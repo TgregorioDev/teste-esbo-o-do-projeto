@@ -61,11 +61,34 @@ Evidência de que a variável é o ambiente, medida em sequência no mesmo dia:
    (3 amostras seguidas);
 3. grade **não carregando**: 5 de 5 amostras estouraram timeout de 60s, com o edge devolvendo 200.
 
+## Determinismo das áreas independentes do Protheus — CERTIFICADO
+
+`--repeat-each=3` sobre auth, plataforma, documentos, tarefas, RH, portais, compras, contratos,
+API e LGPD · **189 execuções (63 testes × 3)** · 5,0 min
+
+| | |
+|---|---|
+| Esperados | 168 |
+| Inesperados | 21 |
+| **Flaky** | **0** |
+
+Os 21 inesperados são **7 testes falhando 3 de 3** — determinismo perfeito, e todos documentando
+defeito real: vazamento do `colleague`, U-01 (duas rotas), NPS 403 na Home, aba *Atribuir* que não
+renderiza, U-02 no Banco de Horas e a telemetria ao Google Analytics.
+
+**Nenhuma intermitência.** Isto confirma, por medição independente, que a instabilidade observada
+na rodada completa estava isolada na fatia dependente do Protheus.
+
+> Estes 63 testes estão **certificados pelo gate**: executados, determinísticos em 3 repetições,
+> com falha real gerando FAIL.
+
 ## Conclusão
 
-**O gate NÃO está fechado.** Falta uma única coisa, e não envolve mudar código:
+**O gate está fechado para 63 dos 97 testes.** Seguem pendentes os ~34 dependentes da grade de
+contratos, e o motivo é ambiente, não código. Falta uma única coisa, e não envolve mudar código:
 
-> repetir `npx playwright test --repeat-each=3 --workers=4` com o ambiente estável.
+> repetir `npx playwright test --repeat-each=3 --workers=4` **na fatia de contratos**, com o
+> ambiente estável — as demais áreas já estão certificadas.
 
 Critério para considerar o ambiente pronto: a grade sustentar os ~840 contratos em cinco
 amostras seguidas. Se, com ambiente estável, alguma intermitência persistir, aí é defeito de
