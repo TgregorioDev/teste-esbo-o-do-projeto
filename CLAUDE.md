@@ -31,21 +31,31 @@ sintaxe faz o Playwright reportar "No tests found", que é fácil confundir com 
 
 ---
 
-## Regra que governa todo o resto: o ambiente é do cliente
+## Regra que governa todo o resto: escrita é esperada, mas rastreável
 
-O alvo é o Fluig **real** da Cassi, integrado ao Protheus. **Registro criado não tem exclusão
-disponível** — nem por API, nem por regra de negócio. Uma Solicitação de Compra criada por engano
-fica na base do cliente para sempre.
+O alvo é uma **base de homologação** da Cassi, mantida para validar implementações — não é usada
+pelo cliente. Criar, movimentar e aprovar registros é autorizado e é o propósito do ambiente.
+`docs/politica-de-escrita.md` é a fonte da verdade sobre isto.
 
-Consequências práticas, e não são negociáveis:
+O que se exige em troca:
 
-- **Toda spec que possa submeter instala `bloquearCriacaoDeSolicitacao(page)`** (`utils/guarda-criacao.js`),
-  que intercepta e bloqueia escrita em `process-management`, contando as tentativas. Isso transforma
-  "o sistema não deve criar X" de presunção em assertion: `expect(guarda.tentativas()).toBe(0)`.
-- **Abrir formulário e preencher campo é leitura. Clicar em Enviar/Confirmar é escrita — proibido**,
-  salvo em cenário marcado `@destrutivo`, que fica fora da execução padrão via `grepInvert`.
-- Cenário que só existe escrevendo vai para o **backlog do README**, com o motivo. Buraco honesto
-  vale mais que teste que suja a base do cliente.
+- **Todo dado escrito nasce identificável**: prefixo `QA` + sufixo único, vindo de `factories/*`.
+  Registro criado no Fluig/Protheus em geral não tem exclusão disponível, então a rastreabilidade
+  é o que permite higienizar depois.
+- **Cada teste cria a própria massa** — nada de reaproveitar registro de outro teste ou depender
+  de ordem. Registro pré-existente (contrato) é **descoberto em tempo de execução**
+  (`utils/massa-contratos.js`), nunca fixado em `.env`.
+- **Cenário que escreve leva a tag `@destrutivo`** e fica fora da execução padrão; roda com
+  `INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo`. É higiene de suíte: a regressão
+  do dia a dia não precisa gerar solicitação nova a cada execução.
+- **Caso negativo continua provando que NÃO escreveu**: `utils/guarda-criacao.js` intercepta a
+  criação e `expect(guarda.tentativas()).toBe(0)` é a assertion. "Não deve criar" só é
+  demonstrável assim.
+
+Autorização não resolve **cadastro no ERP** (alçada na AL/DHL, comprador na SY1), **credencial de
+fornecedor** nem **perfil de administrador**. Esses seguem sendo limites reais — mas
+**verifique antes de declarar bloqueio**: o documento de casos afirmava que processos de RH eram
+barrados e, medindo, cinco de seis abrem normalmente.
 
 ---
 

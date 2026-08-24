@@ -140,18 +140,25 @@ no código de teste é necessária.
 
 ---
 
-## Regra inegociável: o ambiente é do cliente
+## Política de escrita
 
-Registro criado no Fluig/Protheus **não tem exclusão disponível**. Por isso:
+Base de **homologação**, mantida para validar implementações — não é usada pelo cliente. Criar,
+movimentar e aprovar registros é autorizado. Detalhes em `docs/politica-de-escrita.md`.
 
-- `utils/guarda-criacao.js` bloqueia toda escrita em `process-management` e conta as tentativas.
-  "O sistema não deve criar X" vira assertion: `expect(guarda.tentativas()).toBe(0)`.
-- `utils/captura-payload.js` intercepta a criação da SC, **lê o corpo e aborta** — o que permite
-  provar D-01, D-02, D-04 e a incoerência de contrato **sem gravar nada**.
-- Cenário que precise escrever de fato é marcado `@destrutivo` e fica fora da execução padrão:
-  `INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo`. Hoje não há nenhum.
+- Todo registro criado nasce com prefixo `QA` e sufixo único: o resíduo é identificável, o que
+  importa porque registro no Fluig/Protheus em geral não tem exclusão disponível.
+- Cada teste cria a própria massa; nada depende de ordem de execução.
+- Cenário que escreve leva `@destrutivo` e fica fora da execução padrão:
+  `INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo`.
+- Caso negativo segue provando que **não** escreveu: `utils/guarda-criacao.js` intercepta a
+  criação e `expect(guarda.tentativas()).toBe(0)` é a assertion.
+- `utils/captura-payload.js` intercepta a criação da SC, **lê o corpo e aborta** — prova D-01,
+  D-02 e D-04 sem depender de gravar. Continua sendo o caminho preferido quando serve.
 
-**Nenhuma Solicitação de Compra foi criada durante o desenvolvimento desta suíte.**
+Seguem bloqueados por pré-condição que autorização não resolve: cadastro de aprovador de alçada
+(AL/DHL) e de comprador (SY1) no Protheus, credencial de fornecedor externo e perfil de
+administrador. **Verifique antes de declarar bloqueio** — o documento de casos afirmava que RH
+era barrado e cinco de seis processos abrem.
 
 ---
 
