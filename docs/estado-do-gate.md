@@ -9,9 +9,15 @@ Números **medidos**, não estimados. Relatório JSON do Playwright, ambiente re
 
 | | |
 |---|---|
-| Esperados (verdes) | **79** |
-| Inesperados (vermelhos) | **18** |
+| Esperados (verdes) | **80** |
+| Inesperados (vermelhos) | **17** |
 | Flaky | **0** |
+| Falhas por pré-condição ausente | **0** |
+
+> Medição feita **após** a refatoração que eliminou os contratos fixos de `.env`. Os 18
+> vermelhos da medição anterior viraram 17: o teste de duplo clique passou a medir a coisa
+> certa e ficou verde — a proteção antiduplo-clique **funciona**, o vermelho anterior era
+> artefato do próprio teste.
 
 Os 18 vermelhos são testes escritos contra o comportamento esperado, que reprovam porque o
 produto não o entrega — ver a tabela de defeitos no README. Um deles (`CT-INT-01-H`) não é

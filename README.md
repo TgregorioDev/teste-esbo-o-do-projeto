@@ -52,6 +52,30 @@ armadilhas de automação já pagas por esta suíte.
 
 ---
 
+## Massa de teste
+
+**Não há variável de contrato para preencher** — o `.env.test` pede só `BASE_URL`,
+`QA_USERNAME` e `QA_PASSWORD`.
+
+A massa é **descoberta em tempo de execução** a partir da própria grade do portal
+(`utils/massa-contratos.js`): o teste declara a característica de que precisa — contrato
+vigente, de filial diferente de outro — e a suíte escolhe um que sirva.
+
+Fixar um número de contrato em `.env` criava duas fragilidades: a suíte quebrava no dia em que
+alguém finalizasse, cancelasse ou revisasse aquele contrato; e a falha era ilegível, porque um
+timeout esperando o filtro não diz "faltou massa". Quando não há massa, a descoberta agora falha
+com *"PRÉ-CONDIÇÃO AUSENTE: a grade de contratos não retornou nenhuma linha… isto NÃO é defeito
+do produto"*, separando ambiente de defeito no próprio relatório.
+
+Contrato é pré-condição de **leitura**: a automação não pode criá-lo, porque nasce no Protheus
+por processo de negócio que esta suíte está proibida de executar. Já tudo que a automação
+**preenche** (justificativa, data, tipo) vem de factory com faker, sufixo único e prefixo `QA`.
+
+> Ao escrever teste novo: **nunca fixe o valor de um contrato numa constante**. Não há oráculo
+> externo para o valor total — nem o payload nem a grade o expõem. Afirme sobre a coerência
+> interna do payload (itens com quantidades diferentes não podem compartilhar o mesmo total),
+> que vale para qualquer contrato.
+
 ## Cobertura
 
 | Área | Specs | Cobre |

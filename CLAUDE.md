@@ -92,8 +92,16 @@ contrato viraram testes normais em vez de destrutivos.
 ### `config/`
 
 `ambiente.js` centraliza rotas, nomes de dataset e títulos, com `envObrigatoria()` falhando alto
-quando falta configuração. `massa-contratos.js` lê os contratos de **variável de ambiente** de
-propósito: são identificadores do cliente e este repositório é público.
+quando falta configuração.
+
+**Não existe variável de contrato.** A massa é descoberta em tempo de execução pela grade
+(`utils/massa-contratos.js`): o teste declara a característica de que precisa e a suíte escolhe
+um contrato que sirva; sem massa, falha com `PRÉ-CONDIÇÃO AUSENTE`, separando ambiente de
+defeito no relatório. Contrato é pré-condição de leitura — a automação não pode criá-lo.
+
+Corolário ao escrever teste novo: **nunca fixe o valor de um contrato numa constante**. Não há
+oráculo externo para o valor total, então afirme sobre a coerência interna do payload (itens com
+quantidades diferentes não podem compartilhar o mesmo total), que vale para qualquer contrato.
 
 ---
 
