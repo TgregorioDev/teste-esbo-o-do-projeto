@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { CONTRATO_LIMPO } from '../../../config/massa-contratos.js';
+import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
 
 /**
  * Grade de contratos e ações da linha — casos CT-ACC-02.
@@ -23,7 +23,7 @@ test.describe('Grade de contratos', () => {
   }) => {
     await contratosPage.goto();
     await contratosPage.expectCarregada();
-    await contratosPage.filtrarPorContrato(CONTRATO_LIMPO());
+    await contratosPage.filtrarPorContrato((await descobrirContratoVigente(contratosPage)).contrato);
 
     const acoes = contratosPage.acoesDaLinha;
 
@@ -35,7 +35,7 @@ test.describe('Grade de contratos', () => {
   test('deve filtrar a grade pelo número do contrato', async ({ contratosPage }) => {
     await contratosPage.goto();
     await contratosPage.expectCarregada();
-    await contratosPage.filtrarPorContrato(CONTRATO_LIMPO());
+    await contratosPage.filtrarPorContrato((await descobrirContratoVigente(contratosPage)).contrato);
 
     await expect(contratosPage.getInformacaoDaGrade()).toHaveText(
       /Mostrando de 1 até 1 de 1 registros \(Filtrados de \d+ registros\)/,

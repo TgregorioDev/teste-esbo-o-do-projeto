@@ -1,7 +1,7 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { envObrigatoria } from '../../../config/ambiente.js';
-import { CONTRATO_LIMPO, CONTRATO_MEDIO } from '../../../config/massa-contratos.js';
+import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
 import { criarSolicitacaoCompra } from '../../../factories/solicitacao-compra.js';
 import {
   capturarEnvioSolicitacao,
@@ -34,18 +34,25 @@ import {
  * @param {import('@playwright/test').Page} page
  * @param {import('../../../pages/AcompanhamentoContratosPage.js').AcompanhamentoContratosPage} contratosPage
  * @param {import('../../../components/SolicitacaoCompraModal.js').SolicitacaoCompraModal} solicitacaoModal
- * @param {string} contrato
+ * @param {import('../../../utils/massa-contratos.js').CriterioDeContrato} [criterio] característica exigida do contrato
  * @param {Partial<import('../../../factories/solicitacao-compra.js').SolicitacaoCompra>} [overrides]
+ * @returns {Promise<import('../../../pages/AcompanhamentoContratosPage.js').LinhaDeContrato>} o contrato efetivamente usado
  */
-async function abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, contrato, overrides = {}) {
+async function abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, criterio = {}, overrides = {}) {
   await contratosPage.goto();
   await contratosPage.expectCarregada();
-  await contratosPage.filtrarPorContrato(contrato);
+
+  // Massa descoberta em tempo de execução: o teste declara a característica de que precisa e
+  // a suíte escolhe da grade um contrato que sirva. Ver utils/massa-contratos.js.
+  const contrato = await descobrirContratoVigente(contratosPage, criterio);
+  await contratosPage.filtrarPorContrato(contrato.contrato);
   await contratosPage.abrirSolicitacaoCompra();
   await solicitacaoModal.expectAberto();
 
   await solicitacaoModal.preencher(criarSolicitacaoCompra(overrides));
   await solicitacaoModal.confirmar();
+
+  return contrato;
 }
 
 test.describe('Payload de start — targetState e targetAssignee (D-01 / CT-E2E-01-H)', () => {
@@ -56,7 +63,7 @@ test.describe('Payload de start — targetState e targetAssignee (D-01 / CT-E2E-
   }) => {
     const captura = await capturarEnvioSolicitacao(page);
 
-    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, CONTRATO_LIMPO());
+    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal);
     const payload = await captura.aguardarPayload(0);
 
     expect(captura.tentativas(), `houve mais de uma tentativa de escrita: ${captura.urls().join(', ')}`).toBe(1);
@@ -77,60 +84,94 @@ test.describe('Payload de start — targetState e targetAssignee (D-01 / CT-E2E-
 });
 
 test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', () => {
-  // Validado em campo: CONTRATO_LIMPO (2101 / rev 001) vale R$ 40.560,00. É pré-condição do
-  // ambiente (mesma natureza de CONTRATO_LIMPO/CONTRATO_MEDIO em config/massa-contratos.js),
-  // não dado inventado — não existe, no payload, nenhum campo com o valor total do contrato
-  // para servir de oráculo, então o valor de referência precisa vir de fora.
-  const VALOR_CONTRATO_LIMPO = 40560.0;
+  // Sem oráculo externo, de propósito.
+  //
+  // O payload não traz nenhum campo com o valor total do contrato, e a grade também não o
+  // exibe — não há de onde ler o "valor correto" para comparar. Fixar o valor de um contrato
+  // específico numa constante resolveria isso e criaria um problema pior: o teste passaria a
+  // depender daquele contrato existir e continuar valendo aquilo, e quebraria por motivo que
+  // não é defeito no dia em que a base mudasse.
+  //
+  // A saída é afirmar sobre a INCOERÊNCIA INTERNA do próprio payload, que é a assinatura do
+  // defeito e não precisa de referência de fora: itens com quantidades diferentes trazendo o
+  // mesmo valor total, e item de quantidade 1 repetindo o total de outro item. Vale para
+  // qualquer contrato, hoje e depois.
 
-  test('a soma dos itens deve corresponder ao valor do contrato, não multiplicá-lo', async ({
+  test('itens com quantidades diferentes não devem trazer o mesmo valor total', async ({
     page,
     contratosPage,
     solicitacaoModal,
   }) => {
     const captura = await capturarEnvioSolicitacao(page);
 
-    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, CONTRATO_LIMPO());
+    const contrato = await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal);
     const payload = await captura.aguardarPayload(0);
 
     expect(captura.tentativas()).toBe(1);
 
     const itens = extrairItens(payload.formFields);
-    expect(itens.length, 'CONTRATO_LIMPO deveria trazer itens no payload').toBeGreaterThan(0);
+    expect(
+      itens.length,
+      `contrato ${contrato.contrato} deveria trazer itens no payload`,
+    ).toBeGreaterThan(0);
 
-    const somaItens = itens.reduce((soma, item) => soma + paraNumero(item.tbprod_valorTotal), 0);
+    /** @type {string[]} */
+    const colisoes = [];
+    for (let i = 0; i < itens.length; i += 1) {
+      for (let j = i + 1; j < itens.length; j += 1) {
+        const a = itens[i];
+        const b = itens[j];
+        const quantidadesDiferentes = Number(a.tbprod_quantidade) !== Number(b.tbprod_quantidade);
+        const mesmoTotal = paraNumero(a.tbprod_valorTotal) === paraNumero(b.tbprod_valorTotal);
+        if (quantidadesDiferentes && mesmoTotal) {
+          colisoes.push(
+            `#${a.indice}(qtd=${a.tbprod_quantidade}) e #${b.indice}(qtd=${b.tbprod_quantidade}) ` +
+              `compartilham total=${a.tbprod_valorTotal}`,
+          );
+        }
+      }
+    }
 
     expect(
-      somaItens,
-      `soma dos ${itens.length} itens (R$ ${somaItens.toFixed(2)}) deveria ser R$ ${VALOR_CONTRATO_LIMPO.toFixed(2)} — ` +
-        `itens: ${itens.map((i) => `#${i.indice} qtd=${i.tbprod_quantidade} total=${i.tbprod_valorTotal}`).join('; ')}`,
-    ).toBeCloseTo(VALOR_CONTRATO_LIMPO, 2);
-  });
-
-  test('não deve existir item-fantasma repetindo o valor cheio do contrato com quantidade 1', async ({
-    page,
-    contratosPage,
-    solicitacaoModal,
-  }) => {
-    const captura = await capturarEnvioSolicitacao(page);
-
-    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, CONTRATO_LIMPO());
-    const payload = await captura.aguardarPayload(0);
-
-    expect(captura.tentativas()).toBe(1);
-
-    const itens = extrairItens(payload.formFields);
-    const fantasmas = itens.filter(
-      (item) => Number(item.tbprod_quantidade) === 1 && paraNumero(item.tbprod_valorTotal) === VALOR_CONTRATO_LIMPO,
-    );
-
-    expect(
-      fantasmas.map((f) => `#${f.indice} (qtd=1, valorTotal=${f.tbprod_valorTotal})`),
-      'item(ns) fantasma: quantidade 1 replicando o valor cheio do contrato como se fosse um produto próprio',
+      colisoes,
+      `contrato ${contrato.contrato}: o valor do contrato está sendo replicado em cada item ` +
+        `em vez de dividido entre eles — ${colisoes.join(' | ')}`,
     ).toHaveLength(0);
   });
 
-  test('CONTRATO_MEDIO: itens com quantidade e preço diferentes não deveriam compartilhar o mesmo valor total', async ({
+  test('não deve existir item de quantidade 1 repetindo o valor total de outro item', async ({
+    page,
+    contratosPage,
+    solicitacaoModal,
+  }) => {
+    const captura = await capturarEnvioSolicitacao(page);
+
+    const contrato = await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal);
+    const payload = await captura.aguardarPayload(0);
+
+    expect(captura.tentativas()).toBe(1);
+
+    const itens = extrairItens(payload.formFields);
+    const totaisDeOutros = new Map(
+      itens.map((item) => [item.indice, paraNumero(item.tbprod_valorTotal)]),
+    );
+
+    const fantasmas = itens.filter((item) => {
+      if (Number(item.tbprod_quantidade) !== 1) return false;
+      const meuTotal = paraNumero(item.tbprod_valorTotal);
+      return [...totaisDeOutros.entries()].some(
+        ([indice, total]) => indice !== item.indice && total === meuTotal,
+      );
+    });
+
+    expect(
+      fantasmas.map((f) => `#${f.indice} (qtd=1, valorTotal=${f.tbprod_valorTotal})`),
+      `contrato ${contrato.contrato}: item-fantasma replicando o valor cheio como se fosse ` +
+        'produto próprio',
+    ).toHaveLength(0);
+  });
+
+  test('itens com quantidade e preço diferentes não deveriam compartilhar o mesmo valor total', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -141,13 +182,13 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
     // só acontece se o widget estiver repetindo o valor do contrato inteiro por item.
     const captura = await capturarEnvioSolicitacao(page);
 
-    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, CONTRATO_MEDIO());
+    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal);
     const payload = await captura.aguardarPayload(0);
 
     expect(captura.tentativas()).toBe(1);
 
     const itens = extrairItens(payload.formFields);
-    expect(itens.length, 'CONTRATO_MEDIO deveria trazer múltiplos itens no payload').toBeGreaterThan(1);
+    expect(itens.length, 'o contrato deveria trazer múltiplos itens no payload').toBeGreaterThan(1);
 
     /** @type {Map<number, typeof itens>} */
     const porValorTotal = new Map();
@@ -181,7 +222,7 @@ test.describe('Payload de start — campos chumbados (D-04 / CT-ACC-07-S1)', () 
     solicitacaoModal,
   }) => {
     const capturaLimpo = await capturarEnvioSolicitacao(page);
-    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, CONTRATO_LIMPO());
+    const primeiroContrato = await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal);
     const payloadLimpo = await capturaLimpo.aguardarPayload(0);
     expect(capturaLimpo.tentativas()).toBe(1);
 
@@ -192,7 +233,11 @@ test.describe('Payload de start — campos chumbados (D-04 / CT-ACC-07-S1)', () 
     // ouro exige. `page.route` empilha (LIFO) — este handler passa a ser o único acionado
     // daqui em diante, então `capturaLimpo` não é afetado pelo segundo fluxo.
     const capturaMedio = await capturarEnvioSolicitacao(page);
-    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, CONTRATO_MEDIO());
+    // Segundo contrato precisa ser de OUTRA filial — senão "vir igual" seria coincidência.
+    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, {
+      filialDiferenteDe: primeiroContrato.filial,
+      excluirContratos: [primeiroContrato.contrato],
+    });
     const payloadMedio = await capturaMedio.aguardarPayload(0);
     expect(capturaMedio.tentativas()).toBe(1);
 
@@ -234,7 +279,7 @@ test.describe('Payload de start — integridade dos valores e do rateio (CT-ACC-
   }) => {
     const captura = await capturarEnvioSolicitacao(page);
 
-    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, CONTRATO_LIMPO());
+    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal);
     const payload = await captura.aguardarPayload(0);
     expect(captura.tentativas()).toBe(1);
 
@@ -268,7 +313,7 @@ test.describe('Payload de start — integridade dos valores e do rateio (CT-ACC-
   }) => {
     const captura = await capturarEnvioSolicitacao(page);
 
-    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, CONTRATO_LIMPO());
+    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal);
     const payload = await captura.aguardarPayload(0);
     expect(captura.tentativas()).toBe(1);
 
@@ -302,7 +347,7 @@ test.describe('Payload de start — integridade dos valores e do rateio (CT-ACC-
     // rateio, que vem preenchida) chega sempre vazio, nos dois contratos observados.
     const captura = await capturarEnvioSolicitacao(page);
 
-    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, CONTRATO_LIMPO());
+    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal);
     const payload = await captura.aguardarPayload(0);
     expect(captura.tentativas()).toBe(1);
 
@@ -357,7 +402,8 @@ test.describe('Payload de start — duplo clique (CT-ACC-04-S3)', () => {
     try {
       await contratosPage.goto();
       await contratosPage.expectCarregada();
-      await contratosPage.filtrarPorContrato(CONTRATO_LIMPO());
+      const contrato = await descobrirContratoVigente(contratosPage);
+      await contratosPage.filtrarPorContrato(contrato.contrato);
       await contratosPage.abrirSolicitacaoCompra();
       await solicitacaoModal.expectAberto();
       await solicitacaoModal.preencher(criarSolicitacaoCompra());
@@ -390,24 +436,28 @@ test.describe('Payload de start — número de contrato incoerente (CT-ACC-04-S5
     contratosPage,
     solicitacaoModal,
   }) => {
-    // Passo 1: captura o payload GENUÍNO do CONTRATO_MEDIO — é a referência para provar a
+    // Passo 1: captura o payload GENUÍNO do contrato de referência — é a base para provar a
     // incoerência sem precisar de nenhum valor hardcoded (revisão, filial e itens reais
     // continuam sendo o que o ambiente já define para esse contrato).
     const capturaReferencia = await capturarEnvioSolicitacao(page);
-    await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, CONTRATO_MEDIO());
+    const contratoReferencia = await abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal);
     const payloadReferencia = await capturaReferencia.aguardarPayload(0);
     expect(capturaReferencia.tentativas()).toBe(1);
 
     await solicitacaoModal.botaoFechar.click();
     await expect(solicitacaoModal.getDialog()).toBeHidden();
 
-    // Passo 2: abre a SC no CONTRATO_LIMPO e força via JS o campo `numeroContrato`
-    // (disabled) para o número do CONTRATO_MEDIO — simula o único jeito de a interface
+    // Passo 2: abre a SC em OUTRO contrato e força via JS o campo `numeroContrato`
+    // (disabled) para o número do contrato de referência — simula o único jeito de a interface
     // enviar um valor que ela nunca permitiria digitar.
     const capturaIncoerente = await capturarEnvioSolicitacao(page);
     await contratosPage.goto();
     await contratosPage.expectCarregada();
-    await contratosPage.filtrarPorContrato(CONTRATO_LIMPO());
+    const outroContrato = await descobrirContratoVigente(contratosPage, {
+      filialDiferenteDe: contratoReferencia.filial,
+      excluirContratos: [contratoReferencia.contrato],
+    });
+    await contratosPage.filtrarPorContrato(outroContrato.contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
 
@@ -417,7 +467,7 @@ test.describe('Payload de start — número de contrato incoerente (CT-ACC-04-S5
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
       el.disabled = true;
-    }, CONTRATO_MEDIO());
+    }, contratoReferencia.contrato);
 
     await solicitacaoModal.preencher(criarSolicitacaoCompra());
     await solicitacaoModal.confirmar();
@@ -425,7 +475,7 @@ test.describe('Payload de start — número de contrato incoerente (CT-ACC-04-S5
     expect(capturaIncoerente.tentativas()).toBe(1);
 
     // A força via JS precisa ter "pegado": nrContrato saiu com o número do MEDIO.
-    expect(payloadIncoerente.formFields.nrContrato).toBe(CONTRATO_MEDIO());
+    expect(payloadIncoerente.formFields.nrContrato).toBe(contratoReferencia.contrato);
 
     // Esperado (coerência): se o servidor recebe nrContrato de um contrato, a revisão, a
     // filial e os itens devem ser DESSE MESMO contrato — nunca uma mistura. Comparado

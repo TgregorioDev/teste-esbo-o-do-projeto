@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { CONTRATO_LIMPO } from '../../../config/massa-contratos.js';
+import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
 import { TIPO_SOLICITACAO } from '../../../factories/solicitacao-compra.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
 
@@ -20,17 +20,17 @@ test.describe('Abertura da Solicitação de Compra a partir do contrato', () => 
     contratosPage,
     solicitacaoModal,
   }) => {
-    const contrato = CONTRATO_LIMPO();
-
     await contratosPage.goto();
     await contratosPage.expectCarregada();
-    await contratosPage.filtrarPorContrato(contrato);
+
+    const contrato = await descobrirContratoVigente(contratosPage);
+    await contratosPage.filtrarPorContrato(contrato.contrato);
     await contratosPage.abrirSolicitacaoCompra();
 
     await solicitacaoModal.expectAberto();
 
     await expect(solicitacaoModal.getDialog()).toBeVisible();
-    await expect(solicitacaoModal.campoContrato).toHaveValue(contrato);
+    await expect(solicitacaoModal.campoContrato).toHaveValue(contrato.contrato);
   });
 
   test('deve impedir a digitação do número do contrato no modal', async ({
@@ -40,7 +40,7 @@ test.describe('Abertura da Solicitação de Compra a partir do contrato', () => 
     // O contrato é a origem da solicitação: quem escolhe é a linha da grade, não o usuário.
     await contratosPage.goto();
     await contratosPage.expectCarregada();
-    await contratosPage.filtrarPorContrato(CONTRATO_LIMPO());
+    await contratosPage.filtrarPorContrato((await descobrirContratoVigente(contratosPage)).contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
 
@@ -53,7 +53,7 @@ test.describe('Abertura da Solicitação de Compra a partir do contrato', () => 
   }) => {
     await contratosPage.goto();
     await contratosPage.expectCarregada();
-    await contratosPage.filtrarPorContrato(CONTRATO_LIMPO());
+    await contratosPage.filtrarPorContrato((await descobrirContratoVigente(contratosPage)).contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
 
@@ -72,7 +72,7 @@ test.describe('Abertura da Solicitação de Compra a partir do contrato', () => 
     // o placeholder e os dois tipos contratuais — em vez de fixar a lista inteira.
     await contratosPage.goto();
     await contratosPage.expectCarregada();
-    await contratosPage.filtrarPorContrato(CONTRATO_LIMPO());
+    await contratosPage.filtrarPorContrato((await descobrirContratoVigente(contratosPage)).contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
 
@@ -92,7 +92,7 @@ test.describe('Abertura da Solicitação de Compra a partir do contrato', () => 
 
     await contratosPage.goto();
     await contratosPage.expectCarregada();
-    await contratosPage.filtrarPorContrato(CONTRATO_LIMPO());
+    await contratosPage.filtrarPorContrato((await descobrirContratoVigente(contratosPage)).contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
 

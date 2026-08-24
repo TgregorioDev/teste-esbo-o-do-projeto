@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { CONTRATO_LIMPO } from '../../../config/massa-contratos.js';
+import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
 import { criarSolicitacaoCompra } from '../../../factories/solicitacao-compra.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
 
@@ -23,7 +23,7 @@ test.describe('Campos obrigatórios da Solicitação de Compra', () => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);
     await contratosPage.goto();
     await contratosPage.expectCarregada();
-    await contratosPage.filtrarPorContrato(CONTRATO_LIMPO());
+    await contratosPage.filtrarPorContrato((await descobrirContratoVigente(contratosPage)).contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
     return guarda;

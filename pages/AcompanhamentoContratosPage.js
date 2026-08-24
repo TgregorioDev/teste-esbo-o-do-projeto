@@ -106,4 +106,53 @@ export class AcompanhamentoContratosPage {
       return [...valores].filter(Boolean);
     });
   }
+
+  /**
+   * @typedef {Object} LinhaDeContrato
+   * @property {string} filial
+   * @property {string} tipo
+   * @property {string} contrato
+   * @property {string} revisao
+   * @property {string} status
+   * @property {string} fornecedor
+   */
+
+  /**
+   * Lê as linhas da grade como o usuário as vê.
+   *
+   * É a base da descoberta de massa em tempo de execução: em vez de fixar um número de
+   * contrato em variável de ambiente — que some quando alguém finaliza, cancela ou revisa
+   * aquele contrato —, o teste escolhe da grade um contrato que satisfaça o que ele precisa.
+   *
+   * Lido do DOM porque as células da tabela não expõem papel próprio.
+   *
+   * @returns {Promise<LinhaDeContrato[]>}
+   */
+  async lerLinhasDaGrade() {
+    return this.page.evaluate(() => {
+      /** @param {Element} c */
+      const texto = (c) => (c?.textContent ?? '').trim();
+
+      // flatMap em vez de map+filter: descartar a linha devolvendo [] mantém o tipo do
+      // resultado sem precisar de type predicate.
+      return [...document.querySelectorAll('tbody tr')].flatMap((linha) => {
+        const c = linha.querySelectorAll('td');
+        if (c.length < 8) return [];
+
+        const contrato = texto(c[2]);
+        if (contrato === '') return [];
+
+        return [
+          {
+            filial: texto(c[0]),
+            tipo: texto(c[1]),
+            contrato,
+            revisao: texto(c[5]),
+            status: texto(c[6]),
+            fornecedor: texto(c[7]),
+          },
+        ];
+      });
+    });
+  }
 }

@@ -1,7 +1,7 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { DATASET } from '../../../config/ambiente.js';
-import { CONTRATO_LIMPO } from '../../../config/massa-contratos.js';
+import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
 import { criarSolicitacaoCompra } from '../../../factories/solicitacao-compra.js';
 import { derrubarDataset } from '../../../utils/dataset-fluig.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
@@ -28,7 +28,7 @@ test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra'
 
     await contratosPage.goto();
     await contratosPage.expectCarregada();
-    await contratosPage.filtrarPorContrato(CONTRATO_LIMPO());
+    await contratosPage.filtrarPorContrato((await descobrirContratoVigente(contratosPage)).contrato);
     await contratosPage.abrirSolicitacaoCompra();
     return guarda;
   }
