@@ -9,6 +9,14 @@ produção: arquitetura, isolamento, paralelismo e observabilidade valem aqui co
 
 ## Comandos
 
+> **Execução é sempre em PRIMEIRO PLANO.** Nunca mande a suíte para segundo plano, nunca use
+> Monitor, nunca encerre o turno "aguardando notificação" — o turno acaba antes do processo e a
+> espera nunca chega. Se uma execução estourar o limite de tempo da ferramenta, **fatie**: um
+> arquivo de spec por vez, ou um teste por vez com `-g "trecho do título"`. Muitas execuções
+> curtas e síncronas valem mais que uma longa em background. Demorar é aceitável; entregar sem
+> execução comprovada não é.
+
+
 ```bash
 npm ci && npx playwright install chromium
 cp .env.example .env.test          # preencher; NUNCA commitar
