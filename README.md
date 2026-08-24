@@ -1,7 +1,8 @@
 # Suíte E2E — TOTVS Fluig Cassi
 
-Automação de testes end-to-end do **Portal de Acompanhamento de Contratos** e da abertura da
-Solicitação de Compra a partir de um contrato — o ponto de entrada que o time pediu para cobrir.
+Automação de testes end-to-end da plataforma Fluig da Cassi, cobrindo autenticação, navegação e
+permissões, documentos, central de tarefas, o ciclo de Compras e Contratos, RH, portais e
+segurança/integração.
 
 Stack: **Playwright + JavaScript + Node**, verificação estática por `// @ts-check` + JSDoc + `checkJs`.
 
@@ -16,9 +17,8 @@ npx playwright install chromium
 cp .env.example .env.test     # preencher; NUNCA commitar
 npm test                      # suíte completa
 npm run test:auth             # só autenticação
-npm run test:e2e              # só os fluxos do portal
 npm run typecheck             # verificação estática
-npm run report                # abre o relatório HTML da última execução
+npm run report                # relatório HTML da última execução
 ```
 
 Reproduzir exatamente a massa de uma execução que falhou (a seed fica anexada ao relatório):
@@ -36,142 +36,141 @@ config/       ambiente, rotas, nomes de dataset e massa de contratos (tudo vindo
 factories/    massa fictícia preenchida em tela (faker + sufixo único + prefixo QA)
 fixtures/     fixtures do Playwright, evidência automática de falha e autenticação única
 pages/        Page Objects (uma rota por arquivo)
-components/   componentes reaproveitados entre telas (modal da Solicitação de Compra)
-utils/        interceptação de dataset do Fluig e trava de escrita no ambiente
-tests/e2e/    specs, agrupadas por funcionalidade
+components/   componentes reaproveitados entre telas
+utils/        interceptação de dataset, trava de escrita e captura de payload
+tests/e2e/    specs de interface, agrupadas por área
+tests/api/    specs de contrato e controle de acesso via API
+docs/         mapa do ambiente confirmado em campo
 ```
 
-`globalSetup` autentica uma vez e grava o `storageState`; o projeto `autenticacao` roda **sem** ele,
-para validar o login de verdade.
+`globalSetup` autentica uma vez e grava o `storageState`; o projeto `autenticacao` roda **sem**
+ele, para validar o login de verdade.
+
+📌 **Leia `docs/mapa-do-ambiente.md` antes de escrever qualquer teste novo.** Ele registra o que
+foi confirmado em campo — rotas, títulos, datasets, formatos de campo, defeitos reprodutíveis e as
+armadilhas de automação já pagas por esta suíte.
 
 ---
 
-## Massa de teste
+## Cobertura
 
-Os contratos usados como pré-condição **não são versionados** — são identificadores do cliente e
-vivem em `.env.test`:
-
-| Variável | Papel |
-|---|---|
-| `CONTRATO_LIMPO` | contrato vigente com 2 itens — caminho feliz |
-| `CONTRATO_MEDIO` | contrato vigente com 4 itens |
-| `CONTRATO_SERVICO` | contrato de serviço sem quantidade (exercita o fallback do widget) |
-| `CONTRATO_VOLUMOSO` | contrato de 177 itens — **declarado para não ser usado** (ver D-03) |
-
-Contrato é pré-condição de leitura. Tudo que a automação **preenche** (justificativa, data, tipo)
-vem de `factories/solicitacao-compra.js`, com faker + sufixo único + prefixo `QA`.
-
----
-
-## Trava de escrita no ambiente do cliente
-
-O ambiente sob teste é o Fluig real da Cassi, integrado ao Protheus. **Uma Solicitação de Compra
-criada por engano não tem exclusão disponível** — fica na base do cliente para sempre.
-
-Por isso `utils/guarda-criacao.js` intercepta e bloqueia toda escrita em `process-management`,
-contando as tentativas. Ela cumpre dois papéis: impede que um seletor quebrado escreva no
-ambiente, e transforma "o sistema não deve criar a solicitação" de presunção em assertion.
-
-Cenários que **precisam** criar registro real ficam marcados `@destrutivo` e estão fora da
-execução padrão (`grepInvert` no config). Não é skip — é composição de suíte:
-
-```bash
-INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo
-```
-
-Hoje **não há nenhum cenário destrutivo implementado** — ver *Backlog* abaixo.
-
----
-
-## O que a suíte cobre
-
-| Arquivo | Casos | Cobre |
+| Área | Specs | Cobre |
 |---|---|---|
-| `auth/login.spec.js` | CT-AUT-01, CT-AUT-02 | credencial válida, senha errada, usuário inexistente, campos em branco |
-| `acompanhamento-contratos/acesso-portal.spec.js` | CT-ACC-01 | acesso autorizado, colunas da grade, acesso negado, falha ao validar permissão, acesso anônimo |
-| `acompanhamento-contratos/grade-contratos.spec.js` | CT-ACC-02 | ações da linha, filtro por contrato, legibilidade da situação |
-| `acompanhamento-contratos/modal-solicitacao-compra.spec.js` | CT-ACC-03-H | modal vinculado ao contrato, campo protegido, campos em branco, tipos oferecidos, fechar sem criar |
-| `acompanhamento-contratos/validacoes-solicitacao.spec.js` | CT-ACC-04-S1 | as quatro combinações de campo obrigatório faltante |
-| `acompanhamento-contratos/indisponibilidade-protheus.spec.js` | CT-ACC-03-S2, CT-ACC-04-S2 | aviso de indisponibilidade, duplicidade do aviso, bloqueio de envio sem itens |
+| **Autenticação** (`auth/`) | 3 | login válido/inválido, usuário inexistente, campos vazios, recuperação de senha, token adulterado, troca de idioma, sessão inválida, logout |
+| **Plataforma** (`plataforma/`) | 5 | home e contadores, catálogo de processos e busca, início permitido, bloqueio por permissão, deep-link de rota SPA |
+| **Contratos — portal** (`acompanhamento-contratos/`) | 7 | acesso e negação, colunas e ações da grade, filtro, modal da SC, campos obrigatórios, indisponibilidade do Protheus, **payload da criação** e erros no start |
+| **Compras** (`compras/`) | 3 | abertura da SC clássica e da Cotação, campos obrigatórios, rateio abaixo de 100% |
+| **Contratos — processos** (`contratos/`) | 3 | faturamento, cadastro de fornecedor, delegação de fiscais |
+| **Documentos** (`documentos/`) | 1 | árvore de pastas, paginação, ações da barra, navegação e retorno |
+| **Tarefas** (`tarefas/`) | 2 | coerência dos contadores, tarefa atrasada, minhas solicitações e filtro |
+| **RH** (`rh/`) | 2 | banco de horas, indisponibilidade do Protheus, segregação de início dos processos de RH |
+| **Portais** (`portais/`) | 4 | gerência de compras, portal do comprador, tracker, portal do fornecedor e controle de acesso |
+| **Segurança e integração** (`seguranca/`, `api/`) | 4 | vazamento por constraint, acesso admin negado, telemetria externa, datasets do Protheus e indisponibilidade |
 
-Cobertura por categoria: caminho feliz, negativo, validação, autorização, autenticação e
-tratamento de erro.
+Categorias exercitadas: caminho feliz, negativo, validação, borda, autenticação, autorização,
+tratamento de erro e integração.
 
 ---
 
 ## Testes vermelhos por defeito real do produto
 
-Dois testes **reprovam de propósito**. Eles estão escritos contra o comportamento esperado, e o
-produto hoje não o entrega. Ajustá-los para passar documentaria o defeito como se fosse regra.
+Estes reprovam **de propósito**. Estão escritos contra o comportamento esperado e o produto hoje
+não o entrega. Ajustá-los para passar documentaria o defeito como se fosse regra.
 
-| Teste | Defeito | O que se observa |
+| Defeito | Onde | O que se observa |
 |---|---|---|
-| `deve exibir a situação do contrato por extenso, sem truncar` | **D-08** | a grade corta o rótulo: `Finali`, `Paralisa`, `Sol.Finali`, `Cancel.` — sem reticências e sem dica ao passar o mouse |
-| `deve apresentar o erro de indisponibilidade uma única vez` | **D-11** | o mesmo erro é renderizado **duas vezes**. Medição em campo: cada dataset é chamado **uma** vez, então a duplicação está na renderização do aviso, não em requisição repetida |
+| **D-01** 🔴 | payload da SC | `targetState: 6` (marco de Início do BPMN) e `targetAssignee: consumerkeycompras` — a SC nasce presa na conta de integração e nunca chega ao Protheus |
+| **D-01 (sintoma)** 🔴 | criação da SC | falha na transferência é anunciada como "iniciado com sucesso" |
+| **D-02** 🔴 | payload da SC | contrato de R$ 40.560,00 vira 2 itens de R$ 40.560,00 (**R$ 81.120,00**); em contrato de 4 itens, o valor se repete nos quatro |
+| **D-04** 🟠 | payload da SC | `classeOrca=133017` e `classificacao=Tecnologia` fixos em todo item e todo contrato; `campoDescritor="Sol. Compras - CASSI SEDE"` com filial de São Luís/MA |
+| **D-08** 🟡 | grade de contratos | situação truncada: `Finali`, `Paralisa`, `Sol.Finali`, `Cancel.` |
+| **D-11** 🟡 | modal com Protheus fora | o mesmo alerta renderiza duas vezes (cada dataset é chamado uma vez — a duplicação é de renderização) |
+| **CT-ACC-04-S5** 🟡 | payload da SC | `nrContrato` de um contrato com revisão, filial e itens de outro; sem revalidação no servidor |
+| **classeValor vazio** 🟠 | payload da SC | `tbprod_classeValor` em branco, com `classeOrca` e `classificacao` preenchidos ao lado — pode travar a Validação Orçamentária |
+| **U-01** 🟠 | deep-link SPA | `/principalprocess` e `/gestao_ferias` caem em `errorPage/404` |
+| **U-02** 🔴 | banco de horas | `alert()` nativo de configuração de servidor exposto ao usuário final |
+| **U-11** 🟠 | qualquer página | 2 requisições por carga para `google-analytics.com` — validar com Privacidade/LGPD |
+| **Vazamento `colleague`** 🔴 | `dataset/search` | com e sem constraint: **3.493** registros. O filtro é ignorado e a base de colaboradores é acessível a qualquer sessão autenticada |
+| **NPS 403** 🟡 | home | `GET /nps/api/v1/surveys` → 403 em toda carga, gerando erro de console |
+| **Aba Atribuir** 🔴 | gerência de compras | a tabela **nunca** renderiza dados; reclicar não resolve. Trava a etapa de atribuir comprador |
 
-Quando esses defeitos forem corrigidos, os testes ficam verdes sozinhos — nenhuma alteração de
-código de teste é necessária.
+Quando cada defeito for corrigido, o teste correspondente fica verde sozinho — nenhuma alteração
+no código de teste é necessária.
 
 ---
 
-## Divergências em aberto (precisam de confirmação do time)
+## Perguntas em aberto para a Cassi
 
-1. **Tipo de Solicitação perdeu uma opção.** O roteiro de 20/08 registrava *Renovação Contratual*,
-   *Aditivo Contratual* e *Nova Solicitação*. O ambiente hoje oferece apenas as duas primeiras.
-   Enquanto não se confirma se a remoção foi intencional, a assertion cobre o que é regra estável
-   (o placeholder e os dois tipos contratuais) em vez de fixar a lista inteira.
+1. **Segregação de RH.** Dos seis processos verificados, só `wf_aprovacao_ocorrencia` e
+   `wf_solicitacao_ferias` bloqueiam. `wf_pagamento_horas_extras`, `wf_automacao_admissao`,
+   `wf_substituicaocargos`, `GestaoDependentes` e `rh_gbeneficios_planosaude` **abrem** para um
+   usuário de Compras. Parte pode ser autoatendimento por desenho. **Quais deveriam exigir grupo
+   de RH?** O que sobrar é defeito de segregação.
+2. **Tipo de Solicitação.** O roteiro registrava *Renovação Contratual*, *Aditivo Contratual* e
+   *Nova Solicitação*. O ambiente hoje oferece só as duas primeiras. A remoção foi intencional?
+3. **Telemetria externa.** O envio de URL e título a serviço externo é aceitável para uma
+   operadora de saúde? O teste está escrito contra "não deve enviar".
+4. **Confirmar sem itens.** O envio é corretamente bloqueado, mas o usuário não recebe mensagem
+   nova. Qual deve ser o aviso?
+5. **Campos fixos no payload** (D-04): quais são legitimamente fixos?
 
-2. **Confirmar sem itens não dá retorno ao usuário.** Com o Protheus indisponível, o clique em
-   *Confirmar* **não envia nada** (comprovado pela trava de escrita: zero tentativas) — mas também
-   não exibe a mensagem *"Nenhum item de contrato foi carregado"* que o roteiro previa. O bloqueio,
-   que é o essencial, acontece; o aviso ao usuário está em aberto.
+---
+
+## Regra inegociável: o ambiente é do cliente
+
+Registro criado no Fluig/Protheus **não tem exclusão disponível**. Por isso:
+
+- `utils/guarda-criacao.js` bloqueia toda escrita em `process-management` e conta as tentativas.
+  "O sistema não deve criar X" vira assertion: `expect(guarda.tentativas()).toBe(0)`.
+- `utils/captura-payload.js` intercepta a criação da SC, **lê o corpo e aborta** — o que permite
+  provar D-01, D-02, D-04 e a incoerência de contrato **sem gravar nada**.
+- Cenário que precise escrever de fato é marcado `@destrutivo` e fica fora da execução padrão:
+  `INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo`. Hoje não há nenhum.
+
+**Nenhuma Solicitação de Compra foi criada durante o desenvolvimento desta suíte.**
 
 ---
 
 ## Decisões técnicas que valem registro
 
-**Locale fixado em `pt-BR`.** A tela de login do Fluig é traduzida pelo locale do navegador:
-em `pt-BR` os campos são *"Digite seu login" / "Acessar"*, em `en-US` são *"Enter your login" /
-"Access"*. Sem fixar o locale, a suíte quebraria conforme a máquina que a executasse.
+**Locale fixado em `pt-BR`.** A tela de login é traduzida pelo navegador; sem fixar, a suíte
+quebraria conforme a máquina.
 
-**Autenticação não se valida por URL.** O Fluig serve a tela de login na **mesma URL da home**
-(`/portal/p/1/home`). O critério de sessão é o título do documento somado à ausência do formulário.
+**Sessão não se valida por URL.** O Fluig serve o login na mesma URL da home; o critério é o
+título somado à ausência do formulário.
 
-**Os ícones da coluna "Ação" não têm nome acessível.** São âncoras vazias, sem texto e sem
-`aria-label`; `getByRole('link', { name })` não os resolve. O único gancho estável hoje é o
-atributo `title`, e é o que a suíte usa.
-> 📌 **Recomendação ao time de desenvolvimento:** adicionar `aria-label` (ou `data-testid`) aos três
-> ícones. Além de destravar o locator preferencial, é ganho de acessibilidade real — hoje um leitor
-> de tela não anuncia essas ações.
+**Ícones sem nome acessível.** Os da coluna "Ação" são ancorados por `title`. Ver a seção de
+acessibilidade no mapa do ambiente — são três ocorrências do mesmo problema, com recomendação
+consolidada ao time de desenvolvimento.
 
-**O campo de data é `<input type="date">`.** Só aceita ISO (`aaaa-mm-dd`); preencher em `dd/mm/aaaa`
-devolve *Malformed value*. A factory já entrega no formato correto.
+**Interceptar muda o comportamento — cuidado ao afirmar defeito.** A proteção antiduplo-clique
+desabilita o botão enquanto a criação está em voo. Abortar a requisição faz o widget reabilitar
+na hora, e forçar o clique fura a própria trava: as duas coisas produzem vermelho que é artefato,
+não defeito. O teste correto **segura a requisição em voo** e afirma sobre o estado real — e com
+isso se confirmou que **a proteção funciona**.
 
-**Interceptação de dataset.** No Fluig, todo dataset é executado pelo **mesmo** endpoint
-(`POST /api/public/ecm/dataset/datasets`), com o nome no corpo. Não dá para interceptar por URL —
-`utils/dataset-fluig.js` lê o corpo da requisição para decidir.
-
-**Exceção justificada na varredura de anti-patterns.** `utils/dataset-fluig.js` tem um `catch` sem
-rethrow: ele apenas classifica se o corpo da requisição é JSON de dataset. Corpo não-JSON não é
-chamada de dataset e segue o fluxo normal. Não há assertion envolvida — nenhum erro de teste é
-engolido ali.
+**Estado global mutável não paraleliza.** Favoritar processo é estado de conta única e
+`describe.serial` não serializa entre repetições do `--repeat-each`. O caso foi removido em vez de
+virar flaky.
 
 ---
 
 ## Backlog — identificado e não automatizado
 
-| Cenário | Por que não entrou |
+| Motivo | Casos |
 |---|---|
-| `CT-ACC-05-H` criação da SC e `CT-E2E-01-H` (defeito **D-01**) | criam registro real e sem exclusão na base do cliente. Exigem autorização explícita e uma política de higienização acordada antes de rodarem |
-| `CT-ACC-06-S1/S2` valor multiplicado (**D-02**) | o defeito só é observável na SC já criada — mesmo bloqueio acima |
-| `CT-ACC-04-S3` duplo clique e `CT-E2E-12-S1` SC duplicada (**D-12**) | idem |
-| `CT-ACC-03-S3` contrato de 177 itens (**D-03**) | congela o navegador por completo; a aba não fecha e não navega. Rodar em suíte trava o worker |
-| `CT-E2E-03` a `CT-E2E-10` | dependem de cadastro no Protheus (aprovador de alçada na **AL/DHL** e comprador na **SY1**) que o usuário da automação não possui |
-| Camada de API | os datasets do portal são chamados por um endpoint único autenticado por sessão. Vale cobrir contrato de dados dos datasets críticos numa etapa seguinte, com os payloads reais já mapeados em `config/ambiente.js` |
+| **Escreve no ambiente** | GED: upload, check-out/in, aprovação, lixeira · Central de Tarefas: assumir do pool, concorrência · Gerência de Compras: atribuir comprador · Portal do Comprador: validar, avaliar, definir vencedor · criação real de SC ponta a ponta |
+| **Exige cadastro no Protheus** | `CT-E2E-03` a `CT-E2E-10` — aprovador de alçada (**AL/DHL**) e comprador (**SY1**), que o usuário da automação não possui |
+| **Exige perfil administrativo** | `CT-SEG-02/03/04` (admins, credencial em dataset, auditoria de SQL) · `CT-INT-02` (disparar sincronização) |
+| **Exige credencial de fornecedor** | `CT-PFN-01-S1/S2`, `CT-PFN-02` a `CT-PFN-05` |
+| **Seria ataque real** | `CT-PFN-06` (XSS no chat), `CT-PFN-07` (IDOR) — não se executa contra ambiente de cliente |
+| **Não alcançável por essa rota** | `CT-FAT-02-S1/S4` (cadeia de zooms contra dado real, sem resultado determinístico) · `CT-COT-02-S2/S3` (campos `readonly`, sem busca de fornecedor) · `CT-CMP-02-S2` acima de 100% (o campo limita a 100 no blur) |
+| **Destrutivo para a execução** | `CT-ACC-03-S3` — contrato de 177 itens congela o navegador (D-03); rodar em suíte trava o worker |
+| **Removido por não paralelizar** | `CT-PLT-05-H` favoritos |
 
 ---
 
 ## CI
 
-`.github/workflows/e2e.yml` roda a suíte em push e pull request, e publica o relatório HTML e o
-JUnit como artefato. Os segredos vêm de *repository secrets* — nunca do repositório.
+`.github/workflows/e2e.yml` roda a suíte em push e pull request e publica o relatório HTML e o
+JUnit como artefato. Segredos vêm de *repository secrets* — nunca do repositório.

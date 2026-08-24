@@ -44,4 +44,12 @@ export const DATASET = {
   FILIAL: 'dsProtheus_getBranches_restGetAll',
   /** Itens da planilha do contrato, base dos itens da Solicitação de Compra. */
   ITENS_PLANILHA: 'dsProtheus_getItensPlanilha_restGetAll',
+  /** Tipos de contrato, consumido na carga do portal. */
+  TIPOS_CONTRATO: 'dsProtheus_getTipoContratos_restGetAll',
+  /** Solicitações exibidas nas abas Atribuir/Transferir da Gerência de Compras. */
+  SOLICITACOES_GERENCIA_COMPRAS: 'ds_getSolicsGerenciaCompras',
 };
+
+/** Endpoint que cria a Solicitação de Compra. Alvo da trava de escrita e da captura de payload. */
+export const ROTA_START_SOLICITACAO_COMPRAS =
+  '**/process-management/api/v2/processes/wf_solicitacao_compras/start';

@@ -96,3 +96,118 @@ O ambiente é o do cliente, integrado ao Protheus. **Registro criado não tem ex
   (`utils/guarda-criacao.js`), que bloqueia escrita em `process-management` e conta as tentativas.
 - "O sistema não deve criar X" vira assertion: `expect(guarda.tentativas()).toBe(0)`.
 - Cenário que **precisa** escrever é marcado `@destrutivo` e fica fora da execução padrão (`grepInvert`).
+
+---
+
+# Atualizações — rodada de implementação das suítes
+
+Tudo abaixo foi observado em campo durante a implementação das 9 suítes. **Onde contradiz a
+seção anterior ou o documento de casos de teste, o que vale é isto.**
+
+## Correções ao que estava mapeado
+
+| Ponto | Estava | É |
+|---|---|---|
+| Título do Banco de Horas | "(sem título)" | `Cassi - Fluig Plataforma - Portal de Autorização de Horas Extras` |
+| Aba *Atribuir* da Gerência de Compras | "às vezes não renderiza, reclicar resolve" | **nunca** renderiza dados; reclicar não resolve. A aba *Transferir*, ao lado, carrega (lenta, 20–25s) |
+| Seletor de idioma no login | suspeita de controle inacessível | **funciona para o usuário**: clique de mouse na coordenada troca o idioma. A `div.language-spacer` por cima é ruído de CSS, não defeito |
+
+## Premissas do documento de casos que NÃO se confirmaram
+
+O documento afirma que o usuário de Compras/Contratos "não inicia RH, RDFC nem SIGAJURI
+restritos". Verificado processo a processo, isso vale para **RDFC** e para apenas **dois**
+processos de RH:
+
+| Processo | Início pelo usuário de Compras |
+|---|---|
+| `bpm_recepcao_documentos_fiscais_compras` | 🔒 bloqueado |
+| `wf_solicitacao_ferias` | 🔒 bloqueado |
+| `wf_aprovacao_ocorrencia` | 🔒 bloqueado |
+| `wf_pagamento_horas_extras` | ⚠️ **abre** |
+| `wf_automacao_admissao` | ⚠️ **abre** |
+| `wf_substituicaocargos` | ⚠️ **abre** |
+| `GestaoDependentes` | ⚠️ **abre** |
+| `rh_gbeneficios_planosaude` | ⚠️ **abre** |
+| `wf_delegacaoFiscalContratoServico` | ⚠️ **abre** (o roteiro supunha bloqueio) |
+
+> Parte disso pode ser autoatendimento por desenho — Dependentes e Plano de Saúde são coisas
+> que qualquer colaborador abre para si. **Pergunta em aberto para a Cassi:** desses, quais
+> deveriam exigir grupo de RH? O que sobrar da resposta é defeito de segregação.
+
+Consequência prática: casos marcados "⛔ bloqueado por perfil" no documento podem estar
+executáveis hoje. Reavaliar antes de assumir bloqueio.
+
+## Payload de criação da SC — `POST /process-management/api/v2/processes/wf_solicitacao_compras/start`
+
+Interceptar essa requisição, ler o corpo e **abortar** prova defeitos que antes só eram
+visíveis na SC já criada — sem gravar nada. É a base de `utils/captura-payload.js`.
+
+Chaves de topo: `targetState`, `targetAssignee`, `subProcessTargetState`, `comment`, `formFields`.
+`formFields` tem ~101 campos; itens sufixados `___1`, `___2`, …
+
+Valores confirmados (contrato de R$ 40.560,00, filial 2101):
+
+```
+targetState              = 6                      ← marco de Início do BPMN (D-01)
+targetAssignee           = consumerkeycompras     ← conta de integração (D-01)
+tbprod_quantidade___1    = 48    tbprod_valorTotal___1 = 40.560,00
+tbprod_quantidade___2    = 1     tbprod_valorTotal___2 = 40.560,00   ← soma 81.120,00 (D-02)
+tbprod_classeOrca___N    = 133017        (igual em todo item e todo contrato — D-04)
+tbprod_classificacao___N = Tecnologia    (idem — contrato é manutenção de elevador)
+tbprod_classeValor___N   = (vazio)       ← achado novo
+campoDescritor           = Sol. Compras - CASSI SEDE   (filial real: São Luís/MA — D-04)
+```
+
+No contrato de 4 itens, o valor de R$ 48.160,00 se repete nos **quatro**.
+
+## Defeitos confirmados nesta rodada (além dos já mapeados)
+
+| Achado | Onde | Evidência |
+|---|---|---|
+| **Vazamento do `colleague`** | `GET /api/public/ecm/dataset/search?datasetId=colleague` | com e sem `constraintFields`: **3.493** registros. O filtro é ignorado |
+| **NPS 403 na Home** | toda carga de `/portal/p/1/home` | `GET /nps/api/v1/surveys?productLine=TOTVS%20Fluig` → 403, gera `console.error` |
+| **Aba Atribuir não renderiza** | `/portal/p/1/gerenciaCompras` | 2 chamadas a `ds_getSolicsGerenciaCompras` (`etapa=257`, `etapa=119`) na carga, nenhuma no clique; tabela fica em "Nenhum dado encontrado" |
+| **`tbprod_classeValor` vazio** | payload da SC | vazio nos itens, com `classeOrca` e `classificacao` preenchidos ao lado |
+| **Envio a Google Analytics** | qualquer página | 2 requisições por carga para `google-analytics.com` (`G-F0FT6D1NQG`) |
+
+## Acessibilidade — três ocorrências do mesmo problema
+
+Controles sem nome acessível ou fora da árvore de acessibilidade. Levar ao time como um item só:
+
+1. **Ícones da coluna "Ação"** (grade de contratos): âncoras vazias, sem texto e sem `aria-label`.
+2. **Seletor de idioma** (login): `<img data-language>` sem `alt` nem `aria-label`.
+3. **Abas de categoria da Home**: `<a role="tab">` contendo `<div><li>` — bloco dentro de inline,
+   HTML inválido; o Chromium calcula bounding box **0×0** para a âncora, que fica inalcançável
+   por teclado e leitor de tela.
+
+## Comportamentos de tela que decidem o desenho do teste
+
+- **Central de Tarefas guarda a sub-aba por sessão no servidor** — um `goto()` novo pode
+  aterrissar em "Minhas Solicitações". A pré-condição precisa clicar na aba desejada.
+- **Campo de rateio limita silenciosamente**: digitar `110` vira `100` no blur. O caso
+  "rateio acima de 100%" não é reproduzível; só o abaixo de 100%.
+- **Formulário de Cotação avulso**: `txt_cgc_infForn` (CNPJ) e `txt_valid_infForn` (validade)
+  são `readonly` e não há busca de fornecedor. Casos de CNPJ inválido/validade vencida não são
+  alcançáveis por essa rota.
+- **Faturamento**: "Itens da Medição" e "Rateio" existem no DOM ocultos e só aparecem após
+  encadear Fornecedor → Contrato → Competência → Filial nos zooms do Protheus.
+- **Delegação de Fiscais** aberta direto não oferece fiscal substituto nem período — só campos
+  somente leitura. Indica processo disparado por um pai, não iniciado sozinho.
+- **"Atuar como"** existe em 3 das 4 sub-telas do Portal do Comprador; a *Validação Inicial*
+  não tem o seletor e lista SCs reais direto.
+- **Recuperação de senha**: o link é `/portal/p/1/home?token=<token>&user=<login>`, validado por
+  `GET /authentication/api/v1/tokens/valid`. Token fabricado permite testar a recusa **sem**
+  consumir token real nem trocar a senha do usuário de teste.
+- **Banco de Horas** dispara um `alert()` **nativo** — o Playwright dispensa diálogo
+  automaticamente, então é obrigatório registrar `page.on('dialog')` **antes** de navegar, ou o
+  alerta some e o teste conclui, erradamente, que ele não existe.
+
+## Armadilhas de automação aprendidas aqui
+
+- **Interceptar muda o comportamento.** A proteção antiduplo-clique do widget é desabilitar o
+  botão; um segundo clique com `force: true` fura a própria proteção sob teste e produz um
+  vermelho que é artefato, não defeito. Nunca force o clique que valida uma trava de UI.
+- **Contagem lida cedo demais passa por acidente.** O alerta duplicado (D-11) só existe depois
+  que o modal termina de abrir; afirmar antes disso dá falso verde.
+- **Estado global mutável não paralela.** Favoritar processo é estado de conta única e
+  `describe.serial` não serializa entre repetições do `--repeat-each` — o caso foi removido.
