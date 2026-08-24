@@ -1,0 +1,33 @@
+{
+  "name": "cassi-fluig-e2e",
+  "version": "0.1.0",
+  "description": "Suíte E2E Playwright — TOTVS Fluig Cassi",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:auth": "playwright test --project=autenticacao",
+    "test:e2e": "playwright test --project=e2e",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit -p jsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TgregorioDev/teste-esbo-o-do-projeto.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TgregorioDev/teste-esbo-o-do-projeto/issues"
+  },
+  "homepage": "https://github.com/TgregorioDev/teste-esbo-o-do-projeto#readme",
+  "type": "module",
+  "private": "true",
+  "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.2.0",
+    "dotenv": "^17.4.2",
+    "typescript": "^7.0.2"
+  }
+}

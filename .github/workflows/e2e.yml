@@ -1,0 +1,51 @@
+name: E2E Fluig Cassi
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Instalar navegador
+        run: npx playwright install --with-deps chromium
+
+      - name: Verificação estática
+        run: npm run typecheck
+
+      - name: Executar a suíte
+        run: npx playwright test
+        env:
+          # Segredos e identificadores do cliente vêm de repository secrets.
+          BASE_URL: ${{ secrets.BASE_URL }}
+          QA_USERNAME: ${{ secrets.QA_USERNAME }}
+          QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
+          CONTRATO_LIMPO: ${{ secrets.CONTRATO_LIMPO }}
+          CONTRATO_MEDIO: ${{ secrets.CONTRATO_MEDIO }}
+          CONTRATO_SERVICO: ${{ secrets.CONTRATO_SERVICO }}
+          CONTRATO_VOLUMOSO: ${{ secrets.CONTRATO_VOLUMOSO }}
+
+      - name: Publicar relatório
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/junit.xml
+          retention-days: 30
