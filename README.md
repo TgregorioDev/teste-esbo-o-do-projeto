@@ -85,6 +85,11 @@ por processo de negócio que esta suíte está proibida de executar. Já tudo qu
 | Casos sem nenhum teste | **31** — cada um com motivo medido |
 | Testes que **criam ou editam** registro (`@destrutivo`) | **33** |
 
+**Última execução medida (25/08/2026): 143 testes, 103 verdes, 40 vermelhos** — dos 40, 35 são
+defeitos do produto listados abaixo, 3 são `PRÉ-CONDIÇÃO AUSENTE` por falta de massa, 1 ficou sem
+veredito e 1 não reproduziu. Detalhe e classificação em
+[`docs/estado-do-gate.md`](docs/estado-do-gate.md).
+
 **A matriz caso a caso está em [`docs/cobertura.md`](docs/cobertura.md)**, com o comando que
 reproduz a contagem. A ligação é o **ID citado no título do teste** (`CT-AUT-01-H — deve
 autenticar…`) — é o que torna o número auditável em vez de declarado. Ao trazer um caso do
