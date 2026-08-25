@@ -67,4 +67,59 @@ export class AdmissaoPage {
   async aguardarFormularioInternoCarregado() {
     await this.headingDoFormularioInterno.waitFor({ state: 'visible' });
   }
+
+  /**
+   * Título do formulário efetivamente montado dentro do iframe.
+   *
+   * ## Corrida encontrada (determinismo do conjunto, 25/08/2026)
+   *
+   * Este caso era intermitente APENAS quando executado junto com a suíte de contratos:
+   * reprovava 3/3 isolado (o defeito é real e estável) e passava 1 em 3 no conjunto — ou
+   * seja, o VERDE é que era falso, e um teste que documenta defeito ficava verde sozinho.
+   *
+   * Causa raiz medida: durante a carga, o iframe do formulário NAVEGA QUATRO VEZES —
+   * três `about:blank` por volta de 3s e só então o formulário real, por volta de 5,5s.
+   * `frameLocator(...)` é re-resolvido a cada uso, e `expect(...).not.toBeVisible()`
+   * é satisfeito no PRIMEIRO poll em que o elemento não está visível. Se esse poll cai
+   * numa das janelas de documento em branco (mais prováveis sob concorrência, quando a
+   * navegação do iframe demora mais), a assertion negativa passa instantaneamente sem
+   * nada ter sido observado — falso verde.
+   *
+   * Correção pela causa raiz: em vez de esperar por AUSÊNCIA (satisfeita por qualquer
+   * estado transitório), lê-se o valor JÁ ESTABILIZADO e compara-se. A espera só termina
+   * quando o formulário está realmente montado (heading E campos presentes no documento
+   * do iframe); documento em branco não satisfaz a condição, ele continua aguardando e,
+   * se nunca montar, falha alto em vez de passar caladamente.
+   *
+   * @returns {Promise<string>} texto do heading do formulário realmente servido
+   */
+  async lerTituloDoFormularioInterno() {
+    const handle = await this.page.waitForFunction(
+      () => {
+        const iframe = document.querySelectorAll('iframe')[0];
+        const doc = iframe instanceof HTMLIFrameElement ? iframe.contentDocument : null;
+        if (!doc) return null;
+        // Campos montados é o sinal de que o formulário terminou de renderizar — um
+        // documento em branco (ou ainda em `about:blank`) nunca satisfaz esta condição.
+        if (doc.querySelectorAll('input, select, textarea').length === 0) return null;
+        // O heading separa as palavras com ESPAÇO NÃO-SEPARÁVEL (U+00A0), não espaço
+        // comum: comparar o texto cru contra um literal digitado nunca casaria, e a
+        // comparação silenciosamente "passaria" sempre. `getByRole(name:)` escondia isso
+        // porque o cálculo de nome acessível já normaliza espaços em branco.
+        const texto = (doc.querySelector('h1')?.textContent ?? '').replace(/\s+/g, ' ').trim();
+        return texto === '' ? null : texto;
+      },
+      undefined,
+      // Mesmo orçamento de tempo que o `waitFor` anterior usava — não é afrouxamento.
+      { timeout: 30_000 },
+    );
+
+    const titulo = await handle.jsonValue();
+    // `waitForFunction` só resolve com retorno truthy, então `null` é inalcançável aqui;
+    // a guarda existe para o verificador de tipos e falha alto caso isso mude.
+    if (titulo === null) {
+      throw new Error('o formulário interno do processo de Admissão não montou nenhum título');
+    }
+    return titulo;
+  }
 }

@@ -57,9 +57,63 @@ export class SubstituicaoCargosPage {
   /**
    * Confirma o bloqueio real: a validação assíncrona de funcionário falha e o formulário
    * fica bloqueado antes de expor qualquer campo de substituto.
+   *
+   * ## Não-determinismo MEDIDO no produto (25/08/2026)
+   *
+   * Este caso é intermitente e a intermitência é DO PRODUTO, não da automação. Medido em
+   * 8 cargas sequenciais da tela, sem concorrência e sem interceptação: em 7 delas o
+   * formulário bloqueia (0 campos visíveis) e em 1 ele **não bloqueia** — 10 campos ficam
+   * visíveis e utilizáveis. Nas 8 execuções o dataset `ds_protheus_getMatriculaTitular_rest`
+   * devolveu exatamente a MESMA resposta (0 registros): a entrada da validação é idêntica e
+   * o desfecho da tela não é. Ou seja, o bloqueio depende de uma corrida interna do
+   * JavaScript do formulário (a validação assíncrona concluir antes ou depois de o
+   * formulário terminar de montar e reabilitar os campos), não do dado do ERP.
+   *
+   * Consequência de negócio: de forma intermitente, um solicitante que o ERP NÃO conseguiu
+   * identificar recebe o formulário liberado. É defeito de validação, e este teste reprova
+   * exatamente quando isso acontece — comportamento correto, não deve ser "estabilizado".
+   *
+   * Há ainda um terceiro desfecho, com o ERP fora: o formulário bloqueia com outra mensagem
+   * ("Não foi possível estabelecer comunicação com o ERP"). Também é bloqueio, mas por outra
+   * causa, e o teste não o aceita como equivalente.
+   *
+   * O `catch` abaixo apenas ENRIQUECE o diagnóstico e relança: sem ele a falha chega como um
+   * timeout opaco de 30s, que não distingue "produto não bloqueou" de "ambiente fora".
    */
   async expectBloqueadoPorFuncionarioNaoLocalizado() {
-    await this.erroFuncionarioNaoLocalizado.waitFor({ state: 'visible' });
+    try {
+      await this.erroFuncionarioNaoLocalizado.waitFor({ state: 'visible' });
+    } catch (erro) {
+      const observado = await this.descreverDesfechoDaValidacao();
+      throw new Error(
+        `o formulário NÃO apresentou o bloqueio de identificação do solicitante. Estado observado: ${observado}. ` +
+          'Não-determinismo conhecido do produto (ver comentário em SubstituicaoCargosPage): ' +
+          'com a MESMA resposta do ERP, a tela às vezes bloqueia e às vezes libera os campos. ' +
+          `Erro original: ${erro instanceof Error ? erro.message : String(erro)}`,
+      );
+    }
+  }
+
+  /**
+   * Descreve qual dos desfechos conhecidos a tela apresentou — usado só para tornar a
+   * falha legível no relatório.
+   * @returns {Promise<string>}
+   */
+  async descreverDesfechoDaValidacao() {
+    const frameElement = await this.page.locator('iframe').first().elementHandle();
+    const frame = frameElement ? await frameElement.contentFrame() : null;
+    if (!frame) return 'iframe do formulário não disponível';
+
+    return frame.evaluate(() => {
+      const texto = (document.body?.innerText ?? '').replace(/\s+/g, ' ');
+      const visiveis = Array.from(document.querySelectorAll('input, select, textarea')).filter(
+        (el) => /** @type {HTMLElement} */ (el).offsetParent !== null,
+      ).length;
+      if (/Não foi possível estabelecer comunicação com o ERP/.test(texto)) {
+        return `bloqueado por INDISPONIBILIDADE DO ERP (outra mensagem), ${visiveis} campo(s) visível(is)`;
+      }
+      return `SEM bloqueio algum, ${visiveis} campo(s) visível(is) e utilizável(is)`;
+    });
   }
 
   /**

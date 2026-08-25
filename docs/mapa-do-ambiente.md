@@ -211,3 +211,56 @@ Controles sem nome acessível ou fora da árvore de acessibilidade. Levar ao tim
   que o modal termina de abrir; afirmar antes disso dá falso verde.
 - **Estado global mutável não paralela.** Favoritar processo é estado de conta única e
   `describe.serial` não serializa entre repetições do `--repeat-each` — o caso foi removido.
+
+---
+
+# Atualizações — onda 3 (25/08/2026)
+
+## Premissas do documento de casos que caíram (terceira e quarta vez)
+
+| Módulo | Documento diz | Medido |
+|---|---|---|
+| **SIGAJURI** (4 processos) | exige perfil jurídico | **nenhum é bloqueado por perfil** — todos abrem o formulário completo |
+| **RDFC** (5 variantes) | exige grupo de recepção fiscal | **confirmado**: as 5 bloqueiam, com o mesmo modal de erro |
+| **RH** (6 processos) | é barrado | a tela abre em 5, mas o formulário **não monta campos** — a conta não é funcionário no Protheus |
+
+Regra que emerge disso: **distinga três coisas diferentes** antes de declarar bloqueio —
+(1) bloqueio de permissão de início (modal "Erro" com mensagem de permissão);
+(2) tela que abre mas cujo formulário não monta campo (pré-condição de dado, não de perfil);
+(3) formulário funcional.
+
+## Defeitos novos confirmados
+
+| Achado | Onde | Evidência |
+|---|---|---|
+| **Serviço SIGAJURI não registrado** | `SIGAJURI_Consultivo`, `SIGAJURI_Contrato` | combos `Tipo Consulta`/`Filial`/`Tipo Contrato` têm **uma única opção, e ela é uma exceção Java**: `ServiceNotFoundException: Não foi possível encontrar o serviço ' SIGAJURI '`. Envio → HTTP 500. Os dois processos estão inoperantes |
+| **Parte contrária inalcançável** | `SIGAJURI_Contencioso` | botão `Novo Envolvido` existe no DOM e fica **sempre oculto por CSS** (`sem-processo-hide`) |
+| **Questionário CliniCASSI inoperante** | `prc_questionario_v2` | envio sempre HTTP 500: *"A pergunta >>001<< não tem nenhuma ação cadastrada!!"* — idêntico com 1, 4 ou 10 respostas |
+| **Admissão serve o formulário errado** | `wf_automacao_admissao` | entrega o template de `rh_gbeneficios_planosaude` |
+| **Vazamento de exceção no reset de senha** | `PUT .../redefinirPassPUT` (Portal do Fornecedor) | HTTP **500** com `{"exception":"java.lang.IllegalArgumentException: ..."}` no corpo |
+| **Datasets sensíveis alcançáveis sem admin** | `ds_Fluig`, `dsFluig_executeSql`, `dsFluig_getDocumentSql` | HTTP **200** para sessão comum. Conteúdo NUNCA foi lido — a exposição foi provada por alcançabilidade e metadados |
+| **Sincronizações em erro** | `ds_protheus_getFuncionarios_restGetAll_Sync`, `getFuncoes_restGetAll_Sync` | HTTP **500** `java.lang.NullPointerException` |
+| **Cache de colaboradores muito defasado** | `dsp_colaboradorProtheusSync` | 133.968 registros; defasagem **média 237 dias**, **máxima 1.259 dias** |
+| **Não-determinismo no produto** | `wf_substituicaocargos` | 8 cargas sequenciais, mesma resposta do dataset (0 registros): **7 bloqueiam, 1 libera o formulário**. Solicitante não identificado pelo ERP recebe formulário aberto |
+
+## Questão de segurança FECHADA
+
+`SIGAJURI_Consultivo` tem `public:true` no metadado. Medido com contexto anônimo: a rota devolve a
+tela de **Login**, e a API que traria o payload responde com um script de redirecionamento — sem
+`formHtml`, sem dado do caso. **O metadado público não se traduz em vazamento** por nenhuma das
+duas rotas testadas.
+
+## Armadilhas de automação descobertas nesta onda
+
+- **O iframe do formulário navega VÁRIAS vezes durante a carga** (medido: 3× `about:blank`, depois
+  o formulário real por volta de 5,5s). Uma assertion do tipo `not.toBeVisible()` é satisfeita no
+  **primeiro poll** em que o elemento não está lá — e um poll caindo numa janela em branco passa
+  **sem observar nada**. Isto produziu um falso verde real. Espere o conteúdo **estabilizar** e
+  compare o valor, em vez de esperar por ausência.
+- **Headings usam `U+00A0` em todos os espaços.** Comparar com literal digitado nunca casa —
+  normalize o espaço em branco, ou o teste vira falso verde permanente.
+- **Widgets escondem uma linha-modelo no DOM.** Contar `input`/`select` dentro de um grupo pode
+  devolver campos da linha oculta, inalcançáveis pelo usuário. Teste a visibilidade do controle
+  real, não a contagem de elementos.
+- **`SIGAJURI_AprovaFU` e `Delegação de Fiscais` só têm campos `readonly`**, com os campos reais em
+  `input hidden` atrás. São processos disparados por um pai, não iniciáveis isolados.

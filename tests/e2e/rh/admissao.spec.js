@@ -58,20 +58,26 @@ test.describe('Automação Admissão', () => {
     // Pré-condição do caso: o processo abre (não é bloqueio de perfil).
     await admissaoPage.expectFormularioAberto();
 
-    // Aguarda o formulário INTERNO terminar de montar (condição real) antes de qualquer
-    // assertion negativa — sem isso, `.not.toBeVisible()` poderia passar cedo demais,
-    // antes do heading a reprovar sequer existir, mascarando o defeito com falso verde.
-    await admissaoPage.aguardarFormularioInternoCarregado();
+    // Lê o título do formulário JÁ MONTADO dentro do iframe, em vez de esperar pela
+    // AUSÊNCIA do heading indevido.
+    //
+    // Corrida encontrada na verificação de determinismo do conjunto (25/08/2026): o iframe
+    // do formulário navega quatro vezes durante a carga (três `about:blank`, depois o
+    // formulário real). Como `expect(...).not.toBeVisible()` é satisfeito no primeiro poll
+    // em que o elemento não está visível, um poll que caísse numa dessas janelas em branco
+    // fazia a assertion passar sem observar nada — e este teste, que existe para DOCUMENTAR
+    // um defeito, ficava verde sozinho. Detalhe completo em `pages/AdmissaoPage.js`.
+    const tituloDoFormulario = await admissaoPage.lerTituloDoFormularioInterno();
 
     // DEFEITO: o formulário interno é o de Plano de Saúde, não o de Admissão. Esta
-    // assertion está escrita contra o comportamento ESPERADO (heading de Plano de Saúde
-    // NÃO deveria aparecer num processo de Admissão) e reprova de propósito, documentando
+    // assertion está escrita contra o comportamento ESPERADO (um processo de Admissão não
+    // deveria servir o formulário de Plano de Saúde) e reprova de propósito, documentando
     // a associação processo↔formulário incorreta.
-    await expect(
-      admissaoPage.headingPlanoSaudeInesperado,
+    expect(
+      tituloDoFormulario,
       'defeito: o processo de Admissão (wf_automacao_admissao) abre o formulário de Plano de Saúde ' +
         '(mesmo template de rh_gbeneficios_planosaude) em vez de um formulário de admissão — ' +
         'associação processo↔formulário incorreta',
-    ).not.toBeVisible();
+    ).not.toBe('Gestão de Benefícios - Plano de Saúde');
   });
 });

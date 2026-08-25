@@ -1,68 +1,71 @@
 # Estado do quality gate — medições
 
 Números **medidos**, não estimados. Relatório JSON do Playwright, ambiente real.
-Última atualização: 25/08/2026, após a rodada de implementação com escrita autorizada.
+Última atualização: 25/08/2026, ao fim das três ondas de implementação.
 
 ## Suíte
 
 | | |
 |---|---|
-| Specs | 55 |
-| Testes | 146 (124 na execução padrão; 22 marcados `@destrutivo`) |
-| Page Objects | 33 |
-| Linhas de código | ~12.700 |
+| Specs | 65 |
+| Testes | 167 |
+| Page Objects | 36 |
+| Linhas de código | ~14.600 |
 
-## Execução padrão (sem `@destrutivo`)
+## Determinismo — CERTIFICADO do lado do teste
 
-`npx playwright test --workers=4` · 124 testes · 6,8 min
+Estudo dedicado, **735 execuções** em `--repeat-each=3 --workers=4`, fatiado por bloco e sempre em
+primeiro plano.
 
-| | |
-|---|---|
-| Esperados (verdes) | **97** |
-| Inesperados (vermelhos) | **27** |
-| Flaky | **0** |
+**Resultado: em ambiente saudável, todo verde é 3/3 e todo vermelho é 3/3.** Nenhum teste é flaky.
 
-Os 27 vermelhos são testes escritos contra o comportamento esperado que o produto não entrega,
-mais alguns que declaram pré-condição ausente do ambiente. Nenhum é quebra da suíte.
+O estudo encontrou e corrigiu **um falso verde real**: `CT-ADM-01-H` reprovava isolado mas passava
+1 em 3 no conjunto — e o verde é que era falso, num teste que documenta defeito. Causa raiz: o
+iframe do formulário navega quatro vezes durante a carga, e `not.toBeVisible()` é satisfeito no
+primeiro poll em que o elemento não está lá; um poll caindo numa janela em branco passava sem
+observar nada. Corrigido esperando o conteúdo estabilizar. Na verificação, descobriu-se ainda que
+o heading usa `U+00A0` em todos os espaços — comparar com literal digitado teria criado um falso
+verde permanente.
 
-## Correções feitas na consolidação
+Também **refutou com medição** quatro hipóteses antes de atribuir 12 falhas ao ambiente: corrida
+no carregamento (12/12 cargas limpas), concorrência (24/24 a 8 contextos), invalidação de sessão
+por re-login e sessão fria (9/9). E confirmou que **não há vazamento de estado entre suítes** — o
+teardown adotado está segurando.
 
-**A trava de escrita tinha um buraco.** `utils/guarda-criacao.js` interceptava só
-`**/process-management/**`. Os formulários avulsos enviam por `POST /ecm/api/rest/ecm/workflowView/send`,
-que passava direto — o que causou a criação acidental de um processo e, pior, fazia
-`expect(guarda.tentativas()).toBe(0)` passar **sem provar nada** em vários testes.
+## Duas fontes de vermelho variável que NÃO são flakiness da suíte
 
-A lógica foi invertida: bloqueia toda escrita no host, **exceto** uma lista explícita de rotas que
-usam método de escrita mas são leitura (execução de dataset, fragmentos de renderização do portal,
-autenticação de sessão do Portal do Fornecedor). Endpoint novo é bloqueado e o teste falha alto —
-o oposto do falso verde.
+**1. Oscilação do Protheus.** O ambiente alterna entre ~855 contratos e resposta vazia. A suíte
+rotula corretamente como `PRÉ-CONDIÇÃO AUSENTE`, mas o Playwright conta como falha — então um
+relatório isolado ainda não se autoexplica. Na última execução conjunta, **29 dos 54 vermelhos
+eram exatamente isto**.
 
-Um falso verde real foi encontrado e corrigido por essa mudança: o teste de planilha de rateio
-inválida afirmava "nada foi criado" enquanto o upload saía por um endpoint que a guarda não via.
+**2. Não-determinismo no produto** (`wf_substituicaocargos`): em 8 cargas sequenciais, sem
+concorrência e sem interceptação, o dataset devolveu a mesma resposta nas 8 e **7 bloquearam o
+formulário, 1 não**. A suíte está certa em reprovar quando ocorre; estabilizar o teste esconderia
+o defeito.
 
-**Dois escopos de guarda, com nomes honestos.** Nem todo teste negativo pode ser "escrita zero":
-há casos cuja própria ação sob teste é uma escrita (subir planilha inválida). Bloqueá-la faria o
-teste provar que a guarda interceptou, não que o produto rejeita. Daí:
+## O que falta para carimbar o gate
 
-- `bloquearEscritaNoAmbiente` — nenhuma escrita sai;
-- `bloquearCriacaoDeProcesso` — a ação acontece, mas nenhuma solicitação nasce dela.
+Uma **medição conjunta numa janela em que o Protheus não oscile**. Todas as tentativas de 24 e
+25/08 pegaram o ambiente instável — ele caiu duas vezes e, na última verificação, respondeu 0 de 4.
+Não é pendência de código.
 
-**Dois bugs em Page Object compartilhado**, encontrados por um agente no código de outro:
-corrida entre marcar o rádio de decisão e clicar em Enviar (o Fluig recusava por campo
-obrigatório), e um regex que devolvia texto de consenso como se fosse o nome da atividade.
+## Recomendações de configuração
 
-**Uma violação de regra da skill:** `faker` chamado direto numa spec. Movido para factory —
-massa tem um dono só.
-
-## Determinismo
-
-Cada suíte foi verificada com `--repeat-each=3` pelo agente que a escreveu. A execução conjunta
-acima reporta **flaky: 0**. O `--repeat-each=3` sobre as 55 specs juntas ainda não foi rodado —
-é o único item de verificação pendente, e depende de uma janela em que o ambiente não oscile
-(ele caiu duas vezes em 24/08).
+1. ✅ **Aplicado**: `actionTimeout` explícito (45s). Antes, `locator.waitFor()` usava o default de
+   30s do Playwright, que não derivava de nada declarado — era o prazo mais apertado da suíte e
+   ninguém o havia escolhido.
+2. **Pendente**: `CT-FAT-02-S2` roda até 182s e às vezes estoura o próprio `test.setTimeout`,
+   prendendo um worker por 3 minutos. Candidato a projeto isolado.
+3. **Pendente**: portão de pré-condição por execução — as ~34 specs dependentes da grade poderiam
+   checar uma vez, no início, se o Protheus responde, e reportar a janela de ambiente como bloco
+   em vez de dezenas de vermelhos que parecem flaky.
+4. **Pendente**: `test-results/`, `playwright-report/` e o `storageState` por execução, quando
+   houver runs concorrentes no mesmo diretório.
 
 ## Alerta de ambiente
 
-O Portal de Acompanhamento de Contratos oscilou, no mesmo dia, entre 840 contratos, zero
-contratos e não carregar. Para o usuário final isso é indisponibilidade intermitente do fluxo de
-abertura de Solicitação de Compra a partir de contrato. Merece chamado próprio.
+O Portal de Acompanhamento de Contratos oscilou, em dois dias seguidos, entre 855 contratos, zero
+contratos e não carregar. Para o usuário final é indisponibilidade intermitente do fluxo de
+abertura de Solicitação de Compra a partir de contrato. Merece chamado próprio, independente da
+suíte.

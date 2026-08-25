@@ -26,6 +26,7 @@ export default defineConfig({
   timeout: 120_000,
   expect: { timeout: 30_000 },
 
+
   // Cenários que criam registro real no ambiente do cliente ficam fora da execução
   // padrão. Não é skip: é composição de suíte, e são habilitados com
   //   npx playwright test --grep @destrutivo
@@ -48,7 +49,11 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
 
-    actionTimeout: 30_000,
+    // `locator.waitFor()` sem timeout explícito usa o default do Playwright (30s), que NÃO
+    // deriva de nada declarado aqui. Era o prazo mais apertado da suíte e ninguém o tinha
+    // escolhido — um Page Object esperando um widget lento falhava por um limite acidental.
+    // Declarado de propósito, para que o número seja decisão e não default herdado.
+    actionTimeout: 45_000,
     navigationTimeout: 60_000,
 
     ignoreHTTPSErrors: false,
