@@ -86,9 +86,10 @@ por processo de negócio que esta suíte está proibida de executar. Já tudo qu
 | Casos sem nenhum teste | **31** — cada um com motivo medido |
 | Testes que **criam ou editam** registro (`@destrutivo`) | **34** |
 
-**Última execução medida (25/08/2026): 143 testes, 103 verdes, 40 vermelhos** — dos 40, 36 são
-defeitos do produto listados abaixo, 3 são `PRÉ-CONDIÇÃO AUSENTE` por falta de massa e 1 não
-reproduziu. Detalhe e classificação em
+**Última execução medida (25/08/2026, 14h): 143 testes, 108 verdes, 35 vermelhos** — defeitos do
+produto listados abaixo, mais `PRÉ-CONDIÇÃO AUSENTE` por falta de massa. ⚠️ **O total de vermelhos
+não é comparável entre execuções sem olhar quais testes são**: dois testes variam por
+não-determinismo do próprio produto. Detalhe e classificação em
 [`docs/estado-do-gate.md`](docs/estado-do-gate.md).
 
 **A matriz caso a caso está em [`docs/cobertura.md`](docs/cobertura.md)**, gerada por

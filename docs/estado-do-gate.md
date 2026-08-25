@@ -25,7 +25,10 @@ INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo --list | tail -1   
 Estudo dedicado, **735 execuções** em `--repeat-each=3 --workers=4`, fatiado por bloco e sempre em
 primeiro plano.
 
-**Resultado: em ambiente saudável, todo verde é 3/3 e todo vermelho é 3/3.** Nenhum teste é flaky.
+**Resultado: em ambiente saudável, todo verde é 3/3 e todo vermelho é 3/3.** Nenhum teste é
+flaky **por causa própria** — mas dois testes variam por causa do produto e do ambiente, e
+isso aparece no total de uma execução para outra. Ver a seção seguinte antes de comparar
+dois relatórios.
 
 O estudo encontrou e corrigiu **um falso verde real**: `CT-ADM-01-H` reprovava isolado mas passava
 1 em 3 no conjunto — e o verde é que era falso, num teste que documenta defeito. Causa raiz: o
@@ -51,6 +54,12 @@ eram exatamente isto**.
 concorrência e sem interceptação, o dataset devolveu a mesma resposta nas 8 e **7 bloquearam o
 formulário, 1 não**. A suíte está certa em reprovar quando ocorre; estabilizar o teste esconderia
 o defeito.
+
+Remedido em 25/08/2026 com `--repeat-each=3`: `CT-SUB` deu **1 verde e 2 vermelhos**, e
+`bloqueio-processos-rh` deu **3/3 verde** na mesma janela em que reprovara horas antes. A
+proporção muda, o fenômeno não. **Consequência prática: o total de vermelhos da suíte não é
+comparável entre execuções sem olhar quais testes são.** É por isso que este documento registra a
+lista, não só o número.
 
 ## O que falta para carimbar o gate
 
@@ -160,3 +169,28 @@ Isto não é ruído de fundo — é o principal fator que limita o gate. Em ~45 
 O padrão é consistente: **o que depende da integração com o Protheus oscila; o que não depende,
 não.** Por isso a suíte falha com `PRÉ-CONDIÇÃO AUSENTE` explícito em vez de timeout opaco —
 é o que permite ler o relatório e separar ambiente de defeito sem abrir trace.
+
+## Execução completa — 25/08/2026, 14:00–14:20
+
+Repetição da medição, com o ambiente estável e já com `CT-CMP-02-S4` remedido.
+
+| Fatia | Verde | Vermelho | vs. 11h |
+|---|---|---|---|
+| `tests/api` + `auth` + `plataforma` + `seguranca` | 20 | 9 | igual |
+| `acompanhamento-contratos` + `contratos` | 29 | 11 | +1 verde |
+| `compras` + `tarefas` | 17 | 7 | igual |
+| `documentos` + `fiscal` + `juridico` + `notificacoes` | 12 | 2 | igual |
+| `portais` + `rh` + `saude` | 30 | 6 | +4 verde |
+| **Total** | **108** | **35** | **+5 verde** |
+
+**Os +5 não são melhoria de produto nem de suíte.** São as duas fontes de vermelho variável já
+descritas acima: `CT-DEL-01-H`, que na medição das 11h caiu junto de um `net::ERR_NETWORK_CHANGED`
+da máquina, e os testes de RH sujeitos ao não-determinismo de `wf_substituicaocargos`. Nenhuma
+linha de código de produto mudou entre as duas execuções.
+
+A fatia 5 foi executada **duas vezes seguidas** e devolveu 30/6 nas duas — dentro desta janela o
+número é reprodutível. Entre janelas, não é, e a seção anterior explica por quê.
+
+Os 35 vermelhos seguem a mesma classificação de sempre: defeito de produto catalogado no README,
+`PRÉ-CONDIÇÃO AUSENTE` por massa inexistente, e variância de produto/ambiente. Nenhum é falha de
+mecânica da suíte.
