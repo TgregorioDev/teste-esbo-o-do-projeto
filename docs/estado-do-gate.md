@@ -1,107 +1,68 @@
 # Estado do quality gate — medições
 
 Números **medidos**, não estimados. Relatório JSON do Playwright, ambiente real.
-Última atualização: 24/08/2026.
+Última atualização: 25/08/2026, após a rodada de implementação com escrita autorizada.
 
-## Passada completa
-
-`npx playwright test --workers=4` · 97 testes · 3,8 min
+## Suíte
 
 | | |
 |---|---|
-| Esperados (verdes) | **80** |
-| Inesperados (vermelhos) | **17** |
+| Specs | 55 |
+| Testes | 146 (124 na execução padrão; 22 marcados `@destrutivo`) |
+| Page Objects | 33 |
+| Linhas de código | ~12.700 |
+
+## Execução padrão (sem `@destrutivo`)
+
+`npx playwright test --workers=4` · 124 testes · 6,8 min
+
+| | |
+|---|---|
+| Esperados (verdes) | **97** |
+| Inesperados (vermelhos) | **27** |
 | Flaky | **0** |
-| Falhas por pré-condição ausente | **0** |
 
-> Medição feita **após** a refatoração que eliminou os contratos fixos de `.env`. Os 18
-> vermelhos da medição anterior viraram 17: o teste de duplo clique passou a medir a coisa
-> certa e ficou verde — a proteção antiduplo-clique **funciona**, o vermelho anterior era
-> artefato do próprio teste.
+Os 27 vermelhos são testes escritos contra o comportamento esperado que o produto não entrega,
+mais alguns que declaram pré-condição ausente do ambiente. Nenhum é quebra da suíte.
 
-Os 18 vermelhos são testes escritos contra o comportamento esperado, que reprovam porque o
-produto não o entrega — ver a tabela de defeitos no README. Um deles (`CT-INT-01-H`) não é
-defeito de produto: é a integração com o Protheus devolvendo vazio, ver abaixo.
+## Correções feitas na consolidação
+
+**A trava de escrita tinha um buraco.** `utils/guarda-criacao.js` interceptava só
+`**/process-management/**`. Os formulários avulsos enviam por `POST /ecm/api/rest/ecm/workflowView/send`,
+que passava direto — o que causou a criação acidental de um processo e, pior, fazia
+`expect(guarda.tentativas()).toBe(0)` passar **sem provar nada** em vários testes.
+
+A lógica foi invertida: bloqueia toda escrita no host, **exceto** uma lista explícita de rotas que
+usam método de escrita mas são leitura (execução de dataset, fragmentos de renderização do portal,
+autenticação de sessão do Portal do Fornecedor). Endpoint novo é bloqueado e o teste falha alto —
+o oposto do falso verde.
+
+Um falso verde real foi encontrado e corrigido por essa mudança: o teste de planilha de rateio
+inválida afirmava "nada foi criado" enquanto o upload saía por um endpoint que a guarda não via.
+
+**Dois escopos de guarda, com nomes honestos.** Nem todo teste negativo pode ser "escrita zero":
+há casos cuja própria ação sob teste é uma escrita (subir planilha inválida). Bloqueá-la faria o
+teste provar que a guarda interceptou, não que o produto rejeita. Daí:
+
+- `bloquearEscritaNoAmbiente` — nenhuma escrita sai;
+- `bloquearCriacaoDeProcesso` — a ação acontece, mas nenhuma solicitação nasce dela.
+
+**Dois bugs em Page Object compartilhado**, encontrados por um agente no código de outro:
+corrida entre marcar o rádio de decisão e clicar em Enviar (o Fluig recusava por campo
+obrigatório), e um regex que devolvia texto de consenso como se fosse o nome da atividade.
+
+**Uma violação de regra da skill:** `faker` chamado direto numa spec. Movido para factory —
+massa tem um dono só.
 
 ## Determinismo
 
-`npx playwright test --repeat-each=3 --workers=4` · 291 execuções · 15,2 min
+Cada suíte foi verificada com `--repeat-each=3` pelo agente que a escreveu. A execução conjunta
+acima reporta **flaky: 0**. O `--repeat-each=3` sobre as 55 specs juntas ainda não foi rodado —
+é o único item de verificação pendente, e depende de uma janela em que o ambiente não oscile
+(ele caiu duas vezes em 24/08).
 
-| | |
-|---|---|
-| Esperados | 212 |
-| Inesperados | 79 |
-| Testes vermelhos distintos | 36 |
-
-Distribuição dos 36:
-
-| Repetições em que falhou | Testes | Leitura |
-|---|---|---|
-| **3 de 3** | **17** | determinístico — defeito real, sempre pelo mesmo motivo |
-| 2 de 3 | 9 | intermitente |
-| 1 de 3 | 10 | intermitente |
-
-### As 19 intermitências são do ambiente, não do código
-
-Todas caem em specs que dependem da grade de contratos vinda do Protheus:
-
-| Spec | Intermitentes |
-|---|---|
-| `acompanhamento-contratos/modal-solicitacao-compra` | 5 |
-| `acompanhamento-contratos/validacoes-solicitacao` | 4 |
-| `acompanhamento-contratos/payload-solicitacao` | 3 |
-| `acompanhamento-contratos/grade-contratos` | 2 |
-| `acompanhamento-contratos/indisponibilidade-protheus` | 2 |
-| `acompanhamento-contratos/acesso-portal` | 1 |
-| `acompanhamento-contratos/erros-no-start` | 1 |
-| `seguranca/integracao-protheus-grade-contratos` | 1 |
-
-**Nenhuma** intermitência em autenticação, plataforma, documentos, tarefas, RH, portais ou
-segurança — 64 testes que rodaram estáveis nas 3 repetições.
-
-Evidência de que a variável é o ambiente, medida em sequência no mesmo dia:
-
-1. grade com **840 contratos** (estado normal);
-2. datasets `dsProtheus_getContratosxFornecedores_restGet` e `dsProtheus_getTipoContratos_restGetAll`
-   respondendo **HTTP 200 com 0 colunas e 0 registros**, grade em "Mostrando 0 até 0 de 0 registros"
-   (3 amostras seguidas);
-3. grade **não carregando**: 5 de 5 amostras estouraram timeout de 60s, com o edge devolvendo 200.
-
-## Determinismo das áreas independentes do Protheus — CERTIFICADO
-
-`--repeat-each=3` sobre auth, plataforma, documentos, tarefas, RH, portais, compras, contratos,
-API e LGPD · **189 execuções (63 testes × 3)** · 5,0 min
-
-| | |
-|---|---|
-| Esperados | 168 |
-| Inesperados | 21 |
-| **Flaky** | **0** |
-
-Os 21 inesperados são **7 testes falhando 3 de 3** — determinismo perfeito, e todos documentando
-defeito real: vazamento do `colleague`, U-01 (duas rotas), NPS 403 na Home, aba *Atribuir* que não
-renderiza, U-02 no Banco de Horas e a telemetria ao Google Analytics.
-
-**Nenhuma intermitência.** Isto confirma, por medição independente, que a instabilidade observada
-na rodada completa estava isolada na fatia dependente do Protheus.
-
-> Estes 63 testes estão **certificados pelo gate**: executados, determinísticos em 3 repetições,
-> com falha real gerando FAIL.
-
-## Conclusão
-
-**O gate está fechado para 63 dos 97 testes.** Seguem pendentes os ~34 dependentes da grade de
-contratos, e o motivo é ambiente, não código. Falta uma única coisa, e não envolve mudar código:
-
-> repetir `npx playwright test --repeat-each=3 --workers=4` **na fatia de contratos**, com o
-> ambiente estável — as demais áreas já estão certificadas.
-
-Critério para considerar o ambiente pronto: a grade sustentar os ~840 contratos em cinco
-amostras seguidas. Se, com ambiente estável, alguma intermitência persistir, aí é defeito de
-teste e deve ser corrigido pela causa raiz — nunca aumentando timeout nem repetindo até passar.
-
-## Alerta de produto, independente da suíte
+## Alerta de ambiente
 
 O Portal de Acompanhamento de Contratos oscilou, no mesmo dia, entre 840 contratos, zero
-contratos e não carregar. Para o usuário final isso é **indisponibilidade intermitente do fluxo
-de abertura de Solicitação de Compra a partir de contrato**. Merece chamado próprio.
+contratos e não carregar. Para o usuário final isso é indisponibilidade intermitente do fluxo de
+abertura de Solicitação de Compra a partir de contrato. Merece chamado próprio.

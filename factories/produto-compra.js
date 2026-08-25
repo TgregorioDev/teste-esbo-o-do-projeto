@@ -59,6 +59,11 @@ export const PRODUTO_PADRAO = {
  * @property {string} dataNecessidade       dd/mm/aaaa — Data de Necessidade (nível item)
  * @property {string} quantidade            quantidade do item, como string (campo de texto)
  * @property {string} precoUnitario         preço unitário no formato BR ("100,00")
+ * @property {string} valorTotalEsperado    quantidade × precoUnitario, no formato BR do
+ *                                          campo "Vlr. Total Estimado" (recalculado pelo
+ *                                          próprio Fluig) — condição observável para
+ *                                          confirmar que os dois campos acima foram
+ *                                          interpretados corretamente pela tela
  * @property {string} observacao            texto livre do item
  * @property {string} rateioPercentual      percentual do único rateio do item ("100")
  */
@@ -80,6 +85,7 @@ export function criarProdutoCompra(overrides = {}) {
     dataNecessidade: dataFuturaBR(30),
     quantidade: '2',
     precoUnitario: '100,00',
+    valorTotalEsperado: '200,00',
     observacao: `${QA_PREFIX} observação automatizada ${id}`,
     rateioPercentual: '100',
     ...overrides,
@@ -102,4 +108,19 @@ export function dataFuturaBR(dias) {
   const dia = String(data.getDate()).padStart(2, '0');
   const mes = String(data.getMonth() + 1).padStart(2, '0');
   return `${dia}/${mes}/${data.getFullYear()}`;
+}
+
+/**
+ * Justificativa rastreável para decisão de aprovação/reprovação numa tarefa.
+ *
+ * Vive aqui, e não na spec, porque a regra do projeto é que **todo** dado escrito nasce na
+ * factory: é o que garante prefixo `QA` + sufixo único em tudo que a automação deixa na base,
+ * e o que mantém um dono único para a construção de massa.
+ *
+ * @param {string} acao rótulo curto da decisão ("aprovacao", "reprovacao")
+ * @returns {string}
+ */
+export function criarJustificativaDecisao(acao) {
+  const id = randomUUID().slice(0, 8);
+  return `${QA_PREFIX} ${acao} automatizado ${faker.company.catchPhrase()} ${id}`;
 }

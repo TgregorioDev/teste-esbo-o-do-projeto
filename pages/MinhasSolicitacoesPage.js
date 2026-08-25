@@ -62,6 +62,11 @@ export class MinhasSolicitacoesPage {
     const maxPaginas = opcoes.maxPaginas ?? 6;
     const alvo = String(processInstanceId);
 
+    // Recarrega a Central de Tarefas antes de abrir "Minhas Solicitações" — necessário para
+    // chamar este método repetidamente (poll/retry): sem reload, uma segunda chamada encontra
+    // a sub-aba já aberta, o clique em "Minhas solicitações" não dispara requisição nova, e
+    // `abrir()` fica esperando por uma resposta que nunca chega.
+    await this.goto();
     const primeiraResposta = await this.abrir();
     const primeiroJson = await primeiraResposta.json();
 

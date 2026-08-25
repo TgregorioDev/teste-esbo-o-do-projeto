@@ -31,9 +31,15 @@
  *   confirmou: o `waitForResponse` correspondente nunca resolvia porque o clique é tratado
  *   inteiramente no cliente até o diálogo aparecer. A condição observável correta é o
  *   diálogo, não uma chamada de rede específica.)
- * - Confirmado empiricamente (rota real, conta única TOTVS-FS): assumir uma tarefa reduz em
- *   1 o total de "Tarefas em pool" e aumenta em 1 o total de "Tarefas a concluir" no Resumo,
- *   e a solicitação assumida passa a aparecer nos cartões de "Tarefas a concluir".
+ * - Assumir uma tarefa move a solicitação assumida para os cartões de "Tarefas a concluir"
+ *   (prova específica, por identificador). O contador agregado de "Tarefas em pool"/
+ *   "Tarefas a concluir" no Resumo NÃO é uma prova confiável disso neste ambiente: é
+ *   homologação compartilhada com fluxo contínuo de novas tarefas de pool chegando por
+ *   conta própria — o total pode subir entre o "antes" e o "depois" de um teste mesmo com a
+ *   assunção funcionando perfeitamente, porque chegou massa nova no meio do caminho
+ *   (confirmado em campo nesta implementação). Testes desta suíte não devem assertar sobre
+ *   esse contador antes/depois pelo mesmo motivo que não fixam o valor de um contrato (ver
+ *   `utils/massa-contratos.js`).
  *
  * ### Correção de rota registrada durante a implementação
  *
@@ -120,11 +126,26 @@ export class PoolTarefasPage {
   /**
    * Abre o grupo de índice informado — troca o conteúdo da Central de Tarefas para a
    * listagem in-page das tarefas desse grupo, cada uma com botão "Assumir".
+   *
+   * O link do grupo é injetado dinamicamente (flyout "Mais opções" → categoria "Tarefas em
+   * pool", ambos via JS) e, como o ícone de favorito do catálogo (ver
+   * `pages/FavoritosPage.js`), fica VISÍVEL antes do handler de clique estar de fato ligado
+   * — confirmado em campo nesta implementação: o primeiro clique às vezes não navega para
+   * lugar nenhum, sem erro. Por isso o clique é reemitido até o rótulo da listagem aparecer,
+   * em vez de confiar num único disparo.
    * @param {number} indice
    */
   async abrirGrupo(indice) {
-    await this.linksDeGrupo.nth(indice).click();
-    await this.rotuloListaDoGrupo.waitFor({ state: 'visible' });
+    const tentativas = 4;
+    for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
+      await this.linksDeGrupo.nth(indice).click();
+      try {
+        await this.rotuloListaDoGrupo.waitFor({ state: 'visible', timeout: 5_000 });
+        break;
+      } catch (erro) {
+        if (tentativa === tentativas) throw erro;
+      }
+    }
     await this.botoesAssumir.first().waitFor({ state: 'visible' });
   }
 
@@ -184,9 +205,22 @@ export class PoolTarefasPage {
     await this.headingConfirmacaoAssumir.waitFor({ state: 'hidden' });
   }
 
-  /** Abre a aba "Tarefas a concluir" (primeiro nível) — lista os cartões de tarefas minhas. */
+  /**
+   * Abre "Tarefas a concluir" e lista os cartões de tarefas minhas.
+   *
+   * A Central de Tarefas guarda a sub-aba ativa por SESSÃO (`docs/mapa-do-ambiente.md`):
+   * como este fluxo acabou de visitar "Tarefas em pool" via "Mais opções", ela toma o lugar
+   * de "Tarefas a concluir" nas duas abas de primeiro nível — "Tarefas a concluir" passa a
+   * viver dentro do próprio "Mais opções". Por isso tenta a aba de primeiro nível primeiro
+   * e cai para o flyout quando ela não está visível.
+   */
   async abrirTarefasAConcluir() {
-    await this.abaTarefasAConcluir.click();
+    if (await this.abaTarefasAConcluir.isVisible().catch(() => false)) {
+      await this.abaTarefasAConcluir.click();
+      return;
+    }
+    await this.linkMaisOpcoes.click();
+    await this.page.getByRole('link', { name: /^Tarefas a concluir/ }).click();
   }
 }
 

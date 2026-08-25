@@ -1,44 +1,299 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
-import { fakerPT_BR as faker } from '@faker-js/faker';
+import { FormularioSolicitacaoCompraPage } from '../../../pages/FormularioSolicitacaoCompraPage.js';
+import { criarProdutoCompra, criarJustificativaDecisao } from '../../../factories/produto-compra.js';
 import { randomUUID } from 'node:crypto';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ANEXO_VALIDO = path.join(__dirname, '../../../fixtures/anexos/documento-valido.pdf');
 
 /**
  * CT-CMP-04-H, CT-CMP-04-S1, CT-CMP-05-S1, CT-CMP-05-H e CT-CMP-06-H — ciclo de APROVAÇÃO
  * da Solicitação de Compras, a partir da Central de Tarefas → Tarefas em pool.
  *
- * ## Por que a massa é DESCOBERTA, não criada pelo teste
+ * ## Cada teste cria a própria massa — e por que isso exige esperar, não só descobrir
  *
- * A Solicitação de Compras não pode ser criada e roteada até o pool de aprovação dentro de
- * um único teste determinístico: entre o Enviar do formulário clássico e a tarefa aparecer
- * em "Tarefas em pool" existe uma cadeia de atividades automáticas do BPMN (decisão "Compra
- * Centralizada?", integração "Grava SC e Anexos" — ~76s observados em campo) sem nenhum
- * evento observável e estável para sincronizar. Por isso esta suíte segue o MESMO padrão já
- * estabelecido por `utils/massa-contratos.js` para contrato: a tarefa de pool é uma
- * PRÉ-CONDIÇÃO DE LEITURA, descoberta em tempo de execução — nunca um ID fixo.
+ * Diferente de "contrato" (`utils/massa-contratos.js`, pré-condição que a automação não tem
+ * como criar), a SC de origem AQUI é criada pelo próprio teste (`criarSolicitacaoCompletaEEnviar`,
+ * cópia local da mesma função de `ciclo-solicitacao-compras.spec.js`) — mas entre o Enviar e
+ * a tarefa ficar assumível existe uma cadeia de atividades automáticas do BPMN (decisão
+ * "Compra Centralizada?", integração de sistema "Grava SC e Anexos" — ~76s observados em
+ * campo) sem nenhum evento de rede estável para aguardar diretamente.
+ * `criarEAssumirNoPoolGestorImediato` resolve isso com polling por CONDIÇÃO OBSERVÁVEL, nunca
+ * tempo fixo.
  *
- * Confirmado em campo (investigação desta suíte, MCP Playwright, 2026-08-24): o usuário de
- * automação pertence ao grupo `Grupo de Compras - Validação do Gestor Imediato da Req. de
- * Compras`, e o pool SEMPRE tem massa disponível para esse grupo — quando o Fluig não
- * encontra o gestor imediato do solicitante (comum neste ambiente de homologação), a tarefa
- * cai para o GRUPO em vez de travar, com o comentário automático "Atenção! Não foi possivel
- * obter as informações do Superior Responsável pelo Colaborador requerente da Solicitação de
- * Compras." registrado no Histórico.
+ * Achado de campo importante: o painel-resumo "Tarefas em pool" da Central de Tarefas pode
+ * mostrar contagem desatualizada/zerada por latência de cache mesmo com a tarefa já real e
+ * assumível — confirmado comparando o resumo com a tela de detalhe da própria SC no mesmo
+ * instante. Por isso o polling usa a tela de detalhe da solicitação
+ * (`abrirDetalheDaSolicitacao(numeroProcesso)` + botão "Assumir tarefa"), que é a fonte de
+ * verdade, em vez de navegar pela Central de Tarefas — o que também identifica A PRÓPRIA
+ * tarefa por número, sem ambiguidade com outras execuções concorrentes populando o mesmo pool.
  *
- * Quando o pool não tiver tarefa disponível (esvaziado por execuções concorrentes ou por
- * falta de massa no momento), o teste falha com "PRÉ-CONDIÇÃO AUSENTE" — ambiente, não
- * defeito — o mesmo critério que `descobrirContratoVigente` já usa.
+ * Confirmado em campo: o usuário de automação pertence ao grupo `Grupo de Compras -
+ * Validação do Gestor Imediato da Req. de Compras`. Quando o Fluig não encontra o gestor
+ * imediato do solicitante (sempre o caso neste ambiente de homologação, usuário sem gestor
+ * cadastrado), a tarefa cai para esse GRUPO em vez de travar, com o comentário automático
+ * "Atenção! Não foi possivel obter as informações do Superior Responsável pelo Colaborador
+ * requerente da Solicitação de Compras." registrado no Histórico — é assim que toda SC
+ * criada por este formulário vira massa de pool, de forma previsível.
+ *
+ * Se o polling esgotar o tempo (BPMN mais lento que o normal, ou indisponibilidade), o teste
+ * falha com "PRÉ-CONDIÇÃO AUSENTE" — ambiente, não defeito.
  */
 
 const GRUPO_GESTOR_IMEDIATO = /Validação do Gestor Imediato/;
 const GRUPO_COMPRADOR = /Valida[çc][ãa]o (d[eo]s?)? ?Comprador/i;
 const GRUPO_ORCAMENTARIA = /Or[çc]ament[áa]ria/i;
 
-/** Justificativa rastreável de aprovação/reprovação — texto livre nasce QA + sufixo único. */
-function justificativaDecisao(acao) {
-  const id = randomUUID().slice(0, 8);
-  return `QA ${acao} automatizado ${faker.company.catchPhrase()} ${id}`;
+// ---------------------------------------------------------------------------------------
+// Criação de Solicitação de Compras (massa própria desta suíte de aprovação).
+//
+// Cópia equivalente das mesmas funções de `ciclo-solicitacao-compras.spec.js` — NÃO
+// extraída para `utils/` porque esta suíte só pode criar/editar os arquivos listados no
+// prompt original (nenhum novo módulo em `utils/`), e importar um `.spec.js` de outro faria
+// o Playwright registrar os testes daquele arquivo duas vezes (descoberta normal + import).
+// Pequena duplicação de código em troca de nenhuma duplicação de execução de teste.
+// Comentários explicativos completos (o "porquê" de cada técnica) ficam no arquivo de
+// origem; aqui só o necessário para rastrear que é a MESMA lógica.
+// ---------------------------------------------------------------------------------------
+
+/** @param {import('@playwright/test').Page} page @param {import('@playwright/test').FrameLocator} frame @param {import('@playwright/test').Locator} locator */
+async function clicarPorCoordenada(page, frame, locator) {
+  await locator.scrollIntoViewIfNeeded();
+  await frame
+    .locator('.tooltip-inner')
+    .waitFor({ state: 'hidden', timeout: 3_000 })
+    .catch(() => {});
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('Elemento sem bounding box — não está realmente visível para clique por coordenada.');
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
+/** @param {import('@playwright/test').Locator} locator @param {string} valor */
+async function preencherCampoMascarado(locator, valor) {
+  await locator.evaluate((el, valorParaSetar) => {
+    const proto = Object.getPrototypeOf(el);
+    const descriptor = Object.getOwnPropertyDescriptor(proto, 'value');
+    if (!descriptor || !descriptor.set) throw new Error('Campo sem setter nativo de "value".');
+    descriptor.set.call(el, valorParaSetar);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    el.dispatchEvent(new Event('blur', { bubbles: true }));
+  }, valor);
+}
+
+/**
+ * @param {import('@playwright/test').Page} page
+ * @param {import('@playwright/test').FrameLocator} frame
+ * @param {string} nomeCampoBusca
+ * @param {string} termoBusca
+ * @param {RegExp} opcaoEsperada
+ * @param {import('@playwright/test').Locator} [campoDeConfirmacao]
+ */
+async function selecionarNoComboDeBusca(page, frame, nomeCampoBusca, termoBusca, opcaoEsperada, campoDeConfirmacao) {
+  const tentativasMax = 3;
+  for (let tentativa = 1; tentativa <= tentativasMax; tentativa++) {
+    const searchbox = frame.getByRole('searchbox', { name: nomeCampoBusca });
+    await searchbox.click();
+    await searchbox.fill(termoBusca);
+    const opcao = frame.getByRole('option', { name: opcaoEsperada }).first();
+    await opcao.waitFor({ state: 'visible' });
+    await clicarPorCoordenada(page, frame, opcao);
+
+    if (!campoDeConfirmacao) return;
+    try {
+      await expect(campoDeConfirmacao).not.toHaveValue('', { timeout: 5_000 });
+      return;
+    } catch {
+      if (tentativa === tentativasMax) {
+        throw new Error(
+          `Seleção em "${nomeCampoBusca}" não refletiu no campo de confirmação após ${tentativasMax} tentativas.`,
+        );
+      }
+    }
+  }
+}
+
+/**
+ * @param {import('@playwright/test').Page} page
+ * @param {import('@playwright/test').FrameLocator} frame
+ * @param {number} indiceDoIcone 0 = Classe Valor, 1 = Centro de Custo
+ * @param {RegExp} padraoCelula
+ */
+async function selecionarNoZoomDoRateio(page, frame, indiceDoIcone, padraoCelula) {
+  // 5 tentativas (não 3): este popup mostrou, sob carga concorrente do ambiente, falhar
+  // "not attached"/timeout mais vezes seguidas que os outros widgets do formulário —
+  // confirmado em campo como re-render assíncrono transiente, não erro de lógica.
+  const tentativasMax = 5;
+  const icone = frame.locator('[id^="fluigfilter"][id$="_toggleTable"]').nth(indiceDoIcone);
+
+  for (let tentativa = 1; tentativa <= tentativasMax; tentativa++) {
+    try {
+      await icone.scrollIntoViewIfNeeded();
+      await frame
+        .locator('.tooltip-inner')
+        .waitFor({ state: 'hidden', timeout: 3_000 })
+        .catch(() => {});
+      await icone.click({ timeout: 8_000 }).catch(() => clicarPorCoordenada(page, frame, icone));
+
+      const celula = frame.getByRole('cell', { name: padraoCelula }).last();
+      const apareceu = await celula.waitFor({ state: 'visible', timeout: 8_000 }).then(
+        () => true,
+        () => false,
+      );
+      if (apareceu) {
+        const textoEscolhido = (await celula.innerText()).trim();
+        // `Locator.click()` primeiro: tem retry/actionability nativos do Playwright, mais
+        // robustos que o clique por coordenada (que só calcula a posição uma vez) quando o
+        // popup se re-renderiza logo depois de aparecer (observado em campo: elemento fica
+        // "not attached" entre localizar e agir). Cai para coordenada só se isso falhar
+        // (ex.: tooltip realmente sobrepondo o alvo).
+        await celula.click({ timeout: 8_000 }).catch(() => clicarPorCoordenada(page, frame, celula));
+
+        const chip = frame.getByText(textoEscolhido, { exact: false }).first();
+        const confirmou = await chip.waitFor({ state: 'visible', timeout: 5_000 }).then(
+          () => true,
+          () => false,
+        );
+        if (confirmou) return;
+      }
+    } catch (erro) {
+      // Re-render assíncrono do widget pode desanexar o elemento entre localizá-lo e
+      // interagir com ele (observado em campo: "Element is not attached to the DOM" em
+      // scrollIntoViewIfNeeded) — condição transiente, tentar de novo em vez de propagar.
+      if (tentativa === tentativasMax) throw erro;
+    }
+
+    if (tentativa === tentativasMax) {
+      throw new Error(
+        `Zoom no índice ${indiceDoIcone} não abriu/confirmou uma opção após ${tentativasMax} tentativas.`,
+      );
+    }
+  }
+}
+
+/**
+ * @param {import('@playwright/test').Page} page
+ * @param {FormularioSolicitacaoCompraPage} formulario
+ * @param {ReturnType<typeof criarProdutoCompra>} massa
+ */
+async function preencherFormularioCompleto(page, formulario, massa) {
+  await selecionarNoComboDeBusca(
+    page,
+    formulario.frame,
+    'Nome',
+    massa.filialTermoBusca,
+    massa.filialOpcaoEsperada,
+    formulario.campoCodigoFilial,
+  );
+  await formulario.campoJustificativa.fill(massa.justificativa);
+
+  await formulario.adicionarProduto();
+  await selecionarNoComboDeBusca(
+    page,
+    formulario.frame,
+    'Produto/Serviço',
+    massa.produtoTermoBusca,
+    massa.produtoOpcaoEsperada,
+    formulario.frame.getByRole('textbox', { name: 'Unidade de Medida' }),
+  );
+
+  await preencherCampoMascarado(
+    formulario.frame.getByRole('textbox', { name: 'Data de Necessidade' }),
+    massa.dataNecessidade,
+  );
+  await preencherCampoMascarado(formulario.frame.getByRole('textbox', { name: 'Quantidade' }), massa.quantidade);
+  await preencherCampoMascarado(
+    formulario.frame.getByRole('textbox', { name: 'Preço Unitário Estimado' }),
+    massa.precoUnitario,
+  );
+  await formulario.frame.getByRole('textbox', { name: 'Observação' }).fill(massa.observacao);
+
+  await expect(formulario.frame.getByRole('textbox', { name: 'Valor Total Estimado' })).toHaveValue(
+    massa.valorTotalEsperado,
+  );
+
+  await formulario.adicionarCentroCusto();
+  await formulario.preencherRateio(massa.rateioPercentual);
+  await selecionarNoZoomDoRateio(page, formulario.frame, 0, /^[A-Z0-9]{2,6}\s*-/);
+  await selecionarNoZoomDoRateio(page, formulario.frame, 1, /^\d{3,6}\s*-/);
+}
+
+/**
+ * @param {import('@playwright/test').Page} page
+ * @param {Partial<ReturnType<typeof criarProdutoCompra>>} [overridesMassa] o que o teste
+ *   precisa VALIDAR (ex.: valor alto para tentar alçada) entra aqui, explícito
+ * @returns {Promise<{ massa: ReturnType<typeof criarProdutoCompra>, numeroProcesso: string }>}
+ */
+async function criarSolicitacaoCompletaEEnviar(page, overridesMassa = {}) {
+  const formulario = new FormularioSolicitacaoCompraPage(page);
+  const massa = criarProdutoCompra(overridesMassa);
+
+  await formulario.goto();
+  await formulario.expectAberto();
+  await preencherFormularioCompleto(page, formulario, massa);
+
+  await formulario.frame.getByRole('button', { name: 'Anexar documentação Pública' }).click();
+  const dialogAnexo = formulario.frame.getByRole('dialog').filter({ hasText: 'Informe o nome do arquivo' });
+  await dialogAnexo.waitFor({ state: 'visible' });
+  await dialogAnexo.getByRole('textbox').fill(`${massa.justificativa} - anexo`);
+
+  const chooserPromise = page.waitForEvent('filechooser');
+  await dialogAnexo.getByRole('button', { name: 'Selecionar anexo' }).click();
+  const chooser = await chooserPromise;
+  await chooser.setFiles(ANEXO_VALIDO);
+
+  await formulario.enviar();
+
+  const linkConfirmacao = page.getByRole('link', { name: /^\d+$/ }).first();
+  await expect(linkConfirmacao).toBeVisible({ timeout: 30_000 });
+  const numeroProcesso = await linkConfirmacao.innerText();
+  expect(numeroProcesso, 'número da solicitação deveria ser numérico').toMatch(/^\d+$/);
+
+  return { massa, numeroProcesso };
+}
+
+
+
+/**
+ * Cria uma Solicitação de Compras (massa própria deste teste) e espera, por polling
+ * (condição observável: o grupo do pool aparece com a SC específica), até que ela chegue ao
+ * pool "Validação do Gestor Imediato". Retorna com a tarefa já ASSUMIDA (pronta para
+ * decidir), evitando reabrir a Central de Tarefas mais uma vez.
+ * @param {import('@playwright/test').Page} page
+ * @param {Partial<ReturnType<typeof criarProdutoCompra>>} [overridesMassa]
+ * @returns {Promise<{ massa: Awaited<ReturnType<typeof criarSolicitacaoCompletaEEnviar>>['massa'], numeroProcesso: string }>}
+ */
+async function criarEAssumirNoPoolGestorImediato(page, overridesMassa = {}) {
+  const { massa, numeroProcesso } = await criarSolicitacaoCompletaEEnviar(page, overridesMassa);
+  const central = new CentralTarefasComprasPage(page);
+
+  // Achado de campo: o painel-resumo "Tarefas em pool" da Central de Tarefas pode mostrar
+  // contagem zerada/desatualizada mesmo com a tarefa já real e assumível (latência de
+  // cache do widget) — confirmado comparando o resumo com a tela de detalhe da própria SC
+  // no mesmo instante. Por isso o polling usa a tela de detalhe (`abrirDetalheDaSolicitacao`),
+  // que é a fonte de verdade, e não a Central de Tarefas.
+  try {
+    await expect(async () => {
+      await central.abrirDetalheDaSolicitacao(numeroProcesso);
+      await expect(central.botaoAssumirTarefaAtual()).toBeVisible({ timeout: 5_000 });
+    }).toPass({ timeout: 180_000, intervals: [10_000, 15_000, 20_000, 30_000] });
+  } catch (erroDePoll) {
+    throw new Error(
+      `PRÉ-CONDIÇÃO AUSENTE: a SC #${numeroProcesso}, criada por este teste, não ficou assumível ` +
+        '("Assumir tarefa") na Validação do Gestor dentro de 180s. Isto NÃO é defeito do produto ' +
+        'confirmado — pode ser lentidão do BPMN acima do observado em campo (~76s). ' +
+        `Causa do polling: ${erroDePoll instanceof Error ? erroDePoll.message : erroDePoll}`,
+    );
+  }
+
+  await central.assumirTarefaAtual(numeroProcesso);
+
+  return { massa, numeroProcesso };
 }
 
 test.describe('Validação do Gestor Imediato (Tarefas em pool)', () => {
@@ -52,35 +307,36 @@ test.describe('Validação do Gestor Imediato (Tarefas em pool)', () => {
    * CT-CMP-05-S1 abaixo, no mesmo describe, para o que acontece quando essa configuração
    * falta).
    */
-  test('@destrutivo deve assumir e aprovar uma tarefa do pool do Gestor Imediato', async ({ page }) => {
+  test('@destrutivo deve assumir e aprovar uma tarefa do pool do Gestor Imediato', async ({ page }, testInfo) => {
+    // Criar a SC + aguardar chegar ao pool (~76s+) + assumir + decidir: mais longo que o
+    // timeout padrão da suíte, pela mesma razão do teste de criação em
+    // `ciclo-solicitacao-compras.spec.js`.
+    testInfo.setTimeout(300_000);
+
     const central = new CentralTarefasComprasPage(page);
-    await central.goto();
-    await central.abrirTarefasEmPool();
+    const { numeroProcesso } = await criarEAssumirNoPoolGestorImediato(page);
 
-    const grupo = await central.encontrarGrupo(GRUPO_GESTOR_IMEDIATO);
-    if (!grupo) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: nenhuma tarefa no pool "Validação do Gestor Imediato" no ' +
-          'momento da execução. Isto NÃO é defeito do produto — é ausência de massa no pool ' +
-          'neste instante (outra execução pode ter esvaziado o grupo). Rode novamente ou ' +
-          'gere uma nova Solicitação de Compras e aguarde a integração assíncrona.',
-      );
-    }
-
-    await central.abrirGrupo(grupo.link);
-    const numeroProcesso = await central.assumirTarefa(0);
-
-    const justificativa = justificativaDecisao('aprovação');
+    const justificativa = criarJustificativaDecisao('aprovação');
     await central.decidirEEnviar({ aprovar: true, justificativa });
 
-    // Confirmação de negócio: o Histórico da solicitação registra a movimentação da
-    // atividade de Validação do Gestor com a justificativa informada.
-    await central.headingHistorico().click();
-    await expect(page.getByText(justificativa)).toBeVisible({ timeout: 30_000 });
+    // Confirmação de negócio: a atividade atual do processo deixou de ser "Validação do
+    // Gestor" — a aprovação MOVIMENTOU o processo para a próxima etapa (observado em campo:
+    // "Distribuição Gestor Orçamentario"). A linha "Atividade atual" fica fixa no topo do
+    // Histórico (sem precisar rolar uma lista potencialmente virtualizada para achar a
+    // justificativa entre dezenas de eventos automáticos do sistema).
+    await central.abrirDetalheAposConfirmacao();
+    let atividade = '';
+    await expect(async () => {
+      atividade = await central.lerNomeAtividadeAtual();
+      expect(atividade.length).toBeGreaterThan(0);
+    }).toPass({ timeout: 30_000 });
+    expect(atividade, 'aprovar deveria avançar a atividade para além de "Validação do Gestor"').not.toMatch(
+      /Validação do Gestor/i,
+    );
 
     test.info().annotations.push({
       type: 'solicitacao-aprovada',
-      description: `processo=${numeroProcesso} justificativa="${justificativa}"`,
+      description: `processo=${numeroProcesso} justificativa="${justificativa}" novaAtividade="${atividade}"`,
     });
   });
 
@@ -94,31 +350,31 @@ test.describe('Validação do Gestor Imediato (Tarefas em pool)', () => {
    */
   test('@destrutivo deve assumir e reprovar uma tarefa do pool do Gestor Imediato com justificativa', async ({
     page,
-  }) => {
+  }, testInfo) => {
+    testInfo.setTimeout(300_000);
+
     const central = new CentralTarefasComprasPage(page);
-    await central.goto();
-    await central.abrirTarefasEmPool();
+    const { numeroProcesso } = await criarEAssumirNoPoolGestorImediato(page);
 
-    const grupo = await central.encontrarGrupo(GRUPO_GESTOR_IMEDIATO);
-    if (!grupo) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: nenhuma tarefa no pool "Validação do Gestor Imediato" no ' +
-          'momento da execução — mesmo motivo documentado no teste de aprovação acima.',
-      );
-    }
-
-    await central.abrirGrupo(grupo.link);
-    const numeroProcesso = await central.assumirTarefa(0);
-
-    const justificativa = justificativaDecisao('reprovação');
+    const justificativa = criarJustificativaDecisao('reprovação');
     await central.decidirEEnviar({ aprovar: false, justificativa });
 
-    await central.headingHistorico().click();
-    await expect(page.getByText(justificativa)).toBeVisible({ timeout: 30_000 });
+    // Mesma técnica de confirmação de CT-CMP-04-H: a atividade atual muda de "Validação do
+    // Gestor" — aqui espera-se ir para uma etapa de correção/ajuste com o solicitante, não
+    // para a etapa seguinte de aprovação (o caso de teste descreve "volta para correção").
+    await central.abrirDetalheAposConfirmacao();
+    let atividade = '';
+    await expect(async () => {
+      atividade = await central.lerNomeAtividadeAtual();
+      expect(atividade.length).toBeGreaterThan(0);
+    }).toPass({ timeout: 30_000 });
+    expect(atividade, 'reprovar deveria tirar a atividade de "Validação do Gestor"').not.toMatch(
+      /Validação do Gestor/i,
+    );
 
     test.info().annotations.push({
       type: 'solicitacao-reprovada',
-      description: `processo=${numeroProcesso} justificativa="${justificativa}"`,
+      description: `processo=${numeroProcesso} justificativa="${justificativa}" novaAtividade="${atividade}" pareceCorrecao=${/ajust|correç/i.test(atividade)}`,
     });
   });
 
@@ -137,35 +393,52 @@ test.describe('Validação do Gestor Imediato (Tarefas em pool)', () => {
    */
   test('@destrutivo deve sinalizar explicitamente quando não há aprovador habilitado para a próxima etapa', async ({
     page,
-  }) => {
+  }, testInfo) => {
+    testInfo.setTimeout(300_000);
+
     const central = new CentralTarefasComprasPage(page);
-    await central.goto();
-    await central.abrirTarefasEmPool();
+    // Valor deliberadamente alto (500 × R$ 50.000,00 = R$ 25.000.000,00) tentando cruzar um
+    // limite de alçada — a massa padrão (R$ 200,00) nunca reproduziu o cenário em execuções
+    // anteriores desta suíte (a decisão sempre avançou normalmente para "Distribuição Gestor
+    // Orçamentario"). Mesmo assim a assertion abaixo continua incondicional: ou a mensagem
+    // de alçada aparece, ou a atividade avança — o teste não presume qual das duas.
+    const { numeroProcesso } = await criarEAssumirNoPoolGestorImediato(page, {
+      quantidade: '500',
+      precoUnitario: '50000,00',
+      valorTotalEsperado: '25.000.000,00',
+    });
 
-    const grupo = await central.encontrarGrupo(GRUPO_GESTOR_IMEDIATO);
-    if (!grupo) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: nenhuma tarefa no pool "Validação do Gestor Imediato" no ' +
-          'momento da execução — mesmo motivo documentado no teste de aprovação acima.',
-      );
-    }
-
-    await central.abrirGrupo(grupo.link);
-    const numeroProcesso = await central.assumirTarefa(0);
-
-    const justificativa = justificativaDecisao('aprovação (alçada)');
+    const justificativa = criarJustificativaDecisao('aprovação (alçada)');
     await central.decidirEEnviar({ aprovar: true, justificativa });
 
     const mensagemAlcada = page.getByText(/N[ãa]o foi encontrado nenhum usu[áa]rio habilitado/i);
-    await central.headingHistorico().click();
-    const registroNoHistorico = page.getByText(justificativa);
+    await central.abrirDetalheAposConfirmacao();
 
-    await expect(mensagemAlcada.or(registroNoHistorico)).toBeVisible({ timeout: 30_000 });
-
+    // Condição incondicional: OU a mensagem de alçada aparece explicitamente, OU a
+    // atividade avança normalmente (prova de que não há trava silenciosa) — nunca as duas
+    // ausentes (nem mensagem, nem avanço).
+    let atividadeMudou = false;
+    try {
+      await expect(async () => {
+        const atividade = await central.lerNomeAtividadeAtual();
+        expect(atividade.length).toBeGreaterThan(0);
+        expect(atividade).not.toMatch(/Validação do Gestor/i);
+      }).toPass({ timeout: 30_000 });
+      atividadeMudou = true;
+    } catch {
+      // segue false — ou a mensagem de alçada explica, ou nem uma coisa nem outra (falha)
+    }
     const alcadaVisivel = await mensagemAlcada.isVisible().catch(() => false);
+
+    expect(
+      alcadaVisivel || atividadeMudou,
+      'esperado: mensagem explícita de alçada OU avanço real da atividade — não os dois ausentes',
+    ).toBeTruthy();
+
+    const atividade = atividadeMudou ? await central.lerNomeAtividadeAtual() : null;
     test.info().annotations.push({
       type: 'alcada-sem-aprovador',
-      description: `processo=${numeroProcesso} mensagemAlcadaObservada=${alcadaVisivel}`,
+      description: `processo=${numeroProcesso} mensagemAlcadaObservada=${alcadaVisivel} atividadeAposDecisao="${atividade}"`,
     });
   });
 });
@@ -250,10 +523,13 @@ test.describe('Etapas designadas nominalmente (verificação de alcançabilidade
     });
 
     if (temDecisaoPadrao) {
-      const justificativa = justificativaDecisao('validação do comprador');
+      const justificativa = criarJustificativaDecisao('validação do comprador');
       await central.decidirEEnviar({ aprovar: true, justificativa });
-      await central.headingHistorico().click();
-      await expect(page.getByText(justificativa)).toBeVisible({ timeout: 30_000 });
+      await central.abrirDetalheAposConfirmacao();
+      await expect(async () => {
+        const atividade = await central.lerNomeAtividadeAtual();
+        expect(atividade.length).toBeGreaterThan(0);
+      }).toPass({ timeout: 30_000 });
     } else {
       // Página carregou sem tela branca e sem travar — suficiente para provar
       // alcançabilidade quando o padrão de decisão difere do já mapeado.

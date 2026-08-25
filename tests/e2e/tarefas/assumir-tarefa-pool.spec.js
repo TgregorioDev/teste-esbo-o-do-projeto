@@ -41,7 +41,6 @@ test.describe('Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H) @dest
     await tarefasPage.expectCarregada();
 
     const poolAntes = await tarefasPage.resumoTarefasEmPool();
-    const aConcluirAntes = await tarefasPage.resumoTarefasAConcluir();
 
     if (poolAntes.total === 0) {
       throw new Error(
@@ -83,23 +82,18 @@ test.describe('Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H) @dest
 
     // Volta para a Central de Tarefas e confirma o efeito de negócio esperado: a tarefa
     // saiu do pool e foi para "minhas tarefas".
+    //
+    // A prova NÃO é o contador agregado de "Tarefas em pool"/"Tarefas a concluir" antes vs.
+    // depois: este é um ambiente de homologação compartilhado com fluxo contínuo de novas
+    // tarefas de pool (confirmado em campo nesta implementação — o total voltou a subir
+    // entre o "antes" e o "depois" porque chegou massa nova no meio do teste, não porque a
+    // assunção falhou). Uma assertion de contador aqui seria tão frágil quanto fixar o valor
+    // de um contrato (ver `utils/massa-contratos.js`). A prova real e específica é a
+    // solicitação assumida (identificada pelo diálogo de confirmação) aparecer nos cartões
+    // de "Tarefas a concluir" — não apenas "algum contador mudou".
     await tarefasPage.goto();
     await tarefasPage.expectCarregada();
 
-    const poolDepois = await tarefasPage.resumoTarefasEmPool();
-    const aConcluirDepois = await tarefasPage.resumoTarefasAConcluir();
-
-    expect(
-      poolDepois.total,
-      `"Tarefas em pool" deveria ter reduzido a partir de ${poolAntes.total}; está em ${poolDepois.total}`,
-    ).toBeLessThan(poolAntes.total);
-    expect(
-      aConcluirDepois.total,
-      `"Tarefas a concluir" deveria ter aumentado a partir de ${aConcluirAntes.total}; está em ${aConcluirDepois.total}`,
-    ).toBeGreaterThan(aConcluirAntes.total);
-
-    // Prova positiva adicional: a solicitação assumida aparece nos cartões de "Tarefas a
-    // concluir" — não apenas o contador mudou, a tarefa específica está lá.
     await poolPage.abrirTarefasAConcluir();
     await expect(tarefasPage.cartoesDeSolicitacao.first()).toBeVisible();
     const identificadores = await tarefasPage.lerIdentificadoresSolicitacoes();

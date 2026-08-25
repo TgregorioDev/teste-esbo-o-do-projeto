@@ -17,16 +17,28 @@ const ROTA_HOME = '/portal/p/1/home';
  *   ícone (`flaticon-star` quando não favoritado, `flaticon-star-active` quando favoritado)
  *   — por isso os locators desta classe usam só `data-process-id`, estável nos dois estados.
  * - Clicar dispara `POST /ecm/api/rest/ecm/processStart/addFavorites?processId=<id>` (para
- *   favoritar) ou `POST .../removeFavorites?processId=<id>` (para desfavoritar) — ambos
- *   200. É a condição observável usada para sincronizar, em vez de tempo fixo.
+ *   favoritar) ou `POST .../removeFavorites?processId=<id>` (para desfavoritar), conforme a
+ *   classe ATUAL do ícone no navegador — não conforme o que este script leu por último.
+ *   `favoritar`/`desfavoritar` **não** esperam uma dessas chamadas por URL fixa: uma leitura
+ *   de estado um instante desatualizada faz o clique disparar a chamada OPOSTA da esperada,
+ *   e esperar a URL errada trava até o timeout (reproduzido em campo nesta implementação,
+ *   sob `--workers=2`). A condição observável correta é o próprio atributo
+ *   `data-favorite-process` alcançar o valor alvo — reconsultado via locator, não via rede.
  * - A Home (`/portal/p/1/home`) tem o widget "Processos favoritos" (`EcmProcessFavorites`),
  *   uma grade com uma linha por processo favoritado:
  *   `<span data-open-favorite-process="<id>">Nome (<id>)</span>`. Clicar na linha navega
  *   para `pageworkflowview?processID=<id>` — é o "acessar por Favoritos" do caso.
  * - Processo recém-iniciado (`Último iniciado` != "Nunca") pode aparecer DUAS vezes no
- *   catálogo ("Últimos processos iniciados" + "Todos os processos"), duplicando o ícone no
- *   DOM. `listarCandidatosSeguros` descarta esses (mantém só `data-process-id` com 1 única
- *   ocorrência), para nunca operar sobre um card ambíguo.
+ *   catálogo — uma vez em "Últimos processos iniciados", outra em "Todos os processos" —
+ *   duplicando o ícone no DOM. As duas seções vivem como irmãs dentro do MESMO container
+ *   `[id^="processListView_"]` (sufixo numérico dinâmico, igual ao dos menus da Central de
+ *   Tarefas): o primeiro filho é `div.row` ("Últimos processos iniciados"), o segundo é
+ *   `div.page-divider` ("Todos os processos"). **"Todos os processos" contém cada processo
+ *   exatamente uma vez** (confirmado em campo) — por isso todo locator de estrela desta
+ *   classe é escopado a essa segunda `div`, em vez de tentar detectar/descartar duplicata:
+ *   um filtro de "ocorrência única" no documento inteiro é frágil (quanto mais processos o
+ *   usuário inicia ao longo da suíte, mais duplicatas aparecem, podendo esvaziar o pool de
+ *   candidatos — foi exatamente o que aconteceu numa rodada desta implementação).
  *
  * ## Por que este caso foi removido antes (e como este desenho evita repetir o erro)
  *
@@ -46,6 +58,23 @@ export class FavoritosPage {
   async abrirCatalogo() {
     await this.page.goto(ROTA_CATALOGO, { waitUntil: 'domcontentloaded' });
     await this.page.getByRole('heading', { name: 'Todos os processos', exact: true }).waitFor({ state: 'visible' });
+    await this.regiaoTodosOsProcessos().locator('em[data-process-id]').first().waitFor({ state: 'visible' });
+    // O ícone de favorito é interativo (handler de clique ligado via JS) só depois que as
+    // chamadas assíncronas da carga terminam — o card já está VISÍVEL antes disso, então
+    // clicar cedo demais não lança erro nenhum, só não faz nada (nenhuma requisição de
+    // favorito sai). Confirmado em campo nesta implementação: o mesmo padrão de
+    // `tests/e2e/plataforma/home.spec.js` (rede estabilizada, não tempo fixo) resolve.
+    await this.page.waitForLoadState('networkidle');
+  }
+
+  /**
+   * Escopo da seção "Todos os processos" do catálogo — a segunda `div` filha do container
+   * `[id^="processListView_"]` (a primeira é "Últimos processos iniciados"). Único lugar do
+   * catálogo onde cada processo aparece exatamente uma vez (ver doc da classe).
+   * @returns {import('@playwright/test').Locator}
+   */
+  regiaoTodosOsProcessos() {
+    return this.page.locator('[id^="processListView_"] > div.page-divider');
   }
 
   async abrirHome() {
@@ -60,7 +89,7 @@ export class FavoritosPage {
    * @returns {import('@playwright/test').Locator}
    */
   estrelaDoProcesso(processId) {
-    return this.page.locator(`em[data-process-id="${processId}"]`);
+    return this.regiaoTodosOsProcessos().locator(`em[data-process-id="${processId}"]`);
   }
 
   /**
@@ -73,36 +102,60 @@ export class FavoritosPage {
   }
 
   /**
-   * Favorita o processo — idempotente: não clica (nem espera requisição) se já estiver
-   * favoritado, evitando alternar para o estado oposto por engano.
+   * Favorita o processo — idempotente: não clica se já estiver favoritado, evitando
+   * alternar para o estado oposto por engano.
+   *
+   * A condição observável não é uma resposta de rede específica: o clique dispara
+   * `addFavorites` OU `removeFavorites` conforme a CLASSE atual do ícone no navegador (fora
+   * do controle deste script), então esperar por uma URL fixa arriscava esperar para sempre
+   * se a leitura de `estaFavoritado` estivesse um instante desatualizada. A condição real é
+   * o próprio atributo alcançar o valor esperado — um locator escopado a
+   * `data-favorite-process="true"` faz Playwright reconsultar o DOM até isso acontecer.
    * @param {string} processId
    */
   async favoritar(processId) {
     if (await this.estaFavoritado(processId)) return;
-    const resposta = this.page.waitForResponse(
-      (r) =>
-        r.url().includes('/ecm/api/rest/ecm/processStart/addFavorites') &&
-        r.url().includes(`processId=${processId}`) &&
-        r.request().method() === 'POST',
-    );
-    await this.estrelaDoProcesso(processId).click();
-    await resposta;
+    await this.#clicarEEsperarEstado(processId, 'true');
   }
 
   /**
-   * Desfavorita o processo — idempotente, espelhando `favoritar`.
+   * Desfavorita o processo — idempotente, espelhando `favoritar` (mesma nota sobre a
+   * condição observável ser o atributo, não uma resposta de rede específica).
    * @param {string} processId
    */
   async desfavoritar(processId) {
     if (!(await this.estaFavoritado(processId))) return;
-    const resposta = this.page.waitForResponse(
-      (r) =>
-        r.url().includes('/ecm/api/rest/ecm/processStart/removeFavorites') &&
-        r.url().includes(`processId=${processId}`) &&
-        r.request().method() === 'POST',
+    await this.#clicarEEsperarEstado(processId, 'false');
+  }
+
+  /**
+   * Clica na estrela e espera o atributo alcançar o valor alvo, reemitindo o clique se o
+   * primeiro não surtir efeito.
+   *
+   * Confirmado em campo (reproduzido de forma isolada, fora deste método, com o mesmo
+   * `data-process-id` que ora falhava ora funcionava): o clique nesse ícone só é tratado
+   * DEPOIS que o binding assíncrono do handler de clique deste widget termina — o card já
+   * está visível e clicável antes disso, então o clique não lança erro nenhum, só não faz
+   * nada. `abrirCatalogo` já espera a rede estabilizar, mas isso não é garantia suficiente
+   * quando a suíte roda com captura de vídeo/trace ativada (mais carga de CPU concorrente
+   * no navegador) — por isso o clique é reemitido em vez de confiar num único disparo.
+   * @param {string} processId
+   * @param {'true' | 'false'} valorAlvo
+   */
+  async #clicarEEsperarEstado(processId, valorAlvo) {
+    const estrelaNoEstadoAlvo = this.regiaoTodosOsProcessos().locator(
+      `em[data-process-id="${processId}"][data-favorite-process="${valorAlvo}"]`,
     );
-    await this.estrelaDoProcesso(processId).click();
-    await resposta;
+    const tentativas = 4;
+    for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
+      await this.estrelaDoProcesso(processId).click();
+      try {
+        await estrelaNoEstadoAlvo.waitFor({ state: 'attached', timeout: 5_000 });
+        return;
+      } catch (erro) {
+        if (tentativa === tentativas) throw erro;
+      }
+    }
   }
 
   /**
@@ -125,24 +178,16 @@ export class FavoritosPage {
   }
 
   /**
-   * Descobre, no catálogo já carregado, os processos com ícone de favorito em UMA única
-   * ocorrência no DOM (descarta os duplicados por aparecerem em "Últimos processos
-   * iniciados" + "Todos os processos" ao mesmo tempo — ver doc da classe).
+   * Descobre, na seção "Todos os processos" do catálogo já carregado, os processos
+   * disponíveis para favoritar — cada um em ocorrência única nessa seção (ver doc da
+   * classe), então não precisa filtrar duplicata.
    * @returns {Promise<string[]>}
    */
   async listarCandidatosSeguros() {
-    const estrelas = this.page.locator('em[data-process-id]');
-    const total = await estrelas.count();
-    /** @type {Record<string, number>} */
-    const ocorrencias = {};
-    for (let i = 0; i < total; i++) {
-      const id = await estrelas.nth(i).getAttribute('data-process-id');
-      if (!id) continue;
-      ocorrencias[id] = (ocorrencias[id] ?? 0) + 1;
-    }
-    return Object.entries(ocorrencias)
-      .filter(([, vezes]) => vezes === 1)
-      .map(([id]) => id);
+    const ids = await this.regiaoTodosOsProcessos()
+      .locator('em[data-process-id]')
+      .evaluateAll((elementos) => elementos.map((el) => el.getAttribute('data-process-id')));
+    return /** @type {string[]} */ (ids.filter((id) => id !== null));
   }
 }
 

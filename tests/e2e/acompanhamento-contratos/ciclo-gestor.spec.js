@@ -62,9 +62,17 @@ test.describe('A SC criada nasce no estado e no dono corretos (CT-E2E-01-H)', ()
 
     const minhasSolicitacoes = new MinhasSolicitacoesPage(page);
     await minhasSolicitacoes.goto();
-    const registro = await minhasSolicitacoes.localizarPorProcessInstanceId(processInstanceId);
 
-    expect(registro, `SC ${processInstanceId} deveria aparecer em "Solicitadas por mim"`).toBeTruthy();
+    // A listagem pode levar alguns segundos para indexar uma SC recém-criada — poll limitado
+    // e observável, nunca `waitForTimeout` fixo, distingue "ainda não indexou" de "nunca vai
+    // aparecer".
+    await expect
+      .poll(() => minhasSolicitacoes.localizarPorProcessInstanceId(processInstanceId), {
+        message: `SC ${processInstanceId} deveria aparecer em "Solicitadas por mim"`,
+        timeout: 60_000,
+      })
+      .toBeTruthy();
+    const registro = await minhasSolicitacoes.localizarPorProcessInstanceId(processInstanceId);
 
     expect(
       registro?.stateDescription,

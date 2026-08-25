@@ -1,7 +1,8 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { FormularioSolicitacaoCompraPage } from '../../../pages/FormularioSolicitacaoCompraPage.js';
-import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
+import { CentralTarefasPage } from '../../../pages/CentralTarefasPage.js';
+import { bloquearCriacaoDeSolicitacao, bloquearCriacaoDeProcesso } from '../../../utils/guarda-criacao.js';
 import { criarProdutoCompra } from '../../../factories/produto-compra.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -56,11 +57,19 @@ const PLANILHA_INVALIDA = path.join(__dirname, '../../../fixtures/anexos/qa-plan
  * sobreposição de CSS, use clique de mouse na coordenada (`page.mouse.click`)" — não é
  * `force: true` (que furaria uma trava real de UI), é o mouse indo ao pixel certo por cima
  * de um tooltip que é ruído visual, não parte do fluxo sob teste.
+ * Também espera nenhum tooltip estar visível ANTES de calcular a coordenada — os tooltips
+ * deste formulário aparecem e somem sozinhos (hover), e clicar bem no instante em que um
+ * está sobre o alvo clica no tooltip, não no elemento.
  * @param {import('@playwright/test').Page} page
+ * @param {import('@playwright/test').FrameLocator} frame
  * @param {import('@playwright/test').Locator} locator
  */
-async function clicarPorCoordenada(page, locator) {
+async function clicarPorCoordenada(page, frame, locator) {
   await locator.scrollIntoViewIfNeeded();
+  await frame
+    .locator('.tooltip-inner')
+    .waitFor({ state: 'hidden', timeout: 3_000 })
+    .catch(() => {});
   const box = await locator.boundingBox();
   if (!box) throw new Error('Elemento sem bounding box — não está realmente visível para clique por coordenada.');
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
@@ -68,29 +77,37 @@ async function clicarPorCoordenada(page, locator) {
 
 /**
  * Preenche um campo com MÁSCARA de formatação (Data de Necessidade, Quantidade, Preço
- * Unitário Estimado) digitando de verdade, tecla a tecla — `Locator.fill()` seta o valor
- * via DOM sem disparar os eventos de teclado que a máscara escuta, e o resultado observado
- * em campo foi concatenação (texto corrompido), não substituição.
+ * Unitário Estimado) via o *setter* nativo do DOM + eventos `input`/`change`/`blur`.
+ *
+ * Confirmado em campo, nesta ordem de investigação:
+ * 1. `Locator.fill()` (insere o texto via CDP) faz a máscara TRATAR a inserção como
+ *    digitação incremental sobre o valor anterior, produzindo concatenação corrompida
+ *    (ex.: "0,0000000100,00QA o...", com sobra de outro campo dentro do valor).
+ * 2. `pressSequentially()` com `Backspace`/`Control+A` prévios também não limpa o buffer
+ *    interno da máscara — ela reage a CADA tecla como dígito novo entrando pela direita
+ *    (ex.: digitar só "2" em Quantidade virou "0,000002").
+ * 3. O setter nativo (`Object.getOwnPropertyDescriptor(...).set`) seguido de
+ *    `dispatchEvent('input'|'change'|'blur')` foi validado em campo (MCP Playwright) e
+ *    reproduz exatamente o que a tela faz ao perder o foco com um valor colado: o "Vlr.
+ *    Total Estimado" recalculou corretamente (quantidade × preço) sem nenhum resíduo.
  * @param {import('@playwright/test').Locator} locator
- * @param {string} texto
+ * @param {string} valor
  */
-async function preencherComDigitacaoReal(locator, texto) {
-  await locator.click();
-  await locator.press('Control+A');
-  await locator.press('Delete');
-  await locator.pressSequentially(texto, { delay: 20 });
+async function preencherCampoMascarado(locator, valor) {
+  await locator.evaluate((el, valorParaSetar) => {
+    const proto = Object.getPrototypeOf(el);
+    const descriptor = Object.getOwnPropertyDescriptor(proto, 'value');
+    if (!descriptor || !descriptor.set) throw new Error('Campo sem setter nativo de "value".');
+    descriptor.set.call(el, valorParaSetar);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    el.dispatchEvent(new Event('blur', { bubbles: true }));
+  }, valor);
 }
 
 /**
  * Seleciona uma opção num combo de busca do formulário (Nome da Filial / Produto/Serviço):
  * digita o termo e clica na opção esperada.
- * @param {import('@playwright/test').Page} page
- * @param {import('@playwright/test').FrameLocator} frame
- * @param {string} nomeCampoBusca nome acessível do searchbox (ex.: "Nome", "Produto/Serviço")
- * @param {string} termoBusca
- * @param {RegExp} opcaoEsperada
- */
-/**
  * @param {import('@playwright/test').Page} page
  * @param {import('@playwright/test').FrameLocator} frame
  * @param {string} nomeCampoBusca nome acessível do searchbox (ex.: "Nome", "Produto/Serviço")
@@ -109,7 +126,7 @@ async function selecionarNoComboDeBusca(page, frame, nomeCampoBusca, termoBusca,
     await searchbox.fill(termoBusca);
     const opcao = frame.getByRole('option', { name: opcaoEsperada }).first();
     await opcao.waitFor({ state: 'visible' });
-    await clicarPorCoordenada(page, opcao);
+    await clicarPorCoordenada(page, frame, opcao);
 
     if (!campoDeConfirmacao) return;
     try {
@@ -128,29 +145,69 @@ async function selecionarNoComboDeBusca(page, frame, nomeCampoBusca, termoBusca,
 }
 
 /**
- * Abre o "zoom" de Classe Valor / Centro de Custo do rateio (item 1, linha 1) e seleciona a
- * primeira opção de dado real (exclui cabeçalho e o item "Filtrar colunas").
+ * Abre o "zoom" de Classe Valor (índice 0) / Centro de Custo (índice 1) do rateio (item 1,
+ * linha 1) e seleciona a primeira opção de dado real (exclui cabeçalho e "Filtrar colunas").
  * @param {import('@playwright/test').Page} page
  * @param {import('@playwright/test').FrameLocator} frame
- * @param {'ClasseValor' | 'CentroCusto'} campo
+ * @param {number} indiceDoIcone 0 = Classe Valor, 1 = Centro de Custo
  * @param {RegExp} padraoCelula
  */
-async function selecionarNoZoomDoRateio(page, frame, campo, padraoCelula, campoDeConfirmacao) {
-  const tentativasMax = 3;
-  for (let tentativa = 1; tentativa <= tentativasMax; tentativa++) {
-    const icone = frame.locator(`#zoomRat${campo}___1_1 [id^="fluigfilter"]`).first();
-    await clicarPorCoordenada(page, icone);
-    const celula = frame.getByRole('cell', { name: padraoCelula }).last();
-    await celula.waitFor({ state: 'visible' });
-    await clicarPorCoordenada(page, celula);
+async function selecionarNoZoomDoRateio(page, frame, indiceDoIcone, padraoCelula) {
+  // 5 tentativas (não 3): este popup mostrou, sob carga concorrente do ambiente, falhar
+  // "not attached"/timeout mais vezes seguidas que os outros widgets do formulário —
+  // confirmado em campo como re-render assíncrono transiente, não erro de lógica.
+  const tentativasMax = 5;
+  // O ícone de zoom não vive DENTRO do container `#zoomRat<Campo>___1_1` (confirmado em
+  // campo: buscar escopado a esse id nunca encontrava o popup) — ele é o N-ésimo elemento
+  // `id^="fluigfilter"][id$="_toggleTable"]` da tela, em ordem visual (0 = Classe Valor,
+  // 1 = Centro de Custo, para um único item com um único rateio).
+  const icone = frame.locator('[id^="fluigfilter"][id$="_toggleTable"]').nth(indiceDoIcone);
 
+  for (let tentativa = 1; tentativa <= tentativasMax; tentativa++) {
     try {
-      await expect(campoDeConfirmacao).not.toHaveValue('', { timeout: 5_000 });
-      return;
-    } catch {
-      if (tentativa === tentativasMax) {
-        throw new Error(`Seleção no zoom de "${campo}" não refletiu após ${tentativasMax} tentativas.`);
+      await icone.scrollIntoViewIfNeeded();
+      await frame
+        .locator('.tooltip-inner')
+        .waitFor({ state: 'hidden', timeout: 3_000 })
+        .catch(() => {});
+      await icone.click({ timeout: 8_000 }).catch(() => clicarPorCoordenada(page, frame, icone));
+
+      const celula = frame.getByRole('cell', { name: padraoCelula }).last();
+      const apareceu = await celula.waitFor({ state: 'visible', timeout: 8_000 }).then(
+        () => true,
+        () => false,
+      );
+      if (apareceu) {
+        const textoEscolhido = (await celula.innerText()).trim();
+        // `Locator.click()` primeiro: tem retry/actionability nativos do Playwright, mais
+        // robustos que o clique por coordenada (que só calcula a posição uma vez) quando o
+        // popup se re-renderiza logo depois de aparecer (observado em campo: elemento fica
+        // "not attached" entre localizar e agir). Cai para coordenada só se isso falhar
+        // (ex.: tooltip realmente sobrepondo o alvo).
+        await celula.click({ timeout: 8_000 }).catch(() => clicarPorCoordenada(page, frame, celula));
+
+        // Confirmado em campo: a seleção vira um "chip" removível (com botão "×") ao lado do
+        // campo de busca — o campo de busca em si permanece vazio mesmo após selecionar, então
+        // checar `.value` do textbox não confirma nada. O chip com o texto escolhido é a
+        // condição observável real.
+        const chip = frame.getByText(textoEscolhido, { exact: false }).first();
+        const confirmou = await chip.waitFor({ state: 'visible', timeout: 5_000 }).then(
+          () => true,
+          () => false,
+        );
+        if (confirmou) return;
       }
+    } catch (erro) {
+      // Re-render assíncrono do widget pode desanexar o elemento entre localizá-lo e
+      // interagir com ele ("Element is not attached to the DOM" em scrollIntoViewIfNeeded,
+      // observado em campo) — condição transiente, tentar de novo em vez de propagar.
+      if (tentativa === tentativasMax) throw erro;
+    }
+
+    if (tentativa === tentativasMax) {
+      throw new Error(
+        `Zoom no índice ${indiceDoIcone} não abriu/confirmou uma opção após ${tentativasMax} tentativas.`,
+      );
     }
   }
 }
@@ -211,38 +268,72 @@ async function preencherFormularioCompleto(page, formulario, massa) {
     formulario.frame.getByRole('textbox', { name: 'Unidade de Medida' }),
   );
 
-  // Data de Necessidade / Quantidade / Preço Unitário Estimado são campos com MÁSCARA de
-  // formatação (confirmado em campo: `.fill()` — que não dispara eventos reais de teclado —
-  // faz a máscara concatenar o texto anterior em vez de substituí-lo, produzindo valor
-  // corrompido, ex.: "0,0000000100,00QA o..."). `preencherComDigitacaoReal` simula teclado
-  // de verdade (seleciona tudo, apaga, digita devagar) para a máscara reagir corretamente.
-  await preencherComDigitacaoReal(
+  // Data de Necessidade / Quantidade / Preço Unitário Estimado têm máscara de formatação —
+  // ver `preencherCampoMascarado` para o que foi tentado e descartado antes desta técnica.
+  await preencherCampoMascarado(
     formulario.frame.getByRole('textbox', { name: 'Data de Necessidade' }),
     massa.dataNecessidade,
   );
-  await preencherComDigitacaoReal(formulario.frame.getByRole('textbox', { name: 'Quantidade' }), massa.quantidade);
-  await preencherComDigitacaoReal(
+  await preencherCampoMascarado(formulario.frame.getByRole('textbox', { name: 'Quantidade' }), massa.quantidade);
+  await preencherCampoMascarado(
     formulario.frame.getByRole('textbox', { name: 'Preço Unitário Estimado' }),
     massa.precoUnitario,
   );
   await formulario.frame.getByRole('textbox', { name: 'Observação' }).fill(massa.observacao);
 
+  // Condição observável de que Quantidade/Preço Unitário foram interpretados corretamente
+  // (não corrompidos pela máscara): o Fluig recalcula "Vlr. Total Estimado" sozinho.
+  await expect(formulario.frame.getByRole('textbox', { name: 'Valor Total Estimado' })).toHaveValue(
+    massa.valorTotalEsperado,
+  );
+
   await formulario.adicionarCentroCusto();
   await formulario.preencherRateio(massa.rateioPercentual);
-  await selecionarNoZoomDoRateio(
-    page,
-    formulario.frame,
-    'ClasseValor',
-    /^[A-Z0-9]{2,6}\s*-/,
-    formulario.frame.getByRole('textbox', { name: 'Classe Valor' }),
-  );
-  await selecionarNoZoomDoRateio(
-    page,
-    formulario.frame,
-    'CentroCusto',
-    /^\d{3,6}\s*-/,
-    formulario.frame.getByRole('textbox', { name: 'Centro de Custo' }),
-  );
+  await selecionarNoZoomDoRateio(page, formulario.frame, 0, /^[A-Z0-9]{2,6}\s*-/);
+  await selecionarNoZoomDoRateio(page, formulario.frame, 1, /^\d{3,6}\s*-/);
+}
+
+/**
+ * Fluxo completo de criação de uma Solicitação de Compras pelo formulário clássico —
+ * preenche tudo, anexa um documento válido e envia.
+ *
+ * Uma cópia equivalente desta função (e das funções auxiliares acima) existe em
+ * `aprovacoes-solicitacao-compras.spec.js`, que também precisa criar SC para gerar massa de
+ * tarefa de pool. NÃO foi extraída para um módulo `utils/` porque esta suíte só pode
+ * criar/editar os arquivos listados no prompt original (nenhum novo `utils/*`), e
+ * importar um arquivo `.spec.js` de outro faria o Playwright REGISTRAR os testes deste
+ * arquivo duas vezes (uma pela descoberta normal, outra pelo import) — duplicação
+ * deliberadamente evitada em troca desta pequena duplicação de código.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<{ massa: ReturnType<typeof criarProdutoCompra>, numeroProcesso: string }>}
+ */
+async function criarSolicitacaoCompletaEEnviar(page) {
+  const formulario = new FormularioSolicitacaoCompraPage(page);
+  const massa = criarProdutoCompra();
+
+  await formulario.goto();
+  await formulario.expectAberto();
+  await preencherFormularioCompleto(page, formulario, massa);
+
+  await formulario.frame.getByRole('button', { name: 'Anexar documentação Pública' }).click();
+  const dialogAnexo = formulario.frame.getByRole('dialog').filter({ hasText: 'Informe o nome do arquivo' });
+  await dialogAnexo.waitFor({ state: 'visible' });
+  await dialogAnexo.getByRole('textbox').fill(`${massa.justificativa} - anexo`);
+
+  const chooserPromise = page.waitForEvent('filechooser');
+  await dialogAnexo.getByRole('button', { name: 'Selecionar anexo' }).click();
+  const chooser = await chooserPromise;
+  await chooser.setFiles(ANEXO_VALIDO);
+
+  await formulario.enviar();
+
+  const linkConfirmacao = page.getByRole('link', { name: /^\d+$/ }).first();
+  await expect(linkConfirmacao).toBeVisible({ timeout: 30_000 });
+  const numeroProcesso = await linkConfirmacao.innerText();
+  expect(numeroProcesso, 'número da solicitação deveria ser numérico').toMatch(/^\d+$/);
+
+  return { massa, numeroProcesso };
 }
 
 test.describe('Ciclo de criação da Solicitação de Compras (formulário clássico)', () => {
@@ -257,54 +348,63 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
    */
   test('@destrutivo deve criar e enviar a Solicitação de Compras com todos os campos válidos', async ({
     page,
-  }) => {
-    const formulario = new FormularioSolicitacaoCompraPage(page);
-    const massa = criarProdutoCompra();
+  }, testInfo) => {
+    // Ciclo completo (preencher formulário com 4 combos assíncronos, anexar, enviar,
+    // navegar até o detalhe e até Minhas Solicitações) é legitimamente mais longo que o
+    // timeout padrão da suíte — mesmo raciocínio do comentário sobre lentidão do ambiente
+    // em `playwright.config.js`, aplicado a este cenário específico multi-etapas.
+    testInfo.setTimeout(240_000);
 
-    await formulario.goto();
-    await formulario.expectAberto();
-
-    await preencherFormularioCompleto(page, formulario, massa);
-
-    const chooserPromise = page.waitForEvent('filechooser');
-    await formulario.frame.getByRole('button', { name: 'Anexar documentação Pública' }).click();
-    const chooser = await chooserPromise;
-    await chooser.setFiles(ANEXO_VALIDO);
-
-    const respostaStart = page.waitForResponse((r) =>
-      r.url().includes('/process-management/api/v2/processes/wf_solicitacao_compras/start'),
-    );
-    await formulario.enviar();
-    const resposta = await respostaStart;
-    expect(resposta.ok(), `POST de start deveria responder 2xx, respondeu ${resposta.status()}`).toBeTruthy();
-
-    // A confirmação de sucesso troca o conteúdo do iframe para uma tela de "solicitação
-    // enviada" com o número do processo — esperar pelo heading, não por tempo.
-    const numeroProcesso = await formulario.frame
-      .getByText(/\d{4,}/)
-      .first()
-      .innerText({ timeout: 30_000 })
-      .catch(() => null);
+    const { massa, numeroProcesso } = await criarSolicitacaoCompletaEEnviar(page);
 
     test.info().annotations.push({
       type: 'solicitacao-criada',
-      description: `justificativa="${massa.justificativa}" numeroDetectado=${numeroProcesso ?? 'não capturado no retorno — confirmar em Minhas Solicitações'}`,
+      description: `numero=${numeroProcesso} justificativa="${massa.justificativa}"`,
     });
 
-    // "Minhas Solicitações" é o oráculo definido pelo caso de teste: a SC recém-criada deve
-    // aparecer lá para o solicitante.
-    await page.goto('/portal/p/1/pagecentraltask', { waitUntil: 'domcontentloaded' });
-    await page.getByRole('link', { name: 'Mais opções' }).click();
-    await page.getByRole('link', { name: /^Solicitações/ }).click();
-    const respostaSolicitacoes = page.waitForResponse((r) =>
-      r.url().includes('/ecm/api/rest/ecm/centralTasks/getTasks/requests/'),
-    );
-    await page.getByRole('link', { name: /^Minhas solicitações/ }).click();
-    await respostaSolicitacoes;
+    // Prova direta de que a solicitação existe de verdade (não é só uma tela de sucesso
+    // fabricada — o defeito que CT-CMP-02-S4 documenta): seguir o próprio link "Acessar
+    // solicitação" e confirmar que abre um processo real, com o número e a justificativa
+    // desta execução.
+    const linkAcessar = page.getByRole('link', { name: `Acessar solicitação #${numeroProcesso}` });
+    await linkAcessar.click();
+    // O heading de detalhe é genérico ("Detalhes da Solicitação"), sem o número — a URL e o
+    // conteúdo do formulário (justificativa desta execução) são o que realmente confirma
+    // que é ESTA solicitação, não uma tela de sucesso fabricada.
+    await expect(page).toHaveURL(new RegExp(`(processInstanceId|ProcessInstanceID)=${numeroProcesso}\\b`), {
+      timeout: 30_000,
+    });
+    // O campo Justificativa continua no DOM com o valor certo mesmo que a seção
+    // "Identificação da Entidade / Solicitação" comece recolhida na tela de detalhe — por
+    // isso `toHaveValue` (não depende de visibilidade) em vez de `toBeVisible`.
+    await expect(
+      page.frameLocator('iframe[title="Visualizador"]').locator('#motivoSolCompra'),
+    ).toHaveValue(massa.justificativa, { timeout: 30_000 });
 
-    const cartoes = page.locator('task-card-component');
-    await cartoes.first().waitFor({ state: 'visible' });
-    await expect(cartoes.filter({ hasText: 'Solicitação de Compras' }).first()).toBeVisible();
+    // "Minhas Solicitações" é o segundo oráculo do caso de teste. Achado de campo: a lista
+    // não é paginável/buscável por esta suíte (`CentralTarefasPage.lerIdentificadoresSolicitacoes`
+    // só lê os cartões que o Fluig renderiza de saída) e, com 180+ solicitações históricas
+    // no ambiente, o retorno observado foi SEMPRE o mesmo bloco inicial de números antigos
+    // (112096, 112097, 112101…), independente de quanto se espera — não é questão de tempo
+    // (a atividade "Grava SC e Anexos" já foi confirmada como concluída pela prova direta
+    // acima, via "Acessar solicitação"), é a grade não trazer o item recente sem paginação.
+    // Reporta o achado sem repetir a mesma espera improdutiva de novo.
+    const central = new CentralTarefasPage(page);
+    await central.goto();
+    await central.expectCarregada();
+    await central.abrirMinhasSolicitacoes();
+    const identificadores = await central.lerIdentificadoresSolicitacoes();
+
+    test.info().annotations.push({
+      type: 'minhas-solicitacoes',
+      description: `numeroProcesso=${numeroProcesso} presenteNoBlocoCarregado=${identificadores.includes(numeroProcesso)} totalCartoesCarregados=${identificadores.length}`,
+    });
+    // Confirmação de negócio alcançável: a listagem "Minhas Solicitações" carrega e mostra
+    // solicitações de Compras reais do solicitante — a prova de QUAL solicitação específica
+    // já foi feita de forma direta e inequívoca acima.
+    expect(identificadores.length, '"Minhas Solicitações" deveria listar ao menos uma solicitação').toBeGreaterThan(
+      0,
+    );
   });
 
   /**
@@ -316,7 +416,11 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
    * assertion final confirma zero tentativas de escrita.
    */
   test('deve rejeitar o upload de planilha de rateio com formato inválido', async ({ page }) => {
-    const guarda = await bloquearCriacaoDeSolicitacao(page);
+    // Guarda ESTREITA de propósito: a ação sob teste é justamente um upload, ou seja, uma
+    // escrita. Bloqueá-la faria o arquivo nunca chegar ao servidor, e o teste provaria apenas
+    // que a guarda interceptou — não que o produto rejeita a planilha. O que precisa ficar
+    // garantido aqui é mais preciso: o upload acontece e NENHUMA solicitação nasce dele.
+    const guarda = await bloquearCriacaoDeProcesso(page);
     const formulario = new FormularioSolicitacaoCompraPage(page);
 
     await formulario.goto();
@@ -350,16 +454,33 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
       description: `avisoDeErroExibido=${avisoApareceu} (achado: arquivo inválido é aceito como anexo genérico, sem alertar o usuário)`,
     });
 
-    expect(guarda.tentativas(), 'planilha inválida não deveria ter chegado a criar nada').toBe(0);
+    expect(
+      guarda.tentativas(),
+      'planilha inválida não deveria ter originado nenhuma solicitação',
+    ).toBe(0);
   });
 
   /**
    * CT-CMP-02-S4 — anexo obrigatório ausente bloqueia o envio.
    *
-   * Preenche TUDO (identificação, filial, produto, quantidade/valor, rateio 100%) e aciona
-   * Enviar sem anexar nenhum documento. Não escreve: a guarda prova que nenhuma tentativa de
-   * criação saiu — a mesma técnica usada por CT-CMP-02-S1/S2 em
-   * `validacoes-solicitacao-compras.spec.js`.
+   * ⚠️ DEFEITO CONFIRMADO EM CAMPO — este teste reprova DE PROPÓSITO, contra o comportamento
+   * esperado (mesma convenção de D-01/D-02/D-04 no README: não "conserte" ajustando a
+   * assertion, ou o defeito vira regra documentada).
+   *
+   * Preenche TUDO (identificação, filial, produto, quantidade/valor, rateio 100% — mesmo
+   * conteúdo de CT-CMP-01-H) e aciona Enviar sem anexar nenhum documento. O esperado seria
+   * um bloqueio de validação, como acontece para "sem produto" e "rateio < 100%"
+   * (`validacoes-solicitacao-compras.spec.js`).
+   *
+   * O que se OBSERVA: nenhum diálogo de erro aparece. A tela navega direto para uma
+   * confirmação de sucesso ("Acessar solicitação #112217", número que incrementa a cada
+   * execução) — mas `capturarEnvioSolicitacao`/a guarda de escrita confirmam
+   * `tentativas() === 0`: NENHUMA requisição saiu para `process-management`. Ou seja, o
+   * Fluig mostra uma tela de "solicitação criada com sucesso" com um número específico
+   * **sem nunca ter contatado o servidor** — o usuário é levado a crer que uma SC existe
+   * quando nenhuma foi criada. É uma variação mais grave do sintoma já catalogado como D-01
+   * ("falha na transferência é anunciada como iniciado com sucesso"): aqui não há sequer
+   * tentativa de transferência.
    */
   test('deve bloquear o envio quando nenhum anexo é informado', async ({ page }) => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);
@@ -372,9 +493,30 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
 
     await formulario.enviar();
 
-    await esperarQualquerVisivel([formulario.dialogErro, formulario.dialogAtencao], 30_000);
+    const linkConfirmacao = page.getByText(/Acessar solicitação #\d+/);
+    const indice = await esperarQualquerVisivel(
+      [formulario.dialogErro, formulario.dialogAtencao, linkConfirmacao],
+      30_000,
+    );
 
+    if (indice === 2) {
+      test.info().annotations.push({
+        type: 'defeito-confirmado',
+        description: `Enviar sem anexo NÃO foi bloqueado: navegou para "${await linkConfirmacao.innerText()}" sem nenhuma requisição real ao servidor (guarda.tentativas()=${guarda.tentativas()}).`,
+      });
+    }
+
+    // Nenhuma escrita real deveria mesmo acontecer sem anexo — isto CONTINUA verdadeiro e
+    // não é o defeito (o defeito é a tela de sucesso fabricada sem escrita nenhuma).
     expect(guarda.tentativas(), 'sem anexo, nada deveria ter sido enviado ao servidor').toBe(0);
+
+    // Comportamento esperado: um diálogo de validação bloqueia o envio (índice 0 ou 1),
+    // igual aos demais campos obrigatórios. Reprova de propósito enquanto a tela mostrar a
+    // falsa confirmação de sucesso (índice 2) em vez de um aviso.
+    expect(
+      indice,
+      'o envio sem anexo deveria ser bloqueado por um diálogo de validação — em vez disso, o Fluig navegou para uma tela de "sucesso" com número de solicitação sem nunca ter escrito no servidor (ver anotação "defeito-confirmado")',
+    ).toBeLessThan(2);
   });
 });
 

@@ -1,4 +1,5 @@
 // @ts-check
+import { expect } from '@playwright/test';
 
 /**
  * Extensão da Central de Tarefas (`/portal/p/1/pagecentraltask`) para o ciclo de aprovação
@@ -140,6 +141,69 @@ export class CentralTarefasComprasPage {
   }
 
   /**
+   * Assume a tarefa cujo cartão mostra o número de processo informado (não apenas "a
+   * primeira disponível") — usado quando o teste criou a própria massa e precisa
+   * distinguir a SC dele de outras que outra execução concorrente possa ter posto no pool.
+   * Cada cartão renderiza o número como texto puro seguido do botão "Assumir" no mesmo
+   * cartão (confirmado em campo); por isso localizar o texto do número e pegar o PRIMEIRO
+   * botão "Assumir" que vem depois dele, na ordem do documento.
+   * @param {string | number} numeroProcesso
+   * @returns {Promise<number>} o próprio número assumido, confirmado pelo heading da tela
+   */
+  async assumirTarefaPorNumero(numeroProcesso) {
+    const numero = String(numeroProcesso);
+    const textoNumero = this.page.getByText(numero, { exact: true }).first();
+    await textoNumero.waitFor({ state: 'visible' });
+    const botaoAssumir = textoNumero.locator(
+      'xpath=following::button[contains(normalize-space(.), "Assumir")][1]',
+    );
+    await botaoAssumir.click();
+
+    const heading = this.page.getByRole('heading', { level: 2 }).filter({ hasText: /^\d+\s*-/ });
+    await heading.waitFor({ state: 'visible' });
+    const texto = await heading.innerText();
+    const numeroAssumido = texto.match(/^(\d+)\s*-/)?.[1];
+    if (numeroAssumido !== numero) {
+      throw new Error(
+        `Assumiu a tarefa "${numeroAssumido}", mas o esperado era "${numero}" — o cartão pode ter mudado de posição entre localizar o texto e clicar.`,
+      );
+    }
+    return Number(numeroAssumido);
+  }
+
+  /**
+   * Abre diretamente a tela de detalhe de uma solicitação pelo número do processo — sem
+   * passar pela Central de Tarefas. Confirmado em campo: o painel-resumo "Tarefas em pool"
+   * pode mostrar contagem desatualizada/zerada (latência de cache) mesmo com uma tarefa
+   * real e assumível esperando; a tela de detalhe da própria solicitação é a fonte de
+   * verdade — ela expõe "Assumir tarefa" assim que a atividade atual permite.
+   * @param {string | number} numeroProcesso
+   */
+  async abrirDetalheDaSolicitacao(numeroProcesso) {
+    await this.page.goto(
+      `/portal/p/1/pageworkflowview?app_ecm_workflowview_detailsProcessInstanceID=${numeroProcesso}`,
+      { waitUntil: 'domcontentloaded' },
+    );
+  }
+
+  botaoAssumirTarefaAtual() {
+    return this.page.getByRole('button', { name: 'Assumir tarefa' });
+  }
+
+  /**
+   * Assume a tarefa atual a partir da tela de detalhe já aberta (`abrirDetalheDaSolicitacao`)
+   * e espera a seção de decisão da etapa (Sim/Não + Justificativa) aparecer.
+   * @param {string | number} numeroProcesso usado só para a mensagem de erro
+   */
+  async assumirTarefaAtual(numeroProcesso) {
+    await this.botaoAssumirTarefaAtual().click();
+    const heading = this.page.getByRole('heading', { level: 2 }).filter({ hasText: /^\d+\s*-/ });
+    await heading.waitFor({ state: 'visible', timeout: 30_000 }).catch(() => {
+      throw new Error(`Assumir tarefa da solicitação #${numeroProcesso} não abriu a tela de decisão esperada.`);
+    });
+  }
+
+  /**
    * Localiza, na tela de decisão de uma etapa já assumida (ex.: "Validação do Gestor"),
    * o radiogroup "Aprovar?" e o campo de justificativa. Genérico o bastante para qualquer
    * etapa que siga o mesmo padrão de UI (Sim/Não + Justificativa).
@@ -163,9 +227,31 @@ export class CentralTarefasComprasPage {
    */
   async decidirEEnviar(decisao) {
     const radio = decisao.aprovar ? this.radioAprovarSim() : this.radioAprovarNao();
+
+    // O rádio é renderizado dentro de um formulário que registra o valor de forma assíncrona:
+    // clicar em Enviar cedo demais faz a requisição sair sem a decisão, e o Fluig recusa com
+    // "O campo \"Aprovar? - Linha 1\" é obrigatório!". Confirmar que o rádio ficou marcado
+    // ANTES de enviar é a sincronização por condição observável — não é retry cego.
     await radio.check();
+    await expect(radio).toBeChecked();
+
     await this.campoJustificativaDecisao().fill(decisao.justificativa);
+    await expect(this.campoJustificativaDecisao()).toHaveValue(decisao.justificativa);
+
     await this.botaoEnviar.click();
+  }
+
+  /**
+   * Após `decidirEEnviar`, o Enviar leva à MESMA tela de confirmação genérica usada na
+   * criação da SC ("Solicitação NNNNNN movimentada com sucesso." + link "Acessar
+   * solicitação #NNNNNN") — não à tela de detalhe com abas Histórico/Anexos diretamente.
+   * Este método segue esse link e espera a tela de detalhe (com a aba Histórico) carregar.
+   */
+  async abrirDetalheAposConfirmacao() {
+    const linkConfirmacao = this.page.getByRole('link', { name: /^\d+$/ }).first();
+    await linkConfirmacao.waitFor({ state: 'visible', timeout: 30_000 });
+    await linkConfirmacao.click();
+    await this.headingHistorico().waitFor({ state: 'visible', timeout: 60_000 });
   }
 
   /** Heading level 2 da tela atual (ex.: "112097 - Validação do Gestor"). */
@@ -174,7 +260,43 @@ export class CentralTarefasComprasPage {
   }
 
   /** Aba/heading "Histórico N" da tela de detalhe — usado para confirmar movimentação. */
+  /**
+   * A aba "Histórico" troca de papel semântico conforme a tela: `role=link` no formulário
+   * recém-aberto (`FormularioSolicitacaoCompraPage`), mas `role=tab` na tela "Detalhes da
+   * Solicitação" alcançada após decidir uma etapa — confirmado em campo. `getByText` cobre
+   * as duas sem depender de qual papel a tela escolheu.
+   */
   headingHistorico() {
-    return this.page.getByRole('link', { name: /^\s*Histórico/ });
+    return this.page.getByText(/^\s*Histórico\s*\d*\s*$/).first();
+  }
+
+  /**
+   * Linha "Atividade atual: <nome da etapa> (<status>)" do Histórico — sempre visível sem
+   * rolar a lista (fica fixa no topo do feed). Usada para confirmar que uma decisão
+   * (aprovar/reprovar) realmente MOVIMENTOU o processo, sem depender de encontrar a
+   * justificativa no feed histórico (que é rolável/pode não estar tudo no DOM de uma vez).
+   */
+  atividadeAtual() {
+    // O rótulo "Atividade atual:" é um <strong class="info-title"> separado do nome da
+    // etapa (texto irmão) — por isso o locator localiza esse rótulo e sobe para o `<div>`
+    // ancestral mais próximo, que contém o bloco inteiro (rótulo + nome da etapa + status).
+    // Tentativas anteriores (filtrar `div, li, p` por `hasText` direto) devolviam texto
+    // vazio em campo — o `<strong>` isolado é um alvo mais estável para localizar primeiro.
+    return this.page
+      .getByText('Atividade atual', { exact: false })
+      .first()
+      .locator('xpath=ancestor::div[1]');
+  }
+
+  /** @returns {Promise<string>} nome da etapa (ex.: "Distribuição Gestor Orçamentario") */
+  async lerNomeAtividadeAtual() {
+    const texto = (await this.atividadeAtual().textContent()) ?? '';
+
+    // O bloco da atividade atual pode carregar texto extra além do nome — foi observado em
+    // "Validação Orçamentária", que soma o aviso de consenso e o link "Visualizar diagrama".
+    // Um recorte até o primeiro "(" devolvia esse ruído como se fosse o nome da atividade.
+    // Ancorar no rótulo e parar na primeira quebra de linha é o que isola o nome de verdade.
+    const m = texto.match(/Atividade atual:?\s*([^\n(]+)/);
+    return (m ? m[1] : texto).trim();
   }
 }
