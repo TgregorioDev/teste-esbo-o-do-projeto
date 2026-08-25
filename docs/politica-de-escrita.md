@@ -19,15 +19,16 @@ se depende da ordem de execução — é o que mantém o paralelismo. Registro p
 (contrato, fornecedor) continua sendo descoberto em tempo de execução, ver
 `utils/massa-contratos.js`.
 
-**3. Cenário que escreve leva a tag `@destrutivo`.** Fica fora da execução padrão (`grepInvert`
-no config) e roda sob demanda:
+**3. Cenário que escreve leva a tag `@destrutivo` — e roda na execução padrão.**
 
-```bash
-INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo
-```
+Isto mudou em 25/08/2026, por decisão do dono do ambiente: *"sempre rode tudo, não me importa se
+serão testes destrutivos, a base de testes é pra isso"*. A tag continua servindo para mirar
+(`--grep @destrutivo`) e para a regressão rápida de quem não quer gerar massa nova
+(`PULAR_DESTRUTIVOS=1 npx playwright test`), mas o padrão passou a ser cobertura completa.
 
-O motivo é higiene de suíte: quem roda a regressão do dia a dia não precisa gerar solicitação
-nova a cada execução; quem quer exercitar o ciclo completo pede por isso explicitamente.
+O motivo da mudança: excluir por precaução dava um número de cobertura otimista e escondia
+defeito. Rodando os 34 destrutivos pela primeira vez, apareceu upload de `.exe` aceito sem
+validação — um achado que a execução "segura" nunca teria produzido.
 
 **4. Caso negativo continua provando que NÃO escreveu.** `utils/guarda-criacao.js` segue valendo
 para os cenários de bloqueio — "o sistema não deve criar X quando falta campo obrigatório" só é

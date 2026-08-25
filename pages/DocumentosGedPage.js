@@ -2,6 +2,7 @@
 import { expect } from '@playwright/test';
 import path from 'node:path';
 import { DocumentosPage } from './DocumentosPage.js';
+import { comExclusividade } from '../utils/exclusividade.js';
 
 /**
  * Documentos / GED — ações que escrevem no ambiente (upload, aprovação, remoção/lixeira).
@@ -145,6 +146,20 @@ export class DocumentosGedPage extends DocumentosPage {
    * @param {{ descricao: string, caminhoArquivo: string, antesDeConfirmar?: () => Promise<void> }} dados
    */
   async enviarDocumento({ descricao, caminhoArquivo, antesDeConfirmar }) {
+    // A área de upload temporária do GED é do USUÁRIO no servidor, não da aba — dois testes
+    // publicando ao mesmo tempo com a mesma conta enxergam a tabela de arquivos um do outro, e
+    // `limparArquivosResiduais` de um apaga o arquivo do outro. Ver `utils/exclusividade.js`.
+    return comExclusividade('ged-upload', () =>
+      this.publicarDocumento({ descricao, caminhoArquivo, antesDeConfirmar }),
+    );
+  }
+
+  /**
+   * Seção crítica de `enviarDocumento`. Não chame direto: sem o lock, dois workers colidem na
+   * área de staging compartilhada.
+   * @param {{ descricao: string, caminhoArquivo: string, antesDeConfirmar?: () => Promise<void> }} dados
+   */
+  async publicarDocumento({ descricao, caminhoArquivo, antesDeConfirmar }) {
     await this.abrirNovoDocumentoAvancado();
     const nomeArquivo = path.basename(caminhoArquivo);
 

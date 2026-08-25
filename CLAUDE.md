@@ -31,7 +31,7 @@ npx playwright test tests/e2e/plataforma/home.spec.js          # um arquivo
 npx playwright test -g "trecho do título do teste"             # um teste
 npx playwright test --repeat-each=3 --workers=4                # determinismo
 FAKER_SEED=<valor> npx playwright test                         # reproduz a massa de uma execução
-INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo   # os 33 cenários que escrevem
+PULAR_DESTRUTIVOS=1 npx playwright test                         # regressão rápida, sem gerar massa
 ```
 
 Antes de afirmar que um teste falha por defeito, rode `node --check <arquivo>` — um erro de
@@ -53,9 +53,12 @@ O que se exige em troca:
 - **Cada teste cria a própria massa** — nada de reaproveitar registro de outro teste ou depender
   de ordem. Registro pré-existente (contrato) é **descoberto em tempo de execução**
   (`utils/massa-contratos.js`), nunca fixado em `.env`.
-- **Cenário que escreve leva a tag `@destrutivo`** e fica fora da execução padrão; roda com
-  `INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo`. É higiene de suíte: a regressão
-  do dia a dia não precisa gerar solicitação nova a cada execução.
+- **Cenário que escreve leva a tag `@destrutivo`** — mas **roda na execução padrão**. Decisão do
+  dono do ambiente (25/08/2026): *"sempre rode tudo, não me importa se serão testes destrutivos, a
+  base de testes é pra isso"*. A tag serve para mirar (`--grep @destrutivo`) e para a regressão
+  rápida de quem não quer gerar massa (`PULAR_DESTRUTIVOS=1`), nunca para encolher a medição.
+  **Não reporte cobertura medindo só a execução sem destrutivos** — foi assim que 34 testes
+  ficaram fora do número por semanas.
 - **Caso negativo continua provando que NÃO escreveu**: `utils/guarda-criacao.js` intercepta a
   criação e `expect(guarda.tentativas()).toBe(0)` é a assertion. "Não deve criar" só é
   demonstrável assim.

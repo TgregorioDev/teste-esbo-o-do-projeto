@@ -27,10 +27,14 @@ export default defineConfig({
   expect: { timeout: 30_000 },
 
 
-  // Cenários que criam registro real no ambiente do cliente ficam fora da execução
-  // padrão. Não é skip: é composição de suíte, e são habilitados com
-  //   npx playwright test --grep @destrutivo
-  grepInvert: process.env.INCLUIR_DESTRUTIVOS ? undefined : /@destrutivo/,
+  // A execução padrão roda TUDO, inclusive os cenários `@destrutivo` que criam e movimentam
+  // registro. Decisão do dono do ambiente (25/08/2026): esta é uma base de homologação, e é
+  // exatamente para isso que ela existe — cobertura parcial por precaução esconde defeito.
+  //
+  // A tag continua servindo para mirar (`--grep @destrutivo`) e para a regressão rápida de
+  // quem não quer gerar massa nova a cada execução:
+  //   PULAR_DESTRUTIVOS=1 npx playwright test
+  grepInvert: process.env.PULAR_DESTRUTIVOS ? /@destrutivo/ : undefined,
 
   reporter: process.env.CI
     ? [

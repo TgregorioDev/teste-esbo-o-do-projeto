@@ -194,3 +194,51 @@ número é reprodutível. Entre janelas, não é, e a seção anterior explica p
 Os 35 vermelhos seguem a mesma classificação de sempre: defeito de produto catalogado no README,
 `PRÉ-CONDIÇÃO AUSENTE` por massa inexistente, e variância de produto/ambiente. Nenhum é falha de
 mecânica da suíte.
+
+## Suíte inteira, destrutivos incluídos — 25/08/2026, 15:15–15:55
+
+A partir de 25/08/2026 a execução padrão **roda tudo**, por decisão do dono do ambiente
+(`playwright.config.js`, `grepInvert` invertido). Primeira medição sob a nova regra, com reporter
+JSON — as contagens anteriores deste documento vinham de raspagem do texto colorido do reporter
+`line`, que se mostrou pouco confiável.
+
+| | Testes | Verde | Vermelho |
+|---|---|---|---|
+| Execução padrão (sem tag) | 143 | 106 | 37 |
+| `@destrutivo` | 34 | 17 | 17 |
+| **Total** | **177** | **123** | **54** |
+
+Vermelhos por área: `acompanhamento-contratos` 17 · `compras` 10 · `seguranca` 4 · `documentos` 4
+· `rh` 4 · `plataforma` 3 · `contratos` 3 · `juridico` 3 · `api` 2 · `portais` 2 · `tarefas` 1 ·
+`saude` 1.
+
+### O que rodar os destrutivos revelou
+
+**Um defeito que a execução "segura" nunca teria produzido:** `CT-GED-02-S1` — o GED **aceita e
+publica um arquivo `.exe` sem nenhuma validação de extensão**, sem mensagem de bloqueio. Vermelho
+em 3 de 3 execuções.
+
+**Um defeito da própria suíte, corrigido:** dois testes de GED (`CT-GED-02-H` e `CT-GED-04-H`)
+reprovavam sob `--workers=4` e passavam sozinhos — falso vermelho. Causa raiz: a área de upload
+temporária do GED (`UPLOAD_FOLDER`) é **do usuário no servidor**, não da aba. Dois testes
+publicando ao mesmo tempo com a mesma conta enxergam a tabela de arquivos um do outro, e a
+limpeza de resíduos de um apaga o arquivo do outro.
+
+Isolar por massa não resolvia (o disputado não é o dado, é a área de staging) e `describe.serial`
+também não (a disputa é **entre arquivos**, e serial não atravessa arquivo nem worker). A correção
+foi `utils/exclusividade.js`, um lock de diretório no sistema de arquivos — o único canal
+compartilhado entre processos do runner — em volta da publicação.
+
+Medição controlada, `tests/e2e/documentos` a `--workers=4`, 3 execuções de cada lado:
+
+| | Vermelhos |
+|---|---|
+| Sem lock | **4/4 em 3 de 3**: `CT-GED-02-H`, `CT-GED-02-S1`, `CT-GED-04-H`, `CT-GED-05-H` |
+| Com lock | **2/2 em 3 de 3**: `CT-GED-02-S1`, `CT-GED-05-H` |
+
+Os dois que sobram são reais: `.exe` aceito, e a Lixeira que leva minutos para indexar a exclusão
+(já documentado no cabeçalho de `DocumentosGedPage`).
+
+> ⚠️ Ao medir cobertura ou contar vermelhos, **use o reporter JSON**. Raspar a saída do reporter
+> `line` com `grep`/`sort -u` produziu, nesta mesma sessão, dois números errados seguidos.
+

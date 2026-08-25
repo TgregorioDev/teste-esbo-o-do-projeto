@@ -15,11 +15,12 @@ npm ci
 npx playwright install chromium
 
 cp .env.example .env.test     # preencher; NUNCA commitar
-npm test                      # suíte completa
+npm test                      # suíte completa, destrutivos incluídos
 npm run test:auth             # só autenticação
 npm run typecheck             # verificação estática
 npm run report                # relatório HTML da última execução
 npm run cobertura             # regenera docs/cobertura.md a partir do catálogo e da suíte
+PULAR_DESTRUTIVOS=1 npm test  # regressão rápida, sem criar registro novo
 ```
 
 Reproduzir exatamente a massa de uma execução que falhou (a seed fica anexada ao relatório):
@@ -84,12 +85,12 @@ por processo de negócio que esta suíte está proibida de executar. Já tudo qu
 | Casos no catálogo (`docs/catalogo-casos.md`) | **163** |
 | Casos com teste na suíte | **132** (81%) |
 | Casos sem nenhum teste | **31** — cada um com motivo medido |
-| Testes que **criam ou editam** registro (`@destrutivo`) | **34** |
+| Testes que **criam ou editam** registro (`@destrutivo`) | **34** — rodam na execução padrão |
 
-**Última execução medida (25/08/2026, 14h): 143 testes, 108 verdes, 35 vermelhos** — defeitos do
-produto listados abaixo, mais `PRÉ-CONDIÇÃO AUSENTE` por falta de massa. ⚠️ **O total de vermelhos
-não é comparável entre execuções sem olhar quais testes são**: dois testes variam por
-não-determinismo do próprio produto. Detalhe e classificação em
+**Última execução medida (25/08/2026, 15h — suíte inteira, destrutivos incluídos): 177 testes,
+123 verdes, 54 vermelhos.** Dos 34 `@destrutivo`, 17 verdes e 17 vermelhos. ⚠️ **O total de
+vermelhos não é comparável entre execuções sem olhar quais testes são**: dois testes variam por
+não-determinismo do próprio produto. Detalhe em [`docs/estado-do-gate.md`](docs/estado-do-gate.md). Detalhe e classificação em
 [`docs/estado-do-gate.md`](docs/estado-do-gate.md).
 
 **A matriz caso a caso está em [`docs/cobertura.md`](docs/cobertura.md)**, gerada por
@@ -123,6 +124,7 @@ não o entrega. Ajustá-los para passar documentaria o defeito como se fosse reg
 | **D-11** 🟡 | modal com Protheus fora | o mesmo alerta renderiza duas vezes (cada dataset é chamado uma vez — a duplicação é de renderização) |
 | **CT-ACC-04-S5** 🟡 | payload da SC | `nrContrato` de um contrato com revisão, filial e itens de outro; sem revalidação no servidor |
 | **classeValor vazio** 🟠 | payload da SC | `tbprod_classeValor` em branco, com `classeOrca` e `classificacao` preenchidos ao lado — pode travar a Validação Orçamentária |
+| **CT-GED-02-S1** 🔴 | upload no GED | arquivo `.exe` é **aceito e publicado sem nenhuma validação de extensão** — nenhuma mensagem de bloqueio. Achado que só apareceu quando os testes `@destrutivo` passaram a rodar |
 | **CT-CMP-02-S4** 🔴 | SC sem anexo | o anexo obrigatório não é validado **nem no cliente nem no servidor**: o Enviar dispara `POST /ecm/api/rest/ecm/workflowView/send` e o servidor responde 200 com `processInstanceId` real — a SC nasce sem documento |
 | **U-01** 🟠 | deep-link SPA | `/principalprocess` e `/gestao_ferias` caem em `errorPage/404` |
 | **U-02** 🔴 | banco de horas | `alert()` nativo de configuração de servidor exposto ao usuário final |
