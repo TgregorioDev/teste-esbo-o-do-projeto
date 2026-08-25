@@ -12,7 +12,7 @@ import { envObrigatoria, TITULO_HOME, TITULO_LOGIN } from '../../../config/ambie
  * título do documento somado à ausência do formulário de login.
  */
 test.describe('Autenticação no Fluig', () => {
-  test('deve autenticar o usuário e abrir a home quando as credenciais são válidas', async ({
+  test('CT-AUT-01-H — deve autenticar o usuário e abrir a home quando as credenciais são válidas', async ({
     page,
     loginPage,
   }) => {
@@ -25,7 +25,7 @@ test.describe('Autenticação no Fluig', () => {
     await expect(loginPage.campoUsuario).toBeHidden();
   });
 
-  test('deve recusar o acesso e permanecer no login quando a senha está incorreta', async ({
+  test('CT-AUT-02-S1 — deve recusar o acesso e permanecer no login quando a senha está incorreta', async ({
     page,
     loginPage,
   }) => {
@@ -40,7 +40,7 @@ test.describe('Autenticação no Fluig', () => {
     await expect(page).not.toHaveTitle(TITULO_HOME);
   });
 
-  test('deve devolver a mesma mensagem genérica quando o usuário não existe', async ({
+  test('CT-AUT-02-S2 — deve devolver a mesma mensagem genérica quando o usuário não existe', async ({
     loginPage,
   }) => {
     // Mensagem idêntica à de senha errada é o comportamento correto: mensagens diferentes
@@ -53,7 +53,7 @@ test.describe('Autenticação no Fluig', () => {
     await expect(loginPage.getMensagemErro()).toBeVisible();
   });
 
-  test('deve manter o usuário no login quando as credenciais são enviadas em branco', async ({
+  test('CT-AUT-02-S3 — deve manter o usuário no login quando as credenciais são enviadas em branco', async ({
     page,
     loginPage,
   }) => {

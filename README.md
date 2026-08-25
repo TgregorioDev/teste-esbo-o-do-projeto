@@ -76,25 +76,29 @@ por processo de negócio que esta suíte está proibida de executar. Já tudo qu
 > interna do payload (itens com quantidades diferentes não podem compartilhar o mesmo total),
 > que vale para qualquer contrato.
 
-## Cobertura
+## Cobertura — medida, não estimada
 
-| Área | Specs | Cobre |
-|---|---|---|
-| **Autenticação** (`auth/`) | 3 | login válido/inválido, usuário inexistente, campos vazios, recuperação de senha, token adulterado, troca de idioma, sessão inválida, logout |
-| **Plataforma** (`plataforma/`) | 5 | home e contadores, catálogo de processos e busca, início permitido, bloqueio por permissão, deep-link de rota SPA |
-| **Contratos — portal** (`acompanhamento-contratos/`) | 7 | acesso e negação, colunas e ações da grade, filtro, modal da SC, campos obrigatórios, indisponibilidade do Protheus, **payload da criação** e erros no start |
-| **Compras** (`compras/`) | 3 | abertura da SC clássica e da Cotação, campos obrigatórios, rateio abaixo de 100% |
-| **Contratos — processos** (`contratos/`) | 3 | faturamento, cadastro de fornecedor, delegação de fiscais |
-| **Documentos** (`documentos/`) | 1 | árvore de pastas, paginação, ações da barra, navegação e retorno |
-| **Tarefas** (`tarefas/`) | 2 | coerência dos contadores, tarefa atrasada, minhas solicitações e filtro |
-| **RH** (`rh/`) | 2 | banco de horas, indisponibilidade do Protheus, segregação de início dos processos de RH |
-| **Portais** (`portais/`) | 4 | gerência de compras, portal do comprador, tracker, portal do fornecedor e controle de acesso |
-| **Segurança e integração** (`seguranca/`, `api/`) | 4 | vazamento por constraint, acesso admin negado, telemetria externa, datasets do Protheus e indisponibilidade |
+| | |
+|---|---|
+| Casos no catálogo (`docs/catalogo-casos.md`) | **163** |
+| Casos com teste na suíte | **132** (81%) |
+| Casos sem nenhum teste | **31** — cada um com motivo medido |
+| Testes que **criam ou editam** registro (`@destrutivo`) | **33** |
 
-Categorias exercitadas: caminho feliz, negativo, validação, borda, autenticação, autorização,
-tratamento de erro e integração.
+**A matriz caso a caso está em [`docs/cobertura.md`](docs/cobertura.md)**, com o comando que
+reproduz a contagem. A ligação é o **ID citado no título do teste** (`CT-AUT-01-H — deve
+autenticar…`) — é o que torna o número auditável em vez de declarado. Ao trazer um caso do
+catálogo, cite o ID: sem isso ele aparece como lacuna (aconteceu com nove deles).
 
----
+**"Coberto" não significa sempre "fluxo executado".** Parte dos 132 está coberta como **bloqueio
+documentado**: o processo não abre, ou abre e o formulário não monta campo. Esses testes provam a
+condição real do ambiente e ficam prontos para exercitar o fluxo no dia em que a pré-condição
+existir.
+
+**O que a automação já cria e movimenta de verdade:** Solicitações de Compra pelos dois pontos de
+entrada, tarefas assumidas do pool, aprovações e reprovações do Gestor, documentos no GED com
+upload e exclusão, favoritos, delegação de fiscais, medição de contrato e processos de Contencioso.
+Todos com prefixo `QA` e sufixo único, rastreáveis na base.
 
 ## Testes vermelhos por defeito real do produto
 
@@ -186,20 +190,34 @@ virar flaky.
 
 ---
 
-## Backlog — identificado e não automatizado
+## Backlog — os 31 casos sem teste
+
+Lista completa, com o motivo de cada um, em [`docs/cobertura.md`](docs/cobertura.md). Agrupados:
 
 | Motivo | Casos |
 |---|---|
-| **Escreve no ambiente** | GED: upload, check-out/in, aprovação, lixeira · Central de Tarefas: assumir do pool, concorrência · Gerência de Compras: atribuir comprador · Portal do Comprador: validar, avaliar, definir vencedor · criação real de SC ponta a ponta |
-| **Exige cadastro no Protheus** | `CT-E2E-03` a `CT-E2E-10` — aprovador de alçada (**AL/DHL**) e comprador (**SY1**), que o usuário da automação não possui |
-| **Exige perfil administrativo** | `CT-SEG-02/03/04` (admins, credencial em dataset, auditoria de SQL) · `CT-INT-02` (disparar sincronização) |
-| **Exige credencial de fornecedor** | `CT-PFN-01-S1/S2`, `CT-PFN-02` a `CT-PFN-05` |
-| **Seria ataque real** | `CT-PFN-06` (XSS no chat), `CT-PFN-07` (IDOR) — não se executa contra ambiente de cliente |
-| **Não alcançável por essa rota** | `CT-FAT-02-S1/S4` (cadeia de zooms contra dado real, sem resultado determinístico) · `CT-COT-02-S2/S3` (campos `readonly`, sem busca de fornecedor) · `CT-CMP-02-S2` acima de 100% (o campo limita a 100 no blur) |
-| **Destrutivo para a execução** | `CT-ACC-03-S3` — contrato de 177 itens congela o navegador (D-03); rodar em suíte trava o worker |
-| **Removido por não paralelizar** | `CT-PLT-05-H` favoritos |
+| **Falta usuário de RH** (matrícula ativa no Protheus **e** grupo de RH) | 11 — `CT-DEP` (3), `CT-FER` (5), `CT-SUB` (2), `CT-ADM-01-S2` |
+| **Falta credencial de fornecedor** de homologação | 4 — `CT-PFN-02-H` a `CT-PFN-05-H` |
+| **Ataque real, que não se executa aqui** (decisão) | 3 — força bruta, XSS, IDOR |
+| **Protocolo fora do navegador** | 2 — `CT-GED-03-H/S1`, check-out por `dav4:`/WebDAV |
+| **Sem caixa postal** para o token de redefinição | 2 — `CT-AUT-03-S3/S4` |
+| **Processo inoperante ou dataset inativo no produto** | 4 — `CT-JUR-05-H`, `CT-OCO-01-H/S1`, `CT-FAT-03-S1` |
+| **Massa inexistente na base** | 2 — `CT-ACC-03-S1` (filial órfã), `CT-ACC-06-S2` (serviço sem quantidade) |
+| **Consequência de defeito aberto** | 2 — `CT-ACC-03-S3` (D-03 congela o navegador), `CT-ACC-08-H` (D-01 prende a SC) |
+| **Não observável sem admin** | 1 — `CT-NOT-01-S1`, datasets de canal invocados server-side |
 
----
+### Os dois pedidos de provisionamento
+
+**1. Um usuário de teste com matrícula ativa no Protheus e no grupo de RH.** Hoje a conta da
+automação abre as telas de RH mas o formulário **nunca monta campo** — Dependentes falha com
+*"não foi possível determinar a matrícula do titular"*, Substituição com *"Funcionário não
+localizado"*. Férias e Ocorrência barram antes disso, por grupo. Destrava 11 casos.
+
+**2. Uma credencial de fornecedor de homologação.** O Portal do Fornecedor autentica com
+CNPJ/CPF/senha, separado da plataforma. Destrava 4 casos.
+
+Os 16 restantes não dependem de provisionamento: são decisão de escopo, limitação de protocolo,
+defeito aberto do produto ou massa que não existe na base.
 
 ## CI
 

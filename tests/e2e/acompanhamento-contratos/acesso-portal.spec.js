@@ -13,7 +13,7 @@ import { derrubarDataset, responderDatasetCom } from '../../../utils/dataset-flu
  * exatamente o mesmo trecho de código que rodaria na situação real.
  */
 test.describe('Acesso ao Portal de Acompanhamento de Contratos', () => {
-  test('deve listar os contratos para usuário com o grupo de acesso', async ({ contratosPage }) => {
+  test('CT-ACC-01-H — deve listar os contratos para usuário com o grupo de acesso', async ({ contratosPage }) => {
     await contratosPage.goto();
     await contratosPage.expectCarregada();
 
@@ -29,7 +29,7 @@ test.describe('Acesso ao Portal de Acompanhamento de Contratos', () => {
     await expect(contratosPage.avisoAcessoNegado).toHaveCount(0);
   });
 
-  test('deve apresentar as colunas do contrato na ordem definida pelo negócio', async ({
+  test('CT-ACC-01-H — deve apresentar as colunas do contrato na ordem definida pelo negócio', async ({
     contratosPage,
   }) => {
     await contratosPage.goto();
@@ -55,7 +55,7 @@ test.describe('Acesso ao Portal de Acompanhamento de Contratos', () => {
     }
   });
 
-  test('deve negar o acesso ao painel para usuário fora dos grupos autorizados', async ({
+  test('CT-ACC-01-S1 — deve negar o acesso ao painel para usuário fora dos grupos autorizados', async ({
     page,
     contratosPage,
   }) => {
@@ -74,7 +74,7 @@ test.describe('Acesso ao Portal de Acompanhamento de Contratos', () => {
     await expect(contratosPage.getInformacaoDaGrade()).toHaveCount(0);
   });
 
-  test('deve distinguir falha na validação de permissão de ausência de permissão', async ({
+  test('CT-ACC-01-S2 — deve distinguir falha na validação de permissão de ausência de permissão', async ({
     page,
     contratosPage,
   }) => {

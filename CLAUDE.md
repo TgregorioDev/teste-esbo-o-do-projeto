@@ -31,7 +31,7 @@ npx playwright test tests/e2e/plataforma/home.spec.js          # um arquivo
 npx playwright test -g "trecho do título do teste"             # um teste
 npx playwright test --repeat-each=3 --workers=4                # determinismo
 FAKER_SEED=<valor> npx playwright test                         # reproduz a massa de uma execução
-INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo   # cenários que escrevem (hoje: nenhum)
+INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo   # os 33 cenários que escrevem
 ```
 
 Antes de afirmar que um teste falha por defeito, rode `node --check <arquivo>` — um erro de
@@ -147,8 +147,8 @@ ambiente ganha.
 
 ## Testes vermelhos são intencionais
 
-Dezessete testes **reprovam de propósito**: estão escritos contra o comportamento esperado e o
-produto não o entrega. Cada um cita o defeito em comentário. A tabela completa está no README.
+Parte da suíte **reprova de propósito**: são testes escritos contra o comportamento esperado que
+o produto não entrega. Cada um cita o defeito em comentário. A tabela dos defeitos está no README.
 
 **Não "conserte" um teste vermelho para ficar verde** — isso documenta o bug como se fosse regra.
 Se o defeito for corrigido no produto, o teste fica verde sozinho.
@@ -179,8 +179,23 @@ Quando houver sobreposição de CSS, use clique de mouse na coordenada (`page.mo
 
 ## Estado do quality gate
 
-`docs/estado-do-gate.md` guarda as medições. Hoje: **63 dos 97 testes certificados** (determinismo
-em 3 repetições, zero flaky); os ~34 dependentes da grade de contratos aguardam a integração com o
-Protheus estabilizar. **Nenhuma mudança de código pendente.**
+`docs/estado-do-gate.md` guarda as medições de determinismo. Critério para a medição final: a
+grade de contratos sustentar os ~840 registros em cinco amostras seguidas — a integração com o
+Protheus oscilou entre 855 contratos, zero registros e indisponibilidade nos últimos dois dias, e
+medir instabilidade de ambiente como flakiness de teste seria conclusão errada.
 
-Critério para retomar: a grade sustentar os ~840 contratos em cinco amostras seguidas.
+## Cobertura
+
+`docs/cobertura.md` é a matriz caso a caso, **medida** sobre `docs/catalogo-casos.md` (o catálogo
+de 163 casos, versionado aqui) e sobre `tests/`. Hoje: **132 cobertos, 31 sem teste**, cada
+lacuna com motivo.
+
+A ligação é o **ID no título do teste**. Ao implementar um caso do catálogo, **cite o ID** — sem
+isso a cobertura existe mas não é auditável, e o caso aparece como lacuna. Regenerar a matriz
+depois de adicionar casos:
+
+```bash
+grep -ohE 'CT-[A-Z0-9]{2,4}-[0-9]{2}-(H|S[0-9])' docs/catalogo-casos.md | sort -u > /tmp/cat
+grep -rhoE 'CT-[A-Z0-9]{2,4}-[0-9]{2}-(H|S[0-9])' tests/            | sort -u > /tmp/impl
+comm -13 /tmp/cat /tmp/impl   # deve ser vazio: id citado que não existe no catálogo
+```
