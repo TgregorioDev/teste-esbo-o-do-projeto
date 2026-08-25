@@ -316,22 +316,19 @@ async function criarSolicitacaoCompletaEEnviar(page) {
   await formulario.expectAberto();
   await preencherFormularioCompleto(page, formulario, massa);
 
-  await formulario.frame.getByRole('button', { name: 'Anexar documentação Pública' }).click();
-  const dialogAnexo = formulario.frame.getByRole('dialog').filter({ hasText: 'Informe o nome do arquivo' });
-  await dialogAnexo.waitFor({ state: 'visible' });
-  await dialogAnexo.getByRole('textbox').fill(`${massa.justificativa} - anexo`);
-
-  const chooserPromise = page.waitForEvent('filechooser');
-  await dialogAnexo.getByRole('button', { name: 'Selecionar anexo' }).click();
-  const chooser = await chooserPromise;
-  await chooser.setFiles(ANEXO_VALIDO);
-
-  await formulario.enviar();
-
-  const linkConfirmacao = page.getByRole('link', { name: /^\d+$/ }).first();
-  await expect(linkConfirmacao).toBeVisible({ timeout: 30_000 });
-  const numeroProcesso = await linkConfirmacao.innerText();
-  expect(numeroProcesso, 'número da solicitação deveria ser numérico').toMatch(/^\d+$/);
+  // Anexo + Enviar + confirmação acontecem sob exclusividade: a área de upload do Fluig é um
+  // diretório por USUÁRIO no servidor (`/volume/wdk-data/upload/TOTVS-FS/`), disputado por
+  // qualquer outro teste que anexe ao mesmo tempo. Ver `anexarEnviarEConfirmar`.
+  //
+  // O retorno do Enviar é lido pelo Page Object, que distingue os três desfechos possíveis
+  // (confirmação, recusa com a mensagem exibida ao usuário, ou silêncio do ambiente). Antes
+  // isto era um `toBeVisible` sobre o link numérico: quando o Fluig recusava o envio, a
+  // falha saía como "link não visível" — sem dizer o que a tela mostrou, num passo que só
+  // estava montando massa para o cenário de verdade.
+  const numeroProcesso = await formulario.anexarEnviarEConfirmar(
+    ANEXO_VALIDO,
+    `${massa.justificativa} - anexo`,
+  );
 
   return { massa, numeroProcesso };
 }
@@ -410,10 +407,11 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
   /**
    * CT-CMP-02-S3 — upload de planilha de rateio INVÁLIDA deve ser rejeitado.
    *
-   * Não escreve: a rejeição acontece antes de qualquer POST de `/start` — a mesma garantia
-   * que `validacoes-solicitacao-compras.spec.js` já prova para os demais campos
-   * obrigatórios, por isso `bloquearCriacaoDeSolicitacao` continua valendo aqui e a
-   * assertion final confirma zero tentativas de escrita.
+   * O upload em si É uma escrita, e acontece de verdade — é a ação sob teste. O que precisa
+   * ficar demonstrado é mais estreito: nenhuma SOLICITAÇÃO nasce de uma planilha inválida.
+   * Por isso aqui a guarda é a estreita (`bloquearCriacaoDeProcesso`), que deixa o arquivo
+   * chegar ao servidor e bloqueia só criação/movimentação de processo — ver o comentário
+   * dentro do teste para o falso verde que a guarda larga produziria.
    */
   test('deve rejeitar o upload de planilha de rateio com formato inválido', async ({ page }) => {
     // Guarda ESTREITA de propósito: a ação sob teste é justamente um upload, ou seja, uma
@@ -555,9 +553,11 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
    * `processInstanceId` real (na medição, #112445) e a Solicitação de Compras nasce sem
    * nenhum documento anexado.
    *
-   * `@destrutivo` porque escreve de verdade: cada execução cria uma SC na base. Roda sob
-   * demanda (`INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo`) e a massa sai
-   * de `criarProdutoCompra()`, com prefixo `QA` e sufixo único, rastreável na base.
+   * `@destrutivo` porque escreve de verdade: cada execução cria uma SC na base. Roda na
+   * EXECUÇÃO PADRÃO, como todo `@destrutivo` desde a decisão do dono do ambiente
+   * (25/08/2026) — a tag serve para mirar (`--grep @destrutivo`) e para a regressão rápida de
+   * quem não quer gerar massa (`PULAR_DESTRUTIVOS=1`), nunca para encolher a medição. A massa
+   * sai de `criarProdutoCompra()`, com prefixo `QA` e sufixo único, rastreável na base.
    *
    * Por que existe além do teste acima: "o cliente não valida" e "o servidor aceita" são
    * defeitos de gravidade diferente. Se amanhã só o cliente for corrigido, este teste
@@ -585,6 +585,23 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
       criacoes.push({ status: resposta.status(), instanceId, url: resposta.url() });
     });
 
+    // Requisição que MORRE no transporte não gera evento `response` — e sem escutar
+    // `requestfailed` o teste ficava esperando 60s por uma resposta que nunca viria e
+    // reprovava com "não produziu nenhuma resposta do servidor", que não diz nada sobre a
+    // regra sob teste. Medido em campo em 25/08/2026 (execução com 4 workers): o
+    // `POST /ecm/api/rest/ecm/workflowView/send` terminou em `net::ERR_NETWORK_CHANGED`,
+    // junto com duas chamadas de `datasetZoom` que a própria aplicação repetiu — queda de
+    // rede da máquina que executa, não comportamento do Fluig.
+    /** @type {string[]} */
+    const falhasDeTransporte = [];
+    page.on('requestfailed', (requisicao) => {
+      if (requisicao.method() === 'GET') return;
+      if (!/workflowView\/send|process-management/.test(requisicao.url())) return;
+      falhasDeTransporte.push(
+        `${new URL(requisicao.url()).pathname} → ${requisicao.failure()?.errorText ?? 'falha sem detalhe'}`,
+      );
+    });
+
     const formulario = new FormularioSolicitacaoCompraPage(page);
     const massa = criarProdutoCompra();
 
@@ -594,13 +611,30 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
 
     await formulario.enviar();
 
-    // Sincronização por condição observável: espera o servidor responder ao envio.
+    // Sincronização por condição observável: espera o envio ser RESOLVIDO — com resposta do
+    // servidor (o caso normal) ou com a requisição morrendo no transporte (infraestrutura).
     await expect
-      .poll(() => criacoes.length, {
+      .poll(() => criacoes.length + falhasDeTransporte.length, {
         timeout: 60_000,
-        message: 'o envio sem anexo não produziu nenhuma resposta do servidor em 60s',
+        message:
+          'o envio sem anexo não foi resolvido em 60s: nenhuma resposta do servidor e nenhuma ' +
+          'falha de transporte — o clique em Enviar não chegou a disparar a criação',
       })
       .toBeGreaterThan(0);
+
+    // Separa INFRAESTRUTURA de defeito antes de afirmar qualquer coisa. Sem resposta não há
+    // como saber se a SC nasceu ou não: o `send` pode ter morrido antes de chegar ao
+    // servidor ou depois de ele já ter gravado. Reprovar aqui como se fosse o defeito
+    // documentaria uma conclusão que a execução não sustenta — daí o veredito explícito.
+    if (criacoes.length === 0) {
+      throw new Error(
+        'PRÉ-CONDIÇÃO AUSENTE (infraestrutura): a requisição de criação da Solicitação de ' +
+          `Compras não chegou a ter resposta — ${falhasDeTransporte.join(' | ')}. ` +
+          'SEM VEREDITO sobre CT-CMP-02-S4 nesta execução: não dá para afirmar se o servidor ' +
+          'criou ou recusou a SC sem anexo, e a SC pode ter nascido mesmo assim (verificar na ' +
+          `base pela justificativa "${massa.justificativa}"). Reexecute com rede estável.`,
+      );
+    }
 
     const criadas = criacoes.filter((c) => c.status < 400 && c.instanceId != null);
 

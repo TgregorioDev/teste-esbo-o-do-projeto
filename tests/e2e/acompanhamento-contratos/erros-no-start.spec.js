@@ -88,10 +88,56 @@ test.describe('Sucesso simulado com falha na transferência da tarefa (D-01 / CT
     // solicitante falhou — o usuário precisa ser avisado disso especificamente, e não ver
     // apenas uma confirmação de sucesso.
     //
-    // Observado em campo: a aplicação exibe SOMENTE o toast de sucesso ("Processo 999999
-    // iniciado com sucesso!") e nenhum aviso sobre a falha da transferência — o erro é
-    // engolido. Este é o sintoma de superfície do D-01: a tarefa fica presa com a conta de
-    // integração e o usuário não tem como saber.
-    await expect(page.getByText(/n(ã|a)o p(ô|o)de ser atribu(í|i)da/i)).toBeVisible();
+    // Observado em campo (medido em 25/08/2026): a aplicação exibe SOMENTE o toast de sucesso
+    // ("Sucesso! Processo 999999 iniciado com sucesso!", `role=alert`, ~2,1s após o Confirmar)
+    // e fecha o modal. Nenhum aviso sobre a falha da transferência — o erro é engolido. Este é
+    // o sintoma de superfície do D-01: a tarefa fica presa com a conta de integração e o
+    // usuário não tem como saber.
+    //
+    // POR QUE A LEITURA É POR COLETA CONTÍNUA, e não por um `toBeVisible` no aviso esperado:
+    // o toast do Fluig some sozinho depois de alguns segundos. Uma assertion que espera 30s
+    // por um elemento que nunca existe termina em `Locator: getByText(...)  Timeout` — e nessa
+    // altura o toast que o produto REALMENTE mostrou já saiu da tela, então o relatório não
+    // distingue "o produto anunciou sucesso pleno" (o defeito) de "o produto não respondeu
+    // nada" (ambiente). É a mesma lição de CT-CMP-02-S4: o vermelho tem que nomear o que foi
+    // medido. Coletando todos os `role=alert` durante a janela, o `Received` da falha traz
+    // exatamente os avisos exibidos.
+    const alertas = page.getByRole('alert');
+    /** @type {Set<string>} */
+    const avisosObservados = new Set();
+    const coletarAvisos = async () => {
+      for (const texto of await alertas.allInnerTexts()) {
+        const normalizado = texto.replace(/\s+/g, ' ').trim();
+        if (normalizado) avisosObservados.add(normalizado);
+      }
+      return [...avisosObservados];
+    };
+
+    // Sincronização por condição observável: o widget precisa dar ALGUM retorno ao usuário.
+    // Sem retorno nenhum não há veredito sobre o aviso — e isso precisa aparecer dito assim.
+    await expect
+      .poll(async () => (await coletarAvisos()).length, {
+        timeout: 30_000,
+        intervals: Array(60).fill(500),
+        message:
+          'após Confirmar (start respondido com 200 e transferência da tarefa forçada a HTTP 500), ' +
+          'a aplicação não exibiu retorno nenhum em 30s — nenhum `role=alert` na tela. Sem retorno ' +
+          'não é possível afirmar se o usuário foi ou não avisado da falha na atribuição',
+      })
+      .toBeGreaterThan(0);
+
+    // A assertion de negócio. Reprova de propósito enquanto o D-01 estiver aberto: o `Received`
+    // lista os avisos que o produto realmente exibiu na janela observada.
+    await expect
+      .poll(coletarAvisos, {
+        timeout: 15_000,
+        intervals: Array(30).fill(500),
+        message:
+          'defeito D-01 (sintoma): a transferência da tarefa falhou (dsFluig_postProcessesTransfer ' +
+          '→ HTTP 500) e a aplicação deveria avisar que a SC não pôde ser atribuída ao solicitante. ' +
+          'Abaixo, TODOS os avisos que ela exibiu — se aparecer apenas o toast de sucesso, o erro ' +
+          'foi engolido e a tarefa fica presa na conta de integração sem o usuário saber',
+      })
+      .toEqual(expect.arrayContaining([expect.stringMatching(/n(ã|a)o p(ô|o)de ser atribu(í|i)da/i)]));
   });
 });

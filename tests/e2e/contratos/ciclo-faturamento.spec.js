@@ -61,6 +61,8 @@ test.describe('Faturamento de Contratos — ciclo de medição', () => {
     /** @type {Awaited<ReturnType<MedicaoContratoPage['montarMedicaoComSaldoEmAberto']>> | undefined} */
     let resultado;
     const contratosTentados = /** @type {string[]} */ ([]);
+    /** Por que cada contrato/competência foi descartado — vai inteiro para a mensagem de falha. */
+    const descartes = /** @type {string[]} */ ([]);
 
     for (let i = 0; i < MAX_CONTRATOS; i++) {
       // `medicao.goto()` (chamado no fim da iteração anterior) navega para fora do Portal
@@ -80,19 +82,26 @@ test.describe('Faturamento de Contratos — ciclo de medição', () => {
 
       try {
         resultado = await medicao.montarMedicaoComSaldoEmAberto(fornecedor);
-      } catch {
-        // Fornecedor descoberto sem contrato navegável pelo zoom — tenta o próximo contrato.
+      } catch (erro) {
+        // Contrato descartado antes de chegar a tentar competências (ex.: fornecedor sem
+        // contrato navegável pelo zoom). O MOTIVO é guardado e entra na mensagem final:
+        // engolir o erro aqui era o que produzia `Tentativas: []` — uma pré-condição ausente
+        // que não dizia por que cada contrato foi descartado.
+        descartes.push(`${contrato.contrato}: ${erro instanceof Error ? erro.message : String(erro)}`);
         continue;
       }
       if (resultado.sucesso) break;
+      for (const t of resultado.tentativas) {
+        descartes.push(`${contrato.contrato} / competência ${t.competencia}: ${t.mensagem}`);
+      }
     }
 
     if (!resultado?.sucesso) {
       throw new Error(
         'PRÉ-CONDIÇÃO AUSENTE: nenhum dos contratos vigentes tentados ' +
           `(${contratosTentados.join(', ')}) tem competência com saldo em aberto para medir ` +
-          'no momento desta execução — isto NÃO é defeito do produto sob teste. Tentativas: ' +
-          JSON.stringify(resultado?.tentativas ?? []),
+          'no momento desta execução — isto NÃO é defeito do produto sob teste. Motivo de cada ' +
+          `descarte: ${JSON.stringify(descartes)}`,
       );
     }
 

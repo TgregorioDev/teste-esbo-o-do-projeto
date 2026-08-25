@@ -22,12 +22,17 @@ import { envObrigatoria } from '../../../config/ambiente.js';
 test.afterEach(async ({ page }) => {
   // A pasta atual do GED é lembrada no SERVIDOR, por usuário — não por sessão de navegador
   // (ver `DocumentosGedPage`). Sem este reset, um teste que navega para dentro de uma pasta
-  // deixa a próxima spec da suíte (ex.: `navegacao-documentos.spec.js`, que não pode ser
-  // editada) aterrissando fora da Raiz ao chamar `goto()`. Roda mesmo se o teste falhou.
+  // deixa a próxima spec da suíte (ex.: `navegacao-documentos.spec.js`) aterrissando fora da
+  // Raiz ao chamar `goto()`. Roda mesmo se o teste falhou.
+  //
+  // Usa `irParaRaizGarantido()` (e não `goto` + `expectCarregada` + `voltarParaRaiz`) de
+  // propósito: ele clica na Raiz ANTES de exigir a grade. Exigir a grade primeiro fazia o
+  // afterEach gastar 45s esperando um `columnheader` inexistente quando a pasta corrente da
+  // conta não valia mais — e um afterEach vermelho reprova o teste inteiro, mesmo com o corpo
+  // do teste verde. Era assim que CT-GED-02-H e CT-GED-04-H apareciam como
+  // "TimeoutError: ... waiting for getByRole('columnheader')" sem que o cenário tivesse falhado.
   const documentosPage = new DocumentosGedPage(page);
-  await documentosPage.goto();
-  await documentosPage.expectCarregada();
-  await documentosPage.voltarParaRaiz();
+  await documentosPage.irParaRaizGarantido();
 });
 
 test.describe('Documentos — upload (CT-GED-02)', () => {
@@ -44,6 +49,11 @@ test.describe('Documentos — upload (CT-GED-02)', () => {
       descricao: documento.descricao,
       caminhoArquivo: 'fixtures/anexos/documento-valido.pdf',
     });
+
+    // A grade pagina em 30 e "Meus Documentos" já passa de 50 documentos: o recém-publicado
+    // cai na página 1 ou na 2 conforme a inicial sorteada pelo faker. Posiciona a grade na
+    // página onde ele está antes de afirmar qualquer coisa (ver `irParaPaginaComDocumento`).
+    await documentosPage.irParaPaginaComDocumento(documento.descricao);
 
     const linha = documentosPage.localizarLinha(documento.descricao);
     await expect(linha, 'documento não apareceu na listagem de "Meus Documentos" após o upload').toBeVisible();
@@ -62,9 +72,14 @@ test.describe('Documentos — upload (CT-GED-02)', () => {
     await documentosPage.irParaRaizGarantido();
     await documentosPage.abrirPasta('Meus Documentos');
 
+    // `esperaPublicacao: false`: aqui o comportamento do publicador é PARTE do que se testa. Se
+    // um dia o Fluig passar a barrar a extensão, o modal pode legitimamente continuar aberto
+    // exibindo o erro — exigir que ele feche transformaria o conserto do produto num vermelho
+    // pelo motivo errado.
     await documentosPage.enviarDocumento({
       descricao: documento.descricao,
       caminhoArquivo: 'fixtures/anexos/arquivo-bloqueado.exe',
+      esperaPublicacao: false,
     });
 
     // Comportamento esperado: o Fluig bloqueia a extensão não permitida com mensagem clara e
@@ -76,6 +91,12 @@ test.describe('Documentos — upload (CT-GED-02)', () => {
       page.getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i),
       'esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação)',
     ).toBeVisible();
+
+    // "Nada foi gravado" precisa ser afirmado sobre a pasta INTEIRA: a grade pagina em 30 e o
+    // documento pode estar numa página seguinte — olhar só a página corrente daria um falso
+    // verde justamente no caso negativo. `tentativas: 1` porque aqui não se espera nada
+    // aparecer; a varredura só precisa cobrir todas as páginas uma vez.
+    await documentosPage.irParaPaginaComDocumento(documento.descricao, { tentativas: 1 });
     await expect(
       documentosPage.localizarLinha(documento.descricao),
       'esperado que nada fosse gravado — o documento de extensão bloqueada foi publicado normalmente',
@@ -113,7 +134,9 @@ test.describe('Documentos — aprovação (CT-GED-04)', () => {
         }),
     });
 
-    // Enquanto pendente de aprovação, o documento ainda não aparece na listagem da pasta.
+    // Enquanto pendente de aprovação, o documento ainda não aparece na listagem da pasta —
+    // afirmado sobre todas as páginas da pasta, não só sobre a corrente (a grade pagina em 30).
+    await documentosPage.irParaPaginaComDocumento(documento.descricao, { tentativas: 1 });
     await expect(
       documentosPage.localizarLinha(documento.descricao),
       'documento com aprovação pendente não deveria aparecer na pasta antes de ser aprovado',
@@ -124,6 +147,7 @@ test.describe('Documentos — aprovação (CT-GED-04)', () => {
     await documentosPage.irParaRaizGarantido();
     await documentosPage.abrirPasta('Compras e Contratação');
     await documentosPage.abrirPasta('Parecer Técnico');
+    await documentosPage.irParaPaginaComDocumento(documento.descricao);
     await expect(
       documentosPage.localizarLinha(documento.descricao),
       'documento aprovado não apareceu na pasta de destino',

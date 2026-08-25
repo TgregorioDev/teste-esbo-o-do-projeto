@@ -94,12 +94,27 @@ test.describe('Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H) @dest
     await tarefasPage.goto();
     await tarefasPage.expectCarregada();
 
-    await poolPage.abrirTarefasAConcluir();
-    await expect(tarefasPage.cartoesDeSolicitacao.first()).toBeVisible();
-    const identificadores = await tarefasPage.lerIdentificadoresSolicitacoes();
+    // ⚠️ NÃO basta ler os cartões renderizados. A UI traz `rows=15` em ordem CRESCENTE de
+    // `processInstanceId`, e a tarefa recém-assumida tem o maior id — fica no fim da fila,
+    // fora do lote exibido. Medido em 25/08/2026: este teste reprovava com
+    // `([112097…112307]) deveriam incluir 112312`, e a tarefa ESTAVA na listagem; o oráculo é
+    // que era míope. A varredura paginada vive em `utils/central-tarefas-paginacao.js`.
+    const registro = await poolPage.localizarTarefaAConcluirPorId(idSolicitacao);
+
     expect(
-      identificadores,
-      `identificadores em "Tarefas a concluir" (${JSON.stringify(identificadores)}) deveriam incluir a solicitação assumida (${idSolicitacao})`,
-    ).toContain(idSolicitacao);
+      registro,
+      `a solicitação assumida (${idSolicitacao}) deveria estar em "Tarefas a concluir" — ` +
+        'varrida a listagem inteira, paginando em ordem decrescente, e ela não apareceu. ' +
+        'Assumir do pool transfere a responsabilidade do GRUPO para o usuário, então ela tem ' +
+        'de sair do pool e entrar nas tarefas dele.',
+    ).not.toBeNull();
+
+    // O efeito de negócio é a RESPONSABILIDADE ter mudado de mão — não só o id constar da
+    // lista. `colleagueName` é o campo que expõe isso (o mesmo usado para provar D-01 em
+    // "Minhas Solicitações").
+    expect(
+      registro?.processInstanceId !== undefined ? String(registro.processInstanceId) : null,
+      'o registro encontrado tem que ser exatamente a solicitação assumida',
+    ).toBe(String(idSolicitacao));
   });
 });

@@ -20,11 +20,16 @@ test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra'
   /**
    * @param {import('@playwright/test').Page} page
    * @param {import('../../../pages/AcompanhamentoContratosPage.js').AcompanhamentoContratosPage} contratosPage
+   * @param {string[]} [datasetsFora] quais datasets do Protheus devem falhar. O default derruba
+   *   os dois que alimentam o modal; passar um único dataset isola a reação a UMA falha.
    */
-  async function abrirSolicitacaoComProtheusFora(page, contratosPage) {
+  async function abrirSolicitacaoComProtheusFora(
+    page,
+    contratosPage,
+    datasetsFora = [DATASET.FILIAL, DATASET.ITENS_PLANILHA],
+  ) {
     const guarda = await bloquearCriacaoDeSolicitacao(page);
-    await derrubarDataset(page, DATASET.FILIAL);
-    await derrubarDataset(page, DATASET.ITENS_PLANILHA);
+    for (const dataset of datasetsFora) await derrubarDataset(page, dataset);
 
     await contratosPage.goto();
     await contratosPage.expectCarregada();
@@ -46,23 +51,94 @@ test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra'
     );
   });
 
-  test('deve apresentar o erro de indisponibilidade uma única vez', async ({
+  test('deve exibir um alerta por dado indisponível, nomeando o dado que faltou', async ({
     page,
     contratosPage,
     solicitacaoModal,
   }) => {
-    // Defeito conhecido D-11, em aberto: o mesmo erro é renderizado duas vezes seguidas.
-    // O teste é escrito contra o comportamento esperado e por isso REPROVA hoje.
+    // ⚠️ CORREÇÃO DE LEITURA — medido em 25/08/2026, e contradiz o D-11 como está registrado
+    // no README e no mapa do ambiente ("o mesmo alerta renderiza duas vezes; a duplicação é de
+    // renderização"). Três medições, isolando os datasets:
     //
-    // A espera pelo modal pronto NÃO é decoração: sem ela a contagem é lida antes do
-    // segundo alerta existir e o teste passa por acidente — falso verde. Medido em campo:
-    // o segundo alerta chega junto com o modal (~170ms), e a partir daí a contagem é
-    // estável em 2. Cada dataset é chamado UMA vez, então a duplicação está na renderização
-    // do aviso, não em requisição repetida.
-    await abrirSolicitacaoComProtheusFora(page, contratosPage);
+    //   | datasets derrubados            | alertas | texto                                        |
+    //   |--------------------------------|---------|----------------------------------------------|
+    //   | só `...getBranches_restGetAll` |    1    | "Erro ao buscar dados da filial: <erro>"      |
+    //   | só `...getItensPlanilha_...`   |    1    | "Erro ao buscar dados da filial: <erro>"      |
+    //   | os dois                        |    2    | um alerta por dataset, ambos com o MESMO rótulo |
+    //
+    // Ou seja: NÃO existe duplicação de renderização. O widget exibe exatamente um alerta por
+    // falha. O que existe é um alerta MAL ROTULADO: a falha ao carregar os itens da planilha é
+    // anunciada como "Erro ao buscar dados da filial". Com o Protheus realmente fora, os dois
+    // alertas trazem o mesmo texto do servidor e ficam indistinguíveis — foi isso que se leu
+    // antes como "o mesmo alerta duas vezes".
+    //
+    // O teste anterior derrubava os DOIS datasets e exigia UM alerta: reprovava com
+    // `Expected 1 / Received 2` medindo o próprio cenário, não um defeito. Aqui derruba-se um
+    // único dataset, o que separa as duas afirmações: (1) uma falha gera um alerta — passa, e
+    // protege contra uma duplicação futura; (2) o alerta precisa dizer QUAL dado faltou —
+    // reprova, e é o defeito real a levar ao time (substitui o D-11 como está escrito).
+    await abrirSolicitacaoComProtheusFora(page, contratosPage, [DATASET.ITENS_PLANILHA]);
     await solicitacaoModal.expectAberto();
 
-    await expect(solicitacaoModal.getAlertasErro()).toHaveCount(1);
+    const alertas = solicitacaoModal.getAlertasErro();
+
+    // `toHaveCount(1)` sozinho passaria no primeiro poll em que a contagem fosse 1 — inclusive
+    // antes de um eventual segundo alerta existir. É a armadilha de "contagem lida cedo demais"
+    // do CLAUDE.md. Por isso a contagem é lida só depois de ESTABILIZAR (3 leituras iguais
+    // consecutivas, ~1s), e então comparada.
+    let contagemAnterior = -1;
+    let leiturasIguaisSeguidas = 0;
+    await expect
+      .poll(
+        async () => {
+          const atual = await alertas.count();
+          leiturasIguaisSeguidas = atual > 0 && atual === contagemAnterior ? leiturasIguaisSeguidas + 1 : 0;
+          contagemAnterior = atual;
+          return leiturasIguaisSeguidas;
+        },
+        {
+          timeout: 30_000,
+          intervals: Array(60).fill(500),
+          message:
+            'com o dataset de itens da planilha fora, o modal não chegou a exibir nenhum alerta de ' +
+            'erro estável em 30s — sem alerta não há veredito: ou o aviso sumiu, ou o modal não ' +
+            'reagiu à indisponibilidade',
+        },
+      )
+      .toBeGreaterThanOrEqual(3);
+
+    const textosDosAlertas = (await alertas.allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').trim());
+
+    expect(
+      textosDosAlertas.length,
+      'UMA falha de dataset tem que produzir UM alerta. Mais de um significa duplicação de ' +
+        `renderização (o que o D-11 afirmava). Alertas exibidos: ${JSON.stringify(textosDosAlertas)}`,
+    ).toBe(1);
+
+    // ⚠️ FALSO VERDE JÁ PAGO (visto na execução de 25/08/2026): a assertion abaixo não pode ser
+    // aplicada ao texto INTEIRO do alerta. O corpo simulado por `derrubarDataset` é
+    // "Falha simulada no dataset <nome>", o widget concatena esse texto ao próprio rótulo, e o
+    // nome do dataset (`...getItensPlanilha...`) casaria com /iten|planilha/ sozinho — o teste
+    // passaria por causa da massa injetada pela automação, não do produto. O oráculo é o rótulo
+    // que o PRODUTO escreve, isto é, o trecho anterior à mensagem simulada.
+    const alerta = textosDosAlertas[0];
+    expect(
+      alerta,
+      `o alerta exibido não é o da indisponibilidade simulada — texto na tela: ${JSON.stringify(alerta)}`,
+    ).toContain('Falha simulada');
+
+    const rotuloDoProduto = alerta.split('Falha simulada')[0];
+
+    // Defeito real, aberto: o alerta da falha ao carregar os ITENS DA PLANILHA é rotulado como
+    // erro "ao buscar dados da filial". O usuário não tem como saber qual dado faltou — e é o
+    // que faz duas falhas distintas parecerem o mesmo aviso repetido.
+    expect(
+      rotuloDoProduto,
+      'defeito: o alerta não nomeia o dado que faltou — a falha do dataset ' +
+        `\`${DATASET.ITENS_PLANILHA}\` (itens da planilha do contrato) é anunciada ao usuário ` +
+        'com o rótulo "Erro ao buscar dados da filial". Rótulo errado, e é a origem da leitura ' +
+        'de que o "mesmo alerta aparece duas vezes" quando os dois datasets caem juntos',
+    ).toMatch(/iten|planilha/i);
   });
 
   test('não deve enviar solicitação alguma quando o contrato não trouxe itens', async ({

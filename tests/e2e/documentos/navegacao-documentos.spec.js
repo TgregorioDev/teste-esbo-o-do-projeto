@@ -15,8 +15,7 @@ test.describe('Documentos — árvore de pastas (CT-GED-01-H)', () => {
     page,
   }) => {
     const documentosPage = new DocumentosPage(page);
-    await documentosPage.goto();
-    await documentosPage.expectCarregada();
+    await documentosPage.irParaRaizGarantido();
 
     await expect(documentosPage.colunaDescricao).toBeVisible();
     await expect(documentosPage.colunaAtualizacao).toBeVisible();
@@ -30,8 +29,7 @@ test.describe('Documentos — árvore de pastas (CT-GED-01-H)', () => {
     page,
   }) => {
     const documentosPage = new DocumentosPage(page);
-    await documentosPage.goto();
-    await documentosPage.expectCarregada();
+    await documentosPage.irParaRaizGarantido();
 
     await expect(documentosPage.seletorResultadosPorPagina).toHaveValue('30');
     const descricoesAntes = await documentosPage.lerDescricoes();
@@ -51,8 +49,7 @@ test.describe('Documentos — barra de ações (presença, sem interação)', ()
     page,
   }) => {
     const documentosPage = new DocumentosPage(page);
-    await documentosPage.goto();
-    await documentosPage.expectCarregada();
+    await documentosPage.irParaRaizGarantido();
 
     await expect(documentosPage.acoes.novo).toBeVisible();
     await expect(documentosPage.acoes.copiar).toBeVisible();
@@ -69,8 +66,7 @@ test.describe('Documentos — navegação de pasta', () => {
     page,
   }) => {
     const documentosPage = new DocumentosPage(page);
-    await documentosPage.goto();
-    await documentosPage.expectCarregada();
+    await documentosPage.irParaRaizGarantido();
 
     const descricoesNaRaiz = await documentosPage.lerDescricoes();
     expect(descricoesNaRaiz).toContain('Meus Documentos');

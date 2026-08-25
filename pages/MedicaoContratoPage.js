@@ -1,4 +1,5 @@
 // @ts-check
+import { expect } from '@playwright/test';
 
 /** Rota de início do processo "Faturamento de Contratos", confirmada em campo. */
 const ROTA_FATURAMENTO_CONTRATOS = '/portal/p/1/pageworkflowview?processID=wf_faturamento_contratos';
@@ -97,15 +98,32 @@ export class MedicaoContratoPage {
    * por cima de campos vizinhos depois que o mouse passa perto deles (ex.: ao clicar num
    * campo auto-preenchido ao lado), e intercepta o clique do Playwright no campo seguinte —
    * ele re-tenta por até 30s (`actionTimeout`) e falha. Mover o mouse para um canto neutro da
-   * página ANTES do clique dá tempo do tooltip (que só fica visível em cima do elemento
-   * "hovered") sumir sozinho — sem recorrer a `force: true`, que só dispara o handler sem
-   * provar que o clique alcançou o elemento de verdade.
+   * página ANTES do clique faz o tooltip (que só existe enquanto o elemento está "hovered")
+   * desaparecer — sem recorrer a `force: true`, que só dispara o handler sem provar que o
+   * clique alcançou o elemento de verdade.
+   *
+   * A espera é pela CONDIÇÃO OBSERVÁVEL, não por tempo fixo: medido em campo (25/08/2026), o
+   * tooltip é um `div.tooltip[role=tooltip]` renderizado DENTRO do iframe do formulário e é
+   * REMOVIDO do DOM ~160ms depois que o mouse sai — `waitFor({ state: 'hidden' })` devolve
+   * nesse instante, e é satisfeito de imediato quando não há tooltip nenhum (o caso comum).
+   *
+   * ⚠️ A espera é BEST-EFFORT de propósito, e isso foi medido, não presumido: em
+   * `selecionarCompetencia` o tooltip permaneceu visível pelos 10s inteiros (24 leituras
+   * seguidas do mesmo `div[role=tooltip]`) porque ali ele é disparado por FOCO, não por hover —
+   * tirar o mouse não o remove. Exigir o desaparecimento transformaria isso numa falha de
+   * mecânica da suíte. Quem decide se o controle é alcançável é o `click()` logo abaixo, que
+   * tem auto-retry de actionability próprio e, se o tooltip realmente interceptar, falha
+   * apontando o elemento que interceptou.
    * @param {import('@playwright/test').Locator} campo
    */
   async #clicarSemTooltip(campo) {
     await campo.waitFor({ state: 'visible' });
     await this.page.mouse.move(0, 0);
-    await this.page.waitForTimeout(300);
+    await this.frame
+      .locator('div.tooltip')
+      .first()
+      .waitFor({ state: 'hidden', timeout: 1_000 })
+      .catch(() => undefined);
     await campo.click();
   }
 
@@ -129,12 +147,17 @@ export class MedicaoContratoPage {
    * @returns {Promise<boolean>}
    */
   async esperarOpcoesZoom(timeoutMs = 20000) {
-    const inicio = Date.now();
-    while (Date.now() - inicio < timeoutMs) {
-      if ((await this.opcoesZoom.count()) > 0) return true;
-      await this.page.waitForTimeout(250);
-    }
-    return (await this.opcoesZoom.count()) > 0;
+    // Auto-waiting do próprio Playwright em vez de laço com espera fixa: `waitFor` resolve no
+    // instante em que a primeira opção real aparece. O zoom ficar vazio é resposta legítima do
+    // sistema (não erro), e é isso que o `false` comunica a quem chamou — daí o `then` de dois
+    // ramos em vez de deixar o timeout estourar como falha.
+    return this.opcoesZoom
+      .first()
+      .waitFor({ state: 'visible', timeout: timeoutMs })
+      .then(
+        () => true,
+        () => false,
+      );
   }
 
   /**
@@ -154,6 +177,34 @@ export class MedicaoContratoPage {
   async #indiceDaOpcao(padrao) {
     const textos = await this.opcoesZoom.allInnerTexts();
     return textos.findIndex((t) => padrao.test(t));
+  }
+
+  /**
+   * Relê as opções do zoom até alguma casar com o padrão, ou até o prazo acabar.
+   *
+   * `expect.poll` faz o trabalho de repetição (o Playwright já resolve isto melhor que um laço
+   * com espera fixa). Ele lança quando o prazo acaba; aqui esse fim de prazo NÃO é a falha a
+   * reportar — é a informação "nenhuma opção casou", que quem chama transforma numa mensagem
+   * rica, listando as opções realmente oferecidas. Por isso o rejeite vira `-1` em vez de
+   * propagar: o erro que chega ao runner é o do chamador, mais informativo, nunca engolido.
+   * @param {RegExp} padrao
+   * @param {number} [timeoutMs]
+   * @returns {Promise<number>} índice encontrado, ou -1
+   */
+  async #aguardarIndiceDaOpcao(padrao, timeoutMs = 5000) {
+    /** @type {{ indice: number }} */
+    const achado = { indice: -1 };
+    await expect
+      .poll(
+        async () => {
+          achado.indice = await this.#indiceDaOpcao(padrao);
+          return achado.indice;
+        },
+        { timeout: timeoutMs, intervals: Array(Math.ceil(timeoutMs / 250)).fill(250) },
+      )
+      .toBeGreaterThanOrEqual(0)
+      .catch(() => undefined);
+    return achado.indice;
   }
 
   /**
@@ -179,16 +230,10 @@ export class MedicaoContratoPage {
     await this.esperarOpcoesZoom();
 
     const padrao = new RegExp(`CÓDIGO\\s*${codigo}\\s*LOJA\\s*${loja}\\b`);
-    let indice = await this.#indiceDaOpcao(padrao);
-    if (indice === -1) {
-      // A resposta pode ainda não ter renderizado no DOM no instante da leitura acima
-      // (a rede já respondeu, mas o `select2` está terminando de montar a lista) — tenta
-      // mais algumas vezes antes de desistir.
-      for (let tentativa = 0; tentativa < 10 && indice === -1; tentativa++) {
-        await this.page.waitForTimeout(300);
-        indice = await this.#indiceDaOpcao(padrao);
-      }
-    }
+    // A resposta pode ainda não ter renderizado no DOM no instante da primeira leitura (a rede
+    // já respondeu, mas o `select2` está terminando de montar a lista) — daí o poll, que relê o
+    // DOM até a opção existir, em vez de esperar um tempo fixo.
+    const indice = await this.#aguardarIndiceDaOpcao(padrao);
     if (indice === -1) {
       const textos = await this.opcoesZoom.allInnerTexts();
       throw new Error(
@@ -210,8 +255,20 @@ export class MedicaoContratoPage {
    * `esperarOpcoesZoom()` fica esperando por opções que nunca chegam a aparecer, porque a
    * busca nem foi disparada. Não é um problema de sincronização do lado do teste (não há
    * requisição em voo para aguardar): é o formulário aguardando o próprio ciclo interno.
-   * Uma pequena folga fixa aqui é o que o próprio código-fonte do formulário usa como
-   * intervalo de poll — não uma tentativa de mascarar flakiness deste lado.
+   * ⚠️ ESPERA FIXA MANTIDA DE PROPÓSITO — e medida, não presumida. A regra do projeto proíbe
+   * `waitForTimeout` como SINCRONIZAÇÃO justamente porque quase sempre existe uma condição
+   * observável melhor. Aqui foi procurada e NÃO existe (medido em 25/08/2026, logo após
+   * selecionar uma opção no zoom de Fornecedor, amostrando o DOM a cada 150ms por 3,4s):
+   *   • os `<select>` dos cinco zooms (`zoomFornecedor`…`zoomNumPlanilha`) NUNCA ficam
+   *     `disabled` no DOM — o `disable(false)` do formulário é estado interno do widget;
+   *   • as classes dos `.select2-container` só mudam por FOCO
+   *     (`select2-container--focus/--above`), nunca por habilitação;
+   *   • nenhuma requisição de rede é disparada nesse intervalo (o único tráfego observado foi
+   *     um `GET /nps/api/v1/surveys` → 403, alheio ao formulário) — não há resposta a aguardar.
+   * Ou seja: o ciclo é um `setInterval` interno de 100ms sem efeito colateral observável de
+   * fora. A folga fixa é um múltiplo desse intervalo, e não uma tentativa de mascarar
+   * flakiness. Se um sinal observável aparecer (um atributo, uma classe, uma requisição),
+   * troque esta espera por ele.
    */
   async #aguardarCascataDeHabilitacao() {
     await this.page.waitForTimeout(1200);

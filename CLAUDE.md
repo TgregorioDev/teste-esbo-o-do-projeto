@@ -169,7 +169,7 @@ que a proteção funciona.
 **Não segure toda escrita em `process-management`** — o portal faz chamadas de contagem na carga e
 a página nunca termina. Filtre pelo endpoint de `/start`.
 
-**Contagem lida cedo demais passa por acidente.** O alerta duplicado (D-11) só existe depois que o
+**Contagem lida cedo demais passa por acidente.** A contagem de alertas do modal só estabiliza depois que o
 modal termina de abrir; afirmar antes disso dá falso verde.
 
 **`force: true` prova só que o handler existe**, não que a pessoa consegue acionar o controle.

@@ -87,8 +87,10 @@ por processo de negócio que esta suíte está proibida de executar. Já tudo qu
 | Casos sem nenhum teste | **31** — cada um com motivo medido |
 | Testes que **criam ou editam** registro (`@destrutivo`) | **34** — rodam na execução padrão |
 
-**Última execução medida (25/08/2026, 15h — suíte inteira, destrutivos incluídos): 177 testes,
-123 verdes, 54 vermelhos.** Dos 34 `@destrutivo`, 17 verdes e 17 vermelhos. ⚠️ **O total de
+**Última execução medida (25/08/2026, 17h48 — suíte inteira, destrutivos incluídos): 177 testes,
+129 verdes, 48 vermelhos.** Dos 34 `@destrutivo`, 21 verdes e 13 vermelhos. **Nenhum dos 48
+reprova por timeout opaco**: 44 trazem mensagem de domínio nomeando o defeito e 4 são
+`PRÉ-CONDIÇÃO AUSENTE` nomeando a massa que falta. ⚠️ **O total de
 vermelhos não é comparável entre execuções sem olhar quais testes são**: dois testes variam por
 não-determinismo do próprio produto. Detalhe em [`docs/estado-do-gate.md`](docs/estado-do-gate.md). Detalhe e classificação em
 [`docs/estado-do-gate.md`](docs/estado-do-gate.md).
@@ -121,9 +123,10 @@ não o entrega. Ajustá-los para passar documentaria o defeito como se fosse reg
 | **D-02** 🔴 | payload da SC | contrato de R$ 40.560,00 vira 2 itens de R$ 40.560,00 (**R$ 81.120,00**); em contrato de 4 itens, o valor se repete nos quatro |
 | **D-04** 🟠 | payload da SC | `classeOrca=133017` e `classificacao=Tecnologia` fixos em todo item e todo contrato; `campoDescritor="Sol. Compras - CASSI SEDE"` com filial de São Luís/MA |
 | **D-08** 🟡 | grade de contratos | situação truncada: `Finali`, `Paralisa`, `Sol.Finali`, `Cancel.` |
-| **D-11** 🟡 | modal com Protheus fora | o mesmo alerta renderiza duas vezes (cada dataset é chamado uma vez — a duplicação é de renderização) |
+| **D-11 (revisto)** 🟠 | modal com Protheus fora | **não há duplicação de renderização** — o widget exibe um alerta por falha. O defeito é o RÓTULO: a falha ao carregar os itens da planilha é anunciada como *"Erro ao buscar dados da filial"*. Com o Protheus fora, as duas falhas trazem o mesmo texto e ficam indistinguíveis — foi isso que se leu antes como "o mesmo alerta duas vezes" |
 | **CT-ACC-04-S5** 🟡 | payload da SC | `nrContrato` de um contrato com revisão, filial e itens de outro; sem revalidação no servidor |
 | **classeValor vazio** 🟠 | payload da SC | `tbprod_classeValor` em branco, com `classeOrca` e `classificacao` preenchidos ao lado — pode travar a Validação Orçamentária |
+| **Fail-open no formulário** 🔴 | SC clássica | enquanto o formulário ainda monta (overlay `blockUI` na tela), **o clique em Enviar não é validado**: o Fluig dispara `POST .../workflowView/send` direto e cria a SC de um formulário vazio. Medido em 2 de 9 cargas **sem concorrência**, e de forma persistente quando `ds_protheus_getMatriculaTitular_rest` responde 500 (`WFLYEJB0054: Failed to marshal EJB parameters`) — a montagem nunca termina e o envio continua aceito |
 | **CT-GED-02-S1** 🔴 | upload no GED | arquivo `.exe` é **aceito e publicado sem nenhuma validação de extensão** — nenhuma mensagem de bloqueio. Achado que só apareceu quando os testes `@destrutivo` passaram a rodar |
 | **CT-CMP-02-S4** 🔴 | SC sem anexo | o anexo obrigatório não é validado **nem no cliente nem no servidor**: o Enviar dispara `POST /ecm/api/rest/ecm/workflowView/send` e o servidor responde 200 com `processInstanceId` real — a SC nasce sem documento |
 | **U-01** 🟠 | deep-link SPA | `/principalprocess` e `/gestao_ferias` caem em `errorPage/404` |

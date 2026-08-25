@@ -72,7 +72,7 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-CMP-02-S1` | Envio com campos obrigatórios vazios | ✅ | `e2e/compras/validacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-02-S2` | Rateio diferente de 100% | ✅ | `e2e/compras/validacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-02-S3` | Upload de planilha de rateio inválida | ✅ | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
-| `CT-CMP-02-S4` | Anexo obrigatório ausente | ✅ | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
+| `CT-CMP-02-S4` | Anexo obrigatório ausente | ✅ | `e2e/acompanhamento-contratos/erros-no-start.spec.js` · `e2e/compras/ciclo-solicitacao-compras.spec.js` · `e2e/contratos/delegacao-fiscais-ciclo.spec.js` |
 | `CT-CMP-03-S1` | Protheus indisponível ao carregar combos  ⭐ teste-mestre | ✅ | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
 | `CT-CMP-04-H` | Aprovação — Gestor Imediato (feliz) | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-04-S1` | Reprovação do Gestor gera correção | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |

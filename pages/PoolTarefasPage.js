@@ -1,4 +1,5 @@
 // @ts-check
+import { localizarNaListagemPaginada } from '../utils/central-tarefas-paginacao.js';
 
 /**
  * Central de Tarefas (`/portal/p/1/pagecentraltask`) — sub-fluxo de "Tarefas em pool".
@@ -215,12 +216,39 @@ export class PoolTarefasPage {
    * e cai para o flyout quando ela não está visível.
    */
   async abrirTarefasAConcluir() {
+    // A resposta é o que permite varrer a listagem inteira depois (ver
+    // `localizarTarefaAConcluirPorId`): dela sai a URL exata que a UI usou, com a mesma
+    // sessão e o mesmo filtro.
+    const resposta = this.page.waitForResponse(
+      (r) => /centralTasks\/getTasks\/open\//.test(r.url()) && r.request().method() === 'GET',
+    );
     if (await this.abaTarefasAConcluir.isVisible().catch(() => false)) {
       await this.abaTarefasAConcluir.click();
-      return;
+    } else {
+      await this.linkMaisOpcoes.click();
+      await this.page.getByRole('link', { name: /^Tarefas a concluir/ }).click();
     }
-    await this.linkMaisOpcoes.click();
-    await this.page.getByRole('link', { name: /^Tarefas a concluir/ }).click();
+    return resposta;
+  }
+
+  /**
+   * Procura uma tarefa em "Tarefas a concluir" pelo `processInstanceId`, varrendo a listagem
+   * INTEIRA.
+   *
+   * ⚠️ Por que não basta ler os cartões da tela: a UI chama
+   * `GET /ecm/api/rest/ecm/centralTasks/getTasks/open/<login>` com `rows=15&sord=asc` e
+   * renderiza só esse lote. Uma tarefa recém-assumida tem o MAIOR `processInstanceId`, então
+   * fica no fim da fila e nunca aparece nos 15 primeiros cartões. Medido em 25/08/2026: o
+   * teste reprovava com `identificadores ([112097…112307]) deveriam incluir 112312` — a
+   * tarefa ESTAVA lá, a leitura é que enxergava só o começo. Mesmo defeito que existia em
+   * "Minhas Solicitações"; a varredura é compartilhada por isso.
+   *
+   * @param {string|number} processInstanceId
+   * @returns {Promise<Record<string, any> | null>} o registro, ou `null` se não está na listagem
+   */
+  async localizarTarefaAConcluirPorId(processInstanceId) {
+    const primeiraResposta = await this.abrirTarefasAConcluir();
+    return localizarNaListagemPaginada(this.page, primeiraResposta.url(), processInstanceId);
   }
 }
 

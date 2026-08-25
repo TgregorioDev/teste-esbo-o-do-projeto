@@ -227,16 +227,32 @@ export class CentralTarefasComprasPage {
    */
   async decidirEEnviar(decisao) {
     const radio = decisao.aprovar ? this.radioAprovarSim() : this.radioAprovarNao();
+    const campo = this.campoJustificativaDecisao();
 
-    // O rádio é renderizado dentro de um formulário que registra o valor de forma assíncrona:
-    // clicar em Enviar cedo demais faz a requisição sair sem a decisão, e o Fluig recusa com
-    // "O campo \"Aprovar? - Linha 1\" é obrigatório!". Confirmar que o rádio ficou marcado
-    // ANTES de enviar é a sincronização por condição observável — não é retry cego.
-    await radio.check();
-    await expect(radio).toBeChecked();
+    // PRÉ-CONDIÇÃO: a seção de decisão terminou de montar. Confirmar só que o rádio ficou
+    // marcado não bastava — medido em campo em 25/08/2026 (4 workers): a tela de decisão
+    // ainda estava carregando (`getLastVersionDocument` em voo) quando o Enviar saiu, e o
+    // Fluig respondeu HTTP 500 com "O campo \"Aprovar? - Linha 1\" é obrigatório!". O que
+    // acontece nessa janela é o formulário RE-RENDERIZAR a seção depois do `check()`,
+    // desmarcando o rádio: a assertion passou no instante certo e o estado se perdeu logo
+    // depois. Esperar os controles existirem e o overlay do iframe sair é o que fecha a
+    // janela — nesta ordem, porque exigir a ausência do overlay primeiro é satisfeito no
+    // primeiro poll em que ele ainda nem foi criado (armadilha registrada no CLAUDE.md).
+    await radio.waitFor({ state: 'visible' });
+    await campo.waitFor({ state: 'visible' });
+    await expect(
+      this.frame.locator('.loading-message'),
+      'o overlay de carregamento do iframe não saiu — a tela de decisão ainda está montando',
+    ).toHaveCount(0, { timeout: 30_000 });
 
-    await this.campoJustificativaDecisao().fill(decisao.justificativa);
-    await expect(this.campoJustificativaDecisao()).toHaveValue(decisao.justificativa);
+    // Convergência sobre estado observável (não retry cego, não tempo fixo): reaplica o que
+    // um re-render tenha desfeito e só sai quando os DOIS campos estão com o valor esperado.
+    await expect(async () => {
+      if (!(await radio.isChecked())) await radio.check();
+      if ((await campo.inputValue()) !== decisao.justificativa) await campo.fill(decisao.justificativa);
+      await expect(radio).toBeChecked({ timeout: 2_000 });
+      await expect(campo).toHaveValue(decisao.justificativa, { timeout: 2_000 });
+    }).toPass({ timeout: 30_000, intervals: [500, 1_000, 2_000, 5_000] });
 
     await this.botaoEnviar.click();
   }
@@ -249,7 +265,33 @@ export class CentralTarefasComprasPage {
    */
   async abrirDetalheAposConfirmacao() {
     const linkConfirmacao = this.page.getByRole('link', { name: /^\d+$/ }).first();
-    await linkConfirmacao.waitFor({ state: 'visible', timeout: 30_000 });
+    // O Fluig pode RECUSAR a movimentação em vez de confirmá-la (medido: HTTP 500 com
+    // "Erro ao salvar dados do formulário: - O campo \"Aprovar? - Linha 1\" é obrigatório!").
+    // Esperar só pelo link de confirmação transformava essa recusa — que traz a causa escrita
+    // na tela — num `locator.waitFor: Timeout 30000ms` sem veredito nenhum.
+    const dialogErro = this.page.getByRole('dialog').filter({ hasText: 'Erro' });
+
+    const desfecho = await Promise.any([
+      linkConfirmacao.waitFor({ state: 'visible', timeout: 60_000 }).then(() => 'confirmou'),
+      dialogErro.waitFor({ state: 'visible', timeout: 60_000 }).then(() => 'recusou'),
+    ]).catch(() => 'semRetorno');
+
+    if (desfecho === 'recusou') {
+      const texto = (await dialogErro.innerText().catch(() => '(texto indisponível)'))
+        .replace(/\s+/g, ' ')
+        .trim();
+      throw new Error(
+        `O Fluig RECUSOU a movimentação da tarefa em vez de confirmá-la. Mensagem exibida ao usuário: "${texto}"`,
+      );
+    }
+    if (desfecho === 'semRetorno') {
+      throw new Error(
+        'PRÉ-CONDIÇÃO AUSENTE (ambiente): 60s após acionar Enviar na tela de decisão, o Fluig ' +
+          'não deu retorno nenhum — nem a confirmação da movimentação, nem diálogo de erro. ' +
+          `URL: ${this.page.url()}`,
+      );
+    }
+
     await linkConfirmacao.click();
     await this.headingHistorico().waitFor({ state: 'visible', timeout: 60_000 });
   }

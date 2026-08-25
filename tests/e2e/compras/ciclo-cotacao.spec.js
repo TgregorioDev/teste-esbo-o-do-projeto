@@ -117,7 +117,8 @@ test.describe('Cotação de Produtos e Serviços — formulário avulso (shell f
     await expect(cotacao.radioParecerTecnicoSim).toBeEditable();
     await expect(cotacao.radioParecerTecnicoNao).toBeEditable();
 
-    // Rede de segurança: nada foi escrito só de abrir e inspecionar o formulário.
+    // Delimitação de escopo: este caso afirma sobre os campos que a tela serve (readonly,
+    // valores iniciais), então abrir e inspecionar não pode ter disparado escrita nenhuma.
     expect(guarda.tentativas(), 'abrir e ler o formulário não deveria escrever nada').toBe(0);
   });
 

@@ -15,12 +15,15 @@ import { criarDocumento } from '../../../factories/documento.js';
  * `documentId` capturado no momento da exclusão.
  *
  * A exclusão em si (documento sai da pasta) é rápida e determinística — verificada abaixo sem
- * ressalvas. A RESTAURAÇÃO depende da Lixeira indexar a exclusão, e essa indexação, em campo,
- * não aconteceu de forma confiável dentro de uma janela de teste razoável (varredura contínua
- * por mais de 5 minutos não encontrou uma exclusão feita minutos antes, embora exclusões de
- * horas antes já estivessem lá). Se este teste ficar vermelho na etapa de restauração, é esse
- * atraso de indexação sendo documentado — não um defeito de sincronização do teste. Ver o
- * relatório da suíte para os números medidos.
+ * ressalvas. A RESTAURAÇÃO era dada como bloqueada por indexação lenta da Lixeira ("mais de 5
+ * minutos sem o item aparecer"). **Isso foi remedido em 25/08/2026 e não se confirmou**: com a
+ * paginação da grade corrigida (o documento publicado caía na página 2 e a pré-condição abaixo
+ * nem chegava a vê-lo) e com o clique no paginador da Lixeira esperando o overlay do blockUI
+ * sair, o ciclo completo — publicar, excluir, achar na Lixeira, restaurar e reencontrar na pasta
+ * — fechou verde em 5 execuções seguidas, entre 64s e 84s cada. O que reprovava era nosso.
+ *
+ * Se este teste voltar a ficar vermelho na etapa de restauração, aí sim vale investigar a
+ * indexação — mas comece conferindo em que página da grade o documento está.
  */
 
 test.afterEach(async ({ page }) => {
@@ -28,10 +31,12 @@ test.afterEach(async ({ page }) => {
   // servidor por usuário. Sem este reset, deixar a sessão presa na Lixeira ou dentro de uma
   // pasta quebraria a próxima spec (`navegacao-documentos.spec.js`, não editável) ao assumir
   // que `goto()` aterrissa na Raiz. Roda mesmo se o teste falhou.
+  // `irParaRaizGarantido()` clica na Raiz ANTES de exigir a grade: quando a pasta corrente da
+  // conta não vale mais, a página renderiza o breadcrumb e não renderiza a grade, e exigir a
+  // grade primeiro queimava 45s num `columnheader` inexistente — reprovando o teste pelo
+  // afterEach, não pelo cenário. Ver `DocumentosPage`.
   const documentosPage = new DocumentosGedPage(page);
-  await documentosPage.goto();
-  await documentosPage.expectCarregada();
-  await documentosPage.voltarParaRaiz();
+  await documentosPage.irParaRaizGarantido();
 });
 
 test.describe('Documentos — lixeira (CT-GED-05)', () => {
@@ -52,6 +57,9 @@ test.describe('Documentos — lixeira (CT-GED-05)', () => {
       descricao: documento.descricao,
       caminhoArquivo: 'fixtures/anexos/documento-valido.pdf',
     });
+    // "Meus Documentos" passa de 50 documentos e a grade pagina em 30: sem posicionar a grade
+    // na página certa, a pré-condição reprova conforme a inicial que o faker sorteou.
+    await documentosPage.irParaPaginaComDocumento(documento.descricao);
     await expect(
       documentosPage.localizarLinha(documento.descricao),
       'pré-condição: o documento precisa existir em "Meus Documentos" antes de ser excluído',
@@ -68,6 +76,7 @@ test.describe('Documentos — lixeira (CT-GED-05)', () => {
 
     await documentosPage.irParaRaizGarantido();
     await documentosPage.abrirPasta('Meus Documentos');
+    await documentosPage.irParaPaginaComDocumento(documento.descricao);
     await expect(
       documentosPage.localizarLinha(documento.descricao),
       'documento restaurado não voltou a aparecer na pasta de origem ("Meus Documentos")',

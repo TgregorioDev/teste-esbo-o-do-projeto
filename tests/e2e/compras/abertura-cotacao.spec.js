@@ -9,8 +9,14 @@ import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
  * `wf_cotacao_produtos_servicos`, aberto direto por URL, abre o formulário clássico de
  * Cotação de Produtos e Serviços com os campos de Fornecedor, itens e totais.
  *
- * Escopo deste teste: comprovar que o formulário abre completo. Nunca aciona Enviar —
- * preencher/ler é seguro, enviar é escrita e está fora de escopo (destrutivo).
+ * Escopo deste teste: comprovar que o formulário ABRE completo — um smoke de render, que
+ * separa "o formulário monta" de "o formulário envia" para que uma falha de montagem
+ * reprove sozinha, em segundos, sem arrastar o ciclo inteiro junto.
+ *
+ * O ciclo de Cotação (incluindo o que a tela faz ao acionar Enviar) é coberto por
+ * `tests/e2e/compras/ciclo-cotacao.spec.js`. Escrever é esperado nesta base de homologação
+ * (`docs/politica-de-escrita.md`): o que este arquivo faz é dividir o caso em duas
+ * medições, não evitar a escrita.
  *
  * Confirmado em campo — divergência do formulário de Solicitação de Compras: aqui NENHUM
  * campo de Identificação do Solicitante vem pré-preenchido, e os campos de "Informações do
@@ -40,7 +46,9 @@ test.describe('Abertura do formulário clássico de Cotação de Produtos e Serv
     await expect(formulario.campoSubTotal).toHaveValue('0,00');
     await expect(formulario.campoValorTotalPedido).toHaveValue('0,00');
 
-    // Rede de segurança: nada foi escrito só de abrir e ler o formulário.
+    // Delimitação de escopo: este smoke afirma sobre RENDER, então abrir e ler a tela não
+    // pode ter disparado nenhuma escrita. O que a tela faz ao Enviar é medido em
+    // `ciclo-cotacao.spec.js`.
     expect(guarda.tentativas(), 'abrir e ler o formulário não deveria escrever nada').toBe(0);
   });
 });

@@ -28,12 +28,14 @@ import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
  * @param {import('../../../pages/AcompanhamentoContratosPage.js').AcompanhamentoContratosPage} contratosPage
  * @param {MedicaoContratoPage} medicao
  * @param {number} maxContratos
- * @returns {Promise<{ resultado: Awaited<ReturnType<MedicaoContratoPage['montarMedicaoComSaldoEmAberto']>> | undefined, contratosTentados: string[] }>}
+ * @returns {Promise<{ resultado: Awaited<ReturnType<MedicaoContratoPage['montarMedicaoComSaldoEmAberto']>> | undefined, contratosTentados: string[], descartes: string[] }>}
  */
 async function encontrarMedicaoComSaldo(contratosPage, medicao, maxContratos = 3) {
   const contratosTentados = /** @type {string[]} */ ([]);
   /** @type {Awaited<ReturnType<MedicaoContratoPage['montarMedicaoComSaldoEmAberto']>> | undefined} */
   let resultado;
+  /** Por que cada contrato/competência foi descartado — entra na mensagem de falha. */
+  const descartes = /** @type {string[]} */ ([]);
 
   for (let i = 0; i < maxContratos; i++) {
     // `medicao.goto()` (chamado no fim da iteração anterior) navega para fora do Portal de
@@ -52,14 +54,21 @@ async function encontrarMedicaoComSaldo(contratosPage, medicao, maxContratos = 3
     await medicao.expectAberto();
     try {
       resultado = await medicao.montarMedicaoComSaldoEmAberto(fornecedor);
-    } catch {
-      // Fornecedor descoberto sem contrato navegável pelo zoom — tenta o próximo.
+    } catch (erro) {
+      // Contrato descartado antes de chegar a tentar competências (ex.: fornecedor sem
+      // contrato navegável pelo zoom). O MOTIVO é guardado e devolvido a quem chamou, para
+      // entrar na mensagem de PRÉ-CONDIÇÃO AUSENTE: engolido, o relatório dizia apenas
+      // "nenhum contrato serviu", sem dizer por quê.
+      descartes.push(`${contrato.contrato}: ${erro instanceof Error ? erro.message : String(erro)}`);
       continue;
     }
     if (resultado.sucesso) break;
+    for (const t of resultado.tentativas) {
+      descartes.push(`${contrato.contrato} / competência ${t.competencia}: ${t.mensagem}`);
+    }
   }
 
-  return { resultado, contratosTentados };
+  return { resultado, contratosTentados, descartes };
 }
 
 test.describe('Faturamento de Contratos — validações e bloqueios', () => {
@@ -96,6 +105,9 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     let mensagemBloqueio = '';
     const contratosTentados = /** @type {string[]} */ ([]);
 
+    /** Por que cada contrato foi descartado antes de chegar a uma competência bloqueada. */
+    const descartes = /** @type {string[]} */ ([]);
+
     for (let c = 0; c < MAX_CONTRATOS && !bloqueioReproduzido; c++) {
       // `medicao.goto()` (chamado no fim da iteração anterior) navega para fora do Portal de
       // Acompanhamento de Contratos — precisa voltar antes de ler a grade de novo.
@@ -115,9 +127,11 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
       try {
         await medicao.selecionarFornecedorPorCodigoLoja(fornecedor.codigo, fornecedor.loja);
         await medicao.selecionarPrimeiroContrato();
-      } catch {
-        // Fornecedor descoberto sem contrato navegável pelo zoom (ver PRÉ-CONDIÇÃO AUSENTE
-        // lançada por `selecionarPrimeiroContrato`) — tenta o próximo contrato descoberto.
+      } catch (erro) {
+        // Contrato descartado por não ser navegável pelo zoom (ver PRÉ-CONDIÇÃO AUSENTE
+        // lançada por `selecionarPrimeiroContrato`) — tenta o próximo contrato descoberto,
+        // guardando o motivo para a mensagem final em vez de engoli-lo.
+        descartes.push(`${contrato.contrato}: ${erro instanceof Error ? erro.message : String(erro)}`);
         continue;
       }
       const competencias = await medicao.listarCompetencias();
@@ -147,7 +161,7 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
         'PRÉ-CONDIÇÃO AUSENTE: nenhuma competência bloqueada (sem saldo/revisão pendente) foi ' +
           `encontrada entre os contratos vigentes tentados (${contratosTentados.join(', ')}) — ` +
           'isto NÃO é defeito do produto sob teste; todas as competências amostradas tinham ' +
-          'saldo em aberto no momento desta execução.',
+          `saldo em aberto no momento desta execução. Contratos descartados antes disso: ${JSON.stringify(descartes)}`,
       );
     }
 
@@ -190,10 +204,15 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     // parte das execuções — depende de timing do backend, não é garantido a cada chamada),
     // isso reforça a prova de que o bloqueio é de ETAPA, não de ausência de dado: o campo de
     // quantidade existe, só que oculto dentro do painel.
-    const quantidadeNoDom = await inputsQuantidade.count();
-    if (quantidadeNoDom > 0) {
-      await expect(inputsQuantidade.first()).toBeHidden();
-    }
+    // Incondicional de propósito: `filter({ visible: true })` cobre os dois casos de uma vez —
+    // se o Protheus ainda não populou os itens, a contagem é 0 e a afirmação continua verdadeira;
+    // se populou, nenhum campo pode estar visível. A forma condicional (`if (count > 0)`) é
+    // proibida pela skill: um teste que só valida quando o dado aparece passa sem provar nada
+    // justamente nas execuções em que o backend foi mais lento.
+    await expect(
+      inputsQuantidade.filter({ visible: true }),
+      'nenhum campo de quantidade pode estar alcançável antes da etapa "Realizar Medição do Contrato"',
+    ).toHaveCount(0);
 
     // Sem o campo alcançável, não há como lançar quantidade acima do saldo — e, coerentemente,
     // nenhuma medição foi enviada por este teste.

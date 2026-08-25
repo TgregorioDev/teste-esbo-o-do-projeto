@@ -242,3 +242,66 @@ Os dois que sobram são reais: `.exe` aceito, e a Lixeira que leva minutos para 
 > ⚠️ Ao medir cobertura ou contar vermelhos, **use o reporter JSON**. Raspar a saída do reporter
 > `line` com `grep`/`sort -u` produziu, nesta mesma sessão, dois números errados seguidos.
 
+## Depois da varredura de falsos vermelhos — 25/08/2026, 17:30–17:48
+
+Três agentes investigaram, em arquivos disjuntos, os 10 vermelhos que reprovavam **sem
+veredito** (timeout de locator, sem mensagem de domínio). Resultado da suíte inteira depois das
+correções:
+
+| | Testes | Verde | Vermelho | antes |
+|---|---|---|---|---|
+| Execução padrão | 143 | 108 | 35 | 106/37 |
+| `@destrutivo` | 34 | 21 | 13 | 17/17 |
+| **Total** | **177** | **129** | **48** | **123/54** |
+
+**O número que importa não é o 129 — é o zero:** dos 48 vermelhos, **nenhum** reprova por
+timeout opaco. Todos trazem mensagem de domínio dizendo o que o produto fez de errado, ou
+`PRÉ-CONDIÇÃO AUSENTE` nomeando o que falta no ambiente. São 44 defeitos de produto e 4 de
+massa/infraestrutura.
+
+### O que era problema NOSSO (e não defeito)
+
+| Causa raiz | Onde batia |
+|---|---|
+| **Listagens paginam por cursor, `rows=15`, ordem CRESCENTE** — o registro recém-criado tem o maior id e fica fora do lote renderizado. `totalpages`/`totalrecords` não são o total | "Minhas Solicitações" (2 testes) e "Tarefas a concluir" (1). Escondia um vermelho legítimo de D-01 |
+| **Grade do GED pagina em 30 por Descrição** — o documento caía na página 1 ou 2 conforme a inicial sorteada pelo faker, daí parecer aleatório | `CT-GED-02-H`, e a 2ª assertion de `CT-GED-02-S1` podia dar falso verde |
+| **`afterEach` esperava a grade antes de sair da pasta ruim** — pasta corrente inválida responde 200 e não renderiza grade nenhuma | os 4 testes de GED, com `columnheader` estourando |
+| **`expectAberto()` devolvia antes de o formulário montar** — `blockUI` ainda cobrindo o alvo | 3 testes de Compras |
+| **Lock de upload solto cedo demais** — liberava no clique em Confirmar, com o `POST saveNewItem` em voo | `CT-GED-04-H` |
+| **Guarda de escrita abortava o POST cuja RESPOSTA produz o diálogo de erro** | `CT-DEL-01-S1` |
+| **`try/catch` engolindo o motivo de cada contrato descartado** | mensagem de `PRÉ-CONDIÇÃO AUSENTE` saía como `Tentativas: []` |
+| **Espera fixa escondendo falha mecânica** — clique interceptado por tooltip virava exceção engolida e reaparecia como "nenhum contrato tem saldo" | `CT-FAT-01-H` (virou verde de verdade, ~35s) |
+
+### Duas coisas que a suíte documentava ERRADO
+
+**D-11 não existe como estava escrito.** Medido isolando os datasets: só `getBranches` fora → 1
+alerta; só `getItensPlanilha` fora → 1 alerta; os dois fora → 2 alertas, um por falha. Não há
+duplicação de renderização. O defeito real é o **rótulo**: a falha dos itens da planilha é
+anunciada como *"Erro ao buscar dados da filial"*, então com o Protheus fora os dois ficam
+idênticos. O teste antigo derrubava os dois datasets e exigia um alerta — reprovava medindo o
+próprio cenário.
+
+**A "indexação lenta da Lixeira" foi refutada.** Estava registrada como comportamento do
+ambiente; corrigidos os problemas reais, o ciclo publicar → excluir → achar → restaurar →
+reencontrar fechou **verde em 5/5**, dentro do orçamento que já existia, sem aumentar timeout.
+
+### Defeito de produto novo, achado por rodar os destrutivos
+
+**Fail-open no formulário clássico de SC:** enquanto a montagem não termina (overlay `blockUI` na
+tela), o clique em Enviar **não é validado** — o Fluig dispara `POST .../workflowView/send` e
+cria a SC de um formulário vazio. Medido em 2 de 9 cargas **sem concorrência**, e de forma
+persistente quando `ds_protheus_getMatriculaTitular_rest` responde 500
+(`WFLYEJB0054: Failed to marshal EJB parameters`).
+
+### Higiene de suíte adotada
+
+- `utils/exclusividade.js` — lock entre workers para a área de upload do Fluig
+  (`/volume/wdk-data/upload/<login>/`), que é **um diretório por usuário** e é compartilhada
+  entre o publicador do GED e o anexo da SC. Nome único nos dois pontos
+  (`fluig-upload-staging`): nomes diferentes reintroduzem a colisão. Dar nome de arquivo único
+  **não** resolve — a disputa é pelo diretório.
+- `utils/central-tarefas-paginacao.js` — a varredura paginada, compartilhada pelas duas
+  listagens, para as duas não divergirem.
+- Ao rodar agentes em paralelo, use `--output=/tmp/pw-<n>`: uma execução limpa `test-results/`
+  e leva os traces de quem estiver no meio de uma investigação.
+

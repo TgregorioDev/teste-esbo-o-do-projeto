@@ -82,7 +82,7 @@ Há também o endpoint de busca **`GET /api/public/ecm/dataset/search?datasetId=
 | Defeito | Onde | O que se observa |
 |---|---|---|
 | **D-08** | grade de contratos | situação truncada: `Finali`, `Paralisa`, `Sol.Finali`, `Cancel.` (só *Vigente* sai inteiro) |
-| **D-11** | modal com Protheus fora | o mesmo alerta de erro renderiza **duas vezes**. Cada dataset é chamado **uma** vez — a duplicação é de renderização |
+| **D-11 (revisto em 25/08/2026)** | modal com Protheus fora | A leitura anterior ("o mesmo alerta renderiza duas vezes") estava **errada**. Medido isolando os datasets: só `getBranches` fora → **1** alerta; só `getItensPlanilha` fora → **1** alerta; os dois fora → **2** alertas, um por falha. Não há duplicação. O defeito real é o **rótulo**: a falha dos itens da planilha é anunciada como *"Erro ao buscar dados da filial"*, então com o Protheus fora os dois alertas ficam idênticos e indistinguíveis |
 | **U-01** | `/gestao_ferias`, `/principalprocess` | deep-link/refresh cai em `errorPage/404` |
 | **U-02** | Banco de Horas | `alert()` nativo: *"Existem parâmetros não informado para esse servidor, informe o administrador"*, e em seguida *"Ops! Não foi possivel se comunicar com o Protheus, base offline."* |
 | **U-11** | qualquer página do portal | envia URL e título para `google-analytics.com` (`G-F0FT6D1NQG`) |
@@ -207,7 +207,7 @@ Controles sem nome acessível ou fora da árvore de acessibilidade. Levar ao tim
 - **Interceptar muda o comportamento.** A proteção antiduplo-clique do widget é desabilitar o
   botão; um segundo clique com `force: true` fura a própria proteção sob teste e produz um
   vermelho que é artefato, não defeito. Nunca force o clique que valida uma trava de UI.
-- **Contagem lida cedo demais passa por acidente.** O alerta duplicado (D-11) só existe depois
+- **Contagem lida cedo demais passa por acidente.** A contagem de alertas do modal só é confiável depois
   que o modal termina de abrir; afirmar antes disso dá falso verde.
 - **Estado global mutável não paralela.** Favoritar processo é estado de conta única e
   `describe.serial` não serializa entre repetições do `--repeat-each` — o caso foi removido.

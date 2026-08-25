@@ -1,6 +1,8 @@
 // @ts-check
 import { expect } from '@playwright/test';
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { DocumentosPage } from './DocumentosPage.js';
 import { comExclusividade } from '../utils/exclusividade.js';
 
@@ -18,6 +20,20 @@ import { comExclusividade } from '../utils/exclusividade.js';
  *   aterrissar em qualquer pasta visitada por último por QUALQUER execução que tenha usado esta
  *   conta. Por isso todo teste começa com `irParaRaizGarantido()`, que força a Raiz pelo link do
  *   breadcrumb (sempre presente, independente da pasta atual) em vez de confiar no estado inicial.
+ *
+ * - **A grade pagina em 30 e a massa da pasta cresce a cada execução.** "Meus Documentos" já
+ *   tem 50+ documentos `QA ...` publicados pelas execuções destrutivas anteriores, e a ordenação
+ *   é por Descrição. Um documento recém-publicado **não** aparece necessariamente na página 1:
+ *   depende da inicial que o faker sorteou. Nenhuma assertion sobre "o documento aparece/não
+ *   aparece na pasta" pode olhar só a página corrente — use `irParaPaginaComDocumento`. Isto,
+ *   e não a combinação de suítes que rodam juntas, era a causa de `CT-GED-02-H` reprovar em
+ *   algumas execuções e passar em outras (a inicial muda a cada `FAKER_SEED`).
+ *
+ * - **A ordenação da grade também é lembrada por usuário no servidor.** Clicar num cabeçalho de
+ *   coluna (`sidx=lastModifiedDate&sord=desc`, por exemplo) muda a ordem para TODAS as sessões
+ *   da conta, inclusive em contexto de navegador novo — confirmado em campo. Nenhum teste desta
+ *   suíte clica em cabeçalho; se algum passar a clicar, precisa restaurar a ordem (Descrição,
+ *   ascendente) ao final, ou vai mexer na listagem de todo mundo.
  *
  * - **O modal de publicação (`Novo → Documento avançado`) pode abrir com um rascunho de outra
  *   execução já preenchido** — Descrição e a tabela "Arquivo" às vezes chegam com um arquivo de
@@ -52,14 +68,16 @@ import { comExclusividade } from '../utils/exclusividade.js';
  *   (itens de meses atrás aparecem antes de exclusões do dia). O caminho que funciona é
  *   paginar (`Mostrar 100 registros` + botão "»") até o checkbox `#cb-item-<id>` aparecer.
  *
- * - **Um documento recém-removido demora para ficar visível (e restaurável) na Lixeira** — não
- *   é questão de alguns segundos. Em campo, um item excluído levou mais de 5 minutos de
- *   varredura contínua (releitura da listagem completa a cada tentativa) sem aparecer, enquanto
- *   itens excluídos horas antes na mesma sessão de investigação já apareciam normalmente. Isso
- *   aponta para algum processamento assíncrono/periódico por trás da indexação da Lixeira, não
- *   para uma janela curta de consistência eventual. `restaurarDaLixeira` tenta por um tempo
- *   limitado e razoável (não minutos) — se o ambiente não indexar a exclusão dentro desse prazo,
- *   o método falha explicitamente, e isso é o resultado esperado hoje: ver o relatório da suíte.
+ * - **A indexação da Lixeira NÃO é o problema que se suspeitava (medido em 25/08/2026).** A nota
+ *   anterior dizia que um documento recém-removido levava mais de 5 minutos para aparecer na
+ *   Lixeira e que `CT-GED-05-H` reprovar na restauração era o esperado. Remedido depois de
+ *   corrigir a paginação da grade e o clique no paginador da Lixeira: o item removido apareceu e
+ *   foi restaurado **dentro do orçamento de 90s** do `toPass` em **5 execuções seguidas**
+ *   (3× `--repeat-each` com 4 workers + 2 execuções junto com fiscal/juridico/notificacoes),
+ *   com o teste inteiro levando 64–84s. O que reprovava era nosso: (1) o documento publicado
+ *   caía na página 2 da grade e a pré-condição não o via; (2) o clique em `button[data-nav-next]`
+ *   acontecia sob o overlay do blockUI e morria em `intercepts pointer events` / `detached`.
+ *   A busca textual da Lixeira continua não servindo — a varredura por paginação, sim.
  */
 export class DocumentosGedPage extends DocumentosPage {
   /** @param {import('@playwright/test').Page} page */
@@ -91,13 +109,55 @@ export class DocumentosGedPage extends DocumentosPage {
   }
 
   /**
-   * Pré-condição de todo teste desta suíte: força a Raiz pelo breadcrumb, nunca confia que
-   * `goto()` aterrissou lá — a conta lembra a última pasta navegada, por usuário, no servidor.
+   * Posiciona a grade na página em que o documento está — e NÃO afirma nada: quem chama faz a
+   * assertion (para que a mensagem de falha continue sendo a do caso de teste).
+   *
+   * Por que existe (medido em 25/08/2026): a grade do ECM **pagina em 30 itens** e ordena por
+   * Descrição. "Meus Documentos" já acumula 50+ documentos `QA ...` das execuções destrutivas,
+   * então o documento recém-publicado cai na página 1 ou na 2 **conforme a inicial do nome
+   * sorteado pelo faker** — foi exatamente isso que fez `CT-GED-02-H` reprovar de forma
+   * aparentemente aleatória ("QA documento Sabonete ..." ficou depois de "QA documento Mouse ..."
+   * e nunca esteve na página 1) e fez a pré-condição de `CT-GED-05-H` reprovar em outra execução.
+   * Não é defeito do produto e não tem relação com quais outras suítes rodam junto: é a massa da
+   * pasta crescendo a cada execução.
+   *
+   * Cada tentativa recarrega a pasta antes de varrer. O recarregamento não é cosmético: ao
+   * publicar, o ECM dispara sozinho um `GET navigation/content/<pasta>?page=1` e, se esse
+   * refresh chegar depois de a varredura ter avançado de página, a grade volta para a página 1
+   * e a linha já encontrada vira "element was detached from the DOM" no clique seguinte
+   * (medido: `excluirDocumento` morreu assim marcando um checkbox que estava visível).
+   * Recarregar antes de varrer elimina qualquer refresh pendente.
+   *
+   * Para assertion NEGATIVA ("não deve estar lá") use `tentativas: 1`: não há o que esperar
+   * aparecer, e a varredura só precisa cobrir todas as páginas uma vez.
+   *
+   * @param {string} descricao
+   * @param {{ tentativas?: number, maxPaginas?: number }} [opcoes]
    */
-  async irParaRaizGarantido() {
-    await this.goto();
-    await this.expectCarregada();
-    await this.voltarParaRaiz();
+  async irParaPaginaComDocumento(descricao, { tentativas = 4, maxPaginas = 20 } = {}) {
+    for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
+      // Recarrega SEMPRE: garante página 1, sem refresh pendente do ECM para chegar depois e
+      // desfazer a paginação feita aqui.
+      await this.recarregarPastaAtual();
+      // 100 por página é o maior valor que o seletor oferece; com ele o paginador do jqGrid
+      // (que é `<td>` e sofre com sobreposição de CSS) quase nunca precisa ser acionado.
+      await this.alterarResultadosPorPagina(100);
+
+      for (let pagina = 1; pagina <= maxPaginas; pagina++) {
+        await this.aguardarGradeOciosa();
+        if (await this.localizarLinha(descricao).count()) return;
+        if (!(await this.temProximaPagina())) break;
+
+        if (pagina === maxPaginas) {
+          throw new Error(
+            `A varredura da pasta parou em ${maxPaginas} páginas de 100 itens e ainda havia ` +
+              `páginas para ver — higienize a massa "QA" da pasta antes de concluir qualquer ` +
+              `coisa sobre "${descricao}".`,
+          );
+        }
+        await this.irParaProximaPagina();
+      }
+    }
   }
 
   /**
@@ -143,15 +203,34 @@ export class DocumentosGedPage extends DocumentosPage {
    * `antesDeConfirmar`, se informado, roda depois da Descrição preenchida e antes do clique em
    * Confirmar — é o gancho usado para configurar a aba "Aprovação" antes de publicar.
    *
-   * @param {{ descricao: string, caminhoArquivo: string, antesDeConfirmar?: () => Promise<void> }} dados
+   * `esperaPublicacao` (padrão `true`) mantém o lock até o publicador FECHAR. Só passe `false`
+   * no caso em que o fechamento do publicador é parte do que está sendo testado (o cenário de
+   * extensão bloqueada): exigir o fechamento ali transformaria em vermelho um eventual conserto
+   * do produto, em que o modal legitimamente continuaria aberto exibindo o erro.
+   *
+   * @param {{ descricao: string, caminhoArquivo: string, antesDeConfirmar?: () => Promise<void>, esperaPublicacao?: boolean }} dados
    */
-  async enviarDocumento({ descricao, caminhoArquivo, antesDeConfirmar }) {
+  async enviarDocumento({ descricao, caminhoArquivo, antesDeConfirmar, esperaPublicacao = true }) {
     // A área de upload temporária do GED é do USUÁRIO no servidor, não da aba — dois testes
     // publicando ao mesmo tempo com a mesma conta enxergam a tabela de arquivos um do outro, e
     // `limparArquivosResiduais` de um apaga o arquivo do outro. Ver `utils/exclusividade.js`.
-    return comExclusividade('ged-upload', () =>
-      this.publicarDocumento({ descricao, caminhoArquivo, antesDeConfirmar }),
-    );
+    //
+    // O lock precisa cobrir também a ESPERA pelo fim da publicação, não só o preenchimento do
+    // formulário: o clique em Confirmar apenas dispara `POST documentPublisher/saveNewItem`, e
+    // enquanto essa requisição está em voo a área de staging ainda está em uso. Soltar o lock
+    // no clique (como estava) deixava o próximo worker limpar a tabela de arquivos por baixo de
+    // uma publicação em andamento — medido: o publicador do primeiro ficava aberto para sempre
+    // ("o publicador de documento não fechou") numa repetição de `CT-GED-04-H` com 4 workers.
+    return comExclusividade('fluig-upload-staging', async () => {
+      await this.publicarDocumento({ descricao, caminhoArquivo, antesDeConfirmar });
+      if (!esperaPublicacao) return;
+      // 60s (e não os 30s padrão) porque a publicação com aprovação configurada grava mais e
+      // porque o lock enfileira workers: é o prazo da OPERAÇÃO, não folga para esconder falha.
+      await expect(
+        this.modal.descricao,
+        'o publicador de documento não fechou — a publicação não concluiu',
+      ).toBeHidden({ timeout: 60_000 });
+    });
   }
 
   /**
@@ -161,9 +240,24 @@ export class DocumentosGedPage extends DocumentosPage {
    */
   async publicarDocumento({ descricao, caminhoArquivo, antesDeConfirmar }) {
     await this.abrirNovoDocumentoAvancado();
-    const nomeArquivo = path.basename(caminhoArquivo);
 
-    await this.modal.inputArquivo.setInputFiles(caminhoArquivo);
+    // NOME FÍSICO ÚNICO por chamada, mesma técnica de `FormularioSolicitacaoCompraPage
+    // .anexarDocumentacaoPublica` — e pelo mesmo motivo: a área de staging é do USUÁRIO no
+    // servidor e recebe arquivo de outras suítes. Medido em campo: uma execução com
+    // `--repeat-each=3` encontrou na tabela do publicador uma linha
+    // `QA-07406ce1-documento-valido.pdf` (resíduo do anexo de uma SC de Compras) ao lado da
+    // linha `documento-valido.pdf` desta chamada; como o nome de uma é SUBSTRING do da outra,
+    // o filtro por texto resolvia para DUAS linhas (`strict mode violation` no rádio
+    // "Principal") e `limparArquivosResiduais` protegia o resíduo em vez de removê-lo. Com nome
+    // único não há substring compartilhada: a linha desta chamada é inequívoca.
+    const extensao = path.extname(caminhoArquivo);
+    const nomeArquivo = `QA-${randomUUID().slice(0, 8)}-${path.basename(caminhoArquivo, extensao)}${extensao}`;
+
+    await this.modal.inputArquivo.setInputFiles({
+      name: nomeArquivo,
+      mimeType: extensao.toLowerCase() === '.pdf' ? 'application/pdf' : 'application/octet-stream',
+      buffer: await readFile(caminhoArquivo),
+    });
     const linhaDoArquivo = this.modal.tabelaArquivos.locator('tbody tr', { hasText: nomeArquivo });
     await expect(linhaDoArquivo).toBeVisible();
     await this.limparArquivosResiduais(nomeArquivo);
@@ -254,15 +348,23 @@ export class DocumentosGedPage extends DocumentosPage {
    */
   async aprovarDocumento(descricaoDocumento) {
     const descElemento = this.page.getByText(descricaoDocumento, { exact: true });
+    const cartao = descElemento.locator('xpath=ancestor::*[.//button[normalize-space()="Aprovar"]][1]');
+    const modalAprovacao = this.page.getByRole('heading', { name: 'Aprovar documento', exact: true });
+
+    // Uma tentativa = reabrir a categoria (é o que traz dado novo do servidor) + achar o cartão
+    // + clicar + confirmar que o modal abriu. Achar o cartão numa tentativa e clicar nele em
+    // outra não funciona: a lista se re-renderiza sozinha e o cartão inteiro é trocado por
+    // baixo do clique (medido: `element was detached from the DOM, retrying` até estourar o
+    // timeout, e também o botão "Aprovar" sumindo depois da descrição já ter sido vista). A
+    // condição de parada é o modal de aprovação ter aberto — nunca um clique com `force`, que
+    // só provaria que o handler existe.
     await expect(async () => {
       await this.abrirDocumentosAAprovar();
       await expect(descElemento).toBeVisible({ timeout: 5_000 });
-    }).toPass({ timeout: 75_000, intervals: [5_000, 8_000, 12_000] });
+      await cartao.getByRole('button', { name: 'Aprovar', exact: true }).click({ timeout: 10_000 });
+      await expect(modalAprovacao).toBeVisible({ timeout: 10_000 });
+    }).toPass({ timeout: 90_000, intervals: [3_000, 5_000, 8_000] });
 
-    const cartao = descElemento.locator('xpath=ancestor::*[.//button[normalize-space()="Aprovar"]][1]');
-    await cartao.getByRole('button', { name: 'Aprovar', exact: true }).click();
-
-    await expect(this.page.getByRole('heading', { name: 'Aprovar documento', exact: true })).toBeVisible();
     await this.page.getByRole('button', { name: 'Confirmar', exact: true }).click();
     await expect(this.page.getByText('Documento aprovado com sucesso', { exact: false })).toBeVisible();
   }
@@ -278,6 +380,7 @@ export class DocumentosGedPage extends DocumentosPage {
     const documentId = await linha.getAttribute('id');
     if (!documentId) throw new Error(`Não foi possível ler o documentId da linha de "${descricao}".`);
 
+    await this.aguardarGradeOciosa();
     await linha.locator('input[type="checkbox"]').check();
     await this.acoes.remover.click();
 
@@ -286,6 +389,17 @@ export class DocumentosGedPage extends DocumentosPage {
 
     await expect(this.localizarLinha(descricao)).toHaveCount(0);
     return documentId;
+  }
+
+  /**
+   * A Lixeira cobre a lista com o overlay do jQuery blockUI (`div.blockUI.blockOverlay`) a cada
+   * troca de página. Clicar durante o overlay é o que produzia, em campo,
+   * `locator.click: Timeout 45000ms ... <div class="blockUI blockOverlay"> intercepts pointer
+   * events` seguido de `element was detached from the DOM` — a página trocava por baixo do
+   * clique. Esperar o overlay sair é condição observável, não espera cega.
+   */
+  async aguardarLixeiraOciosa() {
+    await expect(this.page.locator('div.blockUI.blockOverlay')).toHaveCount(0);
   }
 
   /** Navega para a Lixeira e confirma que carregou. */
@@ -316,13 +430,13 @@ export class DocumentosGedPage extends DocumentosPage {
    * suíte):
    *  1. A busca textual da Lixeira (por Descrição, Código ou qualquer outro campo) não
    *     encontra um item comprovadamente presente — não é usada aqui.
-   *  2. Um documento recém-removido **não aparece de imediato** na listagem paginada (mesmo na
-   *     última página) — a indexação observada em campo passa de vários minutos (ver cabeçalho
-   *     da classe). A varredura por páginas roda dentro de `toPass`, que a repete (recarregando
-   *     a Lixeira do zero a cada tentativa) por um tempo limitado — condição observável, não
-   *     `waitForTimeout`, mas **não** um `toPass` de minutos: se o ambiente não indexar a
-   *     exclusão dentro do prazo configurado, o método falha, e essa falha é o resultado
-   *     esperado hoje, não um bug de sincronização do teste.
+   *  2. Um documento recém-removido pode não aparecer na PRIMEIRA leitura da listagem — daí a
+   *     varredura por páginas rodar dentro de `toPass`, que a repete recarregando a Lixeira do
+   *     zero a cada tentativa (condição observável, nunca `waitForTimeout`). O orçamento de 90s
+   *     é suficiente: remedido em 25/08/2026, 5 execuções seguidas encontraram e restauraram o
+   *     item dentro dele. A suspeita anterior de "indexação de vários minutos" não se confirmou
+   *     — o que reprovava era o clique no paginador sob o overlay do blockUI (ver
+   *     `aguardarLixeiraOciosa`) e a página errada da grade do ECM na pré-condição do teste.
    * @param {string} documentId
    * @param {{ maxPaginas?: number }} [opcoes]
    */
@@ -334,12 +448,17 @@ export class DocumentosGedPage extends DocumentosPage {
       await this.ampliarPaginaDaLixeira();
 
       for (let pagina = 1; pagina <= maxPaginas; pagina++) {
+        await this.aguardarLixeiraOciosa();
         if (await checkbox.count()) break;
         const proxima = this.lixeira.botaoProximaPagina;
-        const habilitada = await proxima.isEnabled().catch(() => false);
-        if (!habilitada) break;
+        // Aqui o desabilitado é o atributo `disabled` de verdade (diferente do paginador
+        // jqGrid da grade de navegação, que usa classe CSS) — `isDisabled()` responde certo.
+        if (await proxima.isDisabled()) break;
+        const resposta = this.page.waitForResponse((r) =>
+          r.url().includes('/ecm/api/rest/ecm/recycleBin/getRecycledDocuments'),
+        );
         await proxima.click();
-        await expect(proxima).toBeEnabled({ timeout: 20_000 });
+        await resposta;
       }
 
       expect(

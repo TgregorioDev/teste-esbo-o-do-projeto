@@ -237,22 +237,19 @@ async function criarSolicitacaoCompletaEEnviar(page, overridesMassa = {}) {
   await formulario.expectAberto();
   await preencherFormularioCompleto(page, formulario, massa);
 
-  await formulario.frame.getByRole('button', { name: 'Anexar documentação Pública' }).click();
-  const dialogAnexo = formulario.frame.getByRole('dialog').filter({ hasText: 'Informe o nome do arquivo' });
-  await dialogAnexo.waitFor({ state: 'visible' });
-  await dialogAnexo.getByRole('textbox').fill(`${massa.justificativa} - anexo`);
-
-  const chooserPromise = page.waitForEvent('filechooser');
-  await dialogAnexo.getByRole('button', { name: 'Selecionar anexo' }).click();
-  const chooser = await chooserPromise;
-  await chooser.setFiles(ANEXO_VALIDO);
-
-  await formulario.enviar();
-
-  const linkConfirmacao = page.getByRole('link', { name: /^\d+$/ }).first();
-  await expect(linkConfirmacao).toBeVisible({ timeout: 30_000 });
-  const numeroProcesso = await linkConfirmacao.innerText();
-  expect(numeroProcesso, 'número da solicitação deveria ser numérico').toMatch(/^\d+$/);
+  // Anexo + Enviar + confirmação acontecem sob exclusividade: a área de upload do Fluig é um
+  // diretório por USUÁRIO no servidor (`/volume/wdk-data/upload/TOTVS-FS/`), disputado por
+  // qualquer outro teste que anexe ao mesmo tempo. Ver `anexarEnviarEConfirmar`.
+  //
+  // O retorno do Enviar é lido pelo Page Object, que distingue os três desfechos possíveis
+  // (confirmação, recusa com a mensagem exibida ao usuário, ou silêncio do ambiente). Antes
+  // isto era um `toBeVisible` sobre o link numérico: quando o Fluig recusava o envio, a
+  // falha saía como "link não visível" — sem dizer o que a tela mostrou, num passo que só
+  // estava montando massa para o cenário de verdade.
+  const numeroProcesso = await formulario.anexarEnviarEConfirmar(
+    ANEXO_VALIDO,
+    `${massa.justificativa} - anexo`,
+  );
 
   return { massa, numeroProcesso };
 }
@@ -283,10 +280,20 @@ async function criarEAssumirNoPoolGestorImediato(page, overridesMassa = {}) {
       await expect(central.botaoAssumirTarefaAtual()).toBeVisible({ timeout: 5_000 });
     }).toPass({ timeout: 180_000, intervals: [10_000, 15_000, 20_000, 30_000] });
   } catch (erroDePoll) {
+    // Diagnóstico, não assertion: sem ele as duas causas possíveis (BPMN lento x tarefa
+    // assumida por outro teste) produzem exatamente a mesma mensagem, e a distinção só sai
+    // reabrindo a tela à mão. `tests/e2e/tarefas/assumir-tarefa-pool.spec.js` assume "a
+    // PRIMEIRA tarefa disponível" de um grupo do pool, sem identificá-la por número — se
+    // rodar em paralelo com este teste, pode assumir justamente esta SC, e aí "Assumir
+    // tarefa" some da tela porque a tarefa já é do usuário, não porque não chegou.
+    const atividadeObservada = await central.lerNomeAtividadeAtual().catch(() => '(não foi possível ler)');
     throw new Error(
       `PRÉ-CONDIÇÃO AUSENTE: a SC #${numeroProcesso}, criada por este teste, não ficou assumível ` +
         '("Assumir tarefa") na Validação do Gestor dentro de 180s. Isto NÃO é defeito do produto ' +
-        'confirmado — pode ser lentidão do BPMN acima do observado em campo (~76s). ' +
+        'confirmado — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ' +
+        'ter sido assumida por outra execução concorrente que pega a primeira do pool ' +
+        '(tests/e2e/tarefas/assumir-tarefa-pool.spec.js). ' +
+        `Atividade atual observada na tela de detalhe: "${atividadeObservada}". ` +
         `Causa do polling: ${erroDePoll instanceof Error ? erroDePoll.message : erroDePoll}`,
     );
   }

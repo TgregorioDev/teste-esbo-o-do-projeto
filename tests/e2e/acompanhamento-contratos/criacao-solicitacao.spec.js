@@ -141,14 +141,33 @@ test.describe('Confirmar cria a SC e ela deveria chegar ao solicitante (CT-ACC-0
 
     // A listagem pode levar alguns segundos para indexar uma SC recém-criada — poll limitado
     // e observável, nunca `waitForTimeout` fixo, distingue "ainda não indexou" de "nunca vai
-    // aparecer" (o que aqui SERIA um sintoma ainda mais grave de D-01).
+    // aparecer" (o que aqui SERIA um sintoma ainda mais grave de D-01). Ver
+    // `MinhasSolicitacoesPage`: a varredura é DECRESCENTE por `processInstanceId` porque a
+    // listagem pagina por cursor e, em ordem crescente, uma SC recém-criada nunca é alcançada —
+    // foi o que produzia `Received: null` aqui sem dizer a causa.
+    // O resultado é guardado numa propriedade (e não numa variável solta) porque o `checkJs`
+    // não enxerga a atribuição feita dentro do callback do poll e estreitaria o tipo para `never`.
+    /** @type {{ solicitacao: Record<string, any> | null }} */
+    const achado = { solicitacao: null };
     await expect
-      .poll(() => minhasSolicitacoes.localizarPorProcessInstanceId(processInstanceId), {
-        message: `SC ${processInstanceId} deveria aparecer em "Solicitadas por mim"`,
-        timeout: 60_000,
-      })
-      .toBeTruthy();
-    const registro = await minhasSolicitacoes.localizarPorProcessInstanceId(processInstanceId);
+      .poll(
+        async () => {
+          achado.solicitacao = await minhasSolicitacoes.localizarPorProcessInstanceId(processInstanceId);
+          return achado.solicitacao !== null;
+        },
+        {
+        message:
+          `SC ${processInstanceId} não apareceu em "Solicitadas por mim" em 60s. A varredura é ` +
+          'decrescente por `processInstanceId` (a SC recém-criada é a de maior id, então estaria ' +
+          'nas primeiras páginas) e só devolve `null` depois de a listagem já ter descido abaixo ' +
+          'desse id — logo, não é limitação de paginação da leitura. Resta: ou o servidor ainda ' +
+          'não indexou a solicitação, ou ela não foi registrada como solicitação DESTE usuário',
+          timeout: 60_000,
+        },
+      )
+      .toBe(true);
+
+    const registro = achado.solicitacao;
 
     expect(
       registro?.colleagueName,
