@@ -468,21 +468,29 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
    * assertion, ou o defeito vira regra documentada).
    *
    * Preenche TUDO (identificação, filial, produto, quantidade/valor, rateio 100% — mesmo
-   * conteúdo de CT-CMP-01-H) e aciona Enviar sem anexar nenhum documento. O esperado seria
-   * um bloqueio de validação, como acontece para "sem produto" e "rateio < 100%"
-   * (`validacoes-solicitacao-compras.spec.js`).
+   * conteúdo de CT-CMP-01-H) e aciona Enviar sem anexar nenhum documento. O catálogo pede
+   * "bloqueio informando o anexo obrigatório", como já acontece para "sem produto" e
+   * "rateio < 100%" (`validacoes-solicitacao-compras.spec.js`).
    *
-   * O que se OBSERVA: nenhum diálogo de erro aparece. A tela navega direto para uma
-   * confirmação de sucesso ("Acessar solicitação #112217", número que incrementa a cada
-   * execução) — mas `capturarEnvioSolicitacao`/a guarda de escrita confirmam
-   * `tentativas() === 0`: NENHUMA requisição saiu para `process-management`. Ou seja, o
-   * Fluig mostra uma tela de "solicitação criada com sucesso" com um número específico
-   * **sem nunca ter contatado o servidor** — o usuário é levado a crer que uma SC existe
-   * quando nenhuma foi criada. É uma variação mais grave do sintoma já catalogado como D-01
-   * ("falha na transferência é anunciada como iniciado com sucesso"): aqui não há sequer
-   * tentativa de transferência.
+   * O que se OBSERVA (remedido em 25/08/2026, em janela de ambiente estável): não há
+   * validação de cliente nenhuma. O clique dispara
+   * `POST /ecm/api/rest/ecm/workflowView/send` — a criação da SC — sem anexo e sem aviso.
+   * Só não chega ao servidor porque este teste bloqueia toda escrita no host.
+   *
+   * ⚠️ CORREÇÃO de leitura anterior. A suíte documentava "tela de sucesso fabricada, sem
+   * nunca contatar o servidor (`tentativas() === 0`)". Medindo com a escrita liberada
+   * (ver o teste `@destrutivo` logo abaixo), a realidade é outra e pior: a requisição sai,
+   * o servidor responde **HTTP 200 com `processInstanceId` real** e a SC é criada sem o
+   * anexo obrigatório. A confirmação não é fabricada — é verdadeira. Ninguém valida o anexo:
+   * nem o cliente, nem o servidor.
+   *
+   * A mudez da tela sob este teste (botão Enviar some, nenhum diálogo) é **artefato da
+   * guarda**, que aborta a requisição — não é comportamento do produto. Por isso o oráculo
+   * aqui é a tentativa de escrita, nunca o que a tela mostra depois.
    */
-  test('deve bloquear o envio quando nenhum anexo é informado', async ({ page }) => {
+  test('CT-CMP-02-S4 — deve bloquear o envio quando nenhum anexo é informado', async ({
+    page,
+  }) => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);
     const formulario = new FormularioSolicitacaoCompraPage(page);
     const massa = criarProdutoCompra();
@@ -494,29 +502,114 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
     await formulario.enviar();
 
     const linkConfirmacao = page.getByText(/Acessar solicitação #\d+/);
-    const indice = await esperarQualquerVisivel(
-      [formulario.dialogErro, formulario.dialogAtencao, linkConfirmacao],
-      30_000,
-    );
+    const dialogDeValidacao = formulario.dialogErro.or(formulario.dialogAtencao);
 
-    if (indice === 2) {
-      test.info().annotations.push({
-        type: 'defeito-confirmado',
-        description: `Enviar sem anexo NÃO foi bloqueado: navegou para "${await linkConfirmacao.innerText()}" sem nenhuma requisição real ao servidor (guarda.tentativas()=${guarda.tentativas()}).`,
-      });
-    }
+    // Sincronização por condição observável, nunca por tempo: espera até o formulário
+    // resolver o envio de ALGUMA forma — diálogo de validação (o esperado), confirmação
+    // fabricada (defeito anterior) ou tentativa de escrita (defeito atual). Sem esta espera,
+    // ler `tentativas()` logo após o clique passaria por acidente, antes de a requisição
+    // sair (a armadilha de "contagem lida cedo demais" registrada no CLAUDE.md).
+    await expect
+      .poll(
+        async () =>
+          guarda.tentativas() > 0 ||
+          (await dialogDeValidacao.isVisible().catch(() => false)) ||
+          (await linkConfirmacao.isVisible().catch(() => false)),
+        {
+          timeout: 30_000,
+          message:
+            'após Enviar sem anexo, o formulário não deu retorno nenhum ao usuário em 30s: ' +
+            'nenhum diálogo de validação, nenhuma confirmação e nenhuma requisição de escrita',
+        },
+      )
+      .toBe(true);
 
-    // Nenhuma escrita real deveria mesmo acontecer sem anexo — isto CONTINUA verdadeiro e
-    // não é o defeito (o defeito é a tela de sucesso fabricada sem escrita nenhuma).
-    expect(guarda.tentativas(), 'sem anexo, nada deveria ter sido enviado ao servidor').toBe(0);
-
-    // Comportamento esperado: um diálogo de validação bloqueia o envio (índice 0 ou 1),
-    // igual aos demais campos obrigatórios. Reprova de propósito enquanto a tela mostrar a
-    // falsa confirmação de sucesso (índice 2) em vez de um aviso.
+    // O defeito atual: sem anexo, o cliente nem valida — dispara a criação da SC.
     expect(
-      indice,
-      'o envio sem anexo deveria ser bloqueado por um diálogo de validação — em vez disso, o Fluig navegou para uma tela de "sucesso" com número de solicitação sem nunca ter escrito no servidor (ver anotação "defeito-confirmado")',
-    ).toBeLessThan(2);
+      guarda.tentativas(),
+      'defeito: o envio sem anexo deveria ser recusado no cliente, sem gerar nenhuma ' +
+        `requisição de escrita — em vez disso tentou: ${guarda.urls().join(' | ')}`,
+    ).toBe(0);
+
+    // Nenhuma confirmação de criação deve aparecer para um envio sem o anexo obrigatório —
+    // vale tanto se a tela a fabricar quanto se a SC for criada de fato (é o que acontece
+    // com a escrita liberada, ver o teste `@destrutivo` abaixo).
+    await expect(
+      linkConfirmacao,
+      'defeito: o Fluig confirmou a criação de uma solicitação enviada sem o anexo obrigatório',
+    ).toBeHidden();
+
+    // O comportamento que o catálogo exige.
+    await expect(
+      dialogDeValidacao,
+      'esperado por CT-CMP-02-S4: um diálogo informando que o anexo é obrigatório',
+    ).toBeVisible();
+  });
+
+  /**
+   * CT-CMP-02-S4 (lado servidor) — a SC não deve ser CRIADA sem o anexo obrigatório.
+   *
+   * ⚠️ DEFEITO CONFIRMADO EM CAMPO — reprova DE PROPÓSITO. O teste acima prova que o cliente
+   * não bloqueia; este prova que o servidor também não. Medido em 25/08/2026: o
+   * `POST /ecm/api/rest/ecm/workflowView/send` responde **HTTP 200** com
+   * `processInstanceId` real (na medição, #112445) e a Solicitação de Compras nasce sem
+   * nenhum documento anexado.
+   *
+   * `@destrutivo` porque escreve de verdade: cada execução cria uma SC na base. Roda sob
+   * demanda (`INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo`) e a massa sai
+   * de `criarProdutoCompra()`, com prefixo `QA` e sufixo único, rastreável na base.
+   *
+   * Por que existe além do teste acima: "o cliente não valida" e "o servidor aceita" são
+   * defeitos de gravidade diferente. Se amanhã só o cliente for corrigido, este teste
+   * continua vermelho e mantém visível que a regra não está no servidor — que é onde ela
+   * precisa estar (o cliente é contornável).
+   */
+  test('CT-CMP-02-S4 @destrutivo — o servidor não deve criar a SC quando falta o anexo obrigatório', async ({
+    page,
+  }) => {
+    /** @type {{ status: number, instanceId: unknown, url: string }[]} */
+    const criacoes = [];
+    page.on('response', async (resposta) => {
+      if (resposta.request().method() === 'GET') return;
+      if (!/workflowView\/send|process-management/.test(resposta.url())) return;
+      const corpo = await resposta.text().catch(() => '');
+      /** @type {unknown} */
+      let instanceId = null;
+      try {
+        instanceId = JSON.parse(corpo)?.content?.processInstanceId ?? null;
+      } catch {
+        // Corpo não-JSON não carrega id de instância; classificar como "sem id" é a leitura
+        // correta aqui, e o status da resposta continua sendo afirmado abaixo.
+        instanceId = null;
+      }
+      criacoes.push({ status: resposta.status(), instanceId, url: resposta.url() });
+    });
+
+    const formulario = new FormularioSolicitacaoCompraPage(page);
+    const massa = criarProdutoCompra();
+
+    await formulario.goto();
+    await formulario.expectAberto();
+    await preencherFormularioCompleto(page, formulario, massa);
+
+    await formulario.enviar();
+
+    // Sincronização por condição observável: espera o servidor responder ao envio.
+    await expect
+      .poll(() => criacoes.length, {
+        timeout: 60_000,
+        message: 'o envio sem anexo não produziu nenhuma resposta do servidor em 60s',
+      })
+      .toBeGreaterThan(0);
+
+    const criadas = criacoes.filter((c) => c.status < 400 && c.instanceId != null);
+
+    expect(
+      criadas.map((c) => `#${c.instanceId} via ${new URL(c.url).pathname}`),
+      'defeito: o servidor aceitou e CRIOU a Solicitação de Compras sem o anexo obrigatório — ' +
+        'a regra do catálogo (CT-CMP-02-S4) não está implementada nem no cliente nem no ' +
+        'servidor, e o cliente é contornável',
+    ).toEqual([]);
   });
 });
 

@@ -1,7 +1,9 @@
 # Cobertura por caso de teste
 
-Gerado por medição sobre `docs/catalogo-casos.md` e `tests/**/*.spec.js`. A ligação é o **ID
-citado no título do teste** — é o que torna esta contagem auditável em vez de declarada.
+> Gerado por `node scripts/gerar-cobertura.mjs`. **Não edite à mão** — regenere.
+
+Medido sobre `docs/catalogo-casos.md` e `tests/**/*.spec.js`. A ligação é o **ID citado no
+título do teste** — é o que torna esta contagem auditável em vez de declarada.
 
 | | |
 |---|---|
@@ -9,14 +11,9 @@ citado no título do teste** — é o que torna esta contagem auditável em vez 
 | Com teste na suíte | **132** (81%) |
 | Sem teste | **31** |
 
-Para reproduzir a medição:
-
-```bash
-grep -ohE 'CT-[A-Z0-9]{2,4}-[0-9]{2}-(H|S[0-9])' docs/catalogo-casos.md | sort -u > /tmp/cat
-grep -rhoE 'CT-[A-Z0-9]{2,4}-[0-9]{2}-(H|S[0-9])' tests/            | sort -u > /tmp/impl
-comm -23 /tmp/cat /tmp/impl    # casos sem teste
-comm -13 /tmp/cat /tmp/impl    # ids citados na suíte que não existem no catálogo (deve ser vazio)
-```
+O script falha se um teste citar um ID que não existe no catálogo, ou se um caso ficar sem teste
+e sem motivo declarado. As duas checagens existem para que a matriz não possa envelhecer em
+silêncio.
 
 **⬜ não significa "esquecido"** — cada linha vazia traz o motivo medido. E **✅ não significa
 sempre "fluxo executado"**: parte dos casos está coberta como *bloqueio documentado* — o teste

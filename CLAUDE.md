@@ -191,11 +191,14 @@ de 163 casos, versionado aqui) e sobre `tests/`. Hoje: **132 cobertos, 31 sem te
 lacuna com motivo.
 
 A ligação é o **ID no título do teste**. Ao implementar um caso do catálogo, **cite o ID** — sem
-isso a cobertura existe mas não é auditável, e o caso aparece como lacuna. Regenerar a matriz
-depois de adicionar casos:
+isso a cobertura existe mas não é auditável, e o caso aparece como lacuna. Depois de adicionar
+casos, regenere:
 
 ```bash
-grep -ohE 'CT-[A-Z0-9]{2,4}-[0-9]{2}-(H|S[0-9])' docs/catalogo-casos.md | sort -u > /tmp/cat
-grep -rhoE 'CT-[A-Z0-9]{2,4}-[0-9]{2}-(H|S[0-9])' tests/            | sort -u > /tmp/impl
-comm -13 /tmp/cat /tmp/impl   # deve ser vazio: id citado que não existe no catálogo
+npm run cobertura
 ```
+
+O script reprova em dois casos, de propósito: **ID citado que não existe no catálogo** (ou o
+teste está errado, ou o caso precisa entrar no catálogo) e **caso sem teste e sem motivo
+declarado** em `scripts/gerar-cobertura.mjs`. Lacuna sem motivo é indistinguível de esquecimento,
+e uma matriz que envelhece em silêncio é pior que nenhuma.

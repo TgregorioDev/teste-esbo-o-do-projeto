@@ -9,15 +9,15 @@ Números **medidos**, não estimados. Relatório JSON do Playwright, ambiente re
 |---|---|
 | Specs | 65 |
 | Testes na execução padrão | 143 (57 arquivos) |
-| Testes `@destrutivo`, sob demanda | 33 (16 arquivos) |
-| **Total** | **176** |
+| Testes `@destrutivo`, sob demanda | 34 (16 arquivos) |
+| **Total** | **177** |
 | Page Objects | 36 |
 
 Conferir os totais:
 
 ```bash
 npx playwright test --list | tail -1                                    # 143
-INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo --list | tail -1   # 33
+INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo --list | tail -1   # 34
 ```
 
 ## Determinismo — CERTIFICADO do lado do teste
@@ -98,23 +98,44 @@ plano. As cinco fatias somam exatamente os 143 testes da execução padrão.
 |---|---|---|
 | **Defeito do produto**, já catalogado no README | 35 | vermelho intencional: o teste afirma o comportamento esperado e o produto não entrega |
 | **`PRÉ-CONDIÇÃO AUSENTE`** — massa que não existe na base | 3 | `CT-FAT-02-S2` (nenhuma competência bloqueada), `CT-COT` e `CT-NEG` (nenhuma cotação — consequência de D-01) |
-| **Sem veredito** | 1 | envio sem anexo — ver abaixo |
+| **Sem veredito na hora** | 1 | envio sem anexo — **resolvido depois**, ver abaixo |
 | **Não reproduzido** | 1 | `CT-DEL-01-H` — ver abaixo |
 
-### O vermelho sem veredito
+### O vermelho sem veredito — RESOLVIDO em 25/08/2026, 11:45–12:20
 
-`ciclo-solicitacao-compras.spec.js › deve bloquear o envio quando nenhum anexo é informado`
-reprova **de propósito**, mas mudou o *modo* de reprovar. O teste está escrito contra três
-desfechos possíveis (diálogo de erro, diálogo de atenção, tela de sucesso) e hoje **nenhum
-dos três aparece** — o Enviar sem anexo não produz retorno nenhum. Foi confirmado
-determinístico (3/3 em repetição isolada), então não é flakiness.
+`CT-CMP-02-S4` (envio sem anexo) ficou sem veredito na medição das 11h porque o ambiente
+degradou no meio da apuração. Remedido em janela estável, e o resultado **corrige uma leitura
+anterior da suíte**.
 
-O que impediu fechar o diagnóstico: **o ambiente degradou às ~11:30**, no meio da apuração.
-Testes vizinhos do mesmo arquivo que estavam verdes às 11:05 passaram a estourar
-`locator.click: Timeout 45000ms`. Enquanto o Protheus oscila, não é possível separar "o produto
-mudou de comportamento" de "a tela não terminou de montar". **Fica aberto para remedir em janela
-estável** — a assertion não deve ser reescrita antes disso, sob pena de codificar instabilidade
-de ambiente como se fosse regra de produto.
+**O que a suíte documentava:** o Fluig mostrava uma tela de "Acessar solicitação #NNNNN"
+fabricada, com `tentativas() === 0` — ou seja, uma confirmação de sucesso *sem nunca contatar o
+servidor*.
+
+**O que foi medido, com a escrita liberada:** a requisição sai
+(`POST /ecm/api/rest/ecm/workflowView/send`), o servidor responde **HTTP 200 com
+`processInstanceId` real** e **a Solicitação de Compras é criada sem o anexo obrigatório**. A
+confirmação não era fabricada — era verdadeira. O defeito é mais grave do que o registrado:
+não há validação do anexo **nem no cliente nem no servidor**.
+
+A mudez da tela que aparecia sob o teste (botão Enviar some, nenhum diálogo) era **artefato da
+guarda de escrita**, que aborta a requisição — não comportamento do produto. Foi exatamente a
+armadilha já registrada no CLAUDE.md ("interceptar muda o comportamento da aplicação"), e é por
+isso que o oráculo do teste passou a ser a tentativa de escrita, nunca o que a tela mostra
+depois.
+
+**O que mudou na suíte:**
+
+| | |
+|---|---|
+| `CT-CMP-02-S4` (cliente) | reescrito: falha nomeando o endpoint disparado, em vez de `Nenhum dos 3 locator(s)…`. Determinístico 3/3 |
+| `CT-CMP-02-S4 @destrutivo` (servidor) | **novo** — prova que o servidor cria a SC sem anexo. Vermelho de propósito |
+
+Os dois existem porque "o cliente não valida" e "o servidor aceita" têm gravidades diferentes:
+se amanhã só o cliente for corrigido, o teste de servidor segue vermelho e mantém visível que a
+regra não está onde precisa estar — o cliente é contornável.
+
+Custo desta apuração: **três Solicitações de Compra criadas na base** (observadas: #112445 e
+#112447), com massa de `criarProdutoCompra()` — prefixo `QA` e sufixo único, rastreáveis.
 
 ### Um vermelho não reproduzido
 

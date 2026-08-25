@@ -19,6 +19,7 @@ npm test                      # suíte completa
 npm run test:auth             # só autenticação
 npm run typecheck             # verificação estática
 npm run report                # relatório HTML da última execução
+npm run cobertura             # regenera docs/cobertura.md a partir do catálogo e da suíte
 ```
 
 Reproduzir exatamente a massa de uma execução que falhou (a seed fica anexada ao relatório):
@@ -83,15 +84,16 @@ por processo de negócio que esta suíte está proibida de executar. Já tudo qu
 | Casos no catálogo (`docs/catalogo-casos.md`) | **163** |
 | Casos com teste na suíte | **132** (81%) |
 | Casos sem nenhum teste | **31** — cada um com motivo medido |
-| Testes que **criam ou editam** registro (`@destrutivo`) | **33** |
+| Testes que **criam ou editam** registro (`@destrutivo`) | **34** |
 
-**Última execução medida (25/08/2026): 143 testes, 103 verdes, 40 vermelhos** — dos 40, 35 são
-defeitos do produto listados abaixo, 3 são `PRÉ-CONDIÇÃO AUSENTE` por falta de massa, 1 ficou sem
-veredito e 1 não reproduziu. Detalhe e classificação em
+**Última execução medida (25/08/2026): 143 testes, 103 verdes, 40 vermelhos** — dos 40, 36 são
+defeitos do produto listados abaixo, 3 são `PRÉ-CONDIÇÃO AUSENTE` por falta de massa e 1 não
+reproduziu. Detalhe e classificação em
 [`docs/estado-do-gate.md`](docs/estado-do-gate.md).
 
-**A matriz caso a caso está em [`docs/cobertura.md`](docs/cobertura.md)**, com o comando que
-reproduz a contagem. A ligação é o **ID citado no título do teste** (`CT-AUT-01-H — deve
+**A matriz caso a caso está em [`docs/cobertura.md`](docs/cobertura.md)**, gerada por
+`npm run cobertura` — que falha se um teste citar um ID inexistente no catálogo, ou se um caso
+ficar sem teste e sem motivo declarado. A ligação é o **ID citado no título do teste** (`CT-AUT-01-H — deve
 autenticar…`) — é o que torna o número auditável em vez de declarado. Ao trazer um caso do
 catálogo, cite o ID: sem isso ele aparece como lacuna (aconteceu com nove deles).
 
@@ -120,6 +122,7 @@ não o entrega. Ajustá-los para passar documentaria o defeito como se fosse reg
 | **D-11** 🟡 | modal com Protheus fora | o mesmo alerta renderiza duas vezes (cada dataset é chamado uma vez — a duplicação é de renderização) |
 | **CT-ACC-04-S5** 🟡 | payload da SC | `nrContrato` de um contrato com revisão, filial e itens de outro; sem revalidação no servidor |
 | **classeValor vazio** 🟠 | payload da SC | `tbprod_classeValor` em branco, com `classeOrca` e `classificacao` preenchidos ao lado — pode travar a Validação Orçamentária |
+| **CT-CMP-02-S4** 🔴 | SC sem anexo | o anexo obrigatório não é validado **nem no cliente nem no servidor**: o Enviar dispara `POST /ecm/api/rest/ecm/workflowView/send` e o servidor responde 200 com `processInstanceId` real — a SC nasce sem documento |
 | **U-01** 🟠 | deep-link SPA | `/principalprocess` e `/gestao_ferias` caem em `errorPage/404` |
 | **U-02** 🔴 | banco de horas | `alert()` nativo de configuração de servidor exposto ao usuário final |
 | **U-11** 🟠 | qualquer página | 2 requisições por carga para `google-analytics.com` — validar com Privacidade/LGPD |
