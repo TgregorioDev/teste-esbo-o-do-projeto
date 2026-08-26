@@ -66,10 +66,26 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
 
         if (testInfo.status === testInfo.expectedStatus) return;
 
-        await testInfo.attach('screenshot-da-falha', {
-          body: await page.screenshot({ fullPage: true }),
-          contentType: 'image/png',
-        });
+        // Spec de API (`tests/api/**`) nunca navega: a `page` existe, mas segue em
+        // `about:blank`. Capturar aí produz um PNG branco de ~4 KB que ocupa espaço no
+        // relatório e, pior, PARECE evidência — quem abre pensa que a tela ficou em branco no
+        // momento da falha. Nesses casos o que vale é a resposta do endpoint, que os próprios
+        // testes de API já colocam na mensagem da assertion.
+        const semTela = page.url() === 'about:blank' || page.url() === '';
+        if (semTela) {
+          await testInfo.attach('sem-captura', {
+            body:
+              'Este teste não dirige interface — a página nunca saiu de about:blank. ' +
+              'Screenshot omitida de propósito: a evidência aqui é a resposta do endpoint, ' +
+              'que está na mensagem da falha.',
+            contentType: 'text/plain',
+          });
+        } else {
+          await testInfo.attach('screenshot-da-falha', {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png',
+          });
+        }
 
         await testInfo.attach('contexto-da-falha', {
           body: JSON.stringify(

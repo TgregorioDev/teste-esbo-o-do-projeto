@@ -130,12 +130,27 @@ for (const suite of relatorio.suites ?? []) {
       }
     }
 
-    const capturaConfig = pegar('screenshot');
-    const capturaFixture = pegar('screenshot-da-falha');
-    const capturas = [capturaConfig, capturaFixture]
-      .filter(Boolean)
-      .map((a) => ({ nome: a.name, b64: anexoBase64(a) }))
-      .filter((c) => c.b64);
+    // Spec que não dirige interface (tests/api/**) nunca sai de `about:blank`: a captura sai
+    // branca e PARECE evidência — quem abre o relatório conclui que a tela ficou em branco no
+    // momento da falha. O sinal é semântico, não o tamanho do arquivo: a URL registrada pela
+    // fixture. A partir de 26/08/2026 a fixture já nem captura nesses casos; a checagem aqui
+    // cobre relatórios gerados de execuções anteriores.
+    const semTela = !contexto?.url || contexto.url === 'about:blank';
+
+    // As duas capturas são recortes diferentes (a do config é a viewport, a da fixture é
+    // `fullPage`) — mas em teste que falha antes de rolar a página elas saem idênticas, e aí
+    // mostrar as duas só empurra a evidência real para baixo.
+    const vistas = new Set();
+    const capturas = semTela
+      ? []
+      : [pegar('screenshot'), pegar('screenshot-da-falha')]
+          .filter(Boolean)
+          .map((a) => ({ nome: a.name, b64: anexoBase64(a) }))
+          .filter((c) => {
+            if (!c.b64 || vistas.has(c.b64)) return false;
+            vistas.add(c.b64);
+            return true;
+          });
 
     falhas.push({
       id: spec.id,
@@ -153,6 +168,7 @@ for (const suite of relatorio.suites ?? []) {
       codigo: trechoDeCodigo(resultado.error?.location ?? resultado.errorLocation),
       contexto,
       capturas,
+      semTela,
       ariaSnapshot: pegar('error-context') ? anexoTexto(pegar('error-context')) : null,
       temTrace: Boolean(pegar('trace')),
       temVideo: Boolean(pegar('video')),
@@ -208,6 +224,17 @@ const cartao = (f, i) => `
           `<span class="linha${l.destaque ? ' alvo' : ''}"><span class="num">${l.n}</span>${escapar(l.texto)}</span>`,
       )
       .join('\n')}</pre>
+  </section>`
+      : ''
+  }
+
+  ${
+    f.semTela
+      ? `<section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">Este teste não dirige interface — é uma verificação de API, e a página nunca
+    saiu de <code>about:blank</code>. Não há captura porque não haveria o que capturar: a
+    evidência aqui é a resposta do endpoint, que está na mensagem da falha acima.</p>
   </section>`
       : ''
   }
