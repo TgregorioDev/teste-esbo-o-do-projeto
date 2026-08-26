@@ -8,3 +8,5 @@ blob-report/
 .env
 .env.test
 .env.local
+blob-slices/
+blob-todos/

@@ -111,6 +111,29 @@ entrada, tarefas assumidas do pool, aprovações e reprovações do Gestor, docu
 upload e exclusão, favoritos, delegação de fiscais, medição de contrato e processos de Contencioso.
 Todos com prefixo `QA` e sufixo único, rastreáveis na base.
 
+## Relatório de falhas
+
+Depois de uma execução completa, `relatorio-falhas.html` reúne **todos os testes que reprovaram**
+numa página só: o caso, a falha, a classificação da causa e as evidências.
+
+```bash
+# 1. execute em fatias, gravando blobs (evita estourar o tempo de uma execução única)
+PLAYWRIGHT_BLOB_OUTPUT_DIR=blob-slices/s1 npx playwright test tests/api tests/e2e/auth --reporter=blob
+# … demais fatias …
+
+# 2. junte tudo e gere os dois relatórios
+mkdir -p blob-todos && cp blob-slices/*/*.zip blob-todos/
+npx playwright merge-reports --reporter=html ./blob-todos && npx playwright show-report
+npx playwright merge-reports --reporter=json ./blob-todos > /tmp/merged.json
+node scripts/relatorio-falhas.mjs /tmp/merged.json
+```
+
+Cada cartão traz, além do que o relatório nativo mostra: o **trecho de código** que falhou (o JSON
+do Playwright traz só a localização), o **aria-snapshot** da tela no instante do erro, o *call log*
+do que foi esperado, o contexto capturado pela fixture e o **comando de reprodução com a seed**.
+Screenshots vão embutidos, então o arquivo abre sozinho. Trace e vídeo ficam no relatório nativo,
+linkado por teste.
+
 ## Testes vermelhos por defeito real do produto
 
 Estes reprovam **de propósito**. Estão escritos contra o comportamento esperado e o produto hoje

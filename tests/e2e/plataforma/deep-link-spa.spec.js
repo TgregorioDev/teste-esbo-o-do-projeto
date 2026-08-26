@@ -21,9 +21,19 @@ test.describe('Deep-link de rota SPA (defeito U-01)', () => {
     }) => {
       await page.goto(rota, { waitUntil: 'domcontentloaded' });
 
-      await expect(page).not.toHaveURL(/errorPage\/404/);
+      // As mensagens abaixo existem para que o relatório de falhas se explique sozinho: sem
+      // elas, este vermelho aparece como um `expect(page).not.toHaveURL failed` cru, e quem lê
+      // não descobre nem qual rota nem qual defeito — precisa abrir o trace para entender.
+      await expect(
+        page,
+        `defeito U-01: abrir ${rota} diretamente pela URL cai em errorPage/404. A rota existe e ` +
+          'funciona quando alcançada pela navegação interna da SPA — o que quebra é o ' +
+          'deep-link, então link salvo, favorito e compartilhamento de endereço não funcionam',
+      ).not.toHaveURL(/errorPage\/404/);
+
       await expect(
         page.getByRole('heading', { name: 'Recurso não foi encontrado.', exact: true }),
+        `defeito U-01: ${rota} renderizou a página de "Recurso não foi encontrado."`,
       ).toHaveCount(0);
     });
   }
