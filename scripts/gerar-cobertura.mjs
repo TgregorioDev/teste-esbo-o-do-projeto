@@ -22,7 +22,7 @@ const MOTIVOS = {
   'CT-ACC-03-S1': 'exige contrato com filial órfã (código sem cadastro); não existe na base',
   'CT-ACC-03-S3': 'contrato de 177 itens congela o navegador (D-03) e derruba o worker',
   'CT-ACC-06-S2':
-    'exige contrato de serviço com `CNB_QUANT`, `CNB_QTDORI` e `CNB_QTRDRZ` todos nulos, para exercitar o fallback 1; não localizado na base',
+    '**a massa EXISTE** (corrigido em 26/08/2026): o contrato 000000000000001, de serviços, tem dois itens com `CNB_QUANT`, `CNB_QTDORI` e `CNB_QTRDRZ` vazios, e o payload prova o fallback — eles saem com `tbprod_quantidade: "1"` enquanto os reais saem com `"29"`. Não está implementado, e não por falta de massa. Ver o cabeçalho de CT-ACC-06-S1 em `criacao-solicitacao.spec.js`',
   'CT-ACC-08-H':
     'depende de abrir a SC já criada — D-01 a deixa atribuída a `consumerkeycompras`, fora do alcance da conta da automação',
   'CT-ADM-01-S2': 'reprocessar atividade de integração exige perfil de administrador',
@@ -77,12 +77,50 @@ for (const [, id, titulo] of catalogo.matchAll(
   titulos[id] = titulo.trim();
 }
 
+/**
+ * Coleta os IDs citados nos TÍTULOS de `test(...)` e `test.describe(...)` — nunca no corpo do
+ * arquivo inteiro.
+ *
+ * ⚠️ A versão anterior lia o arquivo todo, e por isso um ID mencionado num COMENTÁRIO contava
+ * como cobertura. Descoberto em 26/08/2026 ao explicar o defeito de CT-ACC-06-S1: citar
+ * `CT-ACC-06-S2` numa explicação fez a cobertura "subir" de 132 para 133 sem nenhum teste novo.
+ * Cobertura que sobe porque alguém escreveu um comentário não é cobertura — é ruído.
+ */
+const RE_TITULO = /(?:^|[\s.])(?:test|it)(?:\.\w+)*\s*\(\s*(['"`])([\s\S]*?)\1/g;
+const RE_PRIMEIRO_TESTE = /(?:^|[\s.])(?:test|it)(?:\.\w+)*\s*\(/;
+
+/**
+ * Um caso conta como coberto quando seu ID aparece em algum arquivo de teste.
+ *
+ * ⚠️ **O que essa regra NÃO garante.** Ela é deliberadamente frouxa: a suíte declara cobertura
+ * de três formas legítimas — no título do teste (preferida), no cabeçalho do arquivo
+ * ("este spec cobre CT-X, CT-Y") e dentro da mensagem de uma assertion que documenta um caso
+ * bloqueado. Exigir só o título derrubaria 40 casos que estão cobertos de verdade.
+ *
+ * O preço é que uma menção em PROSA também conta. Isso já mordeu: ao explicar o defeito de
+ * CT-ACC-06-S1, bastou citar o ID do caso irmão num comentário para a cobertura ir de 132 para
+ * 133 sem nenhum teste novo. Por isso o relatório lista abaixo, explicitamente, os IDs que
+ * aparecem SÓ em prosa no meio do arquivo — são os candidatos a falso positivo, e ficam
+ * auditáveis em vez de escondidos no total.
+ */
 /** @type {Map<string, Set<string>>} */
 const onde = new Map();
+/** IDs cuja única menção é prosa fora de título e de cabeçalho. */
+const soEmProsa = new Set();
+
 for (const caminho of specs('tests')) {
-  for (const id of new Set(readFileSync(caminho, 'utf8').match(RE) ?? [])) {
+  const fonte = readFileSync(caminho, 'utf8');
+  const corte = fonte.search(RE_PRIMEIRO_TESTE);
+  const cabecalho = corte === -1 ? fonte : fonte.slice(0, corte);
+  const declarados = new Set(
+    [cabecalho, ...[...fonte.matchAll(RE_TITULO)].map((m) => m[2])].flatMap((t) => t.match(RE) ?? []),
+  );
+
+  for (const id of new Set(fonte.match(RE) ?? [])) {
     if (!onde.has(id)) onde.set(id, new Set());
     onde.get(id)?.add(caminho.replace('tests/', ''));
+    if (!declarados.has(id)) soEmProsa.add(id);
+    else soEmProsa.delete(id);
   }
 }
 
@@ -111,6 +149,14 @@ const linhas = casos.map((id) => {
     : `| \`${id}\` | ${titulo} | ⬜ | ${MOTIVOS[id]} |`;
 });
 
+const avisoProsa = soEmProsa.size
+  ? '> ⚠️ **Contados por menção em prosa**, fora de título e de cabeçalho: ' +
+    [...soEmProsa].sort().map((id) => '`' + id + '`').join(', ') +
+    '.\n> São candidatos a falso positivo — confirme que existe teste para cada um, ou leve o ' +
+    'ID para o título do teste.'
+  : '> Nenhum caso é contado por menção em prosa: todo ID coberto aparece em título de teste ou ' +
+    'no cabeçalho do arquivo.';
+
 const doc = `# Cobertura por caso de teste
 
 > Gerado por \`node scripts/gerar-cobertura.mjs\`. **Não edite à mão** — regenere.
@@ -127,6 +173,8 @@ título do teste** — é o que torna esta contagem auditável em vez de declara
 O script falha se um teste citar um ID que não existe no catálogo, ou se um caso ficar sem teste
 e sem motivo declarado. As duas checagens existem para que a matriz não possa envelhecer em
 silêncio.
+
+${avisoProsa}
 
 **⬜ não significa "esquecido"** — cada linha vazia traz o motivo medido. E **✅ não significa
 sempre "fluxo executado"**: parte dos casos está coberta como *bloqueio documentado* — o teste

@@ -83,7 +83,7 @@ por processo de negócio que esta suíte está proibida de executar. Já tudo qu
 | | |
 |---|---|
 | Casos no catálogo (`docs/catalogo-casos.md`) | **163** |
-| Casos com teste na suíte | **132** (81%) |
+| Casos com teste na suíte | **132** (81%) — 6 contados por menção em prosa, listados na matriz |
 | Casos sem nenhum teste | **31** — cada um com motivo medido |
 | Testes que **criam ou editam** registro (`@destrutivo`) | **34** — rodam na execução padrão |
 
@@ -240,7 +240,8 @@ Lista completa, com o motivo de cada um, em [`docs/cobertura.md`](docs/cobertura
 | **Protocolo fora do navegador** | 2 — `CT-GED-03-H/S1`, check-out por `dav4:`/WebDAV |
 | **Sem caixa postal** para o token de redefinição | 2 — `CT-AUT-03-S3/S4` |
 | **Processo inoperante ou dataset inativo no produto** | 4 — `CT-JUR-05-H`, `CT-OCO-01-H/S1`, `CT-FAT-03-S1` |
-| **Massa inexistente na base** | 2 — `CT-ACC-03-S1` (filial órfã), `CT-ACC-06-S2` (serviço sem quantidade) |
+| **Massa inexistente na base** | 1 — `CT-ACC-03-S1` (filial órfã) |
+| **Não implementado, sem impedimento** | 1 — `CT-ACC-06-S2`: a massa existe (contrato 000000000000001), só falta escrever o teste |
 | **Consequência de defeito aberto** | 2 — `CT-ACC-03-S3` (D-03 congela o navegador), `CT-ACC-08-H` (D-01 prende a SC) |
 | **Não observável sem admin** | 1 — `CT-NOT-01-S1`, datasets de canal invocados server-side |
 

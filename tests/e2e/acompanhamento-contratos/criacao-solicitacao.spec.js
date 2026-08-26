@@ -183,7 +183,39 @@ test.describe('Confirmar cria a SC e ela deveria chegar ao solicitante (CT-ACC-0
   });
 });
 
-test.describe('Itens zerados descartados silenciosamente (CT-ACC-06-S1)', () => {
+/**
+ * CT-ACC-06-S1 — item sem quantidade e sem valor no contrato não pode virar item da SC.
+ *
+ * ⚠️ O nome deste bloco já foi "Itens zerados descartados silenciosamente", herdado do
+ * enunciado do catálogo. Ele descrevia o comportamento que a revisão de código previa
+ * (regra R8: `quant <= 0 || vlunit <= 0` é filtrado e os itens são reindexados) — e dizia o
+ * OPOSTO do que a assertion cobra. Medido em campo em 26/08/2026, o descarte não acontece, e
+ * a causa é a interação de duas regras do próprio serviço:
+ *
+ *   R9 `resolveQuant` resolve a quantidade em cascata:
+ *       CNB_QUANT → CNB_QTDORI → CNB_QTRDRZ → **fallback 1 (serviços)**
+ *   R8 filtra depois: `quant > 0 && vlunit > 0`
+ *
+ * No contrato 000000000000001 (SERVICOS TELEFONICOS, portanto serviços) há dois itens com
+ * CNB_QUANT, CNB_QTDORI e CNB_QTRDRZ **todos vazios** e CNB_VLUNIT = 1. A R9 fabrica
+ * quantidade 1 para eles; a R8 então vê `1 > 0 && 1 > 0` e os aprova. O filtro nunca chega a
+ * descartar nada — a cascata preencheu o campo que o filtro iria reprovar.
+ *
+ * Evidência direta, capturando o payload do start sem criar SC: dos 7 itens enviados, cinco
+ * vão com `tbprod_quantidade: "29"` (os reais) e **dois com `"1"`** (os fabricados).
+ *
+ * Por que é defeito e não detalhe: a SC chega ao comprador com duas linhas do mesmo produto
+ * sem valor no contrato e com quantidade inventada. Ou alguém percebe e apaga à mão, ou o
+ * pedido nasce com linhas que não existem no contrato de origem. Some-se a D-02 (valor
+ * replicado por item) e nem a contagem de linhas nem os valores da SC batem com o contrato.
+ *
+ * Este é também o caminho do caso irmão do catálogo, o que trata do fallback do `resolveQuant`
+ * (seção CT-ACC-06 em `docs/catalogo-casos.md`): a massa para exercitá-lo EXISTE, é este
+ * contrato. O ID não é citado aqui de propósito — `scripts/gerar-cobertura.mjs` conta menção em
+ * arquivo de teste como cobertura, e escrevê-lo faria a matriz declarar coberto um caso que não
+ * tem teste. O motivo está registrado em MOTIVOS, no próprio script.
+ */
+test.describe('Item sem quantidade e sem valor no contrato não pode virar item da SC (CT-ACC-06-S1)', () => {
   test('@destrutivo item de quantidade/valor zerado no contrato não deveria virar item extra na SC criada', async ({
     page,
     contratosPage,
@@ -243,10 +275,12 @@ test.describe('Itens zerados descartados silenciosamente (CT-ACC-06-S1)', () => 
 
     expect(
       itensNaSC.length,
-      `contrato ${alvo.contrato.contrato}: Protheus tem ${alvo.itens.length} itens ` +
-        `(${itensValidos.length} válidos + ${itensZerados.length} zerados), mas a SC criada trouxe ` +
-        `${itensNaSC.length} — item(ns) zerado(s) deveria(m) ter sido descartado(s), não repassado(s) ` +
-        'como item da solicitação',
+      `contrato ${alvo.contrato.contrato}: o Protheus tem ${alvo.itens.length} itens ` +
+        `(${itensValidos.length} com quantidade e valor + ${itensZerados.length} sem nenhum dos dois), ` +
+        `mas a SC nasceu com ${itensNaSC.length}. Os itens sem quantidade não foram descartados: o ` +
+        'serviço FABRICA quantidade para eles (cascata `resolveQuant` → fallback 1 em contrato de ' +
+        `serviços) e com isso eles passam pelo filtro \`quant > 0\`. Quantidades enviadas: ` +
+        `${JSON.stringify(itensNaSC.map((i) => i.tbprod_quantidade))}`,
     ).toBe(itensValidos.length);
   });
 });

@@ -15,6 +15,9 @@ O script falha se um teste citar um ID que não existe no catálogo, ou se um ca
 e sem motivo declarado. As duas checagens existem para que a matriz não possa envelhecer em
 silêncio.
 
+> ⚠️ **Contados por menção em prosa**, fora de título e de cabeçalho: `CT-CMP-02-S2`, `CT-CMP-02-S4`, `CT-DEP-01-H`, `CT-DEP-02-S1`, `CT-SEG-05-S1`, `CT-SUB-01-H`.
+> São candidatos a falso positivo — confirme que existe teste para cada um, ou leve o ID para o título do teste.
+
 **⬜ não significa "esquecido"** — cada linha vazia traz o motivo medido. E **✅ não significa
 sempre "fluxo executado"**: parte dos casos está coberta como *bloqueio documentado* — o teste
 prova que o processo não abre, ou abre e o formulário não monta campo. Esses ficam prontos para
@@ -41,7 +44,7 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-ACC-05-S1` | Falha na transferência deixa a SC com a conta de integração ⚠️ | ✅ | `e2e/acompanhamento-contratos/erros-no-start.spec.js` |
 | `CT-ACC-05-S2` | Erro no start do processo | ✅ | `e2e/acompanhamento-contratos/erros-no-start.spec.js` |
 | `CT-ACC-06-S1` | Itens zerados são descartados silenciosamente 🔎 | ✅ | `e2e/acompanhamento-contratos/criacao-solicitacao.spec.js` · `e2e/acompanhamento-contratos/payload-solicitacao.spec.js` |
-| `CT-ACC-06-S2` | Contrato de serviço sem quantidade | ⬜ | exige contrato de serviço com `CNB_QUANT`, `CNB_QTDORI` e `CNB_QTRDRZ` todos nulos, para exercitar o fallback 1; não localizado na base |
+| `CT-ACC-06-S2` | Contrato de serviço sem quantidade | ⬜ | **a massa EXISTE** (corrigido em 26/08/2026): o contrato 000000000000001, de serviços, tem dois itens com `CNB_QUANT`, `CNB_QTDORI` e `CNB_QTRDRZ` vazios, e o payload prova o fallback — eles saem com `tbprod_quantidade: "1"` enquanto os reais saem com `"29"`. Não está implementado, e não por falta de massa. Ver o cabeçalho de CT-ACC-06-S1 em `criacao-solicitacao.spec.js` |
 | `CT-ACC-07-S1` | Valores fixos no payload da SC 🔎 | ✅ | `e2e/acompanhamento-contratos/payload-solicitacao.spec.js` |
 | `CT-ACC-08-H` | Rastreabilidade contrato ↔ SC | ⬜ | depende de abrir a SC já criada — D-01 a deixa atribuída a `consumerkeycompras`, fora do alcance da conta da automação |
 | `CT-ACC-08-S1` | Máscara monetária não corrompe os valores | ✅ | `e2e/acompanhamento-contratos/payload-solicitacao.spec.js` |
