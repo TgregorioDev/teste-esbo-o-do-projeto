@@ -256,8 +256,26 @@ correções:
 
 **O número que importa não é o 129 — é o zero:** dos 48 vermelhos, **nenhum** reprova por
 timeout opaco. Todos trazem mensagem de domínio dizendo o que o produto fez de errado, ou
-`PRÉ-CONDIÇÃO AUSENTE` nomeando o que falta no ambiente. São 44 defeitos de produto e 4 de
-massa/infraestrutura.
+`PRÉ-CONDIÇÃO AUSENTE` nomeando o que falta.
+
+### Os 4 `PRÉ-CONDIÇÃO AUSENTE`, um a um — três causas diferentes
+
+Agrupá-los como "falta massa" seria impreciso. Só **um** é isso de verdade:
+
+| Teste | Causa real |
+|---|---|
+| `CT-COT` — fila "Controle De Cotações" vazia | **Defeito de produto (D-01)**, não massa. Nenhuma Cotação chega a existir porque toda SC fica presa no marco de Início e nunca alcança o Protheus. Some junto com D-01 |
+| `CT-NEG` — fila "Avaliação de Propostas" vazia | **Mesma causa**: sem Cotação não há proposta para negociar |
+| `CT-FAT-02-S2` — nenhuma competência bloqueada | **Falta de massa, genuína.** Amostra 5 contratos vigentes (153s) e todos tinham saldo em aberto. `Contratos descartados antes disso: []` prova que os 5 foram navegados de verdade — não é falha de mecânica |
+| `atribuicao-comprador` — "Movimentar Solicitação" não renderizou | **Ambiente, transitório.** Reexecutado isolado: **passou** (2,5 min). Não é massa nem defeito |
+
+Ou seja: **2 dos 4 são o D-01 vestido de pré-condição** (e o teste diz isso na própria
+mensagem), 1 é massa que a base não tem hoje, e 1 foi lentidão do ambiente.
+
+Sobre `CT-FAT-02-S2`: alargar a amostra é caro e continua sendo tiro no escuro — cada contrato
+custa ~30s de navegação, e a grade tem ~855. O caminho barato seria consultar o dataset de
+competências direto, em vez de abrir contrato por contrato na UI, e escolher já sabendo qual não
+tem saldo. Fica registrado como melhoria possível, não como defeito.
 
 ### O que era problema NOSSO (e não defeito)
 
