@@ -113,6 +113,45 @@ entrada, tarefas assumidas do pool, aprovações e reprovações do Gestor, docu
 upload e exclusão, favoritos, delegação de fiscais, medição de contrato e processos de Contencioso.
 Todos com prefixo `QA` e sufixo único, rastreáveis na base.
 
+## Limpeza da massa criada
+
+Depois de uma execução, `npm run limpar` **cancela as solicitações que a suíte criou**.
+
+```bash
+npm run limpar:simular   # lista o que faria, sem tocar em nada
+npm run limpar           # cancela o que está no livro-razão desta execução
+
+# acumulado de execuções antigas (varre o servidor pelo carimbo QA)
+node scripts/limpar-massa.mjs --descobrir --desde=2026-08-25
+```
+
+**Roda DEPOIS da coleta de evidências, nunca durante.** Não é `globalTeardown`: o teardown
+nativo corre junto com o fechamento dos reporters, e uma falha de limpeza ali pode derrubar o
+processo antes de trace, vídeo e relatório estarem gravados. A evidência de uma execução vale
+mais que a limpeza dela.
+
+Como funciona: a fixture escreve `test-results/criados.jsonl` no instante da criação — não
+depois, porque o resíduo que mais interessa limpar é o de teste que **morreu no meio**, e esse
+nunca chega ao relatório. O limpador lê esse livro, confirma cada id contra o servidor e
+cancela por `POST /api/public/2.0/workflows/cancelInstances`, em lotes espaçados.
+
+**A trava de segurança:** nada é cancelado sem procedência. No modo `--descobrir`, exige-se o
+carimbo `QA` nos campos do formulário — a base é compartilhada, e cancelar por janela de data
+destruiria trabalho de outras pessoas (medido em 26/08: 402 solicitações abertas na janela, só
+324 eram nossas). No modo livro-razão, aceita-se também registro **sem** carimbo, porque nem
+tudo pode ser carimbado — a medição de contrato não tem um único campo de texto editável — e
+ali a procedência é o próprio livro, escrito pela suíte.
+
+O relatório sai em `limpeza.json`, e a confirmação final é lida **do servidor**, não do retorno
+do endpoint: `successCount` é o que ele diz ter feito; `status: CANCELED` é o que aconteceu.
+
+### O que a limpeza não alcança
+
+Tarefa assumida de pool não tem devolução no Fluig — confirmado por menu, por bundle e pela
+ausência de inverso na API. Anexo de Solicitação de Compra vira documento numa pasta que o
+produto cria por solicitação, e apagá-lo significa mexer na solicitação. Registro de formulário
+e histórico não têm rota de remoção para usuário comum. Detalhes na skill `cassi-fluig-master`.
+
 ## Relatório de falhas
 
 Depois de uma execução completa, `relatorio-falhas.html` reúne **todos os testes que reprovaram**

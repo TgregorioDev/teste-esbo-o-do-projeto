@@ -70,6 +70,26 @@ barrados e, medindo, cinco de seis abrem normalmente.
 
 ---
 
+## Limpeza da massa
+
+`npm run limpar` cancela o que a execução criou. **Sempre depois da coleta de evidências**, num
+passo explícito — nunca em `globalTeardown`, que corre junto com os reporters e poderia derrubar
+o processo antes de trace e relatório fecharem.
+
+- `fixtures/fixtures.js` escreve `test-results/criados.jsonl` a cada teste, lendo as anotações
+  `*-criada`/`*-criado` que os testes destrutivos já produzem. Escrever no instante da criação é
+  o ponto: o resíduo que mais importa é o de teste que morreu no meio, e esse nunca chega ao
+  relatório.
+- `utils/cancelamento-fluig.js` tem o contrato: `POST /api/public/2.0/workflows/cancelInstances`,
+  só cookie, `cancelText` obrigatório, aceita lote. **Sempre via `page.evaluate` + `fetch`** —
+  `page.request` leva 403 do WAF por falta de `User-Agent` e `Referer` de navegador.
+- Procedência é obrigatória: com `--descobrir`, só cancela o que tem carimbo `QA` no formulário;
+  no modo livro-razão, aceita também sem carimbo, porque a medição de contrato não tem campo de
+  texto para carimbar.
+
+Conhecimento de campo sobre o ambiente (cancelamento, catálogo de processos, APIs, o que é
+reversível) está na skill **`cassi-fluig-master`**. Consulte antes de investigar de novo.
+
 ## Arquitetura
 
 ### Dois projetos no `playwright.config.js`

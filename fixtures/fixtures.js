@@ -1,4 +1,5 @@
 // @ts-check
+import { appendFileSync, mkdirSync } from 'node:fs';
 import { test as base, expect } from '@playwright/test';
 import { fakerPT_BR as faker } from '@faker-js/faker';
 import { LoginPage } from '../pages/LoginPage.js';
@@ -63,6 +64,43 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
         testInfo.annotations.push({ type: 'faker-seed', description: String(FAKER_SEED) });
 
         await use(undefined);
+
+        // ── Livro-razão do que este teste criou ────────────────────────────────────────────
+        //
+        // Os testes destrutivos já anotam o que criam (`sc-criada`, `medicao-criada`,
+        // `contencioso-criado`). Aqui essas anotações viram uma linha por registro em
+        // `test-results/criados.jsonl`, que é o que `scripts/limpar-massa.mjs` consome depois
+        // da execução.
+        //
+        // Por que arquivo, e não a anotação sozinha: anotação só existe depois do merge dos
+        // relatórios, e o que mais interessa limpar é justamente o resíduo de teste que MORREU
+        // no meio — esse nunca chega ao relatório. Append funciona entre workers e sobrevive a
+        // processo derrubado.
+        //
+        // Isto REGISTRA, não apaga: a limpeza é passo separado e explícito, para nunca
+        // ameaçar a coleta de evidências.
+        const criados = testInfo.annotations.filter((a) => /criad[ao]/i.test(a.type ?? ''));
+        if (criados.length > 0) {
+          try {
+            mkdirSync('test-results', { recursive: true });
+            const linhas = criados
+              .map((a) =>
+                JSON.stringify({
+                  tipo: 'solicitacao',
+                  id: String(a.description ?? '').trim(),
+                  anotacao: a.type,
+                  teste: testInfo.titlePath.join(' › '),
+                  em: new Date().toISOString(),
+                }),
+              )
+              .join('\n');
+            appendFileSync('test-results/criados.jsonl', linhas + '\n');
+          } catch (erro) {
+            // Falhar aqui derrubaria um teste por causa da CONTABILIDADE dele, o que é pior
+            // que perder uma linha do livro: o registro continua rastreável pelo carimbo `QA`.
+            console.warn(`livro-razão: não foi possível registrar (${String(erro).slice(0, 80)})`);
+          }
+        }
 
         if (testInfo.status === testInfo.expectedStatus) return;
 

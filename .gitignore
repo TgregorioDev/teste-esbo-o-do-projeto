@@ -13,3 +13,5 @@ blob-todos/
 qa-probe-*
 tmp-cancel/
 probe-*.mjs
+limpeza.json
+limpeza-alvos.json
