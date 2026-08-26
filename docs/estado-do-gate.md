@@ -266,16 +266,44 @@ Agrupá-los como "falta massa" seria impreciso. Só **um** é isso de verdade:
 |---|---|
 | `CT-COT` — fila "Controle De Cotações" vazia | **Defeito de produto (D-01)**, não massa. Nenhuma Cotação chega a existir porque toda SC fica presa no marco de Início e nunca alcança o Protheus. Some junto com D-01 |
 | `CT-NEG` — fila "Avaliação de Propostas" vazia | **Mesma causa**: sem Cotação não há proposta para negociar |
-| `CT-FAT-02-S2` — nenhuma competência bloqueada | **Falta de massa, genuína.** Amostra 5 contratos vigentes (153s) e todos tinham saldo em aberto. `Contratos descartados antes disso: []` prova que os 5 foram navegados de verdade — não é falha de mecânica |
+| `CT-FAT-02-S2` — nenhuma competência bloqueada | **Não era massa: era DEFEITO, e o teste não conseguia vê-lo.** Ver abaixo |
 | `atribuicao-comprador` — "Movimentar Solicitação" não renderizou | **Ambiente, transitório.** Reexecutado isolado: **passou** (2,5 min). Não é massa nem defeito |
 
 Ou seja: **2 dos 4 são o D-01 vestido de pré-condição** (e o teste diz isso na própria
 mensagem), 1 é massa que a base não tem hoje, e 1 foi lentidão do ambiente.
 
-Sobre `CT-FAT-02-S2`: alargar a amostra é caro e continua sendo tiro no escuro — cada contrato
-custa ~30s de navegação, e a grade tem ~855. O caminho barato seria consultar o dataset de
-competências direto, em vez de abrir contrato por contrato na UI, e escolher já sabendo qual não
-tem saldo. Fica registrado como melhoria possível, não como defeito.
+### `CT-FAT-02-S2` — a otimização virou achado de defeito (26/08/2026)
+
+A ideia era só reduzir o tempo: consultar os datasets em vez de navegar contrato por contrato.
+Ao capturar os endpoints, apareceu outra coisa.
+
+`GET /api/public/ecm/dataset/search?datasetId=ds_fatcon_get_info_medicoes&filterFields=CNA_CONTRA,
+<contrato>,FILIAL_CONTRATO,<filial>,COMPETENCIA_ESCOLHIDA,<mm-aaaa>,FILIAL_ESCOLHIDA,<filial>`
+responde, para o contrato 000000000000001:
+
+```
+{"content":[{"STATUS":"ERROR","RESPONSE":"… CNTA120_REV:Existe revisão pendente de aprovação
+para este contrato, não é permitido medir contratos em revisão. …"}]}
+```
+
+E a tela, para a MESMA competência, não exibe diálogo nenhum. Confirmado interceptando a
+resposta que o widget recebe (`page.route` + `route.fetch`), não por dedução: o corpo chega com
+`STATUS: ERROR` e o usuário não é avisado. O painel de itens não abre — então nada é medido,
+e por isso o defeito é de aviso, não de integridade.
+
+**Consequência para a leitura anterior:** o teste concluía "nenhuma competência bloqueada
+encontrada" porque o oráculo dele era o **diálogo de erro**. O bloqueio existia em todas as
+competências amostradas; o diálogo é que nunca dispara. Não era falta de massa — era um defeito
+que o teste não enxergava.
+
+**Ganho de tempo, medido:** 153s → **32-39s** (3 de 3 execuções), sendo que a descoberta da
+competência bloqueada custa **0,7s** e a grade de contratos, 8,2s. O resto é dirigir a tela, que
+continua necessário: é o que prova que a interface não avisa.
+
+**Hipótese refutada no caminho:** o campo `PAGAMENTO` de `ds_fatcon_get_competencia` NÃO marca
+bloqueio. A competência 03-2025 vem com `PAGAMENTO: "true"` e a 04-2025 com `"false"`, e as duas
+são recusadas pelo Protheus. Filtrar por ele daria falso negativo — está documentado em
+`utils/massa-medicao.js` para ninguém tentar de novo.
 
 ### O que era problema NOSSO (e não defeito)
 

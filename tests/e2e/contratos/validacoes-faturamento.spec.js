@@ -6,6 +6,7 @@ import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasP
 import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
 import { parseFornecedorDaGrade } from '../../../factories/medicao.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
+import { descobrirCompetenciaBloqueada } from '../../../utils/massa-medicao.js';
 
 /**
  * CT-FAT-02 — bloqueios e validações do ciclo de Faturamento de Contratos.
@@ -72,14 +73,15 @@ async function encontrarMedicaoComSaldo(contratosPage, medicao, maxContratos = 3
 }
 
 test.describe('Faturamento de Contratos — validações e bloqueios', () => {
-  test('CT-FAT-02-S2: competência sem saldo em aberto (ou contrato com revisão pendente) deve bloquear a medição antes do envio', async ({
+  test('CT-FAT-02-S2: competência recusada pelo Protheus deve bloquear a medição E avisar o usuário', async ({
     page,
   }) => {
-    // Buscar uma competência bloqueada entre vários contratos/competências é legitimamente
-    // demorado (cada tentativa é uma cadeia de zooms real contra o Protheus, ~5-10s) — o
-    // mesmo raciocínio do timeout de 120s do `playwright.config.js` ("o ambiente é
-    // legitimamente lento… não mascara flakiness"), só que este teste amplia a busca.
-    test.setTimeout(180_000);
+    // Antes este teste levava 153s: procurava a competência bloqueada NAVEGANDO, uma cadeia de
+    // cinco zooms por tentativa (~30s), em até 5 contratos. A mesma informação está em dois
+    // datasets que respondem em milissegundos — ver `utils/massa-medicao.js`, que documenta os
+    // endpoints capturados em campo. Medido depois da mudança: **8,8s**, dos quais 8,2s são a
+    // própria grade de contratos carregando; a descoberta em si custa 0,7s.
+    test.setTimeout(120_000);
 
     const guarda = await bloquearCriacaoDeSolicitacao(page);
 
@@ -87,87 +89,87 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     await contratosPage.goto();
     await contratosPage.expectCarregada();
 
-    const medicao = new MedicaoContratoPage(page);
-
-    // Não há oráculo para saber de antemão qual competência está fechada para medição —
-    // tenta a competência mais antiga oferecida (mais provável de já estar medida/fechada)
-    // de vários contratos vigentes, até reproduzir o bloqueio. Testa só 1 competência por
-    // contrato e escala para MAIS contratos: quando um contrato tem saldo em aberto, isso
-    // tende a valer para a maioria das competências dele (confirmado em campo) — aprofundar
-    // num único contrato não ajuda tanto quanto amostrar mais contratos. Também evita reabrir
-    // o zoom de Competência mais de uma vez por contrato: reabri-lo depois que os campos
-    // auto-preenchidos (Tipo, Situação, Objeto…) aparecem expõe o formulário a um tooltip
-    // Bootstrap que passa a interceptar o clique nesse campo (armadilha já documentada nesta
-    // suíte para combos/ícones de zoom).
-    const MAX_CONTRATOS = 5;
-    const MAX_COMPETENCIAS_POR_CONTRATO = 1;
-    let bloqueioReproduzido = false;
-    let mensagemBloqueio = '';
-    const contratosTentados = /** @type {string[]} */ ([]);
-
-    /** Por que cada contrato foi descartado antes de chegar a uma competência bloqueada. */
-    const descartes = /** @type {string[]} */ ([]);
-
-    for (let c = 0; c < MAX_CONTRATOS && !bloqueioReproduzido; c++) {
-      // `medicao.goto()` (chamado no fim da iteração anterior) navega para fora do Portal de
-      // Acompanhamento de Contratos — precisa voltar antes de ler a grade de novo.
-      if (c > 0) {
-        await contratosPage.goto();
-        await contratosPage.expectCarregada();
-      }
-      const contrato = await descobrirContratoVigente(contratosPage, {
-        excluirContratos: contratosTentados,
-      });
-      contratosTentados.push(contrato.contrato);
-      const fornecedor = parseFornecedorDaGrade(contrato.fornecedor);
-
-      await medicao.goto();
-      await medicao.expectAberto();
-
-      try {
-        await medicao.selecionarFornecedorPorCodigoLoja(fornecedor.codigo, fornecedor.loja);
-        await medicao.selecionarPrimeiroContrato();
-      } catch (erro) {
-        // Contrato descartado por não ser navegável pelo zoom (ver PRÉ-CONDIÇÃO AUSENTE
-        // lançada por `selecionarPrimeiroContrato`) — tenta o próximo contrato descoberto,
-        // guardando o motivo para a mensagem final em vez de engoli-lo.
-        descartes.push(`${contrato.contrato}: ${erro instanceof Error ? erro.message : String(erro)}`);
-        continue;
-      }
-      const competencias = await medicao.listarCompetencias();
-
-      for (let i = 0; i < Math.min(competencias.length, MAX_COMPETENCIAS_POR_CONTRATO); i++) {
-        // `listarCompetencias()` só abre o zoom para ler as opções, sem selecionar nenhuma —
-        // é preciso selecionar explicitamente mesmo na primeira tentativa (i === 0).
-        await medicao.selecionarCompetencia(competencias[i]);
-        const filialOfertada = await medicao.selecionarPrimeiraFilialMedicao();
-        if (!filialOfertada) continue;
-        const planilhaEscolhida = await medicao.selecionarPrimeiraPlanilha();
-        if (!planilhaEscolhida) continue;
-        const resultado = await medicao.aguardarResultadoDaConsultaDeSaldo();
-
-        if (resultado.comErro) {
-          bloqueioReproduzido = true;
-          mensagemBloqueio = resultado.mensagem;
-          break;
-        }
-        // Sem erro nesta competência: ela TEM saldo em aberto — não serve para este teste
-        // negativo. Segue para a próxima sem fechar diálogo nenhum (não houve diálogo).
-      }
-    }
-
-    if (!bloqueioReproduzido) {
+    const vigentes = (await contratosPage.lerLinhasDaGrade()).filter((l) => l.status === 'Vigente');
+    if (vigentes.length === 0) {
       throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: nenhuma competência bloqueada (sem saldo/revisão pendente) foi ' +
-          `encontrada entre os contratos vigentes tentados (${contratosTentados.join(', ')}) — ` +
-          'isto NÃO é defeito do produto sob teste; todas as competências amostradas tinham ' +
-          `saldo em aberto no momento desta execução. Contratos descartados antes disso: ${JSON.stringify(descartes)}`,
+        'PRÉ-CONDIÇÃO AUSENTE: a grade não trouxe nenhum contrato vigente. A integração com o ' +
+          'Protheus está indisponível ou sem dados — isto NÃO é defeito do produto sob teste.',
       );
     }
 
-    // O bloqueio é uma validação de negócio explícita, não um erro genérico de rede.
-    expect(mensagemBloqueio.length).toBeGreaterThan(0);
-    expect(mensagemBloqueio).toMatch(/saldo|medições em aberto|revisão pendente/i);
+    const MAX_CONTRATOS = 4;
+    const tentados = /** @type {string[]} */ ([]);
+    /** @type {{ competencia: string, mensagemDoServidor: string } | null} */
+    let bloqueada = null;
+    /** @type {(typeof vigentes)[number] | undefined} */
+    let contratoAlvo;
+
+    for (const linha of vigentes.slice(0, MAX_CONTRATOS)) {
+      tentados.push(linha.contrato);
+      bloqueada = await descobrirCompetenciaBloqueada(page, {
+        contrato: linha.contrato,
+        filial: linha.filial,
+        maxCompetencias: 4,
+      });
+      if (bloqueada) {
+        contratoAlvo = linha;
+        break;
+      }
+    }
+
+    if (!bloqueada || !contratoAlvo) {
+      throw new Error(
+        'PRÉ-CONDIÇÃO AUSENTE: nenhuma competência recusada pelo Protheus foi encontrada nos ' +
+          `contratos vigentes consultados (${tentados.join(', ')}). Isto NÃO é defeito do ` +
+          'produto sob teste: significa que, no momento desta execução, todas as competências ' +
+          'amostradas estavam liberadas para medir.',
+      );
+    }
+
+    // ── Prova 1: o SERVIDOR recusa, e a recusa é validação de negócio, não erro genérico.
+    expect(
+      bloqueada.mensagemDoServidor,
+      `o Protheus recusou a medição de ${contratoAlvo.contrato}/${bloqueada.competencia}, mas com ` +
+        'uma mensagem que não parece validação de negócio — se virou erro de infraestrutura, ' +
+        'este teste não está mais medindo o que deveria',
+    ).toMatch(/saldo|medições em aberto|revisão pendente|não é permitido medir/i);
+
+    // ── Prova 2: a INTERFACE tem que repassar essa recusa ao usuário.
+    const medicao = new MedicaoContratoPage(page);
+    await medicao.goto();
+    await medicao.expectAberto();
+
+    const fornecedor = parseFornecedorDaGrade(contratoAlvo.fornecedor);
+    await medicao.selecionarFornecedorPorCodigoLoja(fornecedor.codigo, fornecedor.loja);
+    await medicao.selecionarPrimeiroContrato();
+
+    const competencias = await medicao.listarCompetencias();
+    const rotulo = competencias.find((c) => c.includes(bloqueada.competencia));
+    expect(
+      rotulo,
+      `a competência ${bloqueada.competencia}, que o dataset ofereceu para o contrato ` +
+        `${contratoAlvo.contrato}, não apareceu no zoom da tela: ${JSON.stringify(competencias)}`,
+    ).toBeDefined();
+
+    await medicao.selecionarCompetencia(/** @type {string} */ (rotulo));
+    await medicao.selecionarPrimeiraFilialMedicao();
+    await medicao.selecionarPrimeiraPlanilha();
+    const naTela = await medicao.aguardarResultadoDaConsultaDeSaldo();
+
+    // ⚠️ REPROVA DE PROPÓSITO — defeito confirmado em 26/08/2026, interceptando a resposta que
+    // o widget recebe: com `STATUS: ERROR` e a mensagem do Protheus no corpo, NENHUM diálogo é
+    // exibido. O painel de itens não abre (então nada é medido), mas o usuário não é informado
+    // do motivo — a tela simplesmente não reage. Foi por isso que este teste antes concluía
+    // "nenhuma competência bloqueada encontrada": o bloqueio existia em todas, e o oráculo
+    // (o diálogo) nunca disparava.
+    expect(
+      naTela.comErro,
+      'defeito: o Protheus recusou a medição com "' +
+        bloqueada.mensagemDoServidor.slice(0, 160) +
+        '", mas a tela não exibiu nenhum aviso ao usuário — a recusa é engolida silenciosamente',
+    ).toBe(true);
+
+    expect(naTela.mensagem).toMatch(/saldo|medições em aberto|revisão pendente|não é permitido medir/i);
 
     // O painel de itens nunca chegou a ser liberado, e nenhuma medição foi criada.
     await expect(medicao.frame.locator('#panel_MeasurementItens')).toBeHidden();
