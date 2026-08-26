@@ -419,3 +419,137 @@ test.describe('Segunda SC para o mesmo contrato/revisão sem alerta de duplicida
     ).toBeVisible({ timeout: 5_000 });
   });
 });
+
+/**
+ * "25.920,00" → 25920 — o payload da SC usa BR-money para não corromper a máscara do form.
+ * @param {unknown} texto
+ * @returns {number}
+ */
+function lerBrMoney(texto) {
+  return Number(String(texto ?? '').replace(/\./g, '').replace(',', '.'));
+}
+
+/**
+ * Contrato de serviço com item que exercita a CASCATA de quantidade: `CNB_QUANT` vazio e
+ * `CNB_QTDORI` preenchido. Descoberto pela característica, nunca fixado por número — contrato
+ * é massa de leitura e pode ser finalizado/revisado a qualquer momento.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {import('../../../pages/AcompanhamentoContratosPage.js').AcompanhamentoContratosPage} contratosPage
+ */
+async function descobrirContratoComCascataDeQuantidade(page, contratosPage) {
+  const excluir = new Set();
+  for (let tentativa = 0; tentativa < 15; tentativa += 1) {
+    const candidato = await descobrirContratoVigente(contratosPage, { excluirContratos: [...excluir] });
+    excluir.add(candidato.contrato);
+
+    const itens = await buscarItensSemAbrirModal(page, candidato);
+    if (itens.length === 0 || itens.length > LIMITE_ITENS_SEGURO) continue;
+
+    const comCascata = itens.find(
+      (i) => !(Number(i.CNB_QUANT) > 0) && Number(i.CNB_QTDORI) > 0,
+    );
+    if (comCascata) return { contrato: candidato, itens, itemComCascata: comCascata };
+  }
+  return null;
+}
+
+/**
+ * CT-ACC-06-S2 — contrato de serviço sem quantidade.
+ *
+ * O catálogo pede duas coisas do serviço quando `CNB_QUANT` vem vazio:
+ *  1. resolver a quantidade pela cascata `CNB_QUANT → CNB_QTDORI → CNB_QTRDRZ → 1 (serviços)`;
+ *  2. **não** deixar o item nascer valendo R$ 1,00 quando o contrato tem valor relevante — o
+ *     `CNB_VLUNIT = 1` desses itens é preenchimento provisório, não preço. Levar o 1,00 adiante
+ *     contamina o Total Estimado a Aprovar da Validação Orçamentária.
+ *
+ * Medido em 26/08/2026 (contrato de HIGIENIZAÇÃO/LAVANDERIA, item com `CNB_QUANT` vazio,
+ * `CNB_QTDORI` = 36 e `CNB_VLUNIT` = 1): o payload sai com `tbprod_quantidade: "36"`,
+ * `tbprod_precoUnitario: "720,00"` e `tbprod_valorTotal: "25.920,00"`. Ou seja, **as duas
+ * exigências são atendidas hoje** — este teste é guarda de regressão, e fica verde.
+ *
+ * Não escreve: o start é capturado e ABORTADO (`capturarEnvioSolicitacao`), então a afirmação
+ * é sobre o payload que o cliente monta, sem criar SC nenhuma.
+ */
+test.describe('Quantidade e valor em contrato de serviço sem CNB_QUANT (CT-ACC-06-S2)', () => {
+  test('CT-ACC-06-S2 — item sem quantidade no contrato deve herdar a cascata e o preço real, nunca R$ 1,00', async ({
+    page,
+    contratosPage,
+    solicitacaoModal,
+  }) => {
+    await contratosPage.goto();
+    await contratosPage.expectCarregada();
+
+    const alvo = await descobrirContratoComCascataDeQuantidade(page, contratosPage);
+    expect(
+      alvo,
+      'PRÉ-CONDIÇÃO AUSENTE: nenhum contrato vigente pequeno com item de `CNB_QUANT` vazio e ' +
+        '`CNB_QTDORI` preenchido foi encontrado em 15 tentativas — sem essa massa não há como ' +
+        'exercitar a cascata de quantidade. Não é defeito do produto.',
+    ).toBeTruthy();
+    if (!alvo) return; // apenas para o checkJs
+
+    const quantidadeEsperada = String(Number(alvo.itemComCascata.CNB_QTDORI));
+
+    await contratosPage.filtrarPorContrato(alvo.contrato.contrato);
+    await contratosPage.abrirSolicitacaoCompra();
+    await solicitacaoModal.expectAberto();
+    await solicitacaoModal.preencher(criarSolicitacaoCompra());
+
+    const captura = await capturarEnvioSolicitacao(page);
+    await solicitacaoModal.confirmar();
+    const payload = await captura.aguardarPayload();
+    const itens = extrairItens(payload.formFields);
+
+    const item = itens.find((i) => String(i.tbprod_quantidade) === quantidadeEsperada);
+    expect(
+      item,
+      `contrato ${alvo.contrato.contrato}: o item tem CNB_QUANT vazio e CNB_QTDORI=` +
+        `${quantidadeEsperada}, então a SC deveria trazer essa quantidade pela cascata ` +
+        '(CNB_QUANT → CNB_QTDORI → CNB_QTRDRZ → 1). Quantidades enviadas: ' +
+        `${JSON.stringify(itens.map((i) => i.tbprod_quantidade))}`,
+    ).toBeDefined();
+    if (!item) return; // apenas para o checkJs
+
+    // O `CNB_VLUNIT = 1` do contrato é preenchimento provisório. Se ele vazar para a SC, o item
+    // nasce valendo R$ 1,00 e a Validação Orçamentária aprova um total que não é o do contrato.
+    expect(
+      String(item.tbprod_precoUnitario),
+      `contrato ${alvo.contrato.contrato}: o item nasceu na SC valendo R$ 1,00 — o CNB_VLUNIT=1 ` +
+        'do contrato é preenchimento provisório e não pode ser usado como preço. Isso contamina ' +
+        'o Total Estimado a Aprovar da Validação Orçamentária',
+    ).not.toBe('1,00');
+
+    // Coerência interna, que vale para qualquer contrato: não existe oráculo externo para o
+    // valor (nem a grade nem o payload expõem o total do contrato), então a afirmação é que
+    // total = quantidade × preço unitário. Ver a regra no CLAUDE.md.
+    const esperado = Number(item.tbprod_quantidade) * lerBrMoney(item.tbprod_precoUnitario);
+    expect(
+      lerBrMoney(item.tbprod_valorTotal),
+      `contrato ${alvo.contrato.contrato}: valor total incoerente — ` +
+        `${item.tbprod_quantidade} × ${item.tbprod_precoUnitario} deveria dar ${esperado}, ` +
+        `mas o payload trouxe ${item.tbprod_valorTotal}`,
+    ).toBeCloseTo(esperado, 2);
+  });
+
+  /**
+   * ⚠️ QUESTÃO EM ABERTO, deliberadamente NÃO virou assertion (26/08/2026).
+   *
+   * Este contrato aparece na grade com **revisão vazia**. Consultando
+   * `dsProtheus_getItensPlanilha_restGetAll` com `CNB_REVISA=""` — que é o que a grade oferece e
+   * o que o widget usa — vêm **1 item**. Consultando a mesma chave com `CNB_REVISA="001"` vêm
+   * **2**: o segundo tem `CNB_QUANT`, `CNB_QTDORI` e `CNB_QTRDRZ` vazios e `CNB_VLUNIT` = 60.
+   * A massa M4 do catálogo descreve justamente "4101 / 000000000000002 / rev 001".
+   *
+   * Chegamos a escrever um teste afirmando "item do contrato sumiu da SC em silêncio". Ele
+   * PASSAVA — e por tautologia: comparava o payload contra um baseline vindo da MESMA consulta
+   * de revisão vazia, então os dois eram 1. Um teste que só pode concordar consigo mesmo não
+   * prova nada, e foi removido.
+   *
+   * O que precisa ser respondido antes de virar teste: revisão vazia significa "sem revisão
+   * vigente" (e aí 1 item é o conjunto correto) ou a grade é que não expõe a revisão (e aí a SC
+   * nasce cobrindo menos que o contrato)? A segunda hipótese conversa com o defeito já
+   * catalogado de `revisaContrato` sair vazio no payload. Enquanto não houver resposta da Cassi,
+   * afirmar qualquer um dos dois seria inventar oráculo.
+   */
+});

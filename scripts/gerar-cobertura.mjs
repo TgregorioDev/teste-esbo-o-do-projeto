@@ -21,8 +21,6 @@ const RE = /CT-[A-Z0-9]{2,4}-\d{2}-(?:H|S\d)/g;
 const MOTIVOS = {
   'CT-ACC-03-S1': 'exige contrato com filial órfã (código sem cadastro); não existe na base',
   'CT-ACC-03-S3': 'contrato de 177 itens congela o navegador (D-03) e derruba o worker',
-  'CT-ACC-06-S2':
-    '**a massa EXISTE** (corrigido em 26/08/2026): o contrato 000000000000001, de serviços, tem dois itens com `CNB_QUANT`, `CNB_QTDORI` e `CNB_QTRDRZ` vazios, e o payload prova o fallback — eles saem com `tbprod_quantidade: "1"` enquanto os reais saem com `"29"`. Não está implementado, e não por falta de massa. Ver o cabeçalho de CT-ACC-06-S1 em `criacao-solicitacao.spec.js`',
   'CT-ACC-08-H':
     'depende de abrir a SC já criada — D-01 a deixa atribuída a `consumerkeycompras`, fora do alcance da conta da automação',
   'CT-ADM-01-S2': 'reprocessar atividade de integração exige perfil de administrador',

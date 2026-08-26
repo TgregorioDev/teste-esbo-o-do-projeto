@@ -8,8 +8,8 @@ título do teste** — é o que torna esta contagem auditável em vez de declara
 | | |
 |---|---|
 | Casos no catálogo | **163** |
-| Com teste na suíte | **132** (81%) |
-| Sem teste | **31** |
+| Com teste na suíte | **133** (82%) |
+| Sem teste | **30** |
 
 O script falha se um teste citar um ID que não existe no catálogo, ou se um caso ficar sem teste
 e sem motivo declarado. As duas checagens existem para que a matriz não possa envelhecer em
@@ -44,7 +44,7 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-ACC-05-S1` | Falha na transferência deixa a SC com a conta de integração ⚠️ | ✅ | `e2e/acompanhamento-contratos/erros-no-start.spec.js` |
 | `CT-ACC-05-S2` | Erro no start do processo | ✅ | `e2e/acompanhamento-contratos/erros-no-start.spec.js` |
 | `CT-ACC-06-S1` | Itens zerados são descartados silenciosamente 🔎 | ✅ | `e2e/acompanhamento-contratos/criacao-solicitacao.spec.js` · `e2e/acompanhamento-contratos/payload-solicitacao.spec.js` |
-| `CT-ACC-06-S2` | Contrato de serviço sem quantidade | ⬜ | **a massa EXISTE** (corrigido em 26/08/2026): o contrato 000000000000001, de serviços, tem dois itens com `CNB_QUANT`, `CNB_QTDORI` e `CNB_QTRDRZ` vazios, e o payload prova o fallback — eles saem com `tbprod_quantidade: "1"` enquanto os reais saem com `"29"`. Não está implementado, e não por falta de massa. Ver o cabeçalho de CT-ACC-06-S1 em `criacao-solicitacao.spec.js` |
+| `CT-ACC-06-S2` | Contrato de serviço sem quantidade | ✅ | `e2e/acompanhamento-contratos/criacao-solicitacao.spec.js` |
 | `CT-ACC-07-S1` | Valores fixos no payload da SC 🔎 | ✅ | `e2e/acompanhamento-contratos/payload-solicitacao.spec.js` |
 | `CT-ACC-08-H` | Rastreabilidade contrato ↔ SC | ⬜ | depende de abrir a SC já criada — D-01 a deixa atribuída a `consumerkeycompras`, fora do alcance da conta da automação |
 | `CT-ACC-08-S1` | Máscara monetária não corrompe os valores | ✅ | `e2e/acompanhamento-contratos/payload-solicitacao.spec.js` |
