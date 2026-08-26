@@ -45,6 +45,73 @@ O comprador de quem `TOTVS-FS` é substituto é **Arthur de Almeida Santos**, cu
 da `<option>` em "Atuar como") é `arthur.de.cassi.com.br.1` — já usado por
 `pages/CicloCompradorPage.js`.
 
+## Como a autorização realmente funciona — medido em 26/08/2026
+
+Três tentativas reais contra `dsFluig_postProcessesCancel`, cada uma devolvendo um erro
+diferente. Juntas, revelam a cadeia inteira:
+
+| `taskUserId` enviado | Resposta do servidor |
+|---|---|
+| `arthur.de.cassi.com.br.1` | `User not found! User: arthur.de.cassi.com.br.1` |
+| `ae73d3260d96404d861fa1c573102b8d` | `Current user ... is not the process manager or requisitioner. The request cannot be canceled!` |
+| `TOTVS-FS` | `Usuario consumerkeycompras nao e um substituto valido para o usuario TOTVS-FS!` |
+
+O que cada uma ensina:
+
+1. **`arthur.de.cassi.com.br.1` nao e login.** E o *value* da `<option>` do seletor "Atuar
+   como", derivado do e-mail. O login Fluig de **Arthur de Almeida Santos** e o GUID
+   `ae73d3260d96404d861fa1c573102b8d` (obtido do dataset `colleague`, `active: true`).
+2. **A API exige que o `taskUserId` seja o gestor do processo OU o solicitante.** Arthur nao e
+   nenhum dos dois nas SCs que a suite cria — quem as abriu foi `TOTVS-FS`.
+3. **O dataset roda no servidor como `consumerkeycompras`** — a mesma conta de integracao do
+   D-01 — e *personifica* o `taskUserId`. Para isso, o Fluig exige que `consumerkeycompras`
+   seja **substituto cadastrado** daquele usuario.
+
+O erro 2 (para Arthur) e sobre o PAPEL no processo, nao sobre substituicao: a checagem de
+substituto **passou** para Arthur. Logo `consumerkeycompras` ja e substituto dele. Para
+`TOTVS-FS` a checagem falhou — nao e.
+
+### Por que a opcao de cancelar nao aparece para NENHUMA SC nossa
+
+Verificado em 26/08/2026, e a resposta nao e permissao — e ausencia de dono.
+
+`GET /process-management/api/v2/requests/<id>` devolve, para as SCs que a suite cria:
+
+```
+{ "processInstanceId": 112671, "active": true, "status": "OPEN", "requester": null }
+```
+
+**`requester: null`.** Conferido em duas SCs criadas por testes diferentes (112671 e 112674):
+as duas sem solicitante registrado. Como a API de cancelamento exige *"process manager or
+requisitioner"*, e a solicitacao nao tem nem um nem outro, **ninguem** pode cancela-la — nem o
+`TOTVS-FS`, que a criou na pratica.
+
+Isso e outra face do **D-01**: a SC nasce da conta de integracao (`consumerkeycompras`) presa no
+marco de Inicio, e o campo de solicitante fica vazio. O defeito que impede a SC de andar e o
+mesmo que impede que ela seja cancelada.
+
+Confirmado tambem que a opcao nao existe na interface: varredura nos 12.275 elementos da
+Validacao Inicial do Portal do Comprador nao encontrou nenhum controle de cancelamento. O unico
+que existe no bundle e **"Cancelar Proposta"**, na rota `#/avaliacaoPropostas`, condicionado pela
+flag `controleCancelar` que vem no registro da COTACAO — estagio que as SCs da suite nunca
+alcancam.
+
+**Consequencia para o cleanup:** enquanto o D-01 existir, cancelar as SCs criadas pela suite e
+impossivel por qualquer via — UI ou API. Dar dono a solicitacao (seja o solicitante real, seja
+um comprador) e pre-requisito, nao detalhe.
+
+### Os dois caminhos possiveis
+
+**Caminho A — cadastrar `consumerkeycompras` como substituto de `TOTVS-FS`.** Configuracao
+unica no Fluig (Substitutos). Depois disso a suite cancela as proprias SCs diretamente, porque
+`TOTVS-FS` ja e o solicitante. Nao depende de Arthur nem de tela nenhuma.
+
+**Caminho B — o que o desenvolvedor sugeriu:** colocar as SCs sob Arthur, de quem
+`consumerkeycompras` ja e substituto. Custa uma etapa extra por SC e depende da aba "Atribuir"
+da Gerencia de Compras, que hoje **nunca renderiza dados** — defeito ja catalogado nesta suite.
+
+**Recomendacao: Caminho A.**
+
 ## A restrição que o levantamento revelou
 
 O cancelamento é ancorado em **cotação (C8)**, e a maior parte das SCs que a suíte cria **não
