@@ -351,3 +351,43 @@ persistente quando `ds_protheus_getMatriculaTitular_rest` responde 500
 - Ao rodar agentes em paralelo, use `--output=/tmp/pw-<n>`: uma execução limpa `test-results/`
   e leva os traces de quem estiver no meio de uma investigação.
 
+## Execução com ritmo controlado — 26/08/2026, 11:10–12:18
+
+O dono do ambiente pediu **60s entre cada teste destrutivo**: o Fluig tem proteção contra volume
+de requisições, e em 25/08 a suíte chegou perto de ser barrada rodando várias vezes seguidas.
+Bloqueio de taxa aparece no relatório como vermelho comum — seria confundido com defeito.
+
+O ritmo foi aplicado na **orquestração**, não no código: os 34 destrutivos rodaram um por vez,
+cada um numa invocação própria do Playwright, com 60s de intervalo. Os 144 não-destrutivos
+rodaram em paralelo, como sempre, porque não escrevem.
+
+| | Testes | Verde | Vermelho | Tempo |
+|---|---|---|---|---|
+| Não-destrutivos (`--workers=4`) | 144 | 109 | 35 | 7 min |
+| `@destrutivo` (um a um, 60s de pausa) | 34 | 22 | 12 | 61 min |
+| **Total** | **178** | **131** | **47** | **1h08** |
+
+**Nenhum vermelho sem veredito.** 44 são defeito de produto com mensagem de domínio e 3 são
+`PRÉ-CONDIÇÃO AUSENTE`.
+
+### Por que a pausa não virou código da suíte
+
+Chegou a ser implementada como `afterEach` em `fixtures/fixtures.js` e foi **revertida antes de
+commitar**: ritmo de execução é decisão de quem roda, não propriedade do teste. Embutir uma
+espera de 60s no fixture faria toda execução futura pagar o custo, inclusive as que não precisam,
+e esconderia num arquivo compartilhado uma decisão que precisa ser consciente. A convenção
+adotada: **quando a execução incluir destrutivos, perguntar antes se a pausa se aplica.**
+
+### O vermelho sem veredito que apareceu, e sumiu
+
+`CT-E2E-02-S1` reprovou com `TimeoutError: page.waitForResponse: Timeout 45000ms exceeded` — o
+único da execução sem causa declarada. Era um `waitForResponse` cru esperando o
+`POST .../wf_solicitacao_compras/start`: quando estoura, não diz se a SC não foi criada, se o
+ambiente engasgou, ou se o widget nem chegou a enviar.
+
+Criado `utils/espera-start.js`, que distingue os dois casos pela contagem de requisições que
+saíram: **nenhuma saiu** → o widget não enviou, o problema é anterior ao servidor; **saiu e não
+voltou** → o servidor não respondeu no prazo, é ambiente. Os seis pontos da suíte que esperavam
+esse start foram migrados. Reexecutado, o teste volta a reprovar pela causa real:
+`SC 112674: estado atual "Início" — esperando "Validação do Gestor" (bloqueado por D-01)`.
+

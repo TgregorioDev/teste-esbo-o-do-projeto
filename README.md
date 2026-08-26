@@ -87,10 +87,12 @@ por processo de negócio que esta suíte está proibida de executar. Já tudo qu
 | Casos sem nenhum teste | **30** — cada um com motivo medido |
 | Testes que **criam ou editam** registro (`@destrutivo`) | **34** — rodam na execução padrão |
 
-**Última execução medida (25/08/2026, 17h48 — suíte inteira, destrutivos incluídos): 177 testes,
-129 verdes, 48 vermelhos.** Dos 34 `@destrutivo`, 21 verdes e 13 vermelhos. **Nenhum dos 48
-reprova por timeout opaco**: 44 trazem mensagem de domínio nomeando o defeito e 4 são
-`PRÉ-CONDIÇÃO AUSENTE` nomeando a massa que falta. ⚠️ **O total de
+**Última execução medida (26/08/2026, 12h18 — suíte inteira, destrutivos incluídos): 178 testes,
+131 verdes, 47 vermelhos.** Os 34 `@destrutivo` rodaram **um por vez, com 60s entre cada** — o
+Fluig tem proteção contra volume de requisições, e bloqueio de taxa apareceria como vermelho
+que parece defeito. A pausa é decisão de quem roda, não código da suíte. Dos 34 `@destrutivo`, 22 verdes e 12 vermelhos. **Nenhum dos 47
+reprova por timeout opaco**: 44 trazem mensagem de domínio nomeando o defeito e 3 são
+`PRÉ-CONDIÇÃO AUSENTE` nomeando o que falta. ⚠️ **O total de
 vermelhos não é comparável entre execuções sem olhar quais testes são**: dois testes variam por
 não-determinismo do próprio produto. Detalhe em [`docs/estado-do-gate.md`](docs/estado-do-gate.md). Detalhe e classificação em
 [`docs/estado-do-gate.md`](docs/estado-do-gate.md).

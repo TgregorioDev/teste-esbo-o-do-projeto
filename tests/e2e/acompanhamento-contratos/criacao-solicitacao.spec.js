@@ -4,6 +4,7 @@ import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
 import { criarSolicitacaoCompra } from '../../../factories/solicitacao-compra.js';
 import { capturarEnvioSolicitacao, extrairItens } from '../../../utils/captura-payload.js';
 import { MinhasSolicitacoesPage } from '../../../pages/MinhasSolicitacoesPage.js';
+import { esperarStartDaSolicitacao } from '../../../utils/espera-start.js';
 
 /**
  * Casos destrutivos do Portal de Acompanhamento de Contratos que só existem CRIANDO de
@@ -116,9 +117,7 @@ test.describe('Confirmar cria a SC e ela deveria chegar ao solicitante (CT-ACC-0
     await solicitacaoModal.expectAberto();
     await solicitacaoModal.preencher(criarSolicitacaoCompra());
 
-    const respostaPromise = page.waitForResponse((r) => r.url().includes('/wf_solicitacao_compras/start'));
-    await solicitacaoModal.confirmar();
-    const resposta = await respostaPromise;
+    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar());
 
     expect(resposta.status(), 'o start deveria responder 200').toBe(200);
     const corpoResposta = await resposta.json();
@@ -263,9 +262,7 @@ test.describe('Item sem quantidade e sem valor no contrato não pode virar item 
       }
     });
 
-    const respostaPromise = page.waitForResponse((r) => r.url().includes('/wf_solicitacao_compras/start'));
-    await solicitacaoModal.confirmar();
-    const resposta = await respostaPromise;
+    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar());
     expect(resposta.status()).toBe(200);
     const processInstanceId = (await resposta.json()).processInstanceId;
     testInfo.annotations.push({ type: 'sc-criada', description: String(processInstanceId) });
@@ -429,9 +426,9 @@ test.describe('Segunda SC para o mesmo contrato/revisão sem alerta de duplicida
     await solicitacaoModal.expectAberto();
     await solicitacaoModal.preencher(criarSolicitacaoCompra());
 
-    const resposta1Promise = page.waitForResponse((r) => r.url().includes('/wf_solicitacao_compras/start'));
-    await solicitacaoModal.confirmar();
-    const resposta1 = await resposta1Promise;
+    const resposta1 = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar(), {
+      contexto: 'primeira SC do par que testa o alerta de duplicidade',
+    });
     expect(resposta1.status()).toBe(200);
     const processInstanceId1 = (await resposta1.json()).processInstanceId;
     testInfo.annotations.push({ type: 'sc-criada', description: String(processInstanceId1) });

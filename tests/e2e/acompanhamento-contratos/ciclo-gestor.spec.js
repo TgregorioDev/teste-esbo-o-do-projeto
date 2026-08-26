@@ -4,6 +4,7 @@ import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
 import { criarSolicitacaoCompra } from '../../../factories/solicitacao-compra.js';
 import { MinhasSolicitacoesPage } from '../../../pages/MinhasSolicitacoesPage.js';
 import { TarefaSolicitacaoCompraPage } from '../../../pages/TarefaSolicitacaoCompraPage.js';
+import { esperarStartDaSolicitacao } from '../../../utils/espera-start.js';
 
 /**
  * Início da cadeia E2E: da SC criada pelo Portal de Acompanhamento de Contratos até o
@@ -45,9 +46,7 @@ test.describe('A SC criada nasce no estado e no dono corretos (CT-E2E-01-H)', ()
     await solicitacaoModal.expectAberto();
     await solicitacaoModal.preencher(criarSolicitacaoCompra());
 
-    const respostaPromise = page.waitForResponse((r) => r.url().includes('/wf_solicitacao_compras/start'));
-    await solicitacaoModal.confirmar();
-    const resposta = await respostaPromise;
+    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar());
     expect(resposta.status()).toBe(200);
     const processInstanceId = (await resposta.json()).processInstanceId;
     testInfo.annotations.push({ type: 'sc-criada', description: String(processInstanceId) });
@@ -120,9 +119,7 @@ test.describe('Gestor Imediato assume do pool e aprova (CT-E2E-02-H)', () => {
     await solicitacaoModal.expectAberto();
     await solicitacaoModal.preencher(criarSolicitacaoCompra());
 
-    const respostaPromise = page.waitForResponse((r) => r.url().includes('/wf_solicitacao_compras/start'));
-    await solicitacaoModal.confirmar();
-    const resposta = await respostaPromise;
+    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar());
     expect(resposta.status()).toBe(200);
     const processInstanceId = (await resposta.json()).processInstanceId;
     testInfo.annotations.push({ type: 'sc-criada', description: String(processInstanceId) });
@@ -176,9 +173,7 @@ test.describe('Gestor Imediato reprova com justificativa (CT-E2E-02-S1)', () => 
       }
     });
 
-    const respostaPromise = page.waitForResponse((r) => r.url().includes('/wf_solicitacao_compras/start'));
-    await solicitacaoModal.confirmar();
-    const resposta = await respostaPromise;
+    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar());
     expect(resposta.status()).toBe(200);
     const processInstanceId = (await resposta.json()).processInstanceId;
     testInfo.annotations.push({ type: 'sc-criada', description: String(processInstanceId) });
