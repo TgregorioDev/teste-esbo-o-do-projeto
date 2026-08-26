@@ -10,3 +10,6 @@ blob-report/
 .env.local
 blob-slices/
 blob-todos/
+qa-probe-*
+tmp-cancel/
+probe-*.mjs
