@@ -362,6 +362,41 @@ test.describe('Bypass da validação de cliente no start direto (CT-ACC-04-S6 / 
       testInfo.annotations.push({ type: 'sc-criada (bypass motivoSolCompra vazio)', description: String(idCriado) });
     }
 
+    // ⚠️ NESTE TESTE A TELA NÃO É O ORÁCULO — e a captura de tela induz ao erro se lida sem
+    // contexto. Os dois disparos acima são `fetch` crus, feitos por `page.evaluate`: não passam
+    // pelo widget, então não renderizam nada. O alerta "Erro ao iniciar processo" que aparece na
+    // screenshot é resíduo do passo 1, quando `capturarEnvioSolicitacao` ABORTOU de propósito o
+    // envio do widget para roubar o template. Ele não tem relação com o 200 que reprova o teste.
+    //
+    // A evidência real é o par requisição/resposta, e ela vai anexada abaixo. (No relatório
+    // nativo ela também está na aba Network do trace: as três chamadas ao `/start` aparecem com
+    // status -1 — a abortada —, 200 e 500.)
+    await testInfo.attach('starts-diretos', {
+      body: JSON.stringify(
+        {
+          'o que este teste mede':
+            'se o SERVIDOR valida os campos que o modal marca como obrigatórios, quando o start ' +
+            'é disparado direto, sem passar pela tela',
+          'atenção':
+            'a screenshot deste teste mostra um alerta de erro do passo de captura, que foi ' +
+            'abortado de propósito. Ela não é evidência do resultado.',
+          'tipoSolicitacao vazio': {
+            status: resultadoTipoVazio.status,
+            esperado: 'recusa (4xx/5xx)',
+            corpo: resultadoTipoVazio.body.slice(0, 1200),
+          },
+          'motivoSolCompra vazio': {
+            status: resultadoMotivoVazio.status,
+            esperado: 500,
+            corpo: resultadoMotivoVazio.body.slice(0, 1200),
+          },
+        },
+        null,
+        2,
+      ),
+      contentType: 'application/json',
+    });
+
     // Confirmado em campo: motivoSolCompra vazio é recusado pelo servidor com 500 e mensagem
     // clara ("O campo Justificativa para a Solicitação é obrigatório!"). tipoSolicitacao
     // vazio NÃO é — o servidor aceita com 200 e cria a SC mesmo assim (D-10): a validação de

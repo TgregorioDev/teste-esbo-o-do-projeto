@@ -70,7 +70,7 @@
 <body>
 <div class="capa">
   <h1>Falhas da suíte E2E — TOTVS Fluig Cassi</h1>
-  <p>Execução de 26/08/2026, 10:04:27 · 177 testes, 47 reprovados · destrutivos incluídos</p>
+  <p>Execução de 26/08/2026, 10:58:22 · 177 testes, 47 reprovados · destrutivos incluídos</p>
   <div class="numeros">
     <div class="numero"><b>177</b><span>testes</span></div>
     <div class="numero"><b>130</b><span>verdes</span></div>
@@ -154,6 +154,8 @@ Received: 3493</pre>
   "erro": "Error: a constraint 'colleagueId' não filtrou o resultado: retornou 3493 registros, o MESMO total obtido sem nenhuma constraint (3493). O endpoint expõe a base inteira de colaboradores. Ver CT-SEG-01-S1 / mapa-do-ambiente.md.\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m3493\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -327,6 +329,8 @@ Received: false</pre>
   "erro": "Error: dataset de sincronização 'ds_protheus_getFuncionarios_restGetAll_Sync' respondeu 500: {\"content\":\"ERROR\",\"message\":{\"message\":\"java.lang.NullPointerException\",\"detail\":\"java.lang.NullPointerException\",\"type\":\"ERROR\",\"param\":null,\"errorCode\":\"ECMException\"}}. Sincronização em erro deixa dado de RH/vigência de compra defasado sem aviso. Ver CT-INT-02-S1 / achado U-12.\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -584,6 +588,8 @@ Expected: not "Início"</pre>
   "erro": "Error: estado inicial \"Início\" — deveria ser uma etapa de trabalho, não o marco de Início do BPMN\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"Início\"\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -1615,6 +1621,8 @@ Call Log:
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -2634,6 +2642,8 @@ Call Log:
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -3591,6 +3601,8 @@ Expected: not "Usuário Integrador Fluig"</pre>
   "erro": "Error: a SC 112604 nasceu com responsável \"Usuário Integrador Fluig\" — deveria ser o solicitante logado (ou uma etapa/pool legítima), não a conta de integração\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"Usuário Integrador Fluig\"\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -4583,17 +4595,17 @@ Received: 7</pre>
 
   <section class="bloco">
     <h3>Onde falhou</h3>
-    <pre class="codigo"><span class="linha"><span class="num">244</span>    expect(</span>
-<span class="linha"><span class="num">245</span>      itensNaSC.length,</span>
-<span class="linha"><span class="num">246</span>      `contrato ${alvo.contrato.contrato}: Protheus tem ${alvo.itens.length} itens ` +</span>
-<span class="linha"><span class="num">247</span>        `(${itensValidos.length} válidos + ${itensZerados.length} zerados), mas a SC criada trouxe ` +</span>
-<span class="linha"><span class="num">248</span>        `${itensNaSC.length} — item(ns) zerado(s) deveria(m) ter sido descartado(s), não repassado(s) ` +</span>
-<span class="linha"><span class="num">249</span>        'como item da solicitação',</span>
-<span class="linha alvo"><span class="num">250</span>    ).toBe(itensValidos.length);</span>
-<span class="linha"><span class="num">251</span>  });</span>
-<span class="linha"><span class="num">252</span>});</span>
-<span class="linha"><span class="num">253</span></span>
-<span class="linha"><span class="num">254</span>test.describe('Bypass da validação de cliente no start direto (CT-ACC-04-S6 / D-10)', () =&gt; {</span></pre>
+    <pre class="codigo"><span class="linha"><span class="num">244</span>      'PRÉ-CONDIÇÃO AUSENTE: nenhum contrato vigente pequeno com item de quantidade/valor ' +</span>
+<span class="linha"><span class="num">245</span>        'zerado foi encontrado em 15 tentativas — não é defeito, é ausência de massa hoje.',</span>
+<span class="linha"><span class="num">246</span>    ).toBeTruthy();</span>
+<span class="linha"><span class="num">247</span>    if (!alvo) return; // apenas para o checkJs — a linha acima já falhou o teste</span>
+<span class="linha"><span class="num">248</span></span>
+<span class="linha"><span class="num">249</span>    const itensValidos = alvo.itens.filter((i) =&gt; Number(i.CNB_QUANT) &gt; 0 &amp;&amp; Number(i.CNB_VLTOT) &gt; 0);</span>
+<span class="linha alvo"><span class="num">250</span>    const itensZerados = alvo.itens.filter((i) =&gt; !(Number(i.CNB_QUANT) &gt; 0 &amp;&amp; Number(i.CNB_VLTOT) &gt; 0));</span>
+<span class="linha"><span class="num">251</span>    expect(itensZerados.length, 'o contrato escolhido deveria ter ao menos 1 item zerado').toBeGreaterThan(0);</span>
+<span class="linha"><span class="num">252</span></span>
+<span class="linha"><span class="num">253</span>    await contratosPage.filtrarPorContrato(alvo.contrato.contrato);</span>
+<span class="linha"><span class="num">254</span>    await contratosPage.abrirSolicitacaoCompra();</span></pre>
   </section>
 
   
@@ -4618,6 +4630,8 @@ Received: 7</pre>
   "erro": "Error: contrato 000000000000001: Protheus tem 7 itens (5 válidos + 2 zerados), mas a SC criada trouxe 7 — item(ns) zerado(s) deveria(m) ter sido descartado(s), não repassado(s) como item da solicitação\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m5\u001b[39m\nReceived: \u001b[31m7\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -5098,17 +5112,17 @@ Expected: not 200</pre>
 
   <section class="bloco">
     <h3>Onde falhou</h3>
-    <pre class="codigo"><span class="linha"><span class="num">333</span>    // vazio NÃO é — o servidor aceita com 200 e cria a SC mesmo assim (D-10): a validação de</span>
-<span class="linha"><span class="num">334</span>    // cliente do modal não tem contraparte no servidor para este campo.</span>
-<span class="linha"><span class="num">335</span>    expect(</span>
-<span class="linha"><span class="num">336</span>      resultadoTipoVazio.status,</span>
-<span class="linha"><span class="num">337</span>      'tipoSolicitacao vazio deveria ser recusado pelo servidor (como motivoSolCompra vazio é), ' +</span>
-<span class="linha"><span class="num">338</span>        `mas respondeu ${resultadoTipoVazio.status}: ${resultadoTipoVazio.body.slice(0, 300)}`,</span>
-<span class="linha alvo"><span class="num">339</span>    ).not.toBe(200);</span>
-<span class="linha"><span class="num">340</span></span>
-<span class="linha"><span class="num">341</span>    expect(</span>
-<span class="linha"><span class="num">342</span>      resultadoMotivoVazio.status,</span>
-<span class="linha"><span class="num">343</span>      `motivoSolCompra vazio deveria ser recusado — respondeu ${resultadoMotivoVazio.status}: ` +</span></pre>
+    <pre class="codigo"><span class="linha"><span class="num">333</span>            credentials: 'include',</span>
+<span class="linha"><span class="num">334</span>            headers: {</span>
+<span class="linha"><span class="num">335</span>              'Content-Type': 'application/json',</span>
+<span class="linha"><span class="num">336</span>              Authorization: jwt ? `Bearer ${jwt}` : '',</span>
+<span class="linha"><span class="num">337</span>              'X-Requested-With': 'XMLHttpRequest',</span>
+<span class="linha"><span class="num">338</span>            },</span>
+<span class="linha alvo"><span class="num">339</span>            body: JSON.stringify(payload),</span>
+<span class="linha"><span class="num">340</span>          });</span>
+<span class="linha"><span class="num">341</span>          return { status: resp.status, body: await resp.text() };</span>
+<span class="linha"><span class="num">342</span>        },</span>
+<span class="linha"><span class="num">343</span>        { url: startUrl, payload },</span></pre>
   </section>
 
   
@@ -5133,6 +5147,8 @@ Expected: not 200</pre>
   "erro": "Error: tipoSolicitacao vazio deveria ser recusado pelo servidor (como motivoSolCompra vazio é), mas respondeu 200: {\"possibleAssignees\":[],\"toShowPossibleAssignees\":false,\"jointActivity\":false,\"reachedPercentageForJointActivity\":null,\"highestTaskForJointActivity\":null,\"highestAssigneeForJointActivity\":null,\"nextState\":0,\"nextGateway\":null,\"nextStateName\":null,\"gatewayComment\":null,\"gatewayCondition\":0,\"useManage\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m200\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -5564,16 +5580,17 @@ Error: element(s) not found</pre>
 
   <section class="bloco">
     <h3>Onde falhou</h3>
-    <pre class="codigo"><span class="linha"><span class="num">379</span>    // verificado em campo, o portal deixa abrir e criar uma segunda sem avisar.</span>
-<span class="linha"><span class="num">380</span>    const algumAviso = page.getByText(new RegExp(`${processInstanceId1}|em andamento|já existe|já possui`, 'i'));</span>
-<span class="linha"><span class="num">381</span>    await expect(</span>
-<span class="linha"><span class="num">382</span>      algumAviso,</span>
-<span class="linha"><span class="num">383</span>      `nenhum aviso apareceu ao reabrir a SC do contrato ${contrato.contrato}, mesmo já existindo ` +</span>
-<span class="linha"><span class="num">384</span>        `a solicitação ${processInstanceId1} em andamento para o mesmo contrato/revisão`,</span>
-<span class="linha alvo"><span class="num">385</span>    ).toBeVisible({ timeout: 5_000 });</span>
-<span class="linha"><span class="num">386</span>  });</span>
-<span class="linha"><span class="num">387</span>});</span>
-<span class="linha"><span class="num">388</span></span></pre>
+    <pre class="codigo"><span class="linha"><span class="num">379</span>            'é disparado direto, sem passar pela tela',</span>
+<span class="linha"><span class="num">380</span>          'atenção':</span>
+<span class="linha"><span class="num">381</span>            'a screenshot deste teste mostra um alerta de erro do passo de captura, que foi ' +</span>
+<span class="linha"><span class="num">382</span>            'abortado de propósito. Ela não é evidência do resultado.',</span>
+<span class="linha"><span class="num">383</span>          'tipoSolicitacao vazio': {</span>
+<span class="linha"><span class="num">384</span>            status: resultadoTipoVazio.status,</span>
+<span class="linha alvo"><span class="num">385</span>            esperado: 'recusa (4xx/5xx)',</span>
+<span class="linha"><span class="num">386</span>            corpo: resultadoTipoVazio.body.slice(0, 1200),</span>
+<span class="linha"><span class="num">387</span>          },</span>
+<span class="linha"><span class="num">388</span>          'motivoSolCompra vazio': {</span>
+<span class="linha"><span class="num">389</span>            status: resultadoMotivoVazio.status,</span></pre>
   </section>
 
   
@@ -5598,6 +5615,8 @@ Error: element(s) not found</pre>
   "erro": "Error: nenhum aviso apareceu ao reabrir a SC do contrato 000000000000001, mesmo já existindo a solicitação 112608 em andamento para o mesmo contrato/revisão\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/112608|em andamento|já existe|já possui/i)\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - nenhum aviso apareceu ao reabrir a SC do contrato 000000000000001, mesmo já existindo a solicitação 112608 em andamento para o mesmo contrato/revisão with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/112608|em andamento|já existe|já possui/i)\u001b[22m\n"
 }</pre>
   </section>
+
+  
 
   <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
     <pre class="detalhe">Call log:
@@ -6006,6 +6025,8 @@ Call Log:
   "erro": "Error: defeito D-01 (sintoma): a transferência da tarefa falhou (dsFluig_postProcessesTransfer → HTTP 500) e a aplicação deveria avisar que a SC não pôde ser atribuída ao solicitante. Abaixo, TODOS os avisos que ela exibiu — se aparecer apenas o toast de sucesso, o erro foi engolido e a tarefa fica presa na conta de integração sem o usuário saber\n\ndefeito D-01 (sintoma): a transferência da tarefa falhou (dsFluig_postProcessesTransfer → HTTP 500) e a aplicação deveria avisar que a SC não pôde ser atribuída ao solicitante. Abaixo, TODOS os avisos que ela exibiu — se aparecer apenas o toast de sucesso, o erro foi engolido e a tarefa fica presa na conta de integração sem o usuário saber\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\nExpected: \u001b[32mArrayContaining [StringMatching /n(ã|a)o p(ô|o)de ser atribu(í|i)da/i]\u001b[39m\nReceived: \u001b[31m[\"Sucesso! Processo 999999 iniciado com sucesso! × Close\"]\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate"
 }</pre>
   </section>
+
+  
 
   
 
@@ -6430,6 +6451,8 @@ Call Log:
   "erro": "Error: situações exibidas de forma truncada/ilegível na grade: [\"Finali\",\"Paralisa\",\"Sol.Finali\",\"Cancel.\"]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 6\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   \"Finali\",\u001b[39m\n\u001b[31m+   \"Paralisa\",\u001b[39m\n\u001b[31m+   \"Sol.Finali\",\u001b[39m\n\u001b[31m+   \"Cancel.\",\u001b[39m\n\u001b[31m+ ]\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -20238,6 +20261,8 @@ Received string:  "ERRO: Erro ao buscar dados da filial: "</pre>
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -20711,6 +20736,8 @@ Expected: not 6</pre>
   "erro": "Error: a SC nasceu presa no marco de Início do BPMN (targetState=6)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m6\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -21230,6 +21257,8 @@ Received array:  ["#1(qtd=29) e #3(qtd=1) compartilham total=1.126.200,24", "#1(
   "erro": "Error: contrato 000000000000001: o valor do contrato está sendo replicado em cada item em vez de dividido entre eles — #1(qtd=29) e #3(qtd=1) compartilham total=1.126.200,24 | #1(qtd=29) e #4(qtd=1) compartilham total=1.126.200,24 | #2(qtd=29) e #3(qtd=1) compartilham total=1.126.200,24 | #2(qtd=29) e #4(qtd=1) compartilham total=1.126.200,24 | #3(qtd=1) e #5(qtd=29) compartilham total=1.126.200,24 | #3(qtd=1) e #6(qtd=29) compartilham total=1.126.200,24 | #3(qtd=1) e #7(qtd=29) compartilham total=1.126.200,24 | #4(qtd=1) e #5(qtd=29) compartilham total=1.126.200,24 | #4(qtd=1) e #6(qtd=29) compartilham total=1.126.200,24 | #4(qtd=1) e #7(qtd=29) compartilham total=1.126.200,24\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveLength\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected length: \u001b[32m0\u001b[39m\nReceived length: \u001b[31m10\u001b[39m\nReceived array:  \u001b[31m[\"#1(qtd=29) e #3(qtd=1) compartilham total=1.126.200,24\", \"#1(qtd=29) e #4(qtd=1) compartilham total=1.126.200,24\", \"#2(qtd=29) e #3(qtd=1) compartilham total=1.126.200,24\", \"#2(qtd=29) e #4(qtd=1) compartilham total=1.126.200,24\", \"#3(qtd=1) e #5(qtd=29) compartilham total=1.126.200,24\", \"#3(qtd=1) e #6(qtd=29) compartilham total=1.126.200,24\", \"#3(qtd=1) e #7(qtd=29) compartilham total=1.126.200,24\", \"#4(qtd=1) e #5(qtd=29) compartilham total=1.126.200,24\", \"#4(qtd=1) e #6(qtd=29) compartilham total=1.126.200,24\", \"#4(qtd=1) e #7(qtd=29) compartilham total=1.126.200,24\"]\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -21781,6 +21810,8 @@ Received array:  ["#1 (qtd=1, valorTotal=1.126.200,24)", "#2 (qtd=1, valorTotal=
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -22326,6 +22357,8 @@ Received array:  ["R$ 1126200.24 repetido em 7 itens (#1, #2, #3, #4, #5, #6, #7
   "erro": "Error: itens com quantidade/preço diferentes não deveriam compartilhar o mesmo valor total — cada item deveria valer sua própria fração do contrato\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveLength\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected length: \u001b[32m0\u001b[39m\nReceived length: \u001b[31m1\u001b[39m\nReceived array:  \u001b[31m[\"R$ 1126200.24 repetido em 7 itens (#1, #2, #3, #4, #5, #6, #7) com quantidade/preço distintos\"]\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -22875,6 +22908,8 @@ Expected: not "Sol. Compras - CASSI SEDE"</pre>
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -23418,6 +23453,8 @@ Received array:  ["#1", "#2", "#3", "#4", "#5", "#6", "#7"]</pre>
   "erro": "Error: tbprod_classeValor do item veio vazio (classeOrca e classificacao vieram preenchidos no mesmo item)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveLength\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected length: \u001b[32m0\u001b[39m\nReceived length: \u001b[31m7\u001b[39m\nReceived array:  \u001b[31m[\"#1\", \"#2\", \"#3\", \"#4\", \"#5\", \"#6\", \"#7\"]\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -23968,6 +24005,8 @@ Received: ""</pre>
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -24431,6 +24470,8 @@ Error: element(s) not found</pre>
 }</pre>
   </section>
 
+  
+
   <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
     <pre class="detalhe">Call log:
   - defeito: o Fluig deveria recusar o envio da Cotação sem fornecedor/vínculos (como faz a Solicitação de Compras), mas o shell aceita e tenta criar um processo real sem nenhuma validação — só não chegou ao servidor porque este teste bloqueia toda escrita no host with timeout 5000ms
@@ -24774,6 +24815,8 @@ Call log:
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -25095,6 +25138,8 @@ Received: 1</pre>
   "erro": "Error: defeito: o envio sem anexo deveria ser recusado no cliente, sem gerar nenhuma requisição de escrita — em vez disso tentou: POST https://caixade182374.fluig.cloudtotvs.com.br/ecm/api/rest/ecm/workflowView/send\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m1\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -25856,6 +25901,8 @@ Received: 1
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -26246,6 +26293,8 @@ Received: 1</pre>
   "erro": "Error: o clique em Enviar deveria ter sido recusado no cliente, sem gerar nenhuma requisição de escrita — em vez disso tentou: POST https://caixade182374.fluig.cloudtotvs.com.br/ecm/api/rest/ecm/workflowView/send\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m1\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -27001,6 +27050,8 @@ Received: 1
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -27365,6 +27416,8 @@ Received: 1</pre>
   "erro": "Error: um parecer sem responsável definido não deveria gerar nenhuma requisição de escrita — em vez disso tentou: POST https://caixade182374.fluig.cloudtotvs.com.br/ecm/api/rest/ecm/workflowView/send\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m1\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -27903,6 +27956,8 @@ Received: 1</pre>
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -28414,6 +28469,8 @@ Error: element(s) not found</pre>
 }</pre>
   </section>
 
+  
+
   <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
     <pre class="detalhe">Call log:
   - a Delegação de Fiscais deveria ser criável a partir do catálogo de processos (onde é anunciada como iniciável), mas o formulário recusa o envio exigindo um "portal de delegação de fiscais" inalcançável — ver comentário da suíte para a investigação completa with timeout 15000ms
@@ -28791,6 +28848,8 @@ Received:   0</pre>
   "erro": "Error: CT-DEL-01-S1 é INEXEQUÍVEL pela interface atual: o formulário de Delegação de Fiscais não oferece nenhum controle (searchbox/combobox) para informar um fiscal substituto, então não há entrada de dado para exercitar \"substituto inválido\". O único caminho de escrita (Enviar) é recusado pelo servidor — HTTP 500 em /ecm/api/rest/ecm/workflowView/send: Erro ao salvar dados de formulário: Solicitação só pode ser aberta através do portal de delegação de fiscais! — e esse portal não foi encontrado em nenhum ponto de navegação alcançável por este usuário (ver CT-DEL-01-H)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: &gt; \u001b[32m0\u001b[39m\nReceived:   \u001b[31m0\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -29475,6 +29534,8 @@ Received: false</pre>
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -30135,6 +30196,8 @@ Error: element(s) not found</pre>
   "erro": "Error: esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação) with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)\u001b[22m\n"
 }</pre>
   </section>
+
+  
 
   <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
     <pre class="detalhe">Call log:
@@ -30928,6 +30991,8 @@ Received:   1</pre>
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -31443,6 +31508,8 @@ Received: false</pre>
   "erro": "Error: deveria existir um caminho visível para registrar a parte contrária (botão \"Novo Envolvido\") em uma consulta do tipo \"Liminar\" — testado com o formulário no estado padrão e com \"Não possui processo.\" marcado, o botão fica oculto (classe CSS `sem-processo-hide`) nos dois casos\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -31972,6 +32039,8 @@ Received:   1</pre>
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -32384,6 +32453,8 @@ Timeout: 30000ms</pre>
 }</pre>
   </section>
 
+  
+
   <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
     <pre class="detalhe">Call log:
   - defeito U-01: abrir /portal/p/1/principalprocess diretamente pela URL cai em errorPage/404. A rota existe e funciona quando alcançada pela navegação interna da SPA — o que quebra é o deep-link, então link salvo, favorito e compartilhamento de endereço não funcionam with timeout 30000ms
@@ -32600,6 +32671,8 @@ Timeout: 30000ms</pre>
   "erro": "Error: defeito U-01: abrir /portal/p/1/gestao_ferias diretamente pela URL cai em errorPage/404. A rota existe e funciona quando alcançada pela navegação interna da SPA — o que quebra é o deep-link, então link salvo, favorito e compartilhamento de endereço não funcionam\n\n\u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).not.\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: not \u001b[32m/errorPage\\/404/\u001b[39m\nReceived string: \u001b[31m\"https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/\u001b[7merrorPage/404\u001b[27m\"\u001b[39m\nTimeout: 30000ms\n\nCall log:\n\u001b[2m  - defeito U-01: abrir /portal/p/1/gestao_ferias diretamente pela URL cai em errorPage/404. A rota existe e funciona quando alcançada pela navegação interna da SPA — o que quebra é o deep-link, então link salvo, favorito e compartilhamento de endereço não funcionam with timeout 30000ms\u001b[22m\n\u001b[2m    63 × locator resolved to &lt;html lang=\"pt-BR\" class=\"k-webkit k-webkit151\"&gt;…&lt;/html&gt;\u001b[22m\n\u001b[2m       - unexpected value \"https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/errorPage/404\"\u001b[22m\n"
 }</pre>
   </section>
+
+  
 
   <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
     <pre class="detalhe">Call log:
@@ -32820,6 +32893,8 @@ Call log:
   "erro": "Error: erro(s) de console na Home: [\"Failed to load resource: the server responded with a status of 403 (Forbidden)\"]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   \"Failed to load resource: the server responded with a status of 403 (Forbidden)\",\u001b[39m\n\u001b[31m+ ]\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -33163,6 +33238,8 @@ Received:   500</pre>
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -33416,6 +33493,8 @@ Call Log:
   "erro": "Error: aba Atribuir deveria listar as SCs pendentes de atribuição\n\naba Atribuir deveria listar as SCs pendentes de atribuição\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: &gt; \u001b[32m1\u001b[39m\nReceived:   \u001b[31m1\u001b[39m\n\nCall Log:\n- Timeout 30000ms exceeded while waiting on the predicate"
 }</pre>
   </section>
+
+  
 
   
 
@@ -33762,6 +33841,8 @@ Expected: not "Gestão de Benefícios - Plano de Saúde"</pre>
   "erro": "Error: defeito: o processo de Admissão (wf_automacao_admissao) abre o formulário de Plano de Saúde (mesmo template de rh_gbeneficios_planosaude) em vez de um formulário de admissão — associação processo↔formulário incorreta\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"Gestão de Benefícios - Plano de Saúde\"\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -34198,6 +34279,8 @@ Timeout:  30000ms</pre>
 }</pre>
   </section>
 
+  
+
   <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
     <pre class="detalhe">Call log:
   - defeito: a aba Autorização do Banco de Horas nunca sai do estado "Aguarde, processando" — mesma causa raiz de U-02 (integração com o Protheus fora do ar). Nenhum campo de autorização de horas aparece, então "autorizar acima do limite deve bloquear" não é executável por esta rota. with timeout 30000ms
@@ -34405,6 +34488,8 @@ Call log:
   "erro": "Error: o widget não deveria expor erro de configuração de servidor ao usuário final via alert() nativo — ver defeito U-02\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 6\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"message\": \"Existem parâmetros não informado para esse servidor, informe o administrador\",\u001b[39m\n\u001b[31m+     \"type\": \"alert\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -34637,6 +34722,8 @@ Expected: not ""</pre>
   "erro": "Error: o campo \"Clínica\" deveria vir preenchido com a clínica do diagnóstico — sintoma compatível com o achado U-14 (job dsQDC000 parado); sem acesso admin, a suíte não confirma a causa, só o sintoma\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -35224,6 +35311,8 @@ Received: 6</pre>
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -35465,6 +35554,8 @@ Received: 200</pre>
   "erro": "Error: dataset 'ds_Fluig' (descrito no ambiente como \"Usuário e Senha usuario de integração\") respondeu 200 para uma sessão sem privilégio administrativo — deveria negar acesso (403), como acontece em /webdesk (CT-SEG-05-S1). Evidência estrutural, nunca o conteúdo: 1 registro(s), 3 coluna(s) na resposta. Ver CT-SEG-03-S1 / achado U-03.\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m403\u001b[39m\nReceived: \u001b[31m200\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 
@@ -35712,6 +35803,8 @@ Received: 200</pre>
 
   
 
+  
+
   <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
     <pre class="detalhe"># Instructions
 
@@ -35930,6 +36023,8 @@ Received: 2</pre>
   "erro": "Error: 2 requisição(ões) de navegação enviada(s) a google-analytics.com (medição G-F0FT6D1NQG). Ver achado U-11 / mapa-do-ambiente.md.\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m2\u001b[39m"
 }</pre>
   </section>
+
+  
 
   
 

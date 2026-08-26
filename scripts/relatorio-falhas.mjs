@@ -22,6 +22,17 @@ const saida = process.argv[3] ?? 'relatorio-falhas.html';
 
 const relatorio = JSON.parse(readFileSync(entrada, 'utf8'));
 
+/** Anexos que este gerador já renderiza em seções próprias. */
+const CONHECIDOS = new Set([
+  'screenshot',
+  'screenshot-da-falha',
+  'contexto-da-falha',
+  'error-context',
+  'trace',
+  'video',
+  'sem-captura',
+]);
+
 /** Remove códigos de cor ANSI que o Playwright grava na mensagem. */
 const semAnsi = (t) => String(t ?? '').replace(/\x1b\[[0-9;]*m/g, '');
 
@@ -170,6 +181,18 @@ for (const suite of relatorio.suites ?? []) {
       capturas,
       semTela,
       ariaSnapshot: pegar('error-context') ? anexoTexto(pegar('error-context')) : null,
+
+      // Qualquer anexo textual que o TESTE decidiu deixar. É por aqui que entra evidência que
+      // nem a screenshot nem o call log alcançam — por exemplo, o par requisição/resposta de um
+      // teste cujo oráculo é HTTP e não a tela.
+      extras: anexos
+        .filter(
+          (a) =>
+            !CONHECIDOS.has(a.name) &&
+            /^(application\/json|text\/(plain|markdown))/.test(a.contentType ?? ''),
+        )
+        .map((a) => ({ nome: a.name, texto: anexoTexto(a) }))
+        .filter((e) => e.texto),
       temTrace: Boolean(pegar('trace')),
       temVideo: Boolean(pegar('video')),
       stdout: (resultado.stdout ?? []).map((s) => s.text ?? s).join(''),
@@ -261,6 +284,15 @@ const cartao = (f, i) => `
   </section>`
       : ''
   }
+
+  ${f.extras
+    .map(
+      (e) => `<section class="bloco">
+    <h3>Evidência anexada pelo teste: ${escapar(e.nome)}</h3>
+    <pre class="detalhe">${escapar(e.texto)}</pre>
+  </section>`,
+    )
+    .join('')}
 
   ${
     f.callLog
