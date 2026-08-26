@@ -1,0 +1,3390 @@
+{
+ "items": [
+  {
+   "processInstanceId": 112300,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705686,
+   "formId": 256831,
+   "startDate": "2026-08-24T20:17:04.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112300,
+     "movementSequence": 4,
+     "active": false,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:18:22.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 7,
+      "stateName": "Validação do Gestor",
+      "stateDescription": "Validação do Gestor",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112300,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Gestor_Imediato",
+        "name": "Grupo de Compras - Validação do Gestor Imediato da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "TRANSFERRED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:18:22.000-0300",
+       "assignStartDate": "2026-08-24T20:18:22.000-0300",
+       "assignEndDate": "2026-08-25T17:30:09.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      },
+      {
+       "processInstanceId": 112300,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "TOTVS-FS",
+        "name": "Usuário TBC (TOTVS)",
+        "mail": "fabricasoftware@totvs.com.br",
+        "login": "TOTVS-FS",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:18:22.000-0300",
+       "assignStartDate": "2026-08-25T17:30:09.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    },
+    {
+     "processInstanceId": 112300,
+     "movementSequence": 4,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:18:22.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 7,
+      "stateName": "Validação do Gestor",
+      "stateDescription": "Validação do Gestor",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112300,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Gestor_Imediato",
+        "name": "Grupo de Compras - Validação do Gestor Imediato da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "TRANSFERRED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:18:22.000-0300",
+       "assignStartDate": "2026-08-24T20:18:22.000-0300",
+       "assignEndDate": "2026-08-25T17:30:09.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      },
+      {
+       "processInstanceId": 112300,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "TOTVS-FS",
+        "name": "Usuário TBC (TOTVS)",
+        "mail": "fabricasoftware@totvs.com.br",
+        "login": "TOTVS-FS",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:18:22.000-0300",
+       "assignStartDate": "2026-08-25T17:30:09.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705686,
+    "version": 1000,
+    "description": "Sol. Compras - CASSI SEDE"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112301,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705690,
+   "formId": 256831,
+   "startDate": "2026-08-24T20:20:40.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112301,
+     "movementSequence": 4,
+     "active": false,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:21:59.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 7,
+      "stateName": "Validação do Gestor",
+      "stateDescription": "Validação do Gestor",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112301,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Gestor_Imediato",
+        "name": "Grupo de Compras - Validação do Gestor Imediato da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "TRANSFERRED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:21:59.000-0300",
+       "assignStartDate": "2026-08-24T20:21:59.000-0300",
+       "assignEndDate": "2026-08-25T17:40:55.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      },
+      {
+       "processInstanceId": 112301,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "TOTVS-FS",
+        "name": "Usuário TBC (TOTVS)",
+        "mail": "fabricasoftware@totvs.com.br",
+        "login": "TOTVS-FS",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:21:59.000-0300",
+       "assignStartDate": "2026-08-25T17:40:55.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    },
+    {
+     "processInstanceId": 112301,
+     "movementSequence": 4,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:21:59.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 7,
+      "stateName": "Validação do Gestor",
+      "stateDescription": "Validação do Gestor",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112301,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Gestor_Imediato",
+        "name": "Grupo de Compras - Validação do Gestor Imediato da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "TRANSFERRED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:21:59.000-0300",
+       "assignStartDate": "2026-08-24T20:21:59.000-0300",
+       "assignEndDate": "2026-08-25T17:40:55.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      },
+      {
+       "processInstanceId": 112301,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "TOTVS-FS",
+        "name": "Usuário TBC (TOTVS)",
+        "mail": "fabricasoftware@totvs.com.br",
+        "login": "TOTVS-FS",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:21:59.000-0300",
+       "assignStartDate": "2026-08-25T17:40:55.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705690,
+    "version": 1000,
+    "description": "Sol. Compras - CASSI SEDE"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112302,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705691,
+   "formId": 256831,
+   "startDate": "2026-08-24T20:21:41.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112302,
+     "movementSequence": 9,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:23:50.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 14,
+      "stateName": "Validação Orçamentária",
+      "stateDescription": "Validação Orçamentária",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112302,
+       "movementSequence": 9,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "7ed9f502370740aa8c42285266bde117",
+        "name": "Erlon Cesar Dengo",
+        "mail": "erlon.dengo@cassi.com.br",
+        "login": "erlon.dengo.cassi.com.br.1",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:23:50.000-0300",
+       "assignStartDate": "2026-08-24T20:23:50.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 14,
+        "stateName": "Validação Orçamentária",
+        "stateDescription": "Validação Orçamentária",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 1,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 1,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    },
+    {
+     "processInstanceId": 112302,
+     "movementSequence": 10,
+     "active": false,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:23:50.000-0300",
+     "endDate": "2026-08-24T20:23:50.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 267,
+      "stateName": "Itens sem Gestor?",
+      "stateDescription": "Itens sem Gestor?",
+      "stateType": "AUTOMATIC",
+      "bpmnType": "GATEWAY_EXCLUSIVE",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [],
+     "threadSequence": 2,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705691,
+    "version": 2000,
+    "description": "Sol. Compras - 112302 - CASSI SEDE - 000995"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112303,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705700,
+   "formId": 256831,
+   "startDate": "2026-08-24T20:24:18.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112303,
+     "movementSequence": 6,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:26:21.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 11,
+      "stateName": "Ajustar Informações",
+      "stateDescription": "Ajustar Informações",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112303,
+       "movementSequence": 6,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "TOTVS-FS",
+        "name": "Usuário TBC (TOTVS)",
+        "mail": "fabricasoftware@totvs.com.br",
+        "login": "TOTVS-FS",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:26:21.000-0300",
+       "assignStartDate": "2026-08-24T20:26:21.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 11,
+        "stateName": "Ajustar Informações",
+        "stateDescription": "Ajustar Informações",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705700,
+    "version": 2000,
+    "description": "Sol. Compras - 112303 - CASSI SEDE - 000996"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112304,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705706,
+   "formId": 256831,
+   "startDate": "2026-08-24T20:26:56.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112304,
+     "movementSequence": 9,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:29:05.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 14,
+      "stateName": "Validação Orçamentária",
+      "stateDescription": "Validação Orçamentária",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112304,
+       "movementSequence": 9,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "7ed9f502370740aa8c42285266bde117",
+        "name": "Erlon Cesar Dengo",
+        "mail": "erlon.dengo@cassi.com.br",
+        "login": "erlon.dengo.cassi.com.br.1",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:29:05.000-0300",
+       "assignStartDate": "2026-08-24T20:29:05.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 14,
+        "stateName": "Validação Orçamentária",
+        "stateDescription": "Validação Orçamentária",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 1,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 1,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    },
+    {
+     "processInstanceId": 112304,
+     "movementSequence": 10,
+     "active": false,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:29:05.000-0300",
+     "endDate": "2026-08-24T20:29:05.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 267,
+      "stateName": "Itens sem Gestor?",
+      "stateDescription": "Itens sem Gestor?",
+      "stateType": "AUTOMATIC",
+      "bpmnType": "GATEWAY_EXCLUSIVE",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [],
+     "threadSequence": 2,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705706,
+    "version": 2000,
+    "description": "Sol. Compras - 112304 - CASSI SEDE - 000997"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112305,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705712,
+   "formId": 256831,
+   "startDate": "2026-08-24T20:29:40.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112305,
+     "movementSequence": 4,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:30:59.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 7,
+      "stateName": "Validação do Gestor",
+      "stateDescription": "Validação do Gestor",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112305,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Gestor_Imediato",
+        "name": "Grupo de Compras - Validação do Gestor Imediato da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:30:59.000-0300",
+       "assignStartDate": "2026-08-24T20:30:59.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705712,
+    "version": 1000,
+    "description": "Sol. Compras - CASSI SEDE"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112306,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705714,
+   "formId": 256831,
+   "startDate": "2026-08-24T20:30:47.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112306,
+     "movementSequence": 9,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:32:58.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 14,
+      "stateName": "Validação Orçamentária",
+      "stateDescription": "Validação Orçamentária",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112306,
+       "movementSequence": 9,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "7ed9f502370740aa8c42285266bde117",
+        "name": "Erlon Cesar Dengo",
+        "mail": "erlon.dengo@cassi.com.br",
+        "login": "erlon.dengo.cassi.com.br.1",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:32:58.000-0300",
+       "assignStartDate": "2026-08-24T20:32:58.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 14,
+        "stateName": "Validação Orçamentária",
+        "stateDescription": "Validação Orçamentária",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 1,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 1,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    },
+    {
+     "processInstanceId": 112306,
+     "movementSequence": 10,
+     "active": false,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:32:58.000-0300",
+     "endDate": "2026-08-24T20:32:58.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 267,
+      "stateName": "Itens sem Gestor?",
+      "stateDescription": "Itens sem Gestor?",
+      "stateType": "AUTOMATIC",
+      "bpmnType": "GATEWAY_EXCLUSIVE",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [],
+     "threadSequence": 2,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705714,
+    "version": 2000,
+    "description": "Sol. Compras - 112306 - CASSI SEDE - 000999"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112307,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705724,
+   "formId": 256831,
+   "startDate": "2026-08-24T20:33:29.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112307,
+     "movementSequence": 6,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:35:34.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 11,
+      "stateName": "Ajustar Informações",
+      "stateDescription": "Ajustar Informações",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112307,
+       "movementSequence": 6,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "TOTVS-FS",
+        "name": "Usuário TBC (TOTVS)",
+        "mail": "fabricasoftware@totvs.com.br",
+        "login": "TOTVS-FS",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:35:34.000-0300",
+       "assignStartDate": "2026-08-24T20:35:34.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 11,
+        "stateName": "Ajustar Informações",
+        "stateDescription": "Ajustar Informações",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705724,
+    "version": 2000,
+    "description": "Sol. Compras - 112307 - CASSI SEDE - 001000"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112308,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705730,
+   "formId": 256831,
+   "startDate": "2026-08-24T20:37:43.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112308,
+     "movementSequence": 4,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:39:05.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 7,
+      "stateName": "Validação do Gestor",
+      "stateDescription": "Validação do Gestor",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112308,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Gestor_Imediato",
+        "name": "Grupo de Compras - Validação do Gestor Imediato da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:39:05.000-0300",
+       "assignStartDate": "2026-08-24T20:39:05.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705730,
+    "version": 1000,
+    "description": "Sol. Compras - CASSI SEDE"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112309,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705736,
+   "formId": 256831,
+   "startDate": "2026-08-24T20:39:18.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112309,
+     "movementSequence": 9,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:41:28.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 14,
+      "stateName": "Validação Orçamentária",
+      "stateDescription": "Validação Orçamentária",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112309,
+       "movementSequence": 9,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "7ed9f502370740aa8c42285266bde117",
+        "name": "Erlon Cesar Dengo",
+        "mail": "erlon.dengo@cassi.com.br",
+        "login": "erlon.dengo.cassi.com.br.1",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:41:28.000-0300",
+       "assignStartDate": "2026-08-24T20:41:28.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 14,
+        "stateName": "Validação Orçamentária",
+        "stateDescription": "Validação Orçamentária",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 1,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 1,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    },
+    {
+     "processInstanceId": 112309,
+     "movementSequence": 10,
+     "active": false,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:41:28.000-0300",
+     "endDate": "2026-08-24T20:41:28.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 267,
+      "stateName": "Itens sem Gestor?",
+      "stateDescription": "Itens sem Gestor?",
+      "stateType": "AUTOMATIC",
+      "bpmnType": "GATEWAY_EXCLUSIVE",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [],
+     "threadSequence": 2,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705736,
+    "version": 2000,
+    "description": "Sol. Compras - 112309 - CASSI SEDE - 001002"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112310,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705742,
+   "formId": 256831,
+   "startDate": "2026-08-24T20:42:19.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112310,
+     "movementSequence": 4,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T20:43:37.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 7,
+      "stateName": "Validação do Gestor",
+      "stateDescription": "Validação do Gestor",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112310,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Gestor_Imediato",
+        "name": "Grupo de Compras - Validação do Gestor Imediato da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T20:43:37.000-0300",
+       "assignStartDate": "2026-08-24T20:43:37.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705742,
+    "version": 1000,
+    "description": "Sol. Compras - CASSI SEDE"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112311,
+   "processId": "wf_cotacao_produtos_servicos",
+   "processVersion": 25,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705746,
+   "formId": 256834,
+   "startDate": "2026-08-24T21:05:17.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112311,
+     "movementSequence": 4,
+     "active": false,
+     "slaStatus": "EXPIRED",
+     "startDate": "2026-08-24T21:20:02.000-0300",
+     "deadlineDate": "2026-08-25T18:00:00.000-0300",
+     "processId": "wf_cotacao_produtos_servicos",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 25,
+     "processDescription": "Cotação de Produtos e Serviços",
+     "state": {
+      "processId": "wf_cotacao_produtos_servicos",
+      "processVersion": 25,
+      "sequence": 72,
+      "stateName": "Correção",
+      "stateDescription": "Correção",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_USER",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112311,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Correcoes",
+        "name": "Grupo de Compras - Responsáveis por Correções de Integrações da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-25T18:00:00.000-0300",
+       "status": "TRANSFERRED",
+       "slaStatus": "EXPIRED",
+       "startDate": "2026-08-24T21:20:02.000-0300",
+       "assignStartDate": "2026-08-24T21:20:02.000-0300",
+       "assignEndDate": "2026-08-25T14:31:40.000-0300",
+       "warningDate": "2026-08-25T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_cotacao_produtos_servicos",
+       "processVersion": 25,
+       "processDescription": "Cotação de Produtos e Serviços",
+       "state": {
+        "sequence": 72,
+        "stateName": "Correção",
+        "stateDescription": "Correção",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_USER",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": false,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      },
+      {
+       "processInstanceId": 112311,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "TOTVS-FS",
+        "name": "Usuário TBC (TOTVS)",
+        "mail": "fabricasoftware@totvs.com.br",
+        "login": "TOTVS-FS",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-25T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "EXPIRED",
+       "startDate": "2026-08-24T21:20:02.000-0300",
+       "assignStartDate": "2026-08-25T14:31:40.000-0300",
+       "warningDate": "2026-08-25T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_cotacao_produtos_servicos",
+       "processVersion": 25,
+       "processDescription": "Cotação de Produtos e Serviços",
+       "state": {
+        "sequence": 72,
+        "stateName": "Correção",
+        "stateDescription": "Correção",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_USER",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": false,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    },
+    {
+     "processInstanceId": 112311,
+     "movementSequence": 4,
+     "active": true,
+     "slaStatus": "EXPIRED",
+     "startDate": "2026-08-24T21:20:02.000-0300",
+     "deadlineDate": "2026-08-25T18:00:00.000-0300",
+     "processId": "wf_cotacao_produtos_servicos",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 25,
+     "processDescription": "Cotação de Produtos e Serviços",
+     "state": {
+      "processId": "wf_cotacao_produtos_servicos",
+      "processVersion": 25,
+      "sequence": 72,
+      "stateName": "Correção",
+      "stateDescription": "Correção",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_USER",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112311,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Correcoes",
+        "name": "Grupo de Compras - Responsáveis por Correções de Integrações da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-25T18:00:00.000-0300",
+       "status": "TRANSFERRED",
+       "slaStatus": "EXPIRED",
+       "startDate": "2026-08-24T21:20:02.000-0300",
+       "assignStartDate": "2026-08-24T21:20:02.000-0300",
+       "assignEndDate": "2026-08-25T14:31:40.000-0300",
+       "warningDate": "2026-08-25T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_cotacao_produtos_servicos",
+       "processVersion": 25,
+       "processDescription": "Cotação de Produtos e Serviços",
+       "state": {
+        "sequence": 72,
+        "stateName": "Correção",
+        "stateDescription": "Correção",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_USER",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": false,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      },
+      {
+       "processInstanceId": 112311,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "TOTVS-FS",
+        "name": "Usuário TBC (TOTVS)",
+        "mail": "fabricasoftware@totvs.com.br",
+        "login": "TOTVS-FS",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-25T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "EXPIRED",
+       "startDate": "2026-08-24T21:20:02.000-0300",
+       "assignStartDate": "2026-08-25T14:31:40.000-0300",
+       "warningDate": "2026-08-25T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_cotacao_produtos_servicos",
+       "processVersion": 25,
+       "processDescription": "Cotação de Produtos e Serviços",
+       "state": {
+        "sequence": 72,
+        "stateName": "Correção",
+        "stateDescription": "Correção",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_USER",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": false,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705746,
+    "version": 1000,
+    "description": "24 Agosto, 2026 - Usuário TBC (TOTVS)"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Cotação de Produtos e Serviços",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112312,
+   "processId": "wf_cotacao_produtos_servicos",
+   "processVersion": 25,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705747,
+   "formId": 256834,
+   "startDate": "2026-08-24T21:06:32.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112312,
+     "movementSequence": 4,
+     "active": false,
+     "slaStatus": "EXPIRED",
+     "startDate": "2026-08-24T21:20:02.000-0300",
+     "deadlineDate": "2026-08-25T18:00:00.000-0300",
+     "processId": "wf_cotacao_produtos_servicos",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 25,
+     "processDescription": "Cotação de Produtos e Serviços",
+     "state": {
+      "processId": "wf_cotacao_produtos_servicos",
+      "processVersion": 25,
+      "sequence": 72,
+      "stateName": "Correção",
+      "stateDescription": "Correção",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_USER",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112312,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Correcoes",
+        "name": "Grupo de Compras - Responsáveis por Correções de Integrações da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-25T18:00:00.000-0300",
+       "status": "TRANSFERRED",
+       "slaStatus": "EXPIRED",
+       "startDate": "2026-08-24T21:20:02.000-0300",
+       "assignStartDate": "2026-08-24T21:20:02.000-0300",
+       "assignEndDate": "2026-08-25T15:26:45.000-0300",
+       "warningDate": "2026-08-25T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_cotacao_produtos_servicos",
+       "processVersion": 25,
+       "processDescription": "Cotação de Produtos e Serviços",
+       "state": {
+        "sequence": 72,
+        "stateName": "Correção",
+        "stateDescription": "Correção",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_USER",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": false,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      },
+      {
+       "processInstanceId": 112312,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "TOTVS-FS",
+        "name": "Usuário TBC (TOTVS)",
+        "mail": "fabricasoftware@totvs.com.br",
+        "login": "TOTVS-FS",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-25T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "EXPIRED",
+       "startDate": "2026-08-24T21:20:02.000-0300",
+       "assignStartDate": "2026-08-25T15:26:45.000-0300",
+       "warningDate": "2026-08-25T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_cotacao_produtos_servicos",
+       "processVersion": 25,
+       "processDescription": "Cotação de Produtos e Serviços",
+       "state": {
+        "sequence": 72,
+        "stateName": "Correção",
+        "stateDescription": "Correção",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_USER",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": false,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    },
+    {
+     "processInstanceId": 112312,
+     "movementSequence": 4,
+     "active": true,
+     "slaStatus": "EXPIRED",
+     "startDate": "2026-08-24T21:20:02.000-0300",
+     "deadlineDate": "2026-08-25T18:00:00.000-0300",
+     "processId": "wf_cotacao_produtos_servicos",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 25,
+     "processDescription": "Cotação de Produtos e Serviços",
+     "state": {
+      "processId": "wf_cotacao_produtos_servicos",
+      "processVersion": 25,
+      "sequence": 72,
+      "stateName": "Correção",
+      "stateDescription": "Correção",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_USER",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112312,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Correcoes",
+        "name": "Grupo de Compras - Responsáveis por Correções de Integrações da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-25T18:00:00.000-0300",
+       "status": "TRANSFERRED",
+       "slaStatus": "EXPIRED",
+       "startDate": "2026-08-24T21:20:02.000-0300",
+       "assignStartDate": "2026-08-24T21:20:02.000-0300",
+       "assignEndDate": "2026-08-25T15:26:45.000-0300",
+       "warningDate": "2026-08-25T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_cotacao_produtos_servicos",
+       "processVersion": 25,
+       "processDescription": "Cotação de Produtos e Serviços",
+       "state": {
+        "sequence": 72,
+        "stateName": "Correção",
+        "stateDescription": "Correção",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_USER",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": false,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      },
+      {
+       "processInstanceId": 112312,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "TOTVS-FS",
+        "name": "Usuário TBC (TOTVS)",
+        "mail": "fabricasoftware@totvs.com.br",
+        "login": "TOTVS-FS",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-25T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "EXPIRED",
+       "startDate": "2026-08-24T21:20:02.000-0300",
+       "assignStartDate": "2026-08-25T15:26:45.000-0300",
+       "warningDate": "2026-08-25T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_cotacao_produtos_servicos",
+       "processVersion": 25,
+       "processDescription": "Cotação de Produtos e Serviços",
+       "state": {
+        "sequence": 72,
+        "stateName": "Correção",
+        "stateDescription": "Correção",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_USER",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": false,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705747,
+    "version": 1000,
+    "description": "24 Agosto, 2026 - Usuário TBC (TOTVS)"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Cotação de Produtos e Serviços",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112313,
+   "processId": "wf_faturamento_contratos",
+   "processVersion": 50,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705748,
+   "formId": 256836,
+   "startDate": "2026-08-24T21:21:50.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112313,
+     "movementSequence": 5,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T21:21:56.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_faturamento_contratos",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 50,
+     "processDescription": "Faturamento de Contratos",
+     "state": {
+      "processId": "wf_faturamento_contratos",
+      "processVersion": 50,
+      "sequence": 28,
+      "stateName": "Realizar Medição do Contrato",
+      "stateDescription": "Realizar Medição do Contrato",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112313,
+       "movementSequence": 5,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "79e186f7483048d8978c56bf870ba3b9",
+        "name": "Sandi Cristina Cruz Moreira",
+        "mail": "sandi.moreira@cassi.com.br",
+        "login": "sandi.moreira.cassi.com.br.1",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T21:21:56.000-0300",
+       "assignStartDate": "2026-08-24T21:21:56.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_faturamento_contratos",
+       "processVersion": 50,
+       "processDescription": "Faturamento de Contratos",
+       "state": {
+        "sequence": 28,
+        "stateName": "Realizar Medição do Contrato",
+        "stateDescription": "Realizar Medição do Contrato",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705748,
+    "version": 1000,
+    "description": "Fat. Contrato - 000000000000010 - VERMA ENGENHARIA LTDA - 05395624000179 - 07-2025"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Faturamento de Contratos",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112315,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705749,
+   "formId": 256831,
+   "startDate": "2026-08-24T21:31:42.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112315,
+     "movementSequence": 4,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T21:33:05.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 7,
+      "stateName": "Validação do Gestor",
+      "stateDescription": "Validação do Gestor",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112315,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Gestor_Imediato",
+        "name": "Grupo de Compras - Validação do Gestor Imediato da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T21:33:05.000-0300",
+       "assignStartDate": "2026-08-24T21:33:05.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705749,
+    "version": 1000,
+    "description": "Sol. Compras - CASSI SEDE"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112316,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705753,
+   "formId": 256831,
+   "startDate": "2026-08-24T21:34:19.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112316,
+     "movementSequence": 4,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T21:35:38.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 7,
+      "stateName": "Validação do Gestor",
+      "stateDescription": "Validação do Gestor",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112316,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Gestor_Imediato",
+        "name": "Grupo de Compras - Validação do Gestor Imediato da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T21:35:38.000-0300",
+       "assignStartDate": "2026-08-24T21:35:38.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705753,
+    "version": 1000,
+    "description": "Sol. Compras - CASSI SEDE"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112317,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "TOTVS-FS",
+    "name": "Usuário TBC (TOTVS)",
+    "mail": "fabricasoftware@totvs.com.br",
+    "login": "TOTVS-FS",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705754,
+   "formId": 256831,
+   "startDate": "2026-08-24T21:34:57.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112317,
+     "movementSequence": 4,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T21:36:19.000-0300",
+     "deadlineDate": "2026-08-26T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "TOTVS-FS",
+      "name": "Usuário TBC (TOTVS)",
+      "mail": "fabricasoftware@totvs.com.br",
+      "login": "TOTVS-FS",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 7,
+      "stateName": "Validação do Gestor",
+      "stateDescription": "Validação do Gestor",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112317,
+       "movementSequence": 4,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "Pool:Group:G.P.Requisicao_de_Compras_Gestor_Imediato",
+        "name": "Grupo de Compras - Validação do Gestor Imediato da Req. de Compras",
+        "local": {}
+       },
+       "deadlineDate": "2026-08-26T18:00:00.000-0300",
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T21:36:19.000-0300",
+       "assignStartDate": "2026-08-24T21:36:19.000-0300",
+       "warningDate": "2026-08-26T18:00:00.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 7,
+        "stateName": "Validação do Gestor",
+        "stateDescription": "Validação do Gestor",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 0,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": true,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705754,
+    "version": 1000,
+    "description": "Sol. Compras - CASSI SEDE"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112319,
+   "processId": "wf_cotacao_produtos_servicos",
+   "processVersion": 25,
+   "active": false,
+   "requester": {
+    "code": "usuariocassi",
+    "name": "Usuario Integracao",
+    "mail": "integracao.fluig@cassi.com.br",
+    "login": "integracao.fluig.cassi.com.br.1",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705761,
+   "formId": 256834,
+   "startDate": "2026-08-24T21:38:49.000-0300",
+   "endDate": "2026-08-24T21:46:03.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112319,
+     "movementSequence": 10,
+     "active": false,
+     "slaStatus": "ON_TIME",
+     "processId": "wf_cotacao_produtos_servicos",
+     "requester": {
+      "code": "usuariocassi",
+      "name": "Usuario Integracao",
+      "mail": "integracao.fluig@cassi.com.br",
+      "login": "integracao.fluig.cassi.com.br.1",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 25,
+     "processDescription": "Cotação de Produtos e Serviços",
+     "state": {
+      "processId": "wf_cotacao_produtos_servicos",
+      "processVersion": 25,
+      "sequence": 11,
+      "stateName": "Fim",
+      "stateDescription": "Fim",
+      "stateType": "END",
+      "bpmnType": "END_EVENT_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705761,
+    "version": 2000,
+    "description": "24 Agosto, 2026 - Administrador Cassi"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "FINALIZED",
+   "processDescription": "Cotação de Produtos e Serviços",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112327,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": false,
+   "requester": {
+    "code": "28742b9206f64ddfa8184dd50b71639a",
+    "name": "Geise Campos Silva Matias",
+    "mail": "geise.matias@cassi.com.br",
+    "login": "geise.matias.cassi.com.br.1",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705767,
+   "formId": 256831,
+   "startDate": "2026-08-24T21:45:34.000-0300",
+   "endDate": "2026-08-24T21:46:17.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112327,
+     "movementSequence": 1,
+     "active": false,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T21:45:34.000-0300",
+     "endDate": "2026-08-24T21:46:17.000-0300",
+     "deadlineDate": "2026-09-21T18:00:00.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "28742b9206f64ddfa8184dd50b71639a",
+      "name": "Geise Campos Silva Matias",
+      "mail": "geise.matias@cassi.com.br",
+      "login": "geise.matias.cassi.com.br.1",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 6,
+      "stateName": "Início",
+      "stateDescription": "Início",
+      "stateType": "SIMPLE",
+      "bpmnType": "START_EVENT_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [],
+     "threadSequence": 0,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705767,
+    "version": 1000,
+    "description": "Sol. Compras - CASSI SEDE"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "CANCELED",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  },
+  {
+   "processInstanceId": 112328,
+   "processId": "wf_solicitacao_compras",
+   "processVersion": 94,
+   "active": true,
+   "requester": {
+    "code": "28742b9206f64ddfa8184dd50b71639a",
+    "name": "Geise Campos Silva Matias",
+    "mail": "geise.matias@cassi.com.br",
+    "login": "geise.matias.cassi.com.br.1",
+    "local": null,
+    "_expandables": [
+     "local"
+    ]
+   },
+   "formRecordId": 705768,
+   "formId": 256831,
+   "startDate": "2026-08-24T21:47:46.000-0300",
+   "periodId": "Default",
+   "activities": null,
+   "currentMovements": [
+    {
+     "processInstanceId": 112328,
+     "movementSequence": 10,
+     "active": false,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T21:56:07.000-0300",
+     "endDate": "2026-08-24T21:56:07.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "28742b9206f64ddfa8184dd50b71639a",
+      "name": "Geise Campos Silva Matias",
+      "mail": "geise.matias@cassi.com.br",
+      "login": "geise.matias.cassi.com.br.1",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 267,
+      "stateName": "Itens sem Gestor?",
+      "stateDescription": "Itens sem Gestor?",
+      "stateType": "AUTOMATIC",
+      "bpmnType": "GATEWAY_EXCLUSIVE",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [],
+     "threadSequence": 2,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    },
+    {
+     "processInstanceId": 112328,
+     "movementSequence": 22,
+     "active": true,
+     "slaStatus": "ON_TIME",
+     "startDate": "2026-08-24T22:06:16.000-0300",
+     "processId": "wf_solicitacao_compras",
+     "requester": {
+      "code": "28742b9206f64ddfa8184dd50b71639a",
+      "name": "Geise Campos Silva Matias",
+      "mail": "geise.matias@cassi.com.br",
+      "login": "geise.matias.cassi.com.br.1",
+      "local": null,
+      "_expandables": [
+       "local"
+      ]
+     },
+     "processVersion": 94,
+     "processDescription": "Solicitação de Compras",
+     "state": {
+      "processId": "wf_solicitacao_compras",
+      "processVersion": 94,
+      "sequence": 161,
+      "stateName": "Aguarda Finalizar Cotação",
+      "stateDescription": "Aguarda Finalizar Cotação",
+      "stateType": "SIMPLE",
+      "bpmnType": "TASK_NORMAL",
+      "configuration": null,
+      "_expandables": [
+       "instructions",
+       "configuration"
+      ]
+     },
+     "tasks": [
+      {
+       "processInstanceId": 112328,
+       "movementSequence": 22,
+       "transferSequence": 1,
+       "assignee": {
+        "code": "admin",
+        "name": "Administrador Cassi",
+        "mail": "fluig@cassi.com.br",
+        "login": "admin",
+        "local": {}
+       },
+       "status": "NOT_COMPLETED",
+       "slaStatus": "ON_TIME",
+       "startDate": "2026-08-24T22:06:16.000-0300",
+       "assignStartDate": "2026-08-24T22:06:16.000-0300",
+       "chosenAssignees": null,
+       "processId": "wf_solicitacao_compras",
+       "processVersion": 94,
+       "processDescription": "Solicitação de Compras",
+       "state": {
+        "sequence": 161,
+        "stateName": "Aguarda Finalizar Cotação",
+        "stateDescription": "Aguarda Finalizar Cotação",
+        "stateType": "SIMPLE",
+        "bpmnType": "TASK_NORMAL",
+        "configuration": {}
+       },
+       "threadSequence": 4,
+       "appDecisionInfo": null,
+       "formFields": null,
+       "deadlineSpecification": null,
+       "form": null,
+       "approachingExpiration": false,
+       "_expandables": [
+        "appDecisionInfo",
+        "form",
+        "formFields",
+        "processDiagram",
+        "deadlineSpecification",
+        "chosenAssignees"
+       ]
+      }
+     ],
+     "threadSequence": 4,
+     "formFields": null,
+     "deadlineSpecification": null,
+     "taskInfo": null,
+     "_expandables": [
+      "taskInfo",
+      "deadlineSpecification",
+      "formFields"
+     ]
+    }
+   ],
+   "formRecord": {
+    "id": 705768,
+    "version": 7000,
+    "description": "Sol. Compras - 112328 - CASSI SEDE - 001007"
+   },
+   "formFields": null,
+   "slaStatus": "ON_TIME",
+   "status": "OPEN",
+   "processDescription": "Solicitação de Compras",
+   "deadlineSpecification": null,
+   "_expandables": [
+    "activities",
+    "formFields",
+    "deadlineSpecification"
+   ]
+  }
+ ],
+ "hasNext": true
+}

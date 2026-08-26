@@ -1,0 +1,24 @@
+=== DOC: QA documento Sapatos Lindo de Plástico 989557e9
+--- PUBLICANDO ---
+>> POST /ecm/api/rest/ecm/documentPublisher/saveNewItem BODY: {"companyId":1,"documentId":0,"version":1000,"parentDocumentId":704916,"privateDocument":true,"manualVersion":false,"documentDescription":"QA documento Sapatos Lindo de Plástico 989557e9","additionalComments":"","versionDescription":null,"cardDescription":null,"publisherId":"TOTVS-FS","inheritSecurity":true,"publicDocument":false,"inheritApprovers":false,"uploadFolder":"https://caixade182374.fluig.cloudtotvs.com.br/webdesk/Upload","deleteUploadFiles":true,"documentType":"2","documentTypeId":null,"infGeralVO":null,"approved":false,"securityPermissionVOs":[{"permission":true,"showContent":true,"securityVersion":false,"attributionType":1,"attributionValue":"TOTVS-FS","securityLevel":3,"inheritSecurity":false,"inheritOriginSecurity":false,"attributionDescription":"Usuário TBC (TOTVS)","downloa
+<< 200 /ecm/api/rest/ecm/documentPublisher/saveNewItem RESP: {"msgId":"Novo documento publicado: QA documento Sapatos Lindo de Plástico 989557e9"}
+publicado OK
+--- EXCLUINDO (para a lixeira) ---
+>> DELETE /ecm/api/rest/ecm/navigation/removeDoc/ BODY: {"docsToDelete":[{"docId":"706772","isLink":false,"parentId":704916}],"metadataFormsToDelete":[]}
+<< 200 /ecm/api/rest/ecm/navigation/removeDoc/ RESP: {"content":"OK","message":null}
+excluido OK, documentId = 706772
+--- LIXEIRA: localizando item ---
+item encontrado na lixeira
+ACOES NA LINHA DA LIXEIRA: ["A[title=\"QA documento Sapatos Lindo de Plástico 989557e9\"] onclick=","P[title=\"Usuário TBC (TOTVS)\"] onclick=","P[title=\"Raiz:\\Meus Documentos\\\"] onclick=","P[title=\"Usuário TBC (TOTVS)\"] onclick=","I[title=\"Restaurar Documento\"] onclick=","I[title=\"Excluir Documento\"] onclick="]
+BOTOES VISIVEIS NA LIXEIRA: ["9+","Esvaziar lixeira","Restaurar todos","Mostrar 30 registros","Todos","Data da exclusão","Buscar","<<",">>"]
+--- ESVAZIAR LIXEIRA (só inspeção, vai CANCELAR) ---
+MODAL ESVAZIAR: × Close Esvaziar lixeira Você está prestes a excluir todos os itens da lixeira permanentemente. Essa ação não poderá ser desfeita. Deseja esvaziar a lixeira? Cancelar Esvaziar
+BOTOES DO MODAL: ["×Close","Cancelar","Esvaziar"]
+--- EXCLUSAO DEFINITIVA do item proprio ---
+usando icone da linha: Excluir Documento
+MODAL EXCLUSAO DEFINITIVA: × Close Excluir Esse item será excluído permanentemente. Deseja excluir? Cancelar Excluir
+>> DELETE /ecm/api/rest/ecm/recycleBin/removeDocument/ BODY: {"docsToDelete":["706772"],"colleagueIds":[]}
+<< 200 /ecm/api/rest/ecm/recycleBin/removeDocument/ RESP: {"content":"OK","message":null}
+item NAO esta mais na lixeira
+documento ainda na pasta apos exclusao definitiva? false
+=== PROBE OK ===

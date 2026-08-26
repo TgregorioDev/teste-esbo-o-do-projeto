@@ -143,7 +143,7 @@ não o entrega. Ajustá-los para passar documentaria o defeito como se fosse reg
 
 | Defeito | Onde | O que se observa |
 |---|---|---|
-| **D-01** 🔴 | payload da SC | `targetState: 6` (marco de Início do BPMN) e `targetAssignee: consumerkeycompras` — a SC nasce presa na conta de integração e nunca chega ao Protheus |
+| **D-01 (causa isolada)** 🔴 | payload da SC | o widget envia `targetState: 6` — o `START_EVENT_NORMAL` do BPMN — com `targetAssignee: consumerkeycompras`, e a SC nasce presa ali. **Provado em 26/08/2026:** o MESMO payload com `targetState: 0` faz a SC percorrer *Compra Centralizada?* → *Grava SC e Anexos* → *Validação do Gestor* e parar no pool do Gestor Imediato, como deveria. Não é limitação do processo: é o valor que o widget envia |
 | **D-01 (sintoma)** 🔴 | criação da SC | falha na transferência é anunciada como "iniciado com sucesso" |
 | **D-02** 🔴 | payload da SC | contrato de R$ 40.560,00 vira 2 itens de R$ 40.560,00 (**R$ 81.120,00**); em contrato de 4 itens, o valor se repete nos quatro |
 | **D-04** 🟠 | payload da SC | `classeOrca=133017` e `classificacao=Tecnologia` fixos em todo item e todo contrato; `campoDescritor="Sol. Compras - CASSI SEDE"` com filial de São Luís/MA |
