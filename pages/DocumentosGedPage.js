@@ -166,7 +166,16 @@ export class DocumentosGedPage extends DocumentosPage {
   async abrirNovoDocumentoAvancado() {
     await this.acoes.novo.click();
     await this.page.getByRole('link', { name: 'Documento avançado', exact: true }).click();
-    await this.modal.descricao.waitFor({ state: 'visible' });
+    await this.modal.descricao
+      .waitFor({ state: 'visible', timeout: 45_000 })
+      .catch(() => {
+        throw new Error(
+          'o publicador do GED não abriu: o campo Descrição não apareceu em 45s. Sem o modal ' +
+            'não há o que publicar — verifique se a pasta corrente é válida (pasta inválida ' +
+            'responde 200 e não renderiza nada) e se outro teste não está com a área de ' +
+            'upload travada.',
+        );
+      });
   }
 
   /**
@@ -283,12 +292,28 @@ export class DocumentosGedPage extends DocumentosPage {
    */
   async configurarAprovacaoComResponsavel({ nomeNivel, loginAprovador }) {
     await this.modal.tabAprovacao.click();
-    await this.modal.campoNivelAprovacao.waitFor({ state: 'visible' });
+    await this.modal.campoNivelAprovacao
+      .waitFor({ state: 'visible', timeout: 45_000 })
+      .catch(() => {
+        throw new Error(
+          'a aba "Aprovação" do publicador não expôs o campo de nível. Ela só existe em pasta ' +
+            'com o recurso de aprovação habilitado — se a pasta mudou de configuração, este ' +
+            'teste perdeu a pré-condição.',
+        );
+      });
     await this.modal.campoNivelAprovacao.fill(nomeNivel);
     await this.modal.botaoAdicionarNivel.click();
 
     const buscaAprovador = this.page.locator('input[placeholder="Buscar"]').last();
-    await buscaAprovador.waitFor({ state: 'visible' });
+    await buscaAprovador
+      .waitFor({ state: 'visible', timeout: 45_000 })
+      .catch(() => {
+        throw new Error(
+          'o campo de busca de aprovador não apareceu depois de criar o nível de aprovação. ' +
+            'Sem ele não há como designar o responsável, e o documento seria publicado sem ' +
+            'aprovação — o que descaracterizaria o caso.',
+        );
+      });
     await buscaAprovador.fill(loginAprovador);
 
     const sugestao = this.page

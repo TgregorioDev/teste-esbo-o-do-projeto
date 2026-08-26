@@ -44,8 +44,12 @@ test.describe('Portal de Autorização de Horas Extras', () => {
       const bancoHorasPage = new BancoHorasPage(page);
       await bancoHorasPage.goto();
 
-      await expect(bancoHorasPage.tituloAvisoProtheusOffline).toBeVisible();
-      await expect(bancoHorasPage.mensagemProtheusOffline).toBeVisible();
+      const semAviso =
+        'o Banco de Horas deveria informar ao usuário que a integração com o Protheus está ' +
+        'indisponível, e não apenas ficar sem dados. Nenhum aviso apareceu — ou a integração ' +
+        'voltou (e aí este caso perdeu a pré-condição) ou a tela deixou de avisar';
+      await expect(bancoHorasPage.tituloAvisoProtheusOffline, semAviso).toBeVisible();
+      await expect(bancoHorasPage.mensagemProtheusOffline, semAviso).toBeVisible();
     },
   );
 

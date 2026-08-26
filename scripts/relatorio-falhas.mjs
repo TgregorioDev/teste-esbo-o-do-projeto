@@ -60,6 +60,12 @@ function classificar(mensagem) {
   if (m.includes('pré-condição ausente'))
     return { chave: 'ambiente', rotulo: 'Ambiente / massa', cor: 'ambiente' };
 
+  // Erro de rede do Chromium não é veredito sobre o produto nem sobre o teste: é a máquina que
+  // executa. `net::ERR_NETWORK_CHANGED` apareceu várias vezes nesta suíte, inclusive derrubando
+  // o `globalSetup` de uma invocação inteira e fazendo um teste sumir do relatório em silêncio.
+  if (/net::ERR_/.test(mensagem))
+    return { chave: 'infra', rotulo: 'Infraestrutura', cor: 'infra' };
+
   // "Sem veredito" é o teste que estourou sem dizer NADA de domínio — o vermelho que não
   // ensina nada a quem lê o relatório. O sinal é a PRIMEIRA linha: quando a assertion recebe
   // mensagem customizada, o Playwright a coloca ali; sem ela, a linha é o erro cru da API.

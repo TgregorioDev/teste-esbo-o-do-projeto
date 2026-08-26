@@ -84,15 +84,21 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
           try {
             mkdirSync('test-results', { recursive: true });
             const linhas = criados
-              .map((a) =>
-                JSON.stringify({
+              .map((a) => {
+                // A descrição nem sempre é só o número: alguns testes anotam
+                // `numero=112690 justificativa="..."`. O que o limpador precisa é o id, e o
+                // primeiro grupo de dígitos é ele em todos os formatos usados na suíte.
+                const descricao = String(a.description ?? '').trim();
+                const id = descricao.match(/\d{4,}/)?.[0] ?? descricao;
+                return JSON.stringify({
                   tipo: 'solicitacao',
-                  id: String(a.description ?? '').trim(),
+                  id,
+                  descricaoOriginal: descricao === id ? undefined : descricao,
                   anotacao: a.type,
                   teste: testInfo.titlePath.join(' › '),
                   em: new Date().toISOString(),
-                }),
-              )
+                });
+              })
               .join('\n');
             appendFileSync('test-results/criados.jsonl', linhas + '\n');
           } catch (erro) {

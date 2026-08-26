@@ -45,7 +45,12 @@ test.describe('Gerência de Compras — Atribuir comprador (CT-E2E-05-H)', () =>
     // Transferir primeiro: prova que o pipeline de carga/renderização da grade FUNCIONA para
     // esta conta, com massa real — isola a causa da ausência de dados na Atribuir.
     await atribuicao.abrirAbaTransferir();
-    await expect(atribuicao.getTabelaAtiva()).toBeVisible();
+    await expect(
+      atribuicao.getTabelaAtiva(),
+      'a aba Transferir não renderizou a tabela. Ela é a PRÉ-CONDIÇÃO deste teste: serve para ' +
+        'provar que o pipeline de carga da grade funciona para esta conta, isolando a causa da ' +
+        'ausência de dados na aba Atribuir. Sem ela, o teste não tem o que comparar',
+    ).toBeVisible();
     await expect
       .poll(() => atribuicao.getLinhas().count(), {
         message: 'aba Transferir deveria listar SCs reais para esta conta (etapa=119)',
@@ -55,13 +60,21 @@ test.describe('Gerência de Compras — Atribuir comprador (CT-E2E-05-H)', () =>
 
     // Atribuir: mesma página, mesmo carregamento, dataset irmão (etapa=257) — sem dado real.
     await atribuicao.abrirAbaAtribuir();
-    await expect(atribuicao.getTabelaAtiva()).toBeVisible();
+    await expect(
+      atribuicao.getTabelaAtiva(),
+      'a aba Atribuir não renderizou nem a tabela vazia. O caso afirma sobre a AUSÊNCIA de ' +
+        'dados nela; sem a tabela na tela não dá para distinguir "veio vazia" (o defeito) de ' +
+        '"a aba não carregou" (outro problema)',
+    ).toBeVisible();
     // As duas chamadas a `ds_getSolicsGerenciaCompras` (etapa=257 e etapa=119) disparam juntas
     // no carregamento da página — a essa altura (já esperamos a Transferir acima) a resposta de
     // etapa=257 já chegou; a assertion abaixo só confirma o estado final renderizado.
-    await expect(atribuicao.getTabelaAtiva().getByText('Nenhum dado encontrado')).toBeVisible({
-      timeout: 30_000,
-    });
+    await expect(
+      atribuicao.getTabelaAtiva().getByText('Nenhum dado encontrado'),
+      'defeito: a aba Atribuir deveria listar as SCs pendentes de atribuição, e o esperado hoje ' +
+        'é o vazio ("Nenhum dado encontrado"). Se nem esse aviso aparece, a aba está num terceiro ' +
+        'estado — nem com dado, nem com vazio declarado',
+    ).toBeVisible({ timeout: 30_000 });
     expect(await atribuicao.possuiDados()).toBe(false);
 
     expect(guarda.tentativas()).toBe(0);

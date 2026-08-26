@@ -62,9 +62,13 @@ test.describe('Bloqueio de início de processos de RH — segregação por grupo
     const mensagemErro = page.getByText(mensagemBloqueioEsperada(processId)).first();
     const botaoOkEntendi = page.getByRole('button', { name: 'Ok, entendi' });
 
-    await expect(tituloErro).toBeVisible();
-    await expect(mensagemErro).toBeVisible();
-    await expect(botaoOkEntendi).toBeVisible();
+    const semBloqueio =
+      `o processo ${processId} deveria recusar o início para um usuário FORA do grupo de RH, ` +
+      'com o diálogo "Erro" e a mensagem de permissão. Nada disso apareceu — ou a segregação ' +
+      'por grupo não está aplicada neste processo, ou a tela mudou de forma';
+    await expect(tituloErro, semBloqueio).toBeVisible();
+    await expect(mensagemErro, semBloqueio).toBeVisible();
+    await expect(botaoOkEntendi, semBloqueio).toBeVisible();
 
     // O ponto central do caso: nenhum formulário carrega para submissão.
     await expect(page.getByRole('button', { name: 'Enviar' })).toHaveCount(0);
