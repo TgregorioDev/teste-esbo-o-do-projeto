@@ -100,6 +100,36 @@ alcancam.
 impossivel por qualquer via — UI ou API. Dar dono a solicitacao (seja o solicitante real, seja
 um comprador) e pre-requisito, nao detalhe.
 
+### Experimento: dar dono a SC NAO resolve (refutado em 26/08/2026)
+
+Hipotese testada: se a SC nascer com dono — `targetAssignee` = usuario logado em vez de
+`consumerkeycompras` — o `requester` deixaria de ser nulo e o cancelamento passaria a ser
+possivel. Disparo direto do start, com o payload genuino capturado como template:
+
+| Variante enviada | Resultado |
+|---|---|
+| `targetAssignee=TOTVS-FS`, `targetState=6` | **400 `BPMUserCanNotReceiveTaskException`** — *"Usuario selecionado nao esta apto para receber a tarefa! Usuario: TOTVS-FS"* |
+| `targetAssignee=TOTVS-FS`, `targetState=0` | **200**, SC 112679 criada — mas `requester` **continua null** |
+
+E cancelando a 112679, os MESMOS dois erros de antes:
+
+- `taskUserId=TOTVS-FS` → *"consumerkeycompras nao e um substituto valido para TOTVS-FS"*
+- `taskUserId=<GUID do Arthur>` → *"is not the process manager or requisitioner"*
+
+**Conclusoes:**
+
+1. O `requester` **nao vem de `targetAssignee`**. Sao coisas distintas: um e o responsavel pela
+   tarefa, outro e o autor da solicitacao. Preencher o primeiro nao preenche o segundo.
+2. O marco de Inicio (state 6) so aceita `consumerkeycompras` — o servidor recusa qualquer outro
+   usuario ali. Isso confirma que o `targetState: 6` do D-01 nao e escolha do widget: e imposicao
+   do desenho do processo.
+3. Portanto **nao ha nada que a automacao possa fazer no payload** para tornar suas SCs
+   cancelaveis. A correcao e no processo (quem preenche o solicitante) ou na configuracao de
+   substitutos — as duas fora do alcance da suite.
+
+O experimento foi revertido; nenhum teste da suite foi alterado. Custo: 1 SC criada (112679),
+que — pela propria conclusao acima — nao pode ser cancelada.
+
 ### Os dois caminhos possiveis
 
 **Caminho A — cadastrar `consumerkeycompras` como substituto de `TOTVS-FS`.** Configuracao
