@@ -40,7 +40,7 @@ import { parseFornecedorDaGrade } from '../../../factories/medicao.js';
 test.describe('Faturamento de Contratos — ciclo de medição', () => {
   test('CT-FAT-01-H @destrutivo: deve criar uma medição válida a partir de um contrato vigente e roteá-la para a próxima atividade do workflow', async ({
     page,
-  }) => {
+  }, testInfo) => {
     // Buscar um contrato/competência com saldo em aberto é legitimamente demorado (cada
     // tentativa é uma cadeia de zooms real contra o Protheus, ~5-10s) — o mesmo raciocínio do
     // timeout de 120s do `playwright.config.js` ("o ambiente é legitimamente lento… não
@@ -109,6 +109,35 @@ test.describe('Faturamento de Contratos — ciclo de medição', () => {
     await medicao.enviar();
     const numeroSolicitacao = await medicao.lerNumeroDaSolicitacaoCriada();
     expect(numeroSolicitacao).toBeGreaterThan(0);
+
+    // ⚠️ RASTREABILIDADE — este é o único fluxo destrutivo da suíte que NÃO carrega o prefixo
+    // `QA`, e não por omissão: medido em 26/08/2026, o formulário de medição tem 34 campos de
+    // texto e ZERO editáveis na etapa "Início" — todos `readonly`/`disabled`, porque vêm de
+    // zoom do Protheus ou de auto-preenchimento. O campo "Observações", que aceitaria o
+    // carimbo, só destrava em "Realizar Medição do Contrato", etapa de quem é Fiscal/CSE do
+    // contrato no Protheus. Não existe onde escrever.
+    //
+    // O substituto possível é registrar O QUE FOI CRIADO: o número da medição vai para as
+    // anotações e para um anexo, então o resíduo desta execução fica identificável pelo
+    // relatório mesmo sem marca no dado. Ao higienizar a base, é por aqui que se sabe quais
+    // medições vieram da automação.
+    testInfo.annotations.push({ type: 'medicao-criada', description: String(numeroSolicitacao) });
+    await testInfo.attach('medicao-criada', {
+      body: JSON.stringify(
+        {
+          numeroDaSolicitacao: numeroSolicitacao,
+          contrato: resultado.contrato,
+          competencia: resultado.competencia,
+          planilha: resultado.planilha,
+          observacao:
+            'Sem prefixo QA no dado: o formulário de medição não expõe campo de texto editável ' +
+            'na etapa Início (34 campos, 0 editáveis — medido). Este anexo é a trilha.',
+        },
+        null,
+        2,
+      ),
+      contentType: 'application/json',
+    });
 
     // Confirma que o processo avançou de "Início" para uma atividade de validação humana —
     // a prova de que a medição foi aceita e roteada corretamente, mesmo sem a automação
