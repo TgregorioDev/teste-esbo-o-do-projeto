@@ -72,9 +72,16 @@ barrados e, medindo, cinco de seis abrem normalmente.
 
 ## Limpeza da massa
 
-`npm run limpar` cancela o que a execução criou. **Sempre depois da coleta de evidências**, num
-passo explícito — nunca em `globalTeardown`, que corre junto com os reporters e poderia derrubar
-o processo antes de trace e relatório fecharem.
+`fixtures/global-teardown.js` cancela, ao fim de QUALQUER invocação, as solicitações que ela
+criou. `PULAR_LIMPEZA=1` desliga, para depurar com o resíduo vivo.
+
+Isto contraria uma decisão anterior deste projeto, que mantinha a limpeza fora do teardown. A
+premissa era que uma falha ali derrubaria o relatório — medido em 27/08/2026 e **refutado**:
+quando o teardown roda, trace e screenshot já estão gravados, e teardown que lança exceção não
+impede a geração do relatório. Mesmo assim o arquivo nunca lança.
+
+O corte é **por invocação** (`process.uptime()`), porque o livro-razão é append-only e no fluxo
+destrutivo fatiado cada invocação recancelaria tudo que veio antes.
 
 - `fixtures/fixtures.js` escreve `test-results/criados.jsonl` a cada teste, lendo as anotações
   `*-criada`/`*-criado` que os testes destrutivos já produzem. Escrever no instante da criação é

@@ -115,20 +115,35 @@ Todos com prefixo `QA` e sufixo único, rastreáveis na base.
 
 ## Limpeza da massa criada
 
-Depois de uma execução, `npm run limpar` **cancela as solicitações que a suíte criou**.
+**A limpeza é automática.** Ao fim de QUALQUER execução — inclusive `npx playwright test`
+rodado direto — o `globalTeardown` cancela as solicitações que aquela invocação criou.
 
 ```bash
-npm run limpar:simular   # lista o que faria, sem tocar em nada
-npm run limpar           # cancela o que está no livro-razão desta execução
+npx playwright test                  # cria e limpa sozinho
+PULAR_LIMPEZA=1 npx playwright test  # mantém o resíduo vivo, para depurar
+
+npm run limpar:simular               # lista o que faria, sem tocar em nada
+npm run limpar                       # limpeza manual pelo livro-razão
 
 # acumulado de execuções antigas (varre o servidor pelo carimbo QA)
 node scripts/limpar-massa.mjs --descobrir --desde=2026-08-25
 ```
 
-**Roda DEPOIS da coleta de evidências, nunca durante.** Não é `globalTeardown`: o teardown
-nativo corre junto com o fechamento dos reporters, e uma falha de limpeza ali pode derrubar o
-processo antes de trace, vídeo e relatório estarem gravados. A evidência de uma execução vale
-mais que a limpeza dela.
+**As evidências não são tocadas.** A limpeza cancela registros no Fluig por HTTP; não abre, não
+lê e não apaga arquivo nenhum. Screenshots, trace, vídeo e o `relatorio-falhas.html` ficam
+intactos — e cancelar não é apagar: a solicitação continua legível, com formulário, histórico e
+anexos. O que se perde é a possibilidade de **movimentá-la**, e é para isso que existe
+`PULAR_LIMPEZA=1`.
+
+Medido em 27/08/2026, porque a decisão dependia disso: quando o `globalTeardown` roda, os
+artefatos por teste **já estão gravados**; e um teardown que lança exceção **não impede** a
+geração do relatório. Ainda assim o teardown nunca lança — falha de limpeza é registrada e a
+execução segue.
+
+O filtro é **por invocação**: o livro-razão é append-only, e o corte é o instante em que o
+processo começou. Sem isso, no fluxo destrutivo fatiado cada uma das 34 invocações tentaria
+recancelar tudo que veio antes. Resíduo de execução interrompida com Ctrl+C não passa pelo
+teardown — para esse caso existe o modo `--descobrir`.
 
 Como funciona: a fixture escreve `test-results/criados.jsonl` no instante da criação — não
 depois, porque o resíduo que mais interessa limpar é o de teste que **morreu no meio**, e esse

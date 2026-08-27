@@ -66,6 +66,17 @@ export default defineConfig({
 
   globalSetup: './fixtures/global-setup.js',
 
+  // Cancela, ao fim de QUALQUER invocação, as solicitações que ela criou. Fica aqui — e não
+  // apenas no `npm run limpar` — para valer também quando alguém roda `npx playwright test`
+  // direto, que é o caso comum.
+  //
+  // Medido em 27/08/2026: teardown que lança exceção NÃO impede a geração do relatório nem
+  // apaga trace/vídeo (os artefatos por teste já estão gravados quando ele roda). Ainda assim
+  // o arquivo nunca lança — ver o cabeçalho dele.
+  //
+  // `PULAR_LIMPEZA=1` desliga, para depurar com o resíduo vivo.
+  globalTeardown: './fixtures/global-teardown.js',
+
   projects: [
     {
       // Fluxo de autenticação: SEM storageState — valida o login de verdade
