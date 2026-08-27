@@ -13,6 +13,22 @@ import { RecuperacaoSenhaPage } from '../../../pages/RecuperacaoSenhaPage.js';
  * pedido de token (comportamento que o próprio caso exige validar), mas NUNCA consomem um
  * token real para trocar a senha do usuário de teste — CT-AUT-03-S2 cobre exclusivamente o
  * caminho do token inválido/adulterado, que a plataforma rejeita antes de qualquer troca.
+ *
+ * ## Por que CT-AUT-03-H não usa `QA_USERNAME`
+ *
+ * A versão anterior pedia o token para `envObrigatoria('QA_USERNAME')` — o login que
+ * sustenta a suíte inteira (`fixtures/global-setup.js` e o `globalTeardown` autenticam com
+ * ele). Isso gerava um token de redefinição VIVO e um e-mail para uma caixa real a cada
+ * execução: qualquer consumo desse link derrubaria o `storageState`, a limpeza de massa e o
+ * projeto `e2e` inteiro. E era efeito colateral no ambiente do cliente sem a tag
+ * `@destrutivo`, invisível para `PULAR_DESTRUTIVOS=1`.
+ *
+ * O oráculo do caso não depende do login existir: a tela é anti-enumeração por desenho — a
+ * mensagem é *"Se esse login está associado à uma conta, você receberá um e-mail com
+ * instruções"*, e é exatamente essa indistinguibilidade que CT-AUT-02-S2 já prova no login.
+ * Usar um login inexistente valida o mesmo comportamento observável sem tocar credencial
+ * nenhuma. Se um dia o servidor passar a responder diferente para login inexistente, este
+ * teste reprova — e aí o achado é de enumeração de usuários, que é mais grave que o caso.
  */
 test.describe('Recuperação de senha', () => {
   test('CT-AUT-03-H deve emitir o token de redefinição e avisar para verificar o e-mail', async ({
@@ -21,9 +37,15 @@ test.describe('Recuperação de senha', () => {
     const recuperacaoPage = new RecuperacaoSenhaPage(page);
     await recuperacaoPage.abrirFluxoRecuperacao();
 
-    const resposta = await recuperacaoPage.solicitarToken(envObrigatoria('QA_USERNAME'));
+    // Login inexistente, carimbado e único — nunca a credencial da automação.
+    const loginInexistente = `qa.inexistente.${randomUUID().slice(0, 8)}`;
+    const resposta = await recuperacaoPage.solicitarToken(loginInexistente);
 
-    expect(resposta.status()).toBe(201);
+    expect(
+      resposta.status(),
+      `o pedido de token para o login inexistente "${loginInexistente}" deveria responder 201 ` +
+        'como para qualquer outro: a tela é anti-enumeração e não pode revelar se o login existe',
+    ).toBe(201);
     await expect(recuperacaoPage.headingVerifiqueEmail).toBeVisible();
     await expect(recuperacaoPage.mensagemVerificacaoEmail).toBeVisible();
   });

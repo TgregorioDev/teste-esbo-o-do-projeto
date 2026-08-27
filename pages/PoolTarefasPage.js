@@ -184,6 +184,48 @@ export class PoolTarefasPage {
   }
 
   /**
+   * Assume a tarefa de uma solicitação ESPECÍFICA, e não a de um índice.
+   *
+   * Por que existe: `assumirTarefa(0)` clica no primeiro botão da listagem, que é a tarefa
+   * que o grupo tiver por primeiro — possivelmente de um colaborador real. Assumir tira a
+   * tarefa da fila do GRUPO (ninguém mais a enxerga), então a escolha do alvo precisa ser
+   * deliberada e comprovadamente da automação. Quem decide a procedência é o teste, com
+   * `classificarAlvosDoLivro` (`utils/cancelamento-fluig.js`), que confere o carimbo `QA`
+   * no formulário pelo servidor; este método só executa a escolha já feita.
+   *
+   * A âncora é o `data-process-key` do cartão (`"<processInstanceId>.<movto>"`), o mesmo
+   * gancho estável usado por `CancelamentoCentralTarefasPage` — nunca o `id` do botão, que
+   * carrega timestamp e valor aleatório.
+   *
+   * @param {string|number} processInstanceId
+   * @returns {Promise<string>} identificador lido do diálogo de confirmação
+   */
+  async assumirTarefaPorId(processInstanceId) {
+    const cartao = this.page.locator(`task-card-component[data-process-key^="${processInstanceId}."]`);
+    await cartao.waitFor({ state: 'visible', timeout: 15_000 });
+
+    await cartao.getByRole('button', { name: 'Assumir', exact: true }).click();
+    await this.headingConfirmacaoAssumir.waitFor({ state: 'visible', timeout: 30_000 });
+
+    const texto = await this.headingConfirmacaoAssumir.innerText();
+    const id = texto.match(/(\d+)/)?.[1];
+    if (!id) {
+      throw new Error(
+        `Não foi possível ler o identificador da solicitação no diálogo de confirmação: "${texto}"`,
+      );
+    }
+    // O diálogo é a única confirmação de QUAL tarefa o servidor assumiu. Se divergir do alvo
+    // escolhido, a automação assumiu tarefa de terceiro — falha alto em vez de seguir.
+    if (id !== String(processInstanceId)) {
+      throw new Error(
+        `Assumida a solicitação ${id}, mas o alvo com procedência QA confirmada era ${processInstanceId}. ` +
+          'O clique atingiu outro cartão — não prossiga: a tarefa assumida pode ser de um colaborador real.',
+      );
+    }
+    return id;
+  }
+
+  /**
    * No diálogo de confirmação já aberto (após `assumirTarefa`), clica em "Acessar tarefa" e
    * espera a navegação para a tela de "Movimentar Solicitação" da tarefa assumida.
    *

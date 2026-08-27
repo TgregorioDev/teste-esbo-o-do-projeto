@@ -82,13 +82,32 @@ export class CentralTarefasComprasPage {
    * @returns {Promise<Array<{ nome: string, quantidade: number, link: import('@playwright/test').Locator }>>}
    */
   async listarGrupos() {
-    const links = this.page.getByRole('link').filter({ hasText: /\(\d+\)$/ });
-    const textos = await links.allInnerTexts();
+    // ⚠️ Ancorado em ATRIBUTO, não em texto. A versão anterior era
+    // `getByRole('link').filter({ hasText: /\(\d+\)$/ })` — dependia de o grupo ser exposto
+    // como `link` com o contador "(N)" no fim do texto. Medido em 27/08/2026: com o resumo
+    // anunciando "Tarefas em pool (1)" e o grupo "Validação dos Compradores" presente, este
+    // método devolvia `[]`. O efeito era silencioso porque quem chamava tratava lista vazia
+    // como "grupo não disponível" — e um teste chegou a reportar VERDE em cima disso.
+    //
+    // `a[data-change-tab-view][data-params-type-group="POOL"]`, lido pelo `data-node`, é o
+    // mesmo gancho de `PoolTarefasPage.listarGrupos()`, exercitado por CT-TSK-02.
+    const links = this.page.locator(
+      'a[data-change-tab-view][data-params-type-group="POOL"]:visible',
+    );
+    const quantidade = await links.count();
+    /** @type {Array<{ nome: string, quantidade: number, link: import('@playwright/test').Locator }>} */
     const grupos = [];
-    for (let i = 0; i < textos.length; i++) {
-      const m = textos[i].match(/^(.*)\((\d+)\)\s*$/s);
-      if (!m) continue;
-      grupos.push({ nome: m[1].trim(), quantidade: Number(m[2]), link: links.nth(i) });
+    for (let i = 0; i < quantidade; i++) {
+      const dataNode = await links.nth(i).getAttribute('data-node');
+      if (!dataNode) continue;
+      const info = /** @type {{ description?: string, totalTask?: number, count?: number }} */ (
+        JSON.parse(dataNode)
+      );
+      grupos.push({
+        nome: String(info.description ?? '').trim(),
+        quantidade: info.totalTask ?? info.count ?? 0,
+        link: links.nth(i),
+      });
     }
     return grupos;
   }
@@ -119,6 +138,7 @@ export class CentralTarefasComprasPage {
   async contarTarefasAssumiveis() {
     return this.page.getByRole('button', { name: 'Assumir' }).count();
   }
+
 
   /**
    * Assume a tarefa de índice informado (0 = primeira) dentro do grupo já aberto e espera

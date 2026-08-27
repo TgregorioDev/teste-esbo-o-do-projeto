@@ -26,6 +26,10 @@ const MOTIVOS = {
   'CT-ACC-08-H':
     'depende de abrir a SC já criada — D-01 a deixa atribuída a `consumerkeycompras`, fora do alcance da conta da automação',
   'CT-ADM-01-S2': 'reprocessar atividade de integração exige perfil de administrador',
+  'CT-CMP-05-H':
+    'a Validação Orçamentária (seq 14) tem responsável NOMINAL, vindo de API do Protheus por conta contábil e centro de custo — não cai em pool para a conta de automação, que não é gestor orçamentário de nenhum produto. O teste que existia citando este ID terminava em `expect(true).toBe(true)` e não exercitava o caso; foi substituído por um que afirma a própria regra de atribuição nominal.',
+  'CT-TSK-02-S1':
+    'só existe UMA conta de automação: dois contextos disputando a mesma tarefa são a MESMA identidade para o servidor, e o 500 resultante é exceção genérica de backend, não o aviso de concorrência entre usuários distintos que o caso descreve. Detalhe da investigação no cabeçalho de `tests/e2e/tarefas/assumir-tarefa-pool.spec.js`.',
   'CT-AUT-03-S3': 'exige token válido de redefinição, entregue por e-mail; sem caixa postal acessível',
   'CT-AUT-03-S4': 'idem CT-AUT-03-S3 — depende do token por e-mail',
   'CT-DEP-01-S1': 'o formulário de Dependentes não monta campo sem matrícula ativa',

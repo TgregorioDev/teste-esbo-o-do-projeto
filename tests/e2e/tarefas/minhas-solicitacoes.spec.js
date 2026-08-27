@@ -5,8 +5,15 @@ import { CentralTarefasPage } from '../../../pages/CentralTarefasPage.js';
 /**
  * Central de Tarefas — Minhas Solicitações (CT-TSK-03-H e CT-TSK-04-H).
  *
- * ⚠️ CT-TSK-02-H (assumir tarefa do pool) e CT-TSK-02-S1 (concorrência) alteram estado do
- * workflow do cliente e não estão implementados (ver README/relatório).
+ * ⚠️ Nota antiga, revogada: este cabeçalho dizia que assumir tarefa do pool e o cenário de
+ * concorrência "alteram estado do workflow do cliente e não estão implementados". As duas
+ * metades ficaram falsas. A premissa caiu com a decisão do dono do ambiente em 25/08/2026
+ * (`docs/politica-de-escrita.md`: escrever é o propósito da base de homologação), e o caso
+ * CT-TSK-02 cenário H **está implementado** em `tests/e2e/tarefas/assumir-tarefa-pool.spec.js`,
+ * agora com procedência QA verificada antes de assumir e devolução ao pool no teardown.
+ * O cenário S1 (concorrência) segue sem teste, com o motivo declarado em
+ * `scripts/gerar-cobertura.mjs` — não por política, mas porque só existe uma conta de
+ * automação e dois contextos são a mesma identidade para o servidor.
  */
 
 test.describe('Minhas Solicitações — sinalização de atraso (CT-TSK-03-H)', () => {

@@ -8,8 +8,8 @@ título do teste** — é o que torna esta contagem auditável em vez de declara
 | | |
 |---|---|
 | Casos no catálogo | **187** |
-| Com teste na suíte | **156** (83%) |
-| Sem teste | **31** |
+| Com teste na suíte | **154** (82%) |
+| Sem teste | **33** |
 
 O script falha se um teste citar um ID que não existe no catálogo, ou se um caso ficar sem teste
 e sem motivo declarado. As duas checagens existem para que a matriz não possa envelhecer em
@@ -55,7 +55,7 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-ADM-01-S2` | Reprocessamento após falha | ⬜ | reprocessar atividade de integração exige perfil de administrador |
 | `CT-AUT-01-H` | Login com credenciais válidas | ✅ | `e2e/auth/login.spec.js` |
 | `CT-AUT-02-S1` | Login com senha incorreta | ✅ | `e2e/auth/login.spec.js` |
-| `CT-AUT-02-S2` | Login com usuário inexistente | ✅ | `e2e/auth/login.spec.js` |
+| `CT-AUT-02-S2` | Login com usuário inexistente | ✅ | `e2e/auth/login.spec.js` · `e2e/auth/recuperacao-senha.spec.js` |
 | `CT-AUT-02-S3` | Campos obrigatórios vazios | ✅ | `e2e/auth/login.spec.js` |
 | `CT-AUT-03-H` | Recuperação de senha — envio de token | ✅ | `e2e/auth/recuperacao-senha.spec.js` |
 | `CT-AUT-03-S1` | Recuperação com e-mail vazio | ✅ | `e2e/auth/recuperacao-senha.spec.js` |
@@ -81,7 +81,7 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-CMP-03-S1` | Protheus indisponível ao carregar combos  ⭐ teste-mestre | ✅ | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
 | `CT-CMP-04-H` | Aprovação — Gestor Imediato (feliz) | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-04-S1` | Reprovação do Gestor gera correção | ✅ | `e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js` · `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
-| `CT-CMP-05-H` | Validação Orçamentária dentro da alçada | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
+| `CT-CMP-05-H` | Validação Orçamentária dentro da alçada | ⬜ | a Validação Orçamentária (seq 14) tem responsável NOMINAL, vindo de API do Protheus por conta contábil e centro de custo — não cai em pool para a conta de automação, que não é gestor orçamentário de nenhum produto. O teste que existia citando este ID terminava em `expect(true).toBe(true)` e não exercitava o caso; foi substituído por um que afirma a própria regra de atribuição nominal. |
 | `CT-CMP-05-S1` | Valor acima da alçada sem aprovador | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-06-H` | Aprovação final (Compradores/Alçadas) e conclusão | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-07-S1` | Regressão do fail-open do formulário clássico de SC | ✅ | `e2e/compras/fail-open-formulario-sc.spec.js` |
@@ -204,11 +204,11 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-SUB-01-S2` | Período retroativo/ inválido | ⬜ | idem CT-SUB-01-S1 |
 | `CT-SUB-02-H` | Delegação de Tarefas (`wf_SubstituiçãoCargosFluig`) | ✅ | `e2e/rh/delegacao-tarefas.spec.js` |
 | `CT-TSK-01-H` | Resumo reflete a carga real | ✅ | `e2e/tarefas/resumo-tarefas.spec.js` |
-| `CT-TSK-02-H` | Assumir tarefa do pool | ✅ | `e2e/tarefas/assumir-tarefa-pool.spec.js` · `e2e/tarefas/minhas-solicitacoes.spec.js` |
-| `CT-TSK-02-S1` | Concorrência ao assumir a mesma tarefa | ✅ | `e2e/tarefas/assumir-tarefa-pool.spec.js` · `e2e/tarefas/minhas-solicitacoes.spec.js` |
+| `CT-TSK-02-H` | Assumir tarefa do pool | ✅ | `e2e/tarefas/assumir-tarefa-pool.spec.js` |
+| `CT-TSK-02-S1` | Concorrência ao assumir a mesma tarefa | ⬜ | só existe UMA conta de automação: dois contextos disputando a mesma tarefa são a MESMA identidade para o servidor, e o 500 resultante é exceção genérica de backend, não o aviso de concorrência entre usuários distintos que o caso descreve. Detalhe da investigação no cabeçalho de `tests/e2e/tarefas/assumir-tarefa-pool.spec.js`. |
 | `CT-TSK-03-H` | Tarefa atrasada é sinalizada | ✅ | `e2e/tarefas/minhas-solicitacoes.spec.js` |
 | `CT-TSK-04-H` | Consulta de "Minhas Solicitações" | ✅ | `e2e/tarefas/minhas-solicitacoes.spec.js` |
 | `CT-TSK-05-H` | Cancelar solicitação — o fluxo do produto, nunca testado | ✅ | `e2e/tarefas/cancelamento-solicitacao.spec.js` |
 | `CT-TSK-05-S1` | Cancelamento sem motivo derruba com NPE 500 | ✅ | `e2e/tarefas/cancelamento-solicitacao.spec.js` |
 | `CT-TSK-07-H` | "Somente salvar" — salvar sem movimentar | ✅ | `e2e/tarefas/acoes-da-tarefa.spec.js` |
-| `CT-TSK-08-H` | Transferir atividade | ✅ | `e2e/tarefas/acoes-da-tarefa.spec.js` |
+| `CT-TSK-08-H` | Transferir atividade | ✅ | `e2e/tarefas/acoes-da-tarefa.spec.js` · `e2e/tarefas/assumir-tarefa-pool.spec.js` |
