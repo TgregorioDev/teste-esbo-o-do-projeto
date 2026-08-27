@@ -63,6 +63,37 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
         // a seed da última execução boa ainda estará no relatório.
         testInfo.annotations.push({ type: 'faker-seed', description: String(FAKER_SEED) });
 
+        // ── Livro-razão: escuta a REDE, não a convenção de nome ──────────────────────────────
+        //
+        // A primeira versão lia as anotações do teste e filtrava por `/criad[ao]/`. O filtro
+        // foi inferido de uma amostra e estava incompleto: os testes de aprovação anotam
+        // `solicitacao-aprovada`, `solicitacao-reprovada`, `alcada-sem-aprovador`… e criam SC
+        // do mesmo jeito. Numa execução completa isso deixou 11 solicitações órfãs — o livro
+        // registrou 7 de 18.
+        //
+        // Escutar a resposta de criação elimina a convenção do caminho: o que conta é o que o
+        // servidor devolveu, não o que o teste lembrou de declarar. Cobre os dois pontos de
+        // entrada (o widget do portal e o formulário clássico) e também criação disparada por
+        // `fetch` dentro de `page.evaluate`, que é requisição da página como qualquer outra.
+        /** @type {Set<string>} */
+        const criadosNaRede = new Set();
+        page.on('response', (resposta) => {
+          const url = resposta.url();
+          if (!/\/start$|\/workflowView\/send$/.test(url)) return;
+          if (resposta.request().method() !== 'POST') return;
+          if (!resposta.ok()) return;
+          resposta
+            .json()
+            .then((corpo) => {
+              const id = corpo?.processInstanceId ?? corpo?.content?.processInstanceId;
+              if (id) criadosNaRede.add(String(id));
+            })
+            .catch(() => {
+              // Corpo não-JSON ou já consumido: perder UM registro aqui é aceitável, ele
+              // continua rastreável pelo carimbo `QA` e alcançável por `--descobrir`.
+            });
+        });
+
         await use(undefined);
 
         // ── Livro-razão do que este teste criou ────────────────────────────────────────────
@@ -79,26 +110,27 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
         //
         // Isto REGISTRA, não apaga: a limpeza é passo separado e explícito, para nunca
         // ameaçar a coleta de evidências.
-        const criados = testInfo.annotations.filter((a) => /criad[ao]/i.test(a.type ?? ''));
+        // Anotações continuam valendo como fonte secundária: cobrem registro cujo id o teste
+        // conhece por outro caminho (a medição de contrato, por exemplo, lê o número da tela).
+        const idsAnotados = testInfo.annotations
+          .filter((a) => /criad[ao]/i.test(a.type ?? ''))
+          .map((a) => String(a.description ?? '').match(/\d{4,}/)?.[0])
+          .filter((id) => typeof id === 'string');
+
+        const criados = [...new Set([...criadosNaRede, ...idsAnotados])];
         if (criados.length > 0) {
           try {
             mkdirSync('test-results', { recursive: true });
             const linhas = criados
-              .map((a) => {
-                // A descrição nem sempre é só o número: alguns testes anotam
-                // `numero=112690 justificativa="..."`. O que o limpador precisa é o id, e o
-                // primeiro grupo de dígitos é ele em todos os formatos usados na suíte.
-                const descricao = String(a.description ?? '').trim();
-                const id = descricao.match(/\d{4,}/)?.[0] ?? descricao;
-                return JSON.stringify({
+              .map((id) =>
+                JSON.stringify({
                   tipo: 'solicitacao',
                   id,
-                  descricaoOriginal: descricao === id ? undefined : descricao,
-                  anotacao: a.type,
+                  origem: criadosNaRede.has(id) ? 'rede' : 'anotacao',
                   teste: testInfo.titlePath.join(' › '),
                   em: new Date().toISOString(),
-                });
-              })
+                }),
+              )
               .join('\n');
             appendFileSync('test-results/criados.jsonl', linhas + '\n');
           } catch (erro) {

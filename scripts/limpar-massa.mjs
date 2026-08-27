@@ -33,7 +33,7 @@ import { chromium } from '@playwright/test';
 import dotenv from 'dotenv';
 
 import {
-  cancelarSolicitacoes,
+  cancelarComRetentativa,
   conferirCancelamento,
   classificarAlvosDoLivro,
   descobrirSolicitacoesDaAutomacao,
@@ -172,7 +172,7 @@ try {
 
   for (let i = 0; i < ids.length; i += TAMANHO_LOTE) {
     const lote = ids.slice(i, i + TAMANHO_LOTE);
-    const parciais = await cancelarSolicitacoes(pagina, lote, {
+    const parciais = await cancelarComRetentativa(pagina, lote, {
       motivo: `${PREFIXO} limpeza automatizada pos-execucao`,
       login: USUARIO,
     });

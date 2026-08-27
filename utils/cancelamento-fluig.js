@@ -247,3 +247,46 @@ export async function classificarAlvosDoLivro(page, ids, prefixo = 'QA') {
     { ids, prefixo },
   );
 }
+
+/**
+ * `true` quando a recusa do servidor é TRANSITÓRIA e vale tentar de novo.
+ *
+ * Medido em 27/08/2026: cancelar uma solicitação recém-criada devolve
+ * *"Esta ação está sendo realizada por outra pessoa. Recomendamos atualizar a página…"* — o
+ * motor de workflow ainda está movimentando a tarefa quando a limpeza chega. Segundos depois o
+ * mesmo cancelamento passa.
+ *
+ * A distinção importa: *"A solicitação é invalida ou está inativa"* significa **já cancelada**,
+ * e retentar aquilo seria só desperdício com aparência de erro.
+ *
+ * @param {string} mensagem
+ */
+export function ehRecusaTransitoria(mensagem) {
+  return /outra pessoa|atualizar a p[áa]gina|lock|em uso/i.test(mensagem);
+}
+
+/**
+ * Cancela com retentativa para as recusas transitórias.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {number[]} ids
+ * @param {{ motivo: string, login: string, tentativas?: number, pausaMs?: number }} opcoes
+ * @returns {Promise<ResultadoCancelamento[]>}
+ */
+export async function cancelarComRetentativa(page, ids, opcoes) {
+  const { tentativas = 3, pausaMs = 6_000 } = opcoes;
+  /** @type {Map<number, ResultadoCancelamento>} */
+  const consolidado = new Map();
+  let pendentes = [...ids];
+
+  for (let tentativa = 1; tentativa <= tentativas && pendentes.length > 0; tentativa++) {
+    if (tentativa > 1) await new Promise((r) => setTimeout(r, pausaMs));
+    const resultados = await cancelarSolicitacoes(page, pendentes, opcoes);
+    for (const r of resultados) consolidado.set(r.processInstanceId, r);
+    pendentes = resultados
+      .filter((r) => r.status === 'FAIL' && ehRecusaTransitoria(r.mensagem))
+      .map((r) => r.processInstanceId);
+  }
+
+  return [...consolidado.values()];
+}

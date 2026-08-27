@@ -2,7 +2,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 
-import { cancelarSolicitacoes, conferirCancelamento, classificarAlvosDoLivro } from '../utils/cancelamento-fluig.js';
+import { cancelarComRetentativa, conferirCancelamento, classificarAlvosDoLivro } from '../utils/cancelamento-fluig.js';
 
 /**
  * Cancela, ao fim da execução, as solicitações que ELA criou.
@@ -128,7 +128,7 @@ export default async function globalTeardown() {
     }
 
     const ids = alvos.map((a) => a.processInstanceId);
-    const resultados = await cancelarSolicitacoes(pagina, ids, {
+    const resultados = await cancelarComRetentativa(pagina, ids, {
       motivo: `${process.env.QA_DATA_PREFIX ?? 'QA'} limpeza automatizada pos-execucao`,
       login: USUARIO,
     });
