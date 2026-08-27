@@ -162,6 +162,12 @@ do endpoint: `successCount` é o que ele diz ter feito; `status: CANCELED` é o 
 
 ### O que a limpeza não alcança
 
+Documento publicado no GED **não** é cancelável por solicitação — `CT-GED-02-S2` e `CT-GED-02-S1`
+publicam alguns por execução em "Meus Documentos", e o `npm run limpar` não os toca (a exclusão é
+outra receita, na skill `cassi-fluig-master`). Tarefa assumida de pool também fica: `CT-CMP-08-H`
+deixa uma por execução, e não há devolução direta (há por "Transferir" numa atividade de grupo,
+mas não é o que esses testes fazem).
+
 Tarefa assumida de pool não tem devolução no Fluig — confirmado por menu, por bundle e pela
 ausência de inverso na API. Anexo de Solicitação de Compra vira documento numa pasta que o
 produto cria por solicitação, e apagá-lo significa mexer na solicitação. Registro de formulário

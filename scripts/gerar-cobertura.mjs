@@ -19,54 +19,8 @@ const RE = /CT-[A-Z0-9]{2,4}-\d{2}-(?:H|S\d)/g;
  * @type {Record<string, string>}
  */
 const MOTIVOS = {
-  'CT-SEG-07-S1':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-CMP-07-S1':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-TSK-05-H':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-CMP-08-H':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-SEG-08-S1':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-TSK-05-S1':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-GED-02-S2':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-ACC-09-H':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-RDF-02-H':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-PLT-06-S1':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-PLT-04-S2':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-PLT-10-H':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-TSK-07-H':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-TSK-08-H':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-JUR-06-H':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
   'CT-SEG-10-S1':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-FIN-01-H':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-SUB-02-H':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-GED-04-S1':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-PLT-09-S1':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-PLT-08-S1':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-NOT-03-S1':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-PLT-07-S1':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
-  'CT-CLI-03-H':
-    'EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir.',
+    'bloqueado: o critério de ACL correta dos documentos/pastas que o workflow gera não foi definido pela Cassi — pergunta em aberto. Assertion frouxa aqui seria pior que ausência de teste.',
   'CT-ACC-03-S1': 'exige contrato com filial órfã (código sem cadastro); não existe na base',
   'CT-ACC-03-S3': 'contrato de 177 itens congela o navegador (D-03) e derruba o worker',
   'CT-ACC-08-H':

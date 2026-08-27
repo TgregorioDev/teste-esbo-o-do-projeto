@@ -707,3 +707,260 @@ test.describe('Indisponibilidade do Protheus ao carregar os combos (formulário 
     await expect(formulario.headingFormulario).toBeVisible();
   });
 });
+
+/**
+ * @typedef {Object} Documento
+ * @property {number} id `documentPK.documentId`
+ * @property {string} tipo `documentType` — "1" pasta, "2" documento, "7" anexo de workflow
+ * @property {number} pai `parentDocumentId` (-1 = fora da árvore navegável)
+ * @property {string} descricao `documentDescription`
+ * @property {boolean} excluido `deleted` (está na Lixeira)
+ */
+
+/**
+ * Executa o dataset `document` do Fluig com uma constraint só, e devolve as colunas que
+ * interessam à cadeia de anexos.
+ *
+ * ⚠️ `page.evaluate` + `fetch`, nunca `page.request`: o WAF do TOTVS Cloud barra o contexto de
+ * requisição do Playwright (a armadilha já paga em `utils/cancelamento-fluig.js`).
+ *
+ * ⚠️ Medido em 27/08/2026: constraint com `%` NO INÍCIO do valor (`'%anexo%'`) faz esta
+ * consulta varrer a tabela inteira e estourar 4 minutos sem responder. Toda busca aqui é
+ * **ancorada** — por `parentDocumentId`, por `documentPK.documentId`, ou por descrição com o
+ * prefixo fixo `'Processo <n> - %'` — e responde em ~2s.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} campo
+ * @param {string} valor
+ * @param {boolean} like
+ * @returns {Promise<Documento[]>}
+ */
+async function consultarDocumentos(page, campo, valor, like) {
+  return page.evaluate(
+    async ({ campo, valor, like }) => {
+      const resposta = await fetch('/api/public/ecm/dataset/datasets', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'document',
+          fields: null,
+          constraints: [
+            { _field: campo, _initialValue: valor, _finalValue: valor, _type: 1, _likeSearch: like },
+          ],
+        }),
+      });
+      if (!resposta.ok) return [];
+      const json = await resposta.json().catch(() => null);
+      return (json?.content?.values ?? []).map((/** @type {any} */ linha) => ({
+        id: Number(linha['documentPK.documentId']),
+        tipo: String(linha.documentType ?? ''),
+        pai: Number(linha.parentDocumentId),
+        descricao: String(linha.documentDescription ?? ''),
+        excluido: linha.deleted === true,
+      }));
+    },
+    { campo, valor, like },
+  );
+}
+
+/**
+ * CT-ACC-09-H — o caminho FELIZ do anexo da Solicitação de Compras.
+ *
+ * A suíte prova exaustivamente que a SC nasce **sem** o anexo obrigatório (`CT-CMP-02-S4`, no
+ * cliente e no servidor). Ninguém provava o contrário: que, quando o anexo **é** enviado, ele
+ * chega íntegro e recuperável.
+ *
+ * ## O que o produto faz com um anexo de SC (medido em campo em 27/08/2026)
+ *
+ * O anexo vira **dois** documentos no GED, e uma cadeia de pastas que o produto cria sozinho
+ * por solicitação:
+ *
+ * ```
+ * Anexos de Processo de Compras (256812)
+ *   └ Requisição de Compra ou Contratação (256824)
+ *       └ "Processo <nº> - <aaaa-mm-dd>"                        (documentType 1)
+ *           ├ "Solicitação <nº> - <data> - <usuário>"           (documentType 1)
+ *           │   └ "PUBLICA - Documentação - <anexo> - (Controle:<id>)"  (documentType 2)
+ *           └ "Restrita - Solicitação <nº> - <data> - Comprador"(documentType 1)
+ * ```
+ *
+ * e, FORA da árvore navegável, o registro de anexo de workflow:
+ * `"PUBLICA - Documentação - <anexo>"` com `documentType: "7"` e `parentDocumentId: -1`.
+ *
+ * **Risco concreto que este caso guarda:** se a dupla gravação quebrar, o anexo some da
+ * tarefa; se a cadeia de pastas deixar de ser criada, o anexo fica órfão em
+ * `parentDocumentId: -1`, inalcançável para o aprovador. Nada detectava isso.
+ *
+ * ⚠️ Armadilha de busca já paga: o registro do GED **não** se chama como o arquivo físico nem
+ * como a justificativa — a descrição é prefixada por `"PUBLICA - Documentação - "`. Procurar
+ * por `LIKE 'QA%'` devolve zero e daria a impressão errada de que o anexo não foi gravado.
+ *
+ * `@destrutivo`, e o resíduo é **permanente**: anexo de SC e a cadeia de pastas não podem ser
+ * apagados (apagá-los é mexer na solicitação — vetado nesta base). Um por execução. O nome do
+ * anexo carrega o sufixo único da factory, para não colidir com os ~140 registros de anexo já
+ * acumulados na base.
+ *
+ * ## Duas armadilhas de sincronização medidas ao escrever este teste
+ *
+ * 1. **A cadeia de pastas não existe quando o Fluig devolve o número da solicitação.** Quem a
+ *    cria é a etapa de serviço "Grava SC e Anexos", segundos depois. Consultar uma vez logo
+ *    após o envio devolve vazio e leria como "o produto não gravou o anexo" — aconteceu na
+ *    primeira versão deste teste (SC 112753). Daí o `toPass` sobre a cadeia inteira.
+ * 2. **A aba "Anexos" só é pintada quando acionada**, e o contador do rótulo ("Anexos 0") só é
+ *    recalculado aí — ele lê 0 mesmo com o anexo já vinculado. Por isso o oráculo é o item da
+ *    lista de anexos da solicitação, não o contador nem a visibilidade do painel.
+ */
+test.describe('Anexo da Solicitação de Compras chega íntegro ao GED (CT-ACC-09-H)', () => {
+  test('CT-ACC-09-H @destrutivo — o anexo enviado deveria gerar os dois registros no GED, sob a pasta da solicitação, e ser listado na solicitação', async ({
+    page,
+  }, testInfo) => {
+    // Mesmo orçamento de CT-CMP-01-H: preencher 4 combos assíncronos, anexar, enviar e ainda
+    // navegar até a solicitação criada.
+    testInfo.setTimeout(300_000);
+
+    const { massa, numeroProcesso } = await criarSolicitacaoCompletaEEnviar(page);
+    // Nome informado no diálogo "Informe o nome do arquivo" — é ele que o GED usa na descrição.
+    const nomeDoAnexo = `${massa.justificativa} - anexo`;
+
+    test.info().annotations.push({
+      type: 'solicitacao-criada',
+      description: `numero=${numeroProcesso} anexo="${nomeDoAnexo}"`,
+    });
+
+    // ── 1-3. A cadeia de pastas e a cópia navegável do anexo ─────────────────────────────
+    //
+    // Medido em 27/08/2026: a cadeia NÃO existe no instante em que o Fluig devolve o número
+    // da solicitação — quem a cria é a etapa de serviço "Grava SC e Anexos", segundos depois.
+    // Consultar uma vez logo após o envio devolve vazio e leria como "o produto não gravou o
+    // anexo" (foi o que aconteceu na primeira versão deste teste, com a SC 112753: a pasta
+    // 706975 apareceu pouco depois). Poll observável e limitado, nunca `waitForTimeout`, e o
+    // diagnóstico diz em QUAL elo a cadeia parou.
+    /** @type {{ processo: Documento | null, solicitacao: Documento | null, copia: Documento | null, irmas: string[], conteudo: string[] }} */
+    const cadeia = { processo: null, solicitacao: null, copia: null, irmas: [], conteudo: [] };
+
+    await expect(async () => {
+      const pastasDoProcesso = await consultarDocumentos(
+        page,
+        'documentDescription',
+        `Processo ${numeroProcesso} - %`,
+        true,
+      );
+      cadeia.processo = pastasDoProcesso[0] ?? null;
+      expect(
+        cadeia.processo,
+        `nenhuma pasta "Processo ${numeroProcesso} - ..." existe no GED. O produto cria essa ` +
+          'cadeia sozinho na etapa "Grava SC e Anexos"; sem ela o anexo não tem onde ser ' +
+          'navegado e o aprovador não o alcança',
+      ).not.toBeNull();
+
+      const subpastas = await consultarDocumentos(
+        page,
+        'parentDocumentId',
+        String(/** @type {Documento} */ (cadeia.processo).id),
+        false,
+      );
+      cadeia.irmas = subpastas.map((sub) => sub.descricao);
+      cadeia.solicitacao =
+        subpastas.find((sub) => sub.descricao.startsWith(`Solicitação ${numeroProcesso} - `)) ?? null;
+      expect(
+        cadeia.solicitacao,
+        `dentro de "${/** @type {Documento} */ (cadeia.processo).descricao}" não existe a pasta ` +
+          `"Solicitação ${numeroProcesso} - ...". Subpastas encontradas: ${JSON.stringify(cadeia.irmas)}`,
+      ).not.toBeNull();
+
+      const conteudo = await consultarDocumentos(
+        page,
+        'parentDocumentId',
+        String(/** @type {Documento} */ (cadeia.solicitacao).id),
+        false,
+      );
+      cadeia.conteudo = conteudo.map((doc) => doc.descricao);
+      cadeia.copia = conteudo.find((doc) => doc.descricao.includes(nomeDoAnexo)) ?? null;
+      expect(
+        cadeia.copia,
+        `o anexo "${nomeDoAnexo}" não está sob a pasta da solicitação — é a cópia navegável, a ` +
+          'única alcançável por quem abre o GED. Conteúdo encontrado na pasta: ' +
+          `${JSON.stringify(cadeia.conteudo)}`,
+      ).not.toBeNull();
+    }).toPass({ timeout: 120_000, intervals: [3_000, 5_000, 8_000, 15_000] });
+
+    const pastaDoProcesso = /** @type {Documento} */ (cadeia.processo);
+    expect(
+      pastaDoProcesso.pai,
+      `a pasta "${pastaDoProcesso.descricao}" deveria pendurar em "Requisição de Compra ou ` +
+        'Contratação" (256824), dentro de "Anexos de Processo de Compras" — está fora da cadeia ' +
+        'esperada',
+    ).toBe(256824);
+
+    const copia = /** @type {Documento} */ (cadeia.copia);
+    expect(
+      copia.tipo,
+      `a cópia navegável do anexo (${copia.id}) deveria ser um documento comum (documentType 2)`,
+    ).toBe('2');
+    expect(copia.excluido, `a cópia navegável do anexo (${copia.id}) não deveria nascer excluída`).toBe(
+      false,
+    );
+
+    // ── 4. O registro de ANEXO DE WORKFLOW (documentType 7), fora da árvore ───────────────
+    // O id dele vem no próprio nome da cópia: "... - (Controle:<id>)". Se esse elo se perder,
+    // a tarefa mostra a lista de anexos vazia mesmo com o arquivo gravado.
+    const controle = copia.descricao.match(/\(Controle:(\d+)\)/)?.[1];
+    expect(
+      controle,
+      `a descrição da cópia navegável ("${copia.descricao}") deveria carregar o elo ` +
+        '"(Controle:<id>)" para o registro de anexo de workflow — sem ele o anexo do GED e o ' +
+        'anexo da tarefa deixam de estar ligados',
+    ).toBeTruthy();
+
+    const anexoDeWorkflow = await consultarDocumentos(page, 'documentPK.documentId', String(controle), false);
+    expect(
+      anexoDeWorkflow.map((d) => `${d.id}|tipo ${d.tipo}|pai ${d.pai}`),
+      `o registro de anexo de workflow ${controle} (documentType 7, parentDocumentId -1) não foi ` +
+        'encontrado — é ele que a aba "Anexos" da tarefa lê',
+    ).toHaveLength(1);
+    expect(
+      anexoDeWorkflow[0].tipo,
+      `o registro ${controle} deveria ser o anexo de workflow (documentType 7)`,
+    ).toBe('7');
+    expect(
+      anexoDeWorkflow[0].pai,
+      `o registro ${controle} é o anexo de workflow e vive FORA da árvore navegável ` +
+        '(parentDocumentId -1) — por isso a cópia da etapa 3 é obrigatória',
+    ).toBe(-1);
+    expect(
+      anexoDeWorkflow[0].descricao,
+      `o registro ${controle} deveria referir-se ao anexo desta execução`,
+    ).toContain(nomeDoAnexo);
+
+    // ── 5. E o anexo é listado NA SOLICITAÇÃO, não só no GED ─────────────────────────────
+    //
+    // As quatro etapas acima falam do banco do GED; esta fala do vínculo com a solicitação —
+    // é o que o aprovador enxerga. As duas coisas podem se soltar (o registro tipo 7 vive
+    // FORA da árvore, com `parentDocumentId: -1`), e é essa divergência que o caso guarda.
+    //
+    // ⚠️ O caminho é o link de confirmação, e não `pageworkflowview?...processInstanceId=<n>`:
+    // medido em 27/08/2026 na SC 112755 (mantida viva com `PULAR_LIMPEZA=1`), a navegação
+    // direta abre o modal *"Esta tarefa não está mais sob sua responsabilidade!"* — efeito do
+    // D-01, que deixa a SC com `consumerkeycompras` — e, fechado o modal, a tela inteira some.
+    // Por ali não há aba de Anexos para ler, e insistir mediria o D-01, não este caso.
+    await page.getByRole('link', { name: `Acessar solicitação #${numeroProcesso}` }).click();
+    await expect(page).toHaveURL(new RegExp(`(processInstanceId|ProcessInstanceID)=${numeroProcesso}\\b`), {
+      timeout: 30_000,
+    });
+
+    // A lista de anexos da solicitação é renderizada como `<span data-open-attachment
+    // data-document-id="<id>">`. A assertion é sobre a PRESENÇA do item na lista da
+    // solicitação — não sobre ele estar visível: a aba "Anexos" só é pintada quando acionada
+    // (e o contador do rótulo só é recalculado aí), então exigir visibilidade mediria a
+    // ativação da aba, que é chrome de interface, e não o vínculo anexo↔solicitação.
+    const itemDeAnexo = page.locator('[data-open-attachment]').filter({ hasText: nomeDoAnexo });
+    await expect(
+      itemDeAnexo,
+      `a solicitação ${numeroProcesso} não lista "${nomeDoAnexo}" entre os seus anexos. Os dois ` +
+        'registros do GED existem e estão sob a pasta da solicitação (etapas anteriores), então ' +
+        'o arquivo foi gravado — e mesmo assim não chega a quem precisa aprovar a compra. É ' +
+        `exatamente o cenário do anexo órfão em \`parentDocumentId: -1\` (registro ${controle})`,
+    ).toHaveCount(1, { timeout: 30_000 });
+  });
+});

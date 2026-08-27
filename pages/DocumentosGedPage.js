@@ -395,6 +395,81 @@ export class DocumentosGedPage extends DocumentosPage {
   }
 
   /**
+   * Na lista "Documentos a aprovar", localiza a tarefa pela descrição do documento e REJEITA,
+   * com justificativa. Devolve o `documentId` lido do próprio cartão.
+   *
+   * Espelha `aprovarDocumento` — mesma mecânica de reabrir a categoria a cada tentativa (é o
+   * que traz dado novo do servidor) e de subir do texto da descrição até o ancestral que
+   * contém o botão. Ver o comentário lá para as duas razões de o `toPass` existir.
+   *
+   * O `documentId` sai do atributo `data-document-action="download-<id>"` do botão de download
+   * do cartão — é o único lugar da tela onde o id aparece, e é ele que permite provar depois,
+   * por rota de leitura, que o documento deixou de existir. Ler o id ANTES de rejeitar não é
+   * detalhe: depois da rejeição não há mais de onde tirá-lo.
+   *
+   * ⚠️ A resposta de `POST documentView/approveDocument` com `approved:false` vem com
+   * `{"msgId":"Novo documento publicado: …"}` — **o `msgId` mente**. Nunca use a resposta da
+   * API como oráculo de rejeição; o sinal é o toast da UI e, definitivamente, o sumiço do
+   * documento.
+   *
+   * @param {string} descricaoDocumento
+   * @param {string} justificativa obrigatória — o Fluig recusa a rejeição sem observação
+   * @returns {Promise<string>} `documentId` do documento rejeitado
+   */
+  async rejeitarDocumento(descricaoDocumento, justificativa) {
+    const descElemento = this.page.getByText(descricaoDocumento, { exact: true });
+    const cartao = descElemento.locator('xpath=ancestor::*[.//button[normalize-space()="Rejeitar"]][1]');
+    const modalRejeicao = this.page.getByRole('heading', { name: /Rejeitar documento/i });
+
+    /** @type {{ documentId: string | null }} */
+    const lido = { documentId: null };
+
+    // Uma tentativa = reabrir a categoria + achar o cartão + ler o id + clicar + confirmar que
+    // o modal abriu. Achar numa tentativa e clicar em outra não funciona: a lista se
+    // re-renderiza sozinha e o cartão é trocado por baixo do clique.
+    await expect(async () => {
+      await this.abrirDocumentosAAprovar();
+      await expect(descElemento).toBeVisible({ timeout: 5_000 });
+      lido.documentId =
+        (await cartao
+          .locator('[data-document-action^="download-"]')
+          .first()
+          .getAttribute('data-document-action')
+          .then((valor) => valor?.replace('download-', '') ?? null)) ?? null;
+      await cartao.getByRole('button', { name: 'Rejeitar', exact: true }).click({ timeout: 10_000 });
+      await expect(modalRejeicao).toBeVisible({ timeout: 10_000 });
+    }).toPass({ timeout: 90_000, intervals: [3_000, 5_000, 8_000] });
+
+    if (!lido.documentId) {
+      throw new Error(
+        `Não foi possível ler o documentId do cartão de "${descricaoDocumento}" — o atributo ` +
+          '`data-document-action="download-<id>"` não estava no cartão. Sem o id não há como ' +
+          'provar, depois, que o documento deixou de existir.',
+      );
+    }
+
+    // A justificativa é obrigatória. O campo é o único de texto livre do modal.
+    const campoJustificativa = this.page
+      .locator('[role="dialog"] textarea, .modal textarea, textarea:visible')
+      .first();
+    await campoJustificativa.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {
+      throw new Error(
+        'o modal "Rejeitar documento" abriu, mas não expôs o campo de justificativa — o Fluig ' +
+          'exige observação para rejeitar, e sem ela a rejeição não conclui.',
+      );
+    });
+    await campoJustificativa.fill(justificativa);
+
+    await this.page.getByRole('button', { name: 'Confirmar', exact: true }).click();
+    await expect(
+      this.page.getByText(/rejeitado com sucesso/i),
+      'o Fluig não confirmou a rejeição do documento',
+    ).toBeVisible();
+
+    return lido.documentId;
+  }
+
+  /**
    * Seleciona o documento pela descrição na grade atual e remove (envia para a lixeira) pela
    * barra de ações, confirmando o modal "Remover documento".
    * @param {string} descricao

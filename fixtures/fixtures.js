@@ -81,7 +81,10 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
           const url = resposta.url();
           if (!/\/start$|\/workflowView\/send$/.test(url)) return;
           if (resposta.request().method() !== 'POST') return;
-          if (!resposta.ok()) return;
+          // NÃO filtrar por `resposta.ok()`: medido em 27/08/2026 que `prc_questionario_v2`
+          // CRIA a instância mesmo respondendo HTTP 500. O que prova a criação é o corpo trazer
+          // um `processInstanceId`, não o status — filtrar por 2xx deixava esses registros
+          // órfãos (instâncias OPEN acumuladas na base que o teardown ignorava).
           resposta
             .json()
             .then((corpo) => {

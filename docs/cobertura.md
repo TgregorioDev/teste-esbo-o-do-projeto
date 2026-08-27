@@ -8,14 +8,14 @@ título do teste** — é o que torna esta contagem auditável em vez de declara
 | | |
 |---|---|
 | Casos no catálogo | **187** |
-| Com teste na suíte | **133** (71%) |
-| Sem teste | **54** |
+| Com teste na suíte | **156** (83%) |
+| Sem teste | **31** |
 
 O script falha se um teste citar um ID que não existe no catálogo, ou se um caso ficar sem teste
 e sem motivo declarado. As duas checagens existem para que a matriz não possa envelhecer em
 silêncio.
 
-> ⚠️ **Contados por menção em prosa**, fora de título e de cabeçalho: `CT-CMP-02-S2`, `CT-CMP-02-S4`, `CT-DEP-01-H`, `CT-DEP-02-S1`, `CT-SEG-05-S1`, `CT-SUB-01-H`.
+> ⚠️ **Contados por menção em prosa**, fora de título e de cabeçalho: `CT-CMP-02-S2`, `CT-CMP-02-S4`, `CT-DEP-01-H`, `CT-DEP-02-S1`, `CT-PLT-09-S1`, `CT-PLT-10-H`, `CT-SUB-01-H`.
 > São candidatos a falso positivo — confirme que existe teste para cada um, ou leve o ID para o título do teste.
 
 **⬜ não significa "esquecido"** — cada linha vazia traz o motivo medido. E **✅ não significa
@@ -39,7 +39,7 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-ACC-04-S3` | Duplo clique em Confirmar não duplica a SC | ✅ | `e2e/acompanhamento-contratos/payload-solicitacao.spec.js` |
 | `CT-ACC-04-S4` | Dois contratos abertos em sequência rápida | ✅ | `e2e/acompanhamento-contratos/criacao-solicitacao.spec.js` |
 | `CT-ACC-04-S5` | Número do contrato alterado à mão no modal 🔎 | ✅ | `e2e/acompanhamento-contratos/payload-solicitacao.spec.js` |
-| `CT-ACC-04-S6` | Bypass da validação de cliente | ✅ | `e2e/acompanhamento-contratos/criacao-solicitacao.spec.js` |
+| `CT-ACC-04-S6` | Bypass da validação de cliente | ✅ | `e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js` · `e2e/acompanhamento-contratos/criacao-solicitacao.spec.js` |
 | `CT-ACC-05-H` | Confirmar cria a SC e ela chega ao solicitante ⭐ **caso-âncora do pedido do dev** | ✅ | `e2e/acompanhamento-contratos/criacao-solicitacao.spec.js` |
 | `CT-ACC-05-S1` | Falha na transferência deixa a SC com a conta de integração ⚠️ | ✅ | `e2e/acompanhamento-contratos/erros-no-start.spec.js` |
 | `CT-ACC-05-S2` | Erro no start do processo | ✅ | `e2e/acompanhamento-contratos/erros-no-start.spec.js` |
@@ -49,7 +49,7 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-ACC-08-H` | Rastreabilidade contrato ↔ SC | ⬜ | depende de abrir a SC já criada — D-01 a deixa atribuída a `consumerkeycompras`, fora do alcance da conta da automação |
 | `CT-ACC-08-S1` | Máscara monetária não corrompe os valores | ✅ | `e2e/acompanhamento-contratos/payload-solicitacao.spec.js` |
 | `CT-ACC-08-S2` | Rateio do contrato chega íntegro na SC | ✅ | `e2e/acompanhamento-contratos/payload-solicitacao.spec.js` |
-| `CT-ACC-09-H` | O caminho FELIZ do anexo da SC nunca foi provado | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
+| `CT-ACC-09-H` | O caminho FELIZ do anexo da SC nunca foi provado | ✅ | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
 | `CT-ADM-01-H` | Admissão integra novo funcionário (feliz) | ✅ | `e2e/rh/admissao.spec.js` |
 | `CT-ADM-01-S1` | Dados obrigatórios ausentes | ✅ | `e2e/rh/admissao.spec.js` |
 | `CT-ADM-01-S2` | Reprocessamento após falha | ⬜ | reprocessar atividade de integração exige perfil de administrador |
@@ -72,20 +72,20 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-CLI-01-S1` | Fora da janela / periodicidade não cumprida | ✅ | `e2e/saude/questionario-clinicassi.spec.js` |
 | `CT-CLI-01-S2` | Questionário incompleto | ✅ | `e2e/saude/questionario-clinicassi.spec.js` |
 | `CT-CLI-02-S1` | Job de início parado  ⚠️ (U-14) | ✅ | `e2e/saude/questionario-clinicassi.spec.js` |
-| `CT-CLI-03-H` | Questionário: estado pós-criação nunca verificado | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
+| `CT-CLI-03-H` | Questionário: estado pós-criação nunca verificado | ✅ | `e2e/saude/questionario-clinicassi.spec.js` |
 | `CT-CMP-01-H` | Abertura completa e envio (caminho feliz) | ✅ | `e2e/compras/abertura-solicitacao-compras.spec.js` · `e2e/compras/ciclo-solicitacao-compras.spec.js` |
-| `CT-CMP-02-S1` | Envio com campos obrigatórios vazios | ✅ | `e2e/compras/validacoes-solicitacao-compras.spec.js` |
+| `CT-CMP-02-S1` | Envio com campos obrigatórios vazios | ✅ | `e2e/compras/fail-open-formulario-sc.spec.js` · `e2e/compras/validacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-02-S2` | Rateio diferente de 100% | ✅ | `e2e/compras/validacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-02-S3` | Upload de planilha de rateio inválida | ✅ | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
-| `CT-CMP-02-S4` | Anexo obrigatório ausente | ✅ | `e2e/acompanhamento-contratos/erros-no-start.spec.js` · `e2e/compras/ciclo-solicitacao-compras.spec.js` · `e2e/contratos/delegacao-fiscais-ciclo.spec.js` |
+| `CT-CMP-02-S4` | Anexo obrigatório ausente | ✅ | `e2e/acompanhamento-contratos/erros-no-start.spec.js` · `e2e/compras/ciclo-solicitacao-compras.spec.js` · `e2e/compras/fail-open-formulario-sc.spec.js` · `e2e/contratos/delegacao-fiscais-ciclo.spec.js` |
 | `CT-CMP-03-S1` | Protheus indisponível ao carregar combos  ⭐ teste-mestre | ✅ | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
 | `CT-CMP-04-H` | Aprovação — Gestor Imediato (feliz) | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
-| `CT-CMP-04-S1` | Reprovação do Gestor gera correção | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
+| `CT-CMP-04-S1` | Reprovação do Gestor gera correção | ✅ | `e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js` · `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-05-H` | Validação Orçamentária dentro da alçada | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-05-S1` | Valor acima da alçada sem aprovador | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-06-H` | Aprovação final (Compradores/Alçadas) e conclusão | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
-| `CT-CMP-07-S1` | Regressão do fail-open do formulário clássico de SC | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
-| `CT-CMP-08-H` | Fechar o ciclo de retorno: reprovação → Correção → reenvio | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
+| `CT-CMP-07-S1` | Regressão do fail-open do formulário clássico de SC | ✅ | `e2e/compras/fail-open-formulario-sc.spec.js` |
+| `CT-CMP-08-H` | Fechar o ciclo de retorno: reprovação → Correção → reenvio | ✅ | `e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js` |
 | `CT-COT-01-H` | Cotação sem parecer técnico (feliz) | ✅ | `e2e/compras/abertura-cotacao.spec.js` · `e2e/compras/ciclo-cotacao.spec.js` |
 | `CT-COT-01-S1` | Cotação COM parecer técnico | ✅ | `e2e/compras/ciclo-cotacao.spec.js` |
 | `CT-COT-02-S1` | Totais inconsistentes | ✅ | `e2e/compras/ciclo-cotacao.spec.js` |
@@ -101,7 +101,7 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-DEP-02-S1` | Titular sem matrícula / múltiplos vínculos | ✅ | `e2e/rh/dependentes.spec.js` · `e2e/rh/substituicao-cargos.spec.js` |
 | `CT-E2E-01-H` | Etapa 1 — SC nasce no estado correto e com o dono correto | ✅ | `e2e/acompanhamento-contratos/ciclo-gestor.spec.js` · `e2e/acompanhamento-contratos/payload-solicitacao.spec.js` |
 | `CT-E2E-02-H` | Etapa 2 — Validação do Gestor Imediato (aprovar) | ✅ | `e2e/acompanhamento-contratos/ciclo-gestor.spec.js` |
-| `CT-E2E-02-S1` | Etapa 2 — Reprovação devolve para correção **preservando os dados do contrato** | ✅ | `e2e/acompanhamento-contratos/ciclo-gestor.spec.js` |
+| `CT-E2E-02-S1` | Etapa 2 — Reprovação devolve para correção **preservando os dados do contrato** | ✅ | `e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js` · `e2e/acompanhamento-contratos/ciclo-gestor.spec.js` |
 | `CT-E2E-03-H` | Etapa 3 — Validação Orçamentária | ✅ | `e2e/portais/alcadas-orcamentaria.spec.js` |
 | `CT-E2E-03-S1` | Etapa 3 — Valor acima da alçada | ✅ | `e2e/portais/alcadas-orcamentaria.spec.js` |
 | `CT-E2E-04-H` | Etapa 4 — Validação de Compradores / Alçadas | ✅ | `e2e/portais/alcadas-orcamentaria.spec.js` |
@@ -124,16 +124,16 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-FER-01-S2` | Período em conflito | ⬜ | idem CT-FER-01-H |
 | `CT-FER-01-S3` | Reprovação do gestor | ⬜ | idem CT-FER-01-H |
 | `CT-FER-01-S4` | Falha na integração com a folha | ⬜ | idem CT-FER-01-H |
-| `CT-FIN-01-H` | Rejeições de Pagamentos — uma área inteira sem cobertura | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
+| `CT-FIN-01-H` | Rejeições de Pagamentos — uma área inteira sem cobertura | ✅ | `e2e/financeiro/rejeicoes-pagamentos.spec.js` |
 | `CT-FOR-01-H` |  | ✅ | `e2e/contratos/cadastro-fornecedor.spec.js` |
 | `CT-GED-01-H` | Navegar a árvore de pastas | ✅ | `e2e/documentos/navegacao-documentos.spec.js` |
 | `CT-GED-02-H` | Upload de documento | ✅ | `e2e/documentos/gestao-documentos.spec.js` |
-| `CT-GED-02-S1` | Upload de tipo/tamanho não permitido | ✅ | `e2e/documentos/gestao-documentos.spec.js` |
-| `CT-GED-02-S2` | Bloqueio de extensão: allowlist, não blacklist do `.exe` | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
+| `CT-GED-02-S1` | Upload de tipo/tamanho não permitido | ✅ | `e2e/documentos/bloqueio-extensoes.spec.js` · `e2e/documentos/gestao-documentos.spec.js` |
+| `CT-GED-02-S2` | Bloqueio de extensão: allowlist, não blacklist do `.exe` | ✅ | `e2e/documentos/bloqueio-extensoes.spec.js` |
 | `CT-GED-03-H` | Check-out / Check-in | ⬜ | check-out usa protocolo `dav4:`/WebDAV nativo, fora do alcance de qualquer automação de navegador |
 | `CT-GED-03-S1` | Check-out concorrente | ⬜ | idem CT-GED-03-H |
-| `CT-GED-04-H` | Aprovação de documento | ✅ | `e2e/documentos/gestao-documentos.spec.js` |
-| `CT-GED-04-S1` | Rejeitar documento — o caminho e o `msgId` que mente | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
+| `CT-GED-04-H` | Aprovação de documento | ✅ | `e2e/documentos/gestao-documentos.spec.js` · `e2e/documentos/rejeicao-documento.spec.js` |
+| `CT-GED-04-S1` | Rejeitar documento — o caminho e o `msgId` que mente | ✅ | `e2e/documentos/rejeicao-documento.spec.js` |
 | `CT-GED-05-H` | Lixeira — excluir e restaurar | ✅ | `e2e/documentos/lixeira-documentos.spec.js` |
 | `CT-INT-01-H` | Datasets de consulta retornam dados (feliz) | ✅ | `e2e/seguranca/integracao-protheus-grade-contratos.spec.js` |
 | `CT-INT-01-S1` | ERP indisponível | ✅ | `e2e/seguranca/integracao-protheus-grade-contratos.spec.js` |
@@ -148,14 +148,14 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-JUR-04-H` | Contencioso — roteamento por área (feliz) | ✅ | `e2e/juridico/sigajuri-contencioso.spec.js` |
 | `CT-JUR-04-S1` | Contencioso sem parte contrária | ✅ | `e2e/juridico/sigajuri-contencioso.spec.js` |
 | `CT-JUR-05-H` | Follow-up de processo jurídico (feliz) | ⬜ | processo inoperante: só campos `readonly`, disparado por processo pai |
-| `CT-JUR-06-H` | Contencioso: nasce no pool certo? | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
+| `CT-JUR-06-H` | Contencioso: nasce no pool certo? | ✅ | `e2e/juridico/sigajuri-contencioso.spec.js` |
 | `CT-NEG-01-H` | Validação de proposta — aprovada (feliz) | ✅ | `e2e/compras/negociacao-proposta.spec.js` |
 | `CT-NEG-01-S1` | Validação de proposta — reprovada | ✅ | `e2e/compras/negociacao-proposta.spec.js` |
 | `CT-NEG-01-S2` | Proposta fora do prazo | ✅ | `e2e/compras/negociacao-proposta.spec.js` |
 | `CT-NOT-01-H` | Disparo multicanal (feliz) | ✅ | `e2e/notificacoes/disparo-multicanal.spec.js` |
 | `CT-NOT-01-S1` | Falha de canal não derruba o processo | ⬜ | os datasets de canal são invocados server-side; não há requisição a interceptar |
 | `CT-NOT-02-S1` | Alertas automáticos sem duplicidade | ✅ | `e2e/notificacoes/alertas-automaticos.spec.js` |
-| `CT-NOT-03-S1` | Contratos da API de notificação | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
+| `CT-NOT-03-S1` | Contratos da API de notificação | ✅ | `e2e/notificacoes/contratos-api-notificacao.spec.js` |
 | `CT-OCO-01-H` | Registrar e aprovar ocorrência (feliz) | ⬜ | o processo `wf_aprovacao_ocorrencia` barra o usuário de Compras — exige grupo de RH |
 | `CT-OCO-01-S1` | Ocorrência sem aprovador | ⬜ | idem CT-OCO-01-H |
 | `CT-PAR-01-H` | Parecer emitido pelo responsável (feliz) | ✅ | `e2e/compras/parecer-tecnico.spec.js` |
@@ -178,37 +178,37 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-PLT-03-H` | Usuário COM permissão inicia o processo | ✅ | `e2e/plataforma/inicio-processo-permitido.spec.js` |
 | `CT-PLT-03-S1` | Usuário SEM permissão é bloqueado no início | ✅ | `e2e/plataforma/inicio-processo-bloqueado.spec.js` |
 | `CT-PLT-04-S1` | Deep-link/refresh de página SPA | ✅ | `e2e/plataforma/deep-link-spa.spec.js` |
-| `CT-PLT-04-S2` | Deep-link além das duas rotas de hoje | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
-| `CT-PLT-05-H` | Favoritar e acessar via Favoritos | ✅ | `e2e/plataforma/favoritos.spec.js` |
-| `CT-PLT-06-S1` | Erro de console fora da home | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
-| `CT-PLT-07-S1` | `addFavorites` duplicado responde 500 em texto puro | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
-| `CT-PLT-08-S1` | Processo inativo e resíduo de desenvolvimento visível | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
-| `CT-PLT-09-S1` | Fechar a matriz dos 9 bloqueios duros | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
-| `CT-PLT-10-H` | Invariante do catálogo de processos | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
+| `CT-PLT-04-S2` | Deep-link além das duas rotas de hoje | ✅ | `e2e/plataforma/deep-link-spa.spec.js` |
+| `CT-PLT-05-H` | Favoritar e acessar via Favoritos | ✅ | `e2e/plataforma/favoritos-contrato-api.spec.js` · `e2e/plataforma/favoritos.spec.js` |
+| `CT-PLT-06-S1` | Erro de console fora da home | ✅ | `e2e/plataforma/erros-de-console.spec.js` |
+| `CT-PLT-07-S1` | `addFavorites` duplicado responde 500 em texto puro | ✅ | `e2e/plataforma/favoritos-contrato-api.spec.js` |
+| `CT-PLT-08-S1` | Processo inativo e resíduo de desenvolvimento visível | ✅ | `e2e/plataforma/inicio-processo-bloqueado.spec.js` · `e2e/plataforma/processo-inativo-e-residuo.spec.js` |
+| `CT-PLT-09-S1` | Fechar a matriz dos 9 bloqueios duros | ✅ | `e2e/plataforma/inicio-processo-bloqueado.spec.js` · `e2e/plataforma/processo-inativo-e-residuo.spec.js` |
+| `CT-PLT-10-H` | Invariante do catálogo de processos | ✅ | `e2e/financeiro/rejeicoes-pagamentos.spec.js` · `e2e/plataforma/catalogo-invariante.spec.js` · `e2e/plataforma/processo-inativo-e-residuo.spec.js` · `e2e/rh/delegacao-tarefas.spec.js` |
 | `CT-RDF-01-H` | Recepção de NF condizente (feliz) | ✅ | `e2e/fiscal/recepcao-documentos-fiscais.spec.js` |
 | `CT-RDF-01-S1` | NF com inconsistência | ✅ | `e2e/fiscal/recepcao-documentos-fiscais.spec.js` |
 | `CT-RDF-01-S2` | Violação de segregação fiscal | ✅ | `e2e/fiscal/recepcao-documentos-fiscais.spec.js` |
 | `CT-RDF-01-S3` | NF duplicada | ✅ | `e2e/fiscal/recepcao-documentos-fiscais.spec.js` |
-| `CT-RDF-02-H` | Rastreabilidade pai↔filho do RDFC | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
-| `CT-SEG-01-S1` | Dataset sem filtro no código (vazamento)  🔒 (observado) | ✅ | `api/dataset-colleague-vazamento.spec.js` · `api/sincronizacao-protheus.spec.js` · `e2e/seguranca/auditoria-datasets.spec.js` |
+| `CT-RDF-02-H` | Rastreabilidade pai↔filho do RDFC | ✅ | `e2e/fiscal/rastreabilidade-rdfc.spec.js` |
+| `CT-SEG-01-S1` | Dataset sem filtro no código (vazamento)  🔒 (observado) | ✅ | `api/dataset-colleague-vazamento.spec.js` · `api/sincronizacao-protheus.spec.js` · `e2e/seguranca/auditoria-datasets.spec.js` · `e2e/seguranca/isolamento-horizontal-api-processos.spec.js` |
 | `CT-SEG-02-S1` | Least-privilege dos administradores  🔒 (U-13) | ✅ | `e2e/seguranca/auditoria-datasets.spec.js` |
 | `CT-SEG-03-S1` | Credencial de integração exposta  🔒 (U-03) | ✅ | `e2e/seguranca/auditoria-datasets.spec.js` |
 | `CT-SEG-04-S1` | Execução de SQL / injeção  🔒 (U-04) | ✅ | `e2e/seguranca/auditoria-datasets.spec.js` |
-| `CT-SEG-05-S1` | Acesso admin negado a não-admin  (observado, U-15) | ✅ | `api/webdesk-acesso-admin.spec.js` · `e2e/seguranca/auditoria-datasets.spec.js` |
-| `CT-SEG-06-S1` | Vazamento de dados a serviço externo (LGPD)  (U-11) | ✅ | `e2e/seguranca/lgpd-envio-google-analytics.spec.js` |
-| `CT-SEG-07-S1` | Isolamento horizontal na API v2 de processos (BOLA/IDOR interno) | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
-| `CT-SEG-08-S1` | Processos administrativos abertos a usuário comum | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
-| `CT-SEG-10-S1` | ACL dos documentos que a SC cria sozinha no GED | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
+| `CT-SEG-05-S1` | Acesso admin negado a não-admin  (observado, U-15) | ✅ | `api/webdesk-acesso-admin.spec.js` · `e2e/seguranca/auditoria-datasets.spec.js` · `e2e/seguranca/isolamento-horizontal-api-processos.spec.js` · `e2e/seguranca/processos-administrativos-usuario-comum.spec.js` |
+| `CT-SEG-06-S1` | Vazamento de dados a serviço externo (LGPD)  (U-11) | ✅ | `e2e/plataforma/erros-de-console.spec.js` · `e2e/seguranca/lgpd-envio-google-analytics.spec.js` |
+| `CT-SEG-07-S1` | Isolamento horizontal na API v2 de processos (BOLA/IDOR interno) | ✅ | `e2e/fiscal/rastreabilidade-rdfc.spec.js` · `e2e/seguranca/isolamento-horizontal-api-processos.spec.js` |
+| `CT-SEG-08-S1` | Processos administrativos abertos a usuário comum | ✅ | `e2e/seguranca/processos-administrativos-usuario-comum.spec.js` |
+| `CT-SEG-10-S1` | ACL dos documentos que a SC cria sozinha no GED | ⬜ | bloqueado: o critério de ACL correta dos documentos/pastas que o workflow gera não foi definido pela Cassi — pergunta em aberto. Assertion frouxa aqui seria pior que ausência de teste. |
 | `CT-SUB-01-H` | Definir substituto válido (feliz) | ✅ | `e2e/rh/substituicao-cargos.spec.js` |
 | `CT-SUB-01-S1` | Substituto sem vínculo ativo | ⬜ | o formulário de Substituição responde "Funcionário não localizado" sem matrícula ativa |
 | `CT-SUB-01-S2` | Período retroativo/ inválido | ⬜ | idem CT-SUB-01-S1 |
-| `CT-SUB-02-H` | Delegação de Tarefas (`wf_SubstituiçãoCargosFluig`) | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
+| `CT-SUB-02-H` | Delegação de Tarefas (`wf_SubstituiçãoCargosFluig`) | ✅ | `e2e/rh/delegacao-tarefas.spec.js` |
 | `CT-TSK-01-H` | Resumo reflete a carga real | ✅ | `e2e/tarefas/resumo-tarefas.spec.js` |
 | `CT-TSK-02-H` | Assumir tarefa do pool | ✅ | `e2e/tarefas/assumir-tarefa-pool.spec.js` · `e2e/tarefas/minhas-solicitacoes.spec.js` |
 | `CT-TSK-02-S1` | Concorrência ao assumir a mesma tarefa | ✅ | `e2e/tarefas/assumir-tarefa-pool.spec.js` · `e2e/tarefas/minhas-solicitacoes.spec.js` |
 | `CT-TSK-03-H` | Tarefa atrasada é sinalizada | ✅ | `e2e/tarefas/minhas-solicitacoes.spec.js` |
 | `CT-TSK-04-H` | Consulta de "Minhas Solicitações" | ✅ | `e2e/tarefas/minhas-solicitacoes.spec.js` |
-| `CT-TSK-05-H` | Cancelar solicitação — o fluxo do produto, nunca testado | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
-| `CT-TSK-05-S1` | Cancelamento sem motivo derruba com NPE 500 | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
-| `CT-TSK-07-H` | "Somente salvar" — salvar sem movimentar | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
-| `CT-TSK-08-H` | Transferir atividade | ⬜ | EM IMPLEMENTAÇÃO (acrescentado em 27/08/2026 pela análise de regressivo — ver `docs/lacunas-do-regressivo.md`). Remova esta entrada quando o teste existir. |
+| `CT-TSK-05-H` | Cancelar solicitação — o fluxo do produto, nunca testado | ✅ | `e2e/tarefas/cancelamento-solicitacao.spec.js` |
+| `CT-TSK-05-S1` | Cancelamento sem motivo derruba com NPE 500 | ✅ | `e2e/tarefas/cancelamento-solicitacao.spec.js` |
+| `CT-TSK-07-H` | "Somente salvar" — salvar sem movimentar | ✅ | `e2e/tarefas/acoes-da-tarefa.spec.js` |
+| `CT-TSK-08-H` | Transferir atividade | ✅ | `e2e/tarefas/acoes-da-tarefa.spec.js` |

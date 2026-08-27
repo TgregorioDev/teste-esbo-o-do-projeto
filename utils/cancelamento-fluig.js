@@ -8,7 +8,11 @@
  *
  * - O endpoint é **público** e não personifica ninguém:
  *   `POST /api/public/2.0/workflows/cancelInstances`, só com cookie de sessão.
- * - `cancelText` é **obrigatório**: `null` derruba com NPE 500 e não cancela nada.
+ * - `cancelText` é **obrigatório**, mas a API pública valida com elegância: `null`/vazio
+ * responde HTTP 200 com `failCount:1` e `errorCode:"BPMEmptyCancelTextException"` — não cancela
+ * nada, mas também não estoura (medido em 27/08/2026; o NPE 500 é do endpoint irmão
+ * `/ecm/api/rest/ecm/workflowView/cancelInstance/`, não deste). Ainda assim exigimos o texto
+ * antes de chamar, para nunca gastar uma requisição fadada a falhar.
  * - O usuário efetivo precisa ser **requisitante ou gestor** — não o dono da tarefa atual.
  * - Aceita **lote**, e devolve resultado item a item.
  * - Solicitação presa pelo D-01 (em "Início", com a conta de integração) **cancela normalmente**.
@@ -32,8 +36,9 @@ export async function cancelarSolicitacoes(page, ids, opcoes) {
   if (ids.length === 0) return [];
   if (!opcoes.motivo?.trim()) {
     throw new Error(
-      'cancelarSolicitacoes: `motivo` é obrigatório. O Fluig responde 500 (NullPointerException) ' +
-        'quando `cancelText` vem vazio, e NÃO cancela — falha silenciosa se ninguém checar.',
+      'cancelarSolicitacoes: `motivo` é obrigatório. Com `cancelText` vazio a API pública ' +
+        'responde 200 com failCount:1 e BPMEmptyCancelTextException — não cancela nada. ' +
+        'Barramos aqui para não gastar a requisição.',
     );
   }
 

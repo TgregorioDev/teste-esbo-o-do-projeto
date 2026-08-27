@@ -49,6 +49,64 @@ export class TarefaSolicitacaoCompraPage {
   }
 
   /**
+   * Abre uma tarefa que JÁ ESTÁ com o usuário, na URL completa que a própria Central de
+   * Tarefas usa.
+   *
+   * ## Por que `abrirPorProcessInstanceId` não serve para tarefa assumida
+   *
+   * Medido em 27/08/2026 (SC 112762, tarefa de "Validação do Gestor" assumida do pool e
+   * comprovadamente com `TOTVS-FS` na API): abrir só com
+   * `app_ecm_workflowview_processInstanceId=<id>` — com ou sem um `...movto=<n>` inventado —
+   * devolve o modal *"Esta tarefa não está mais sob sua responsabilidade!"* e a tela nunca
+   * monta o botão Enviar. Não é permissão nem D-01: é a URL faltando contexto.
+   *
+   * A URL correta foi capturada clicando um cartão real na Central de Tarefas:
+   *
+   * ```
+   * /portal/p/1/pageworkflowview
+   *   ?app_ecm_workflowview_processInstanceId=<id>
+   *   &app_ecm_workflowview_currentMovto=<movimento>
+   *   &app_ecm_workflowview_taskUserId=<login>
+   *   &app_ecm_workflowview_managerMode=false
+   * ```
+   *
+   * O `movimento` é o `movementSequence` da tarefa `NOT_COMPLETED` — vem de
+   * `GET /process-management/api/v2/requests/<id>/tasks` ou do campo homônimo em
+   * `centralTasks/getTasks/open/<login>`.
+   *
+   * ⚠️ O método antigo continua existindo e não foi alterado: as specs que o usam nunca
+   * chegam a ter tarefa assumida (D-01 as prende antes), e mudá-lo trocaria o motivo pelo qual
+   * elas reprovam.
+   *
+   * @param {{ processInstanceId: number|string, movimento: number|string, login: string }} tarefa
+   */
+  async abrirTarefaAtribuida({ processInstanceId, movimento, login }) {
+    const url =
+      `${ROTA_WORKFLOW_VIEW}?app_ecm_workflowview_processInstanceId=${encodeURIComponent(String(processInstanceId))}` +
+      `&app_ecm_workflowview_currentMovto=${encodeURIComponent(String(movimento))}` +
+      `&app_ecm_workflowview_taskUserId=${encodeURIComponent(login)}` +
+      '&app_ecm_workflowview_managerMode=false';
+
+    await this.page.goto(url, { waitUntil: 'domcontentloaded' });
+    await this.botaoEnviar.waitFor({ state: 'visible', timeout: 60_000 }).catch(async () => {
+      const modais = await this.page
+        .locator('.container-modal')
+        .allInnerTexts()
+        .catch(() => []);
+      throw new Error(
+        `PRÉ-CONDIÇÃO AUSENTE: a tarefa ${processInstanceId} (movimento ${movimento}) não abriu ` +
+          'em modo de movimentação — o botão "Enviar" nunca apareceu. ' +
+          (modais.length
+            ? `Diálogo(s) na tela: ${JSON.stringify(modais.map((m) => m.replace(/\s+/g, ' ').slice(0, 160)))}. ` +
+              '"Esta tarefa não está mais sob sua responsabilidade!" significa que ela não está ' +
+              'com este usuário (assumir do pool falhou, ou o fluxo já andou).'
+            : 'Nenhum diálogo foi exibido — a tela simplesmente não montou.') +
+          ` URL: ${url}`,
+      );
+    });
+  }
+
+  /**
    * Assume, a partir do pool do grupo "Validação do Gestor Imediato", a tarefa do processo
    * informado. Só se aplica enquanto a tarefa ainda está no POOL (não atribuída a ninguém) —
    * uma vez assumida ela passa a aparecer em "Tarefas a concluir" (individual), não mais aqui.
