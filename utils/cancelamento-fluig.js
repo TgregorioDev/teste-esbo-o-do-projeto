@@ -126,8 +126,15 @@ export async function descobrirSolicitacoesDaAutomacao(page, criterio) {
 
       /** @type {any[]} */
       const todas = [];
-      for (let p = 0; p < maxPaginas; p++) {
-        const r = await fetch(`/process-management/api/v2/requests?size=100&page=${p}`, {
+      // ⚠️ Paginação medida em 27/08/2026 (custou um bug de limpeza):
+      //   - o parâmetro é `pageSize`, NÃO `size` (`size` é ignorado pelo servidor).
+      //   - `page=0` NÃO é a primeira página: é o atalho "sem paginação", que devolve a base
+      //     INTEIRA (~99 mil solicitações). As páginas reais começam em `page=1`, 100 por vez,
+      //     em ordem decrescente de `processInstanceId` e sem sobreposição.
+      // O código anterior (`size=100&page=0`) caía no atalho e trazia tudo numa resposta só,
+      // o que por acaso funcionava mas era frágil. A forma correta é `pageSize` a partir de 1.
+      for (let p = 1; p <= maxPaginas; p++) {
+        const r = await fetch(`/process-management/api/v2/requests?pageSize=100&page=${p}`, {
           credentials: 'include',
           headers: h,
         });
@@ -136,6 +143,14 @@ export async function descobrirSolicitacoesDaAutomacao(page, criterio) {
         const itens = j.items ?? [];
         if (itens.length === 0) break;
         todas.push(...itens);
+        // A varredura pode parar cedo: as solicitações vêm em ordem decrescente, então quando a
+        // página inteira já está abaixo do corte de data não há mais nada da janela adiante.
+        const menorData = itens.reduce(
+          (/** @type {string} */ min, /** @type {any} */ x) =>
+            String(x.startDate ?? '') < min ? String(x.startDate) : min,
+          '9999',
+        );
+        if (menorData < desde) break;
         if (itens.length < 100) break;
       }
 
