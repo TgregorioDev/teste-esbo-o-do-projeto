@@ -1361,3 +1361,232 @@ Contexto confirmado ao vivo na Central de Tarefas: o TOTVS-FS pertence **apenas*
 
 **Conclusões da run:** (1) Orçamentária e Alçada **não** são executáveis pelo TOTVS-FS (designadas por Protheus AL/DHL) — e o sistema **sinaliza corretamente** quando não há aprovador. (2) A parte de **Compradores é executável**: assumir pool + atribuir comprador via portal — executado de ponta a ponta no SC 112003. (3) **Cotação/Negociação** são operadas no Portal do Comprador (atuando como Arthur); as telas funcionam, mas a conclusão (aprovar proposta / definir vencedor) depende de **propostas de fornecedor**, que na base de teste ainda não existem. (4) Achado de qualidade: o formulário de Cotação **não valida CNPJ (dígito), validade vencida nem totais no cliente** — depende do ERP.
 , sempre siga os padrões, regras e estruturas da skill /playwright-test-creator e todos os seus conhecimentos sobre o sistema fluig no /fluig-master
+
+
+---
+
+# Casos acrescentados em 27/08/2026 — análise de regressivo
+
+Levantados por varredura do que a suíte automatizada **não** cobria, cruzando o catálogo de
+processos publicados com os testes existentes. A investigação completa, com as medições que
+sustentam cada caso, está em `docs/lacunas-do-regressivo.md` — aqui fica só a especificação.
+
+Três casos daquela análise **não** entraram neste catálogo, e o motivo de cada um está
+registrado em `docs/lacunas-do-regressivo.md`: um depende de etapa fora do alcance da conta de
+automação, outro exigiria dependência nova no projeto, e o terceiro está bloqueado pelo D-01.
+Os IDs deles não são citados aqui de propósito — a contagem de cobertura conta menção de ID em
+qualquer lugar deste arquivo, e citá-los criaria três casos fantasma sem teste.
+
+> ⚠️ Estes casos mudam o denominador da cobertura: de 163 para 187. As medições anteriores a
+> 27/08/2026 usaram a régua de 163 — `docs/cobertura.md` reporta as duas origens em separado
+> para a comparação continuar honesta.
+
+
+## Plataforma
+
+### CT-PLT-04-S2 · Deep-link além das duas rotas de hoje
+- **Prioridade:** P2 · **Tipo:** Regressão
+- **Pré-condições:** nenhuma.
+- **Passos:** estender a lista parametrizada de `deep-link-spa.spec.js` com as rotas SPA navegáveis restantes, descobertas pelo menu (inclusive `notificationcenter`).
+- **Resultado esperado:** nenhuma cai em `errorPage/404`. Vermelho intencional enquanto o U-01 viver.
+- **Viabilidade:** alcançável hoje, é praticamente só dados. O trabalho real é **inventariar** as rotas SPA pelo menu — meia hora de navegação de leitura.
+
+### CT-PLT-06-S1 · Erro de console fora da home
+- **Prioridade:** P2 · **Tipo:** Funcional / Regressão
+- **Pré-condições:** nenhuma.
+- **Passos:** teste parametrizado sobre as rotas-chave (home, catálogo, Central de Tarefas, Portal de Contratos, Portal do Comprador, Gerência de Compras, Tracker, GED), coletando `pageerror` e `console.error` durante a carga.
+- **Resultado esperado:** zero erro de console não catalogado. Os conhecidos (NPS 403) entram numa **lista de exceções nomeada e datada** no próprio teste — não num filtro genérico por regex, que esconderia os novos.
+- **Viabilidade:** alcançável hoje, leitura pura. Cuidado: a suíte tem `google-analytics` a bloquear (`CT-SEG-06-S1`) — o ruído de rede precisa ser separado do ruído de JS.
+
+### CT-PLT-10-H · Invariante do catálogo de processos
+- **Prioridade:** P2 · **Tipo:** Integração (contrato) / Regressão
+- **Pré-condições:** nenhuma.
+- **Passos:** `GET /process-management/api/v2/processes?pageSize=200` e `GET /ecm/api/rest/ecm/process-category/processes?...&onlyCanStart=true`; comparar contra a lista esperada, versionada no teste.
+- **Resultado esperado:** o conjunto de `processId` publicados e o conjunto de iniciáveis batem exatamente com o esperado. Diferença → falha nomeando **qual** processo entrou ou saiu (não "34 ≠ 35"). Documentar no teste a divergência já conhecida: `SIGAJURI_Contencioso` **cria solicitação sem constar do catálogo `onlyCanStart`** — a permissão real diverge do filtro da tela, e isso é achado, não ruído.
+- **Viabilidade:** alcançável hoje, leitura pura, 2 GETs. Manutenção: a lista esperada precisa ser atualizada conscientemente a cada publicação — que é exatamente o objetivo.
+
+### CT-PLT-07-S1 · `addFavorites` duplicado responde 500 em texto puro
+- **Prioridade:** P3 · **Tipo:** Funcional
+- **Resultado esperado:** duplicidade deve responder erro de negócio **em JSON** (ou 200 idempotente), não 500 com texto. Vermelho intencional.
+- **Viabilidade:** alcançável, `@destrutivo` e reversível (`removeFavorites`). ⚠️ Favorito é **estado global de conta única** — a suíte já removeu um caso por isso (`describe.serial` não serializa entre repetições do `--repeat-each`). Este teste **precisa** do mesmo tipo de lock de `utils/exclusividade.js`, ou não dev…
+
+### CT-PLT-08-S1 · Processo inativo e resíduo de desenvolvimento visível
+- **Prioridade:** P3 · **Tipo:** Funcional
+- **Resultado esperado:** `testePRODUTO` recusa com a mensagem de inativo; `teste` **não deveria constar** do catálogo de um usuário de Compras (vermelho intencional, com anotação de achado).
+- **Viabilidade:** alcançável hoje. Cobre bem junto com `CT-PLT-10-H`, que é o mesmo assunto numa camada acima.
+
+### CT-PLT-09-S1 · Fechar a matriz dos 9 bloqueios duros
+- **Prioridade:** P3 · **Tipo:** Funcional
+- **Passos:** estender a lista parametrizada existente; a mensagem esperada é literal e idêntica para todos: *"Usuário `<login>` não possui permissão para iniciar solicitações do processo `<id>`"*.
+- **Resultado esperado:** os 9 bloqueiam, nenhum formulário monta, `guarda.tentativas() === 0`.
+- **Viabilidade:** alcançável hoje, leitura pura, **é quase só dados** — o Page Object e o padrão já existem. Melhor razão esforço/cobertura do documento.
+
+
+## Central de Tarefas
+
+### CT-TSK-05-H · Cancelar solicitação — o fluxo do produto, nunca testado
+- **Prioridade:** P1 · **Tipo:** Funcional (e infraestrutura da própria suíte)
+- **Pré-condições:** uma solicitação criada **pelo próprio teste** (nunca reaproveitar id de outro teste — regra de independência), em estado `OPEN`.
+- **Passos:** 1. Criar uma SC com massa `QA` de factory. 2. Abrir Central de Tarefas → *Minhas solicitações*, localizar o card pela paginação por cursor (reusar `utils/central-tarefas-paginacao.js` — a listagem é crescente e `rows=15`, armadilha já mapeada). 3. Acionar **Cancelar**, informar o motivo (prefixo `QA`). 4. Reler o estado **no servidor**: `GET /process-management/api/v2/requests/<id>` e `GET /requests/<id>/tasks?pageSize=60`.
+- **Resultado esperado:** `status: CANCELED`, `active: false`, a tarefa da etapa corrente com status `CANCELED`, e o card ausente da listagem de abertas. A confirmação vem **do servidor**, não do toast — mesma disciplina já adotada em `scripts/limpar-massa.mjs` (`successCount` é o que ele diz ter feito; `status: CANCELED` é o que aconteceu).
+- **Viabilidade:** alcançável hoje, `@destrutivo`. Custo de massa: 1 SC por execução — que o teste já destrói ele mesmo, então é o destrutivo **mais barato** da suíte em resíduo.
+
+---
+
+### CT-TSK-05-S1 · Cancelamento sem motivo derruba com NPE 500
+- **Prioridade:** P2 · **Tipo:** Negativo / Integração
+- **Pré-condições:** uma solicitação criada pelo teste (pode ser a mesma de `CT-TSK-05-H`, em outro teste independente que cria a sua própria).
+- **Passos:** `POST /api/public/2.0/workflows/cancelInstances` com `cancelText: null`, depois reler o estado no servidor.
+- **Resultado esperado:** resposta de erro **de negócio** (4xx com mensagem nomeando o campo obrigatório), não 500 de NPE; e a solicitação **permanece `OPEN`**. A segunda metade é a que importa: o teste falha se o estado mudar.
+- **Viabilidade:** alcançável hoje. `@destrutivo` pela criação da massa, mas a chamada em si não escreve.
+
+### CT-TSK-07-H · "Somente salvar" — salvar sem movimentar
+- **Prioridade:** P2 · **Tipo:** Funcional
+- **Pré-condições:** uma tarefa aberta do próprio usuário (a SC do próprio teste, em etapa dele).
+- **Passos:** abrir a tarefa, alterar um campo com valor `QA` identificável, *Somente salvar*, **recarregar a página** e reabrir a tarefa.
+- **Resultado esperado:** o valor persiste **e a etapa não mudou** (a solicitação segue na mesma atividade, com o mesmo responsável, confirmado por `/requests/<id>?expand=currentMovements`). As duas metades importam: salvar que movimenta é tão defeito quanto salvar que perde.
+- **Viabilidade:** alcançável hoje, `@destrutivo`.
+
+### CT-TSK-08-H · Transferir atividade
+- **Prioridade:** P2 · **Tipo:** Funcional
+- **Pré-condições:** tarefa do próprio usuário com `currentMovto > 1` e sem `avoidTransfer` (é o que faz a opção aparecer); um usuário-destino válido, descoberto em execução.
+- **Passos:** abrir a tarefa → *Transferir* → escolher o destino → confirmar → reler `/requests/<id>?expand=currentMovements`.
+- **Resultado esperado:** a solicitação permanece **na mesma atividade** e o `assignee` passa a ser o destino. A confirmação vem do servidor.
+- **Viabilidade:** alcançável, `@destrutivo`, **mas com custo assimétrico**: depois de transferir, a conta da automação **perde a tarefa** e não consegue trazê-la de volta (a mensagem do servidor é *"Esta tarefa não está mais sob sua responsabilidade!"*). A solicitação continua cancelável pelo teardown, então o resídu…
+
+
+## Segurança
+
+### CT-SEG-07-S1 · Isolamento horizontal na API v2 de processos (BOLA/IDOR interno)
+- **Prioridade:** P1 · **Tipo:** Segurança (controle de acesso horizontal / BOLA — *Broken Object Level Authorization*)
+- **Pré-condições:** sessão autenticada de `TOTVS-FS`; um `processInstanceId` de um processo em que a conta comprovadamente **não** participa e que ela **não** tem permissão de iniciar. O teste deve **descobrir** esse id em tempo de execução (varrer `/requests?pageSize=100` procurando `processId` começando por `bpm_recepcao_documentos_fiscais`), nunca fixá-lo numa constante — a regra de massa da suíte vale aqui igual.
+- **Passos:** 1. Autenticar com `storageState` e abrir uma página do portal (o WAF barra `page.request`). 2. Via `page.evaluate` + `fetch`, listar `/process-management/api/v2/requests?pageSize=100` e selecionar a primeira instância de um processo bloqueado por permissão para a conta. 3. Confirmar a não-participação: `GET /requests/<id>/tasks?pageSize=60` não traz nenhum `assignee.code` nem `requester.code` igual ao login da automação. 4. `GET /requests/<id>?expand=formFields`.
+- **Resultado esperado:** (critério objetivo):** o passo 4 deve responder **403** (ou 404, ou 200 com `formFields: null`) para uma instância em que o usuário não é requisitante, responsável atual nem participante histórico. **Hoje responde 200 com o formulário inteiro — o teste reprova de propósito**, como os demais vermelhos intencionais da suíte. A assertion não pode ser sobre "não contém CNPJ": tem de ser sobre o *status* e a ausência do objeto, senão vira teste de string.
+- **Viabilidade:** **alcançável hoje, sem provisionamento nenhum.** Leitura pura, ~3 GETs, segundos de execução, sem `@destrutivo`. É o melhor retorno por linha de código do documento inteiro. Recomendo abrir chamado de segurança em paralelo, sem esperar o teste.
+
+---
+
+### CT-SEG-08-S1 · Processos administrativos abertos a usuário comum
+- **Prioridade:** P1 · **Tipo:** Segurança (segregação de função)
+- **Pré-condições:** nenhuma além da sessão.
+- **Passos:** 1. `GET /ecm/api/rest/ecm/process-category/processes?...&onlyCanStart=true` e verificar a presença dos dois ids. 2. Abrir `/portal/p/1/pageworkflowview?processID=bpm_addUserFluig` e o mesmo para `bpm_addUserGroup`. 3. Com `utils/guarda-criacao.js` ativo, afirmar `guarda.tentativas() === 0`. **Nunca clicar em Enviar** — criar usuário na base é escrita fora da política, mesmo em homologação.
+- **Resultado esperado:** os dois processos **não** devem constar do catálogo de início da conta e **não** devem abrir formulário — devem responder com o diálogo *Erro* e a mensagem de permissão, como `wf_solicitacao_ferias` e os RDFC. Hoje abrem → vermelho intencional, com `testInfo.annotations` de achado, no mesmo padrão do teste de RH.
+- **Viabilidade:** alcançável hoje, leitura pura, minutos de implementação. Reaproveita integralmente `FormularioProcessoPage` e o padrão parametrizado que já existe em `bloqueio-processos-rh.spec.js`.
+
+---
+
+# P2 — o que fecha os buracos estruturais
+
+### CT-SEG-10-S1 · ACL dos documentos que a SC cria sozinha no GED
+- **Prioridade:** P2 · **Tipo:** Segurança
+- **Pré-condições:** uma SC com anexo criada pelo teste (compartilha o setup de `CT-ACC-09-H`, criando a sua própria).
+- **Passos:** localizar os dois documentos gerados; ler as permissões por `GET /api/public/2.0/documents/getDocument/<id>` e pelo dataset `document`; comparar com o esperado.
+- **Resultado esperado:** os documentos e a pasta da solicitação **não** são legíveis por perfil genérico — a permissão é restrita aos participantes do processo. Se o critério do negócio ainda não estiver definido, **pergunte antes de codificar**: assertion frouxa aqui é pior que ausência de teste.
+- **Viabilidade:** a leitura é alcançável hoje. ⚠️ **O critério de aprovação não está definido** — este caso precisa de uma decisão da Cassi sobre qual é a ACL correta antes de virar teste. Entra na lista de "Perguntas em aberto para a Cassi" do README.
+
+
+## Compras (formulário clássico)
+
+### CT-CMP-07-S1 · Regressão do fail-open do formulário clássico de SC
+- **Prioridade:** P1 · **Tipo:** Regressão / Negativo
+- **Pré-condições:** conta da automação; `page.route` interceptando `ds_protheus_getMatriculaTitular_rest` para responder **500** — é isso que torna a janela **determinística** em vez de 2-em-9. Sem essa interceptação o teste é flaky por construção e não deve ser escrito.
+- **Passos:** 1. Interceptar `ds_protheus_getMatriculaTitular_rest` → HTTP 500 (o erro real observado). 2. Abrir o formulário clássico de `wf_solicitacao_compras`. 3. **Sem preencher nada**, e com o `blockUI` ainda visível, clicar em Enviar. 4. Contar as requisições que saíram para `**/workflowView/send`.
+- **Resultado esperado:** **zero** requisições de start. O produto deve manter o Enviar inerte (ou desabilitado) enquanto a montagem não terminar, e nunca aceitar submissão de formulário não montado. Hoje o `send` sai e o servidor devolve `processInstanceId` real → **vermelho intencional**.
+- **Viabilidade:** alcançável hoje. Leva `@destrutivo` porque, com o defeito presente, o teste **cria uma SC** — que o `globalTeardown` cancela pelo livro-razão. Cuidado registrado: abortar o `send` mudaria o comportamento do widget (armadilha já paga por esta suíte); o oráculo correto é **contar a tentativa**, deixan…
+
+### CT-CMP-08-H · Fechar o ciclo de retorno: reprovação → Correção → reenvio
+- **Prioridade:** P1 · **Tipo:** Funcional (caminho de exceção completo)
+- **Pré-condições:** SC criada pelo teste; a conta precisa conseguir assumir o pool do Gestor Imediato (`G.P.Requisicao_de_Compras_Gestor_Imediato`) — **já provado alcançável** pelos testes de `ciclo-gestor.spec.js`. Só é executável pela rota de start corrigido (`targetState` de gateway); pela rota do widget, o D-01 prende a SC no Início e o cenário não existe.
+- **Passos:** 1. Criar a SC e levá-la até *Validação do Gestor*. 2. Assumir do pool e **reprovar** com justificativa `QA`. 3. Confirmar que a SC voltou para a etapa de Correção **com o solicitante**. 4. Abrir a tarefa de Correção, alterar um campo identificável (ex.: justificativa `QA-CORR-<sufixo>`). 5. Reenviar. 6. Reler estado e histórico no servidor.
+- **Resultado esperado:** depois do reenvio a SC volta para *Validação do Gestor* (não para "Início"), o campo alterado persiste, e **os dados do contrato de origem continuam íntegros** — nº do contrato, revisão, filial e itens iguais aos do start. O histórico registra a passagem pela Correção.
+- **Viabilidade:** alcançável hoje, `@destrutivo`, mas é o caso **mais caro** da lista: ~4 movimentações e uma tarefa assumida de pool que **não tem devolução** (resíduo permanente na caixa "Tarefas a concluir" — custo do cenário, não algo a desfazer no teardown). Vale o preço.
+
+---
+
+
+## Documentos / GED
+
+### CT-GED-02-S2 · Bloqueio de extensão: allowlist, não blacklist do `.exe`
+- **Prioridade:** P2 · **Tipo:** Regressão / Segurança
+- **Pré-condições:** as mesmas de `CT-GED-02-S1`, incluindo o lock `fluig-upload-staging` de `utils/exclusividade.js` — a área de upload é **por usuário no servidor**, não por aba.
+- **Passos:** publicar, um por vez, arquivos de factory com extensões `.bat`, `.sh`, `.pdf.exe` e um `.exe` renomeado para `.pdf` (conteúdo com os magic bytes `MZ`), cada um em seu próprio teste.
+- **Resultado esperado:** todos rejeitados **com mensagem de bloqueio**, e nada gravado (`guarda.tentativas() === 0` ou ausência do documento na pasta). O caso do `.exe` renomeado é separado: se o produto validar só a extensão do nome, ele passa — e a assertion deve dizer isso na mensagem de falha, para que o leitor do relatório saiba que a validação é sintática.
+- **Viabilidade:** alcançável hoje, `@destrutivo`. Custo de massa: cada arquivo aceito vira documento a limpar por `navigation/removeDoc` → `recycleBin/removeDocument`.
+
+### CT-GED-04-S1 · Rejeitar documento — o caminho e o `msgId` que mente
+- **Prioridade:** P3 · **Tipo:** Funcional
+- **Pré-condições:** documento publicado pelo teste em pasta com aprovação (`Compras e Contratação > Parecer Técnico`, id 343011), autodesignando-se aprovador.
+- **Passos:** publicar → Central de Tarefas → *Documentos a aprovar* → **Rejeitar** com justificativa `QA` → confirmar o sumiço por rota de leitura.
+- **Resultado esperado:** o documento deixa de existir (`NotFoundException`), **e não está na Lixeira**. Assertion explícita de que o oráculo é o estado do documento, com comentário no teste registrando que o `msgId` não serve.
+- **Viabilidade:** alcançável hoje, `@destrutivo`, e é a limpeza **perfeita** — rejeitar não deixa resíduo nenhum. ⚠️ Precisa do lock `fluig-upload-staging`. ⚠️ Abrir "Documentos a aprovar" **muda estado de sessão no servidor** (`setAttribute centralTaskType=toapprove`) e pode fazer a Central aterrissar noutra sub-aba…
+
+
+## Acompanhamento de Contratos
+
+### CT-ACC-09-H · O caminho FELIZ do anexo da SC nunca foi provado
+- **Prioridade:** P2 · **Tipo:** Funcional / Integração
+- **Pré-condições:** SC criada pelo teste, com um anexo de factory (`QA-anexo-<sufixo>.pdf`).
+- **Passos:** criar a SC com anexo → ler o nº da solicitação → consultar o dataset `document` com constraint pelo nome do anexo → verificar os dois registros e a cadeia de pastas → abrir a solicitação e confirmar o anexo listado na aba Anexos.
+- **Resultado esperado:** os dois registros existem, a cópia navegável está sob a pasta da solicitação criada, e o anexo é listado na tarefa. Nomes com o sufixo único, para não colidir com os **140 registros** de anexo já acumulados na base.
+- **Viabilidade:** alcançável hoje, `@destrutivo`. **Resíduo permanente**: anexo de SC e sua cadeia de pastas não podem ser apagados (apagá-los é mexer na solicitação). Um por execução.
+
+
+## Recepção de Documentos Fiscais
+
+### CT-RDF-02-H · Rastreabilidade pai↔filho do RDFC
+- **Prioridade:** P2 · **Tipo:** Integração (contrato de dados)
+- **Pré-condições:** existir ao menos um par pai/filho na base — o teste **descobre** o par varrendo `/requests`, não fixa ids.
+- **Passos:** para cada filho RDFC encontrado, ler `WKNumProcesPai`; ler o pai correspondente e conferir que ele lista o filho em `*_SOLICITACAO_FLUIG___n`; conferir que a etapa "Atualiza solicitação principal" do filho está `COMPLETED` quando o filho está finalizado.
+- **Resultado esperado:** o elo é **bidirecional e consistente** para todo par encontrado. Se a base não tiver nenhum par, falhar com `PRÉ-CONDIÇÃO AUSENTE` nomeando o que falta — nunca passar vazio (o padrão de falso verde que o estudo de determinismo já pegou uma vez).
+- **Viabilidade:** alcançável hoje, leitura pura, sem provisionamento. ⚠️ Depende do `CT-SEG-07-S1`: **se o isolamento horizontal for corrigido, este teste perde o acesso** e passa a exigir uma conta com perfil fiscal. Registre a dependência ao implementar.
+
+
+## Jurídico
+
+### CT-JUR-06-H · Contencioso: nasce no pool certo?
+- **Prioridade:** P2 · **Tipo:** Funcional
+- **Pré-condições:** as mesmas do teste de Contencioso que já existe.
+- **Passos:** após a criação, `GET /requests/<id>?expand=currentMovements` e `GET /requests/<id>/tasks?pageSize=60`.
+- **Resultado esperado:** etapa `7-Resposta`, `assignee.code` = `Pool:Group:GRUPO_GEJUR_9`, e o grupo **corresponde à UF escolhida** no formulário (se houver mais de um grupo por UF, esta é a assertion que prova o roteamento).
+- **Viabilidade:** alcançável hoje — é **acréscimo de assertion** a um teste destrutivo que já roda, custo de massa **zero**. Um dos melhores custo/benefício da lista.
+
+
+## Financeiro
+
+### CT-FIN-01-H · Rejeições de Pagamentos — uma área inteira sem cobertura
+- **Prioridade:** P2 · **Tipo:** Funcional
+- **Pré-condições:** nenhuma para a abertura.
+- **Passos:** abrir o formulário de início, inventariar os campos obrigatórios, e afirmar sobre a estrutura (mesmo padrão de `cadastro-fornecedor.spec.js` e `parecer-tecnico.spec.js`: abre, espelha os campos, **não** envia).
+- **Resultado esperado:** o formulário monta com os campos do domínio. Se montar vazio, ou servir template de outro processo (como `wf_automacao_admissao` faz hoje), isso é o achado.
+- **Viabilidade:** alcançável hoje, leitura pura. ⚠️ Antes de investir no **ciclo** deste processo, confirme com a Cassi se ele está em escopo — nunca foi iniciado por ninguém, e pode ser publicação órfã. O caso de abertura é barato o bastante para valer de qualquer jeito.
+
+
+## Delegação de Tarefas
+
+### CT-SUB-02-H · Delegação de Tarefas (`wf_SubstituiçãoCargosFluig`)
+- **Prioridade:** P2 · **Tipo:** Funcional
+- **Pré-condições:** nenhuma. ⚠️ **O `processId` tem cedilha e til** — precisa de `encodeURIComponent` na URL; sem isso o teste falha por 404 e parece defeito.
+- **Passos:** abrir o formulário de início e afirmar sobre os campos (delegante, delegado, período).
+- **Resultado esperado:** formulário monta com os campos de delegação. "Último iniciado: Nunca" é contexto, não critério.
+- **Viabilidade:** alcançável hoje, leitura pura.
+
+---
+
+# P3 — barato, ou de valor menor
+
+
+## Notificações
+
+### CT-NOT-03-S1 · Contratos da API de notificação
+- **Prioridade:** P3 · **Tipo:** Funcional
+- **Resultado esperado:** `limit=3` devolve 3 itens (hoje devolve tudo → vermelho intencional); e `removeAlerts` remove de verdade, confirmado por releitura.
+- **Viabilidade:** alcançável hoje. ⚠️ A remoção é escrita — `@destrutivo`, e só sobre notificações que a **própria execução** gerou.
+
+
+## CliniCASSI
+
+### CT-CLI-03-H · Questionário: estado pós-criação nunca verificado
+- **Prioridade:** P3 · **Tipo:** Funcional
+- **Resultado esperado:** etapa 5, `assignee` = o solicitante, `status: OPEN`.
+- **Viabilidade:** acréscimo de assertion a um destrutivo existente, custo de massa zero.
+
