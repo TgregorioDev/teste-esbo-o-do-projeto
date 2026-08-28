@@ -90,24 +90,61 @@ test.describe('Segurança — processos administrativos não devem abrir para us
       // Passo 2 — abrir o formulário de início por URL. Esperado: bloqueio (diálogo "Erro").
       await formularioPage.goto(processId);
 
+      // ⚠️ Esperar a tela ASSENTAR antes de julgá-la.
+      //
+      // A versão anterior lia `headingErro.isVisible()` e `botaoEnviar.isVisible()` na linha
+      // seguinte ao `goto`. `isVisible()` NÃO tem retry, e `goto` resolve em
+      // `domcontentloaded` — mas o iframe do formulário navega várias vezes durante a carga
+      // (3× `about:blank`, o formulário real só por volta de 5,5 s; ver
+      // `docs/mapa-do-ambiente.md`, onda 3). No instante da leitura os dois davam `false`, e
+      // aí a assertion que denuncia a escalada (`botaoEnviar` visível ⇒ o formulário abriu)
+      // recebia `false` e PASSAVA — reportando o oposto do que foi medido em campo.
+      //
+      // A carga tem dois desfechos possíveis e mutuamente exclusivos: o diálogo de bloqueio
+      // ou o formulário montado. Espera-se por QUALQUER um dos dois antes de afirmar; assim
+      // as assertions julgam um estado real, e um terceiro desfecho (nenhum dos dois) vira
+      // falha explícita em vez de virar "bloqueado" por omissão.
+      /** @type {'bloqueado' | 'formulario' | 'indefinido'} */
+      let desfecho = 'indefinido';
+      await expect
+        .poll(
+          async () => {
+            if (await formularioPage.headingErro.isVisible().catch(() => false)) return 'bloqueado';
+            if (await formularioPage.headingInicio.isVisible().catch(() => false)) return 'formulario';
+            return 'indefinido';
+          },
+          {
+            timeout: 45_000,
+            message:
+              `abrir '${processId}' não produziu nem o diálogo "Erro" de permissão nem o ` +
+              'formulário de início em 45s — a tela ficou num terceiro estado, e sem um dos ' +
+              'dois não há veredito sobre CT-SEG-08-S1',
+          },
+        )
+        .not.toBe('indefinido');
+
+      desfecho = /** @type {'bloqueado' | 'formulario'} */ (
+        (await formularioPage.headingErro.isVisible().catch(() => false)) ? 'bloqueado' : 'formulario'
+      );
+
       // A tela deveria ser a de bloqueio de permissão. Hoje é o formulário — estas asserções
       // reprovam de propósito.
       expect
         .soft(
-          await formularioPage.headingErro.isVisible().catch(() => false),
+          desfecho,
           `abrir '${processId}' deveria exibir o diálogo "Erro" de permissão para a conta ` +
             'não-admin, como acontece com os processos de RH barrados. Ver CT-SEG-08-S1.',
         )
-        .toBe(true);
+        .toBe('bloqueado');
 
-      expect
+      await expect
         .soft(
-          await formularioPage.botaoEnviar.isVisible().catch(() => false),
+          formularioPage.botaoEnviar,
           `o formulário de início de '${processId}' (${nome}) carregou com o botão "Enviar" ` +
             'visível para a conta não-admin — o processo administrativo abriu de fato, quando ' +
             'deveria ter sido barrado. É a superfície da escalada de privilégio. Ver CT-SEG-08-S1.',
         )
-        .toBe(false);
+        .toHaveCount(0);
 
       // Invariante de segurança que DEVE valer sempre: a navegação de leitura não pode ter
       // disparado nenhuma escrita. Assertion dura (não-soft) — se falhar, é problema real.

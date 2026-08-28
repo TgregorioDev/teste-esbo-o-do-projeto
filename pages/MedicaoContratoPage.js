@@ -1,6 +1,8 @@
 // @ts-check
 import { expect } from '@playwright/test';
 
+import { lerVereditoDeMedicao } from '../utils/massa-medicao.js';
+
 /** Rota de início do processo "Faturamento de Contratos", confirmada em campo. */
 const ROTA_FATURAMENTO_CONTRATOS = '/portal/p/1/pageworkflowview?processID=wf_faturamento_contratos';
 
@@ -377,23 +379,77 @@ export class MedicaoContratoPage {
   }
 
   /**
-   * Aguarda a resposta síncrona do Protheus após selecionar a planilha (`ds_fatcon_get_info_medicoes`)
-   * e diz se ela veio como erro de negócio (sem saldo/revisão pendente) ou seguiu sem erro.
-   * @returns {Promise<{ comErro: boolean, mensagem: string }>}
+   * Seleciona a planilha e captura a RESPOSTA do Protheus à consulta de saldo
+   * (`ds_fatcon_get_info_medicoes`), devolvendo o veredito lido do corpo.
+   *
+   * ## Por que a resposta, e não o diálogo
+   *
+   * Este é o oráculo que decide se a automação pode seguir e GRAVAR uma medição — escrita
+   * irreversível na base do cliente. A versão anterior decidia por
+   * `dialogoErro.isVisible({ timeout: 8000 })`, e isso estava errado por dois motivos
+   * independentes, os dois medidos:
+   *
+   * 1. **O `timeout` de `locator.isVisible()` é ignorado.** Em Playwright 1.62.1 a opção é
+   *    `@deprecated This option is ignored` (`types.d.ts`): a leitura é instantânea, sem
+   *    retry. Os 8 s eram decorativos.
+   * 2. **O diálogo não existe.** `utils/massa-medicao.js` registra, medido interceptando a
+   *    resposta que o widget recebe: *"com `STATUS: ERROR`, nenhum diálogo é exibido e o
+   *    painel de itens simplesmente não abre"*. O oráculo procurava algo que o produto não
+   *    mostra.
+   *
+   * Somados, o default do `.catch(() => false)` era justamente o ramo que AUTORIZA o envio.
+   * A resposta do servidor é a fonte de verdade — a mesma que `descobrirCompetenciaBloqueada`
+   * já usa, pelo mesmo `lerVereditoDeMedicao`.
+   *
+   * O listener é armado ANTES do clique (`Promise.all`), eliminando a corrida que a versão
+   * anterior contornava com um `.catch()` silencioso.
+   *
+   * @returns {Promise<{ planilha: string, recusado: boolean, mensagem: string, houveResposta: boolean }>}
    */
-  async aguardarResultadoDaConsultaDeSaldo() {
-    await this.page
-      .waitForResponse((r) => r.url().includes('ds_fatcon_get_info_medicoes'), { timeout: 20000 })
-      .catch(() => {
-        // A consulta pode já ter respondido antes deste await começar (corrida entre o
-        // clique e o listener) — o diálogo de erro abaixo é a fonte de verdade real.
-      });
+  async selecionarPlanilhaELerVeredito() {
+    const [resposta, planilha] = await Promise.all([
+      this.page
+        .waitForResponse((r) => r.url().includes('ds_fatcon_get_info_medicoes'), { timeout: 30_000 })
+        .catch(() => null),
+      this.selecionarPrimeiraPlanilha(),
+    ]);
 
-    const comErro = await this.dialogoErro.isVisible({ timeout: 8000 }).catch(() => false);
-    if (!comErro) return { comErro: false, mensagem: '' };
+    if (!planilha) return { planilha: '', recusado: false, mensagem: '', houveResposta: false };
 
+    if (!resposta) {
+      // Sem resposta não há veredito. Tratar como RECUSA é o lado seguro: o preço de um falso
+      // "não pode medir" é pular uma competência; o de um falso "pode" é gravar medição que o
+      // Protheus recusa.
+      return {
+        planilha,
+        recusado: true,
+        mensagem: '(a consulta de saldo não respondeu em 30s — competência descartada por precaução)',
+        houveResposta: false,
+      };
+    }
+
+    const veredito = lerVereditoDeMedicao(await resposta.json().catch(() => ({})));
+    return { planilha, recusado: veredito.recusado, mensagem: veredito.mensagem, houveResposta: true };
+  }
+
+  /**
+   * Diz se a TELA exibiu aviso de erro após a consulta de saldo — e só isso.
+   *
+   * ⚠️ Não use para decidir se pode enviar: quem decide é
+   * `selecionarPlanilhaELerVeredito()`, que lê a resposta do servidor. Este método existe
+   * para o caso `CT-FAT-02-S2`, cuja tese é exatamente que o Protheus recusa e **a tela não
+   * avisa** — lá, a ausência de diálogo é o defeito sob teste, não um sinal de "pode seguir".
+   *
+   * A leitura é instantânea de propósito (o diálogo síncrono do widget, se existisse,
+   * apareceria junto com a resposta já aguardada por quem chama).
+   *
+   * @returns {Promise<{ visivel: boolean, mensagem: string }>}
+   */
+  async avisoDeErroNaTela() {
+    const visivel = await this.dialogoErro.isVisible().catch(() => false);
+    if (!visivel) return { visivel: false, mensagem: '' };
     const mensagem = await this.mensagemErro.innerText().catch(() => '');
-    return { comErro: true, mensagem };
+    return { visivel: true, mensagem };
   }
 
   /** Fecha o diálogo de erro síncrono, deixando o formulário pronto para nova tentativa. */
@@ -439,19 +495,19 @@ export class MedicaoContratoPage {
         tentativas.push({ competencia, mensagem: '(sem opção de Filial da Medição para esta competência)' });
         continue;
       }
-      const planilha = await this.selecionarPrimeiraPlanilha();
-      if (!planilha) {
+      const resultado = await this.selecionarPlanilhaELerVeredito();
+      if (!resultado.planilha) {
         tentativas.push({ competencia, mensagem: '(sem opção de Nº da Planilha para esta competência)' });
         continue;
       }
-      const resultado = await this.aguardarResultadoDaConsultaDeSaldo();
 
-      if (!resultado.comErro) {
-        return { sucesso: true, competencia, planilha, contrato };
+      if (!resultado.recusado) {
+        return { sucesso: true, competencia, planilha: resultado.planilha, contrato };
       }
 
       tentativas.push({ competencia, mensagem: resultado.mensagem });
-      await this.fecharErro();
+      // O diálogo pode nem existir (é o defeito de CT-FAT-02-S2) — fechar só se apareceu.
+      if ((await this.avisoDeErroNaTela()).visivel) await this.fecharErro();
     }
 
     return { sucesso: false, tentativas };

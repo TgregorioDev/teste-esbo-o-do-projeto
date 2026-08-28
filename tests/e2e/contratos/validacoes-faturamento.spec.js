@@ -153,26 +153,48 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
 
     await medicao.selecionarCompetencia(/** @type {string} */ (rotulo));
     await medicao.selecionarPrimeiraFilialMedicao();
-    await medicao.selecionarPrimeiraPlanilha();
-    const naTela = await medicao.aguardarResultadoDaConsultaDeSaldo();
+
+    // Duas leituras com papéis diferentes, e é essa separação que faz o caso funcionar:
+    //
+    // - `noServidor` vem da RESPOSTA de `ds_fatcon_get_info_medicoes`. É o fato: o Protheus
+    //   recusou. Serve de PRÉ-CONDIÇÃO — sem recusa confirmada não há silêncio a denunciar.
+    // - `naTela` vem do DIÁLOGO. É o que o usuário vê, e é onde mora o defeito.
+    //
+    // Antes as duas coisas eram o mesmo método (`aguardarResultadoDaConsultaDeSaldo`), que
+    // lia só o diálogo. Ele também era usado para decidir se a automação podia GRAVAR uma
+    // medição — ver `MedicaoContratoPage.selecionarPlanilhaELerVeredito`, onde essa mistura
+    // foi desfeita.
+    const noServidor = await medicao.selecionarPlanilhaELerVeredito();
+    const naTela = await medicao.avisoDeErroNaTela();
+
+    expect(
+      noServidor.recusado,
+      'PRÉ-CONDIÇÃO deste caso: o Protheus deveria RECUSAR medir esta competência (o dataset ' +
+        `a apontou como bloqueada com "${bloqueada.mensagemDoServidor.slice(0, 120)}"). Sem a ` +
+        'recusa confirmada na resposta, não há silêncio de UI a denunciar — a massa mudou.',
+    ).toBe(true);
+
+    expect(noServidor.mensagem).toMatch(/saldo|medições em aberto|revisão pendente|não é permitido medir/i);
 
     // ⚠️ REPROVA DE PROPÓSITO — defeito confirmado em 26/08/2026, interceptando a resposta que
     // o widget recebe: com `STATUS: ERROR` e a mensagem do Protheus no corpo, NENHUM diálogo é
     // exibido. O painel de itens não abre (então nada é medido), mas o usuário não é informado
-    // do motivo — a tela simplesmente não reage. Foi por isso que este teste antes concluía
-    // "nenhuma competência bloqueada encontrada": o bloqueio existia em todas, e o oráculo
-    // (o diálogo) nunca disparava.
+    // do motivo — a tela simplesmente não reage.
     expect(
-      naTela.comErro,
+      naTela.visivel,
       'defeito: o Protheus recusou a medição com "' +
-        bloqueada.mensagemDoServidor.slice(0, 160) +
+        noServidor.mensagem.slice(0, 160) +
         '", mas a tela não exibiu nenhum aviso ao usuário — a recusa é engolida silenciosamente',
     ).toBe(true);
 
-    expect(naTela.mensagem).toMatch(/saldo|medições em aberto|revisão pendente|não é permitido medir/i);
-
     // O painel de itens nunca chegou a ser liberado, e nenhuma medição foi criada.
-    await expect(medicao.frame.locator('#panel_MeasurementItens')).toBeHidden();
+    // `toBeAttached()` ANTES de `toBeHidden()`: `toBeHidden` sozinho é satisfeito por
+    // AUSÊNCIA — se o id for renomeado, o painel mudar de card ou o template trocar, a
+    // assertion fica verde sem observar nada, justamente no teste que existe para vigiar
+    // essa fronteira. O par é o padrão já usado logo abaixo para a aba de rateio.
+    const painelItens = medicao.frame.locator('#panel_MeasurementItens');
+    await expect(painelItens).toBeAttached();
+    await expect(painelItens).toBeHidden();
     expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);
   });
 
@@ -201,7 +223,13 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     // `#panel_MeasurementItens` no HTML do formulário) — não é revelado pela seleção em si,
     // só na etapa seguinte do workflow, assumida por quem consta como Fiscal/CSE do contrato.
     const inputsQuantidade = medicao.frame.locator('input[id^="quantidade___"]');
-    await expect(medicao.frame.locator('#panel_MeasurementItens')).toBeHidden();
+    // `toBeAttached()` ANTES de `toBeHidden()`: `toBeHidden` sozinho é satisfeito por
+    // AUSÊNCIA — se o id for renomeado, o painel mudar de card ou o template trocar, a
+    // assertion fica verde sem observar nada, justamente no teste que existe para vigiar
+    // essa fronteira. O par é o padrão já usado logo abaixo para a aba de rateio.
+    const painelItens = medicao.frame.locator('#panel_MeasurementItens');
+    await expect(painelItens).toBeAttached();
+    await expect(painelItens).toBeHidden();
     // Quando o Protheus já populou os itens da planilha no DOM (confirmado acontecer em
     // parte das execuções — depende de timing do backend, não é garantido a cada chamada),
     // isso reforça a prova de que o bloqueio é de ETAPA, não de ausência de dado: o campo de
@@ -242,7 +270,13 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     }
 
     const abaRateio = medicao.frame.locator('a[href="#tabRateio"]');
-    await expect(medicao.frame.locator('#panel_MeasurementItens')).toBeHidden();
+    // `toBeAttached()` ANTES de `toBeHidden()`: `toBeHidden` sozinho é satisfeito por
+    // AUSÊNCIA — se o id for renomeado, o painel mudar de card ou o template trocar, a
+    // assertion fica verde sem observar nada, justamente no teste que existe para vigiar
+    // essa fronteira. O par é o padrão já usado logo abaixo para a aba de rateio.
+    const painelItens = medicao.frame.locator('#panel_MeasurementItens');
+    await expect(painelItens).toBeAttached();
+    await expect(painelItens).toBeHidden();
     await expect(abaRateio).toBeAttached();
     await expect(abaRateio).toBeHidden();
 
