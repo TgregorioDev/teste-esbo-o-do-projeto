@@ -26,6 +26,29 @@ const MOTIVOS = {
   'CT-ACC-08-H':
     'depende de abrir a SC já criada — D-01 a deixa atribuída a `consumerkeycompras`, fora do alcance da conta da automação',
   'CT-ADM-01-S2': 'reprocessar atividade de integração exige perfil de administrador',
+  // ── Etapas 7 a 10 do ciclo do comprador ────────────────────────────────────────────────
+  // Estavam marcadas ✅ por testes que afirmavam a fila VAZIA e o pedido INEXISTENTE — o
+  // resultado esperado de cada caso, negado e registrado como aprovação. Ver o cabeçalho de
+  // `tests/e2e/portais/ciclo-comprador.spec.js`.
+  'CT-E2E-07-H':
+    'nenhuma SC atravessa a Validação Orçamentária (seq 14, responsável NOMINAL fora do alcance da conta de automação), então nenhuma chega a gerar cotação: o Controle de Cotações fica vazio mesmo com a delegação "Atuar como" aplicada. A estrutura da sub-tela (delegação + filtros) segue coberta por teste próprio.',
+  'CT-E2E-08-H':
+    'idem CT-E2E-07-H — sem cotação não há proposta a comparar nem SC rastreável por Nº SC / Proc. Fluig. As colunas da grade seguem cobertas por teste próprio.',
+  'CT-E2E-09-H':
+    'idem CT-E2E-07-H — sem cotação analisada não há vencedor a definir. As colunas da grade seguem cobertas por teste próprio.',
+  'CT-E2E-10-H':
+    'o pedido no Protheus exige o ciclo completo, e a SC para na Validação Orçamentária. O teste que restou mede o TETO alcançável (a SC percorre até a seq 14 e para lá), que é afirmação positiva e verificável — não a etapa 10.',
+  // ── Cotação e Negociação pelo Portal do Comprador ──────────────────────────────────────
+  'CT-COT-01-H':
+    'a cotação é gerada pelo PROTHEUS e chega ao Fluig por integração (regras-de-negocio-compras.md §5); sem SC que passe da Validação Orçamentária, a fila do Controle de Cotações fica vazia. O spec detecta e avisa se a massa aparecer.',
+  'CT-COT-01-S1': 'idem CT-COT-01-H',
+  'CT-COT-02-S1': 'idem CT-COT-01-H',
+  'CT-COT-02-S2': 'idem CT-COT-01-H',
+  'CT-COT-02-S3': 'idem CT-COT-01-H',
+  'CT-NEG-01-H':
+    'a negociação é restrita a quem já enviou proposta (regras-de-negocio-compras.md §7) e a decisão acontece na Central de Tarefas, não no Portal; sem cotação com proposta, a fila de Avaliação de Propostas fica vazia.',
+  'CT-NEG-01-S1': 'idem CT-NEG-01-H',
+  'CT-NEG-01-S2': 'idem CT-NEG-01-H',
   'CT-CMP-05-H':
     'a Validação Orçamentária (seq 14) tem responsável NOMINAL, vindo de API do Protheus por conta contábil e centro de custo — não cai em pool para a conta de automação, que não é gestor orçamentário de nenhum produto. O teste que existia citando este ID terminava em `expect(true).toBe(true)` e não exercitava o caso; foi substituído por um que afirma a própria regra de atribuição nominal.',
   'CT-TSK-02-S1':

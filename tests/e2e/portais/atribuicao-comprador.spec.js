@@ -66,16 +66,29 @@ test.describe('Gerência de Compras — Atribuir comprador (CT-E2E-05-H)', () =>
         'dados nela; sem a tabela na tela não dá para distinguir "veio vazia" (o defeito) de ' +
         '"a aba não carregou" (outro problema)',
     ).toBeVisible();
+    // ⚠️ VERMELHO INTENCIONAL — não "conserte" para verde.
+    //
+    // A versão anterior afirmava `getByText('Nenhum dado encontrado')).toBeVisible()` e
+    // `possuiDados()).toBe(false)`: registrava o defeito COMO SE FOSSE A REGRA e passava. Pior,
+    // contradizia `tests/e2e/portais/gerencia-compras.spec.js`, que afirma o oposto sobre esta
+    // mesma aba — a suíte tinha um verde e um vermelho permanentes sobre o mesmo fato, e o
+    // leitor do relatório não tinha como saber qual era o comportamento esperado.
+    //
+    // O resultado esperado de CT-E2E-05-H é explícito (`docs/catalogo-casos.md`): a SC passa a
+    // constar para o comprador escolhido, e a aba Transferir permite trocá-lo depois. Logo a
+    // Atribuir tem de listar as SCs pendentes de atribuição. Enquanto o `etapa=257` devolver
+    // vazio para esta conta, este teste reprova — que é a convenção da suíte.
+    //
     // As duas chamadas a `ds_getSolicsGerenciaCompras` (etapa=257 e etapa=119) disparam juntas
-    // no carregamento da página — a essa altura (já esperamos a Transferir acima) a resposta de
-    // etapa=257 já chegou; a assertion abaixo só confirma o estado final renderizado.
-    await expect(
-      atribuicao.getTabelaAtiva().getByText('Nenhum dado encontrado'),
-      'defeito: a aba Atribuir deveria listar as SCs pendentes de atribuição, e o esperado hoje ' +
-        'é o vazio ("Nenhum dado encontrado"). Se nem esse aviso aparece, a aba está num terceiro ' +
-        'estado — nem com dado, nem com vazio declarado',
-    ).toBeVisible({ timeout: 30_000 });
-    expect(await atribuicao.possuiDados()).toBe(false);
+    // no carregamento da página; a essa altura (já esperamos a Transferir acima) a resposta de
+    // etapa=257 já chegou, então isto mede o estado final renderizado, não uma corrida.
+    expect(
+      await atribuicao.possuiDados(),
+      'defeito: a aba Atribuir deveria listar as SCs pendentes de atribuição (CT-E2E-05-H), e ' +
+        'está vazia — enquanto a aba irmã Transferir, carregada pelo MESMO mecanismo na mesma ' +
+        'página, renderizou dados reais logo acima. Isso isola a causa no `etapa=257` filtrado ' +
+        'pela matrícula da conta autenticada, não no pipeline de carga da grade',
+    ).toBe(true);
 
     expect(guarda.tentativas()).toBe(0);
   });
@@ -96,17 +109,21 @@ test.describe('Gerência de Compras — Atribuir comprador (CT-E2E-05-H)', () =>
     });
     expect(atividade).toBe('Validação Orçamentária');
 
-    // A alçada é quem barra o caminho — não a UI. Confirmado: nenhum "Assumir tarefa" para esta
-    // conta na atividade em que a SC efetivamente parou.
-    await expect(page.getByRole('button', { name: 'Assumir tarefa' })).toHaveCount(0);
+    // A alçada é quem barra o caminho — não a UI. Ancorar num estado POSITIVO da tela antes de
+    // afirmar a ausência do controle: assertion de ausência é satisfeita no primeiro poll, e
+    // sem essa âncora "o botão não está lá" seria indistinguível de "a tela ainda não montou"
+    // (armadilha registrada em `docs/mapa-do-ambiente.md`, onda 3).
+    await expect(page.getByText('Atividade atual: Validação Orçamentária')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Assumir tarefa' }),
+      `a SC ${numeroProcesso} parou em Validação Orçamentária, que é etapa de responsável ` +
+        'NOMINAL — não deve oferecer "Assumir tarefa" para a conta de automação',
+    ).toHaveCount(0);
 
-    // E, coerente com o achado acima: a SC recém-criada não aparece na aba Atribuir — nunca
-    // avançou até lá.
-    const atribuicao = new AtribuicaoCompradorPage(page);
-    await atribuicao.goto();
-    await atribuicao.expectCarregada();
-    await atribuicao.abrirAbaAtribuir();
-    await expect(atribuicao.getTabelaAtiva()).toBeVisible();
-    await expect(atribuicao.localizarLinhaPorNumero(numeroProcesso)).toHaveCount(0);
+    // A segunda metade do teste original ("a SC não aparece na aba Atribuir") foi REMOVIDA: o
+    // teste irmão desta describe já prova que a aba Atribuir está vazia para qualquer SC, então
+    // afirmar que ESTA não está lá era verdade por construção — não podia falhar, e não
+    // acrescentava informação nenhuma. O que este teste prova é o teto: a SC para na etapa
+    // anterior, e é por isso que nunca chega à fila de atribuição.
   });
 });

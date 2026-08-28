@@ -51,21 +51,40 @@ test.describe('Portal do Comprador', () => {
     await expect(page).toHaveURL(/validacaoInicial/);
     await expect(portalComprador.comboAtuarComo).toHaveCount(0);
 
+    // `> 1`, não `> 0`: a grade vazia renderiza uma `tbody tr` com o placeholder "Nenhum dado
+    // encontrado", então `> 0` era satisfeito por uma fila VAZIA — falso verde medido em
+    // 28/08/2026 (a fila tinha exatamente 1 linha, e era o placeholder), enquanto o título
+    // prometia "solicitações reais". Mesmo critério de `CicloCompradorPage.possuiDados()`.
     const linhas = portalComprador.getTabelaAtiva().locator('tbody tr');
     await expect(linhas.first()).toBeVisible();
-    expect(await linhas.count()).toBeGreaterThan(0);
+
+    if ((await linhas.count()) <= 1) {
+      throw new Error(
+        'PRÉ-CONDIÇÃO AUSENTE: a Validação Inicial não lista nenhuma solicitação para a conta ' +
+          'autenticada no momento da execução (só a linha de placeholder). A sub-tela mostra as ' +
+          'SCs do COMPRADOR DESIGNADO, e a designação vem da SY1 do Protheus — sem SC atribuída ' +
+          'a esta conta não há o que listar. Isto NÃO é defeito do produto sob teste.',
+      );
+    }
 
     expect(guarda.tentativas()).toBe(0);
   });
 
-  test('deve exigir delegação em "Atuar como" para listar Controle de Cotações', async ({
+  /**
+   * ⚠️ Título corrigido. Ele dizia *"deve exigir delegação em 'Atuar como' para listar
+   * Controle de Cotações"* — uma regra CAUSAL que este teste nunca exerceu: ele não troca a
+   * delegação em momento nenhum, então não podia comparar "com" contra "sem". O que ele fazia
+   * era afirmar `getByText('Nenhum dado encontrado')).toBeVisible()`, ou seja, registrar a
+   * fila vazia como resultado esperado — e ficar verde.
+   *
+   * A metade que faltava existe em `tests/e2e/portais/ciclo-comprador.spec.js`, que troca a
+   * delegação de verdade e trata a fila vazia como PRÉ-CONDIÇÃO AUSENTE. Aqui fica só o que
+   * é medido e positivo: a sub-tela expõe o seletor de delegação com opções além da própria
+   * conta.
+   */
+  test('o Controle de Cotações expõe o seletor "Atuar como" com opções além da própria conta', async ({
     page,
   }) => {
-    // Confirmado em campo: esta sub-tela expõe o seletor "Atuar como:", default no próprio
-    // usuário autenticado (sem delegação). Nesse estado a fila vem vazia — comportamento
-    // consistente com "opera por delegação" do contexto da task. A suíte NÃO troca a
-    // delegação: isso significaria assumir a fila de outro colaborador real, fora do escopo
-    // de leitura desta automação.
     const guarda = await bloquearCriacaoDeSolicitacao(page);
     const portalComprador = new PortalCompradorPage(page);
 
@@ -80,11 +99,6 @@ test.describe('Portal do Comprador', () => {
     await expect(portalComprador.comboAtuarComo).toBeVisible();
     const opcoes = await portalComprador.comboAtuarComo.locator('option').allInnerTexts();
     expect(opcoes.length).toBeGreaterThan(1);
-
-    // Confirmado em campo: nesta sub-tela a mensagem de grade vazia é texto solto da
-    // página (não uma linha de <table>) — por isso a leitura aqui não passa por
-    // getTabelaAtiva().
-    await expect(page.getByText('Nenhum dado encontrado')).toBeVisible();
 
     expect(guarda.tentativas()).toBe(0);
   });

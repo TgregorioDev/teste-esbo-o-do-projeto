@@ -160,13 +160,41 @@ test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra'
     await solicitacaoModal.preencher(solicitacao);
     await solicitacaoModal.confirmar();
 
-    expect(
-      guarda.tentativas(),
-      `solicitação chegou a ser enviada mesmo sem itens: ${guarda.urls().join(', ')}`,
-    ).toBe(0);
+    // ⚠️ Sincronizar ANTES de contar. A versão anterior lia `guarda.tentativas()` na linha
+    // seguinte ao clique: `click()` resolve quando o evento é despachado, e o widget ainda
+    // aguarda `itensLoadingPromise` antes de eventualmente disparar o `/start`. Contar ali
+    // afirmava "nada foi enviado" antes do instante em que o envio aconteceria — se a trava
+    // `listProdutos.length > 0` fosse removida do produto, o teste continuaria verde.
+    //
+    // A condição observável de "a tentativa terminou" é o Confirmar voltar a ficar
+    // habilitado (a trava antiduplo-clique o desabilita enquanto a criação está em voo).
+    await expect(solicitacaoModal.botaoConfirmar).toBeEnabled({ timeout: 30_000 });
+
+    // E a contagem é sustentada por uma janela, não lida uma vez: `expect.poll` reavalia,
+    // então um `/start` que saísse com atraso ainda seria pego.
+    await expect
+      .poll(() => guarda.tentativas(), {
+        message: `solicitação chegou a ser enviada mesmo sem itens: ${guarda.urls().join(', ')}`,
+        timeout: 10_000,
+      })
+      .toBe(0);
 
     // O modal permanece aberto: não pode haver falso sucesso nem fechamento silencioso
     await expect(solicitacaoModal.getDialog()).toBeVisible();
-    await expect(page.getByText(/iniciado com sucesso/i)).toHaveCount(0);
+
+    // ⚠️ VERMELHO INTENCIONAL — não "conserte" para verde.
+    //
+    // `docs/catalogo-casos.md` (CT-ACC-04-S2) exige o aviso "Nenhum item de contrato foi
+    // carregado. Verifique se o contrato possui itens e tente novamente." A versão anterior
+    // rebaixou essa metade do resultado esperado a COMENTÁRIO ("o aviso ao usuário está em
+    // aberto com o time") e deixou só o bloqueio — removendo justamente a assertion que
+    // reprovaria e viraria achado. O bloqueio sem aviso é falha silenciosa para quem usa o
+    // portal: a pessoa clica em Confirmar e nada acontece.
+    await expect(
+      page.getByText(/Nenhum item de contrato foi carregado/i),
+      'o produto bloqueia o envio sem itens (correto), mas não avisa o usuário — o modal ' +
+        'apenas não faz nada ao Confirmar. O catálogo exige a mensagem explícita; enquanto ' +
+        'ela não existir, este teste reprova de propósito.',
+    ).toBeVisible({ timeout: 15_000 });
   });
 });

@@ -4,7 +4,9 @@ import { FormularioCotacaoPage } from '../../../pages/FormularioCotacaoPage.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
 
 /**
- * CT-COT-01-H (parcial — só abertura/render).
+ * Cotação — abertura/render do formulário avulso. NÃO cobre o caso de negócio da
+ * família CT-COT (cenário 01-H): não preenche nem envia nada. O caso está declarado
+ * como lacuna em `scripts/gerar-cobertura.mjs`.
  *
  * `wf_cotacao_produtos_servicos`, aberto direto por URL, abre o formulário clássico de
  * Cotação de Produtos e Serviços com os campos de Fornecedor, itens e totais.

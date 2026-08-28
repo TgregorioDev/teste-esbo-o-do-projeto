@@ -38,9 +38,14 @@ test.describe('Tracker de Processos Compras/Contratos', () => {
 
     await tracker.pesquisar();
 
+    // O alerta de filtro obrigatório É a prova de que a pesquisa foi recusada.
+    //
+    // ⚠️ Saiu daqui `getLinhasDoResultado().count()).toBe(0)`. `getTabelaResultado()` é
+    // `page.locator('table:visible').first()`: quando nenhuma tabela está visível — que é
+    // exatamente o estado após a recusa — o locator resolve zero elementos e a contagem dá 0
+    // por VACUIDADE, não por a pesquisa ter sido bloqueada. A assertion passaria igual se a
+    // tela nunca tivesse montado, e não acrescentava nada ao alerta acima.
     await expect(tracker.alertaFiltroObrigatorio).toBeVisible();
-    // Nenhum resultado deve ter sido carregado quando o filtro é recusado.
-    expect(await tracker.getLinhasDoResultado().count()).toBe(0);
 
     expect(guarda.tentativas()).toBe(0);
   });
@@ -60,7 +65,15 @@ test.describe('Tracker de Processos Compras/Contratos', () => {
     await expect(linhas.first()).toBeVisible();
     // A quantidade varia com a base; o que o negócio garante é que o filtro devolve
     // processos — fixar o total tornaria o teste falso-vermelho a cada movimentação.
-    expect(await linhas.count()).toBeGreaterThan(0);
+    //
+    // `> 1` e não `> 0`: a grade vazia do portal renderiza UMA linha de placeholder
+    // ("Nenhum dado encontrado"), então `> 0` seria satisfeito por um resultado VAZIO — e o
+    // título promete "processos reais". Mesmo critério de `CicloCompradorPage.possuiDados()`.
+    expect(
+      await linhas.count(),
+      'o filtro por status "Abertos" deveria devolver processos reais — só a linha de ' +
+        'placeholder não sustenta o que este teste afirma',
+    ).toBeGreaterThan(1);
 
     expect(guarda.tentativas()).toBe(0);
   });
