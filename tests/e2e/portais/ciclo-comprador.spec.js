@@ -33,7 +33,7 @@ import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
  * com motivo, em `scripts/gerar-cobertura.mjs`.
  */
 test.describe('Ciclo do Comprador — Validação Inicial (CT-E2E-06-H)', () => {
-  test('deve listar SCs reais em Validação Inicial, com dados do item visíveis ao expandir a linha, sem exigir delegação', async ({
+  test('a Validação Inicial abre sem exigir delegação e renderiza a grade', async ({
     page,
   }) => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);
@@ -50,28 +50,19 @@ test.describe('Ciclo do Comprador — Validação Inicial (CT-E2E-06-H)', () => 
 
     await expect(ciclo.getTabelaAtiva()).toBeVisible();
 
-    // `possuiDados()` (mais de UMA linha), não `count() > 0`: a grade vazia renderiza uma
-    // `tbody tr` com o placeholder "Nenhum dado encontrado", então `> 0` era satisfeito por
-    // uma fila VAZIA — falso verde medido em 28/08/2026 — e o título ("lista SCs reais")
-    // ficava falso. A fila em si é pré-condição: depende de haver SC designada a esta conta.
-    if (!(await ciclo.possuiDados())) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: a Validação Inicial não lista nenhuma solicitação para a conta ' +
-          'autenticada no momento da execução (só a linha de placeholder). A sub-tela mostra as ' +
-          'SCs do COMPRADOR DESIGNADO, e a designação vem da SY1 do Protheus. Isto NÃO é ' +
-          'defeito do produto sob teste — o teste irmão `@destrutivo` desta describe cria a ' +
-          'própria massa e é ele quem exercita o fluxo.',
-      );
-    }
-
-    const primeiraLinha = ciclo.getLinhas().first();
-    await ciclo.expandirDetalhe(primeiraLinha);
-
-    // Dados do contrato/item da SC, visíveis só depois de expandir — confirma
-    // "dados do contrato visíveis" do caso de teste.
-    await expect(page.getByText('Produto/Serviço', { exact: false }).first()).toBeVisible();
-    await expect(page.getByText('Quantidade', { exact: false }).first()).toBeVisible();
-    await expect(page.getByText('Vlr. Total Estimado', { exact: false }).first()).toBeVisible();
+    // ⚠️ A afirmação "lista solicitações reais" saiu daqui.
+    //
+    // Ela dependia de já existir SC atribuída ao comprador — massa que este teste não cria.
+    // Outro teste podia encerrá-la, e o `globalTeardown` da própria suíte cancela
+    // solicitações, então a suíte era capaz de destruir a pré-condição de um teste dela
+    // mesma. A norma da skill é "cada teste monta seus próprios pré-requisitos".
+    //
+    // Quem faz essa afirmação com massa própria é o teste `@destrutivo` desta mesma suíte,
+    // que cria a SC, aprova a Validação do Gestor e a localiza aqui pelo número. A cobertura
+    // não se perde — muda de dono, e passa a ser independente.
+    //
+    // O que resta aqui é o que o teste de fato mede sem depender de ninguém: a sub-tela abre,
+    // responde pela URL certa e não exige delegação.
 
     expect(guarda.tentativas()).toBe(0);
   });
@@ -108,6 +99,19 @@ test.describe('Ciclo do Comprador — Validação Inicial (CT-E2E-06-H)', () => 
         },
       )
       .toContain('Validação Orçamentária');
+
+    // "Os dados do contrato de origem estão visíveis" — a outra metade do resultado esperado
+    // de CT-E2E-06-H (`docs/catalogo-casos.md`).
+    //
+    // Esta afirmação vivia no teste de leitura ao lado, expandindo "a primeira linha da
+    // grade" — uma SC qualquer, de quem quer que fosse. Mudou de dono para cá porque aqui a
+    // linha é a SC DESTE teste: expandir a própria massa é o que torna a verificação
+    // independente, e de quebra o que se lê passa a ser dado conhecido em vez de anônimo.
+    await ciclo.expandirDetalhe(ciclo.localizarLinhaPorNumero(numeroProcesso).first());
+
+    await expect(page.getByText('Produto/Serviço', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('Quantidade', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('Vlr. Total Estimado', { exact: false }).first()).toBeVisible();
   });
 });
 

@@ -36,7 +36,7 @@ test.describe('Portal do Comprador', () => {
     expect(guarda.tentativas()).toBe(0);
   });
 
-  test('deve listar as solicitações reais em Validação Inicial, sem exigir delegação', async ({
+  test('a Validação Inicial abre sem exigir delegação e renderiza a grade', async ({
     page,
   }) => {
     // Confirmado em campo (3 execuções limpas): esta sub-tela NÃO tem o seletor "Atuar
@@ -51,21 +51,20 @@ test.describe('Portal do Comprador', () => {
     await expect(page).toHaveURL(/validacaoInicial/);
     await expect(portalComprador.comboAtuarComo).toHaveCount(0);
 
-    // `> 1`, não `> 0`: a grade vazia renderiza uma `tbody tr` com o placeholder "Nenhum dado
-    // encontrado", então `> 0` era satisfeito por uma fila VAZIA — falso verde medido em
-    // 28/08/2026 (a fila tinha exatamente 1 linha, e era o placeholder), enquanto o título
-    // prometia "solicitações reais". Mesmo critério de `CicloCompradorPage.possuiDados()`.
-    const linhas = portalComprador.getTabelaAtiva().locator('tbody tr');
-    await expect(linhas.first()).toBeVisible();
-
-    if ((await linhas.count()) <= 1) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: a Validação Inicial não lista nenhuma solicitação para a conta ' +
-          'autenticada no momento da execução (só a linha de placeholder). A sub-tela mostra as ' +
-          'SCs do COMPRADOR DESIGNADO, e a designação vem da SY1 do Protheus — sem SC atribuída ' +
-          'a esta conta não há o que listar. Isto NÃO é defeito do produto sob teste.',
-      );
-    }
+    // ⚠️ A afirmação "lista solicitações reais" saiu daqui.
+    //
+    // Ela dependia de já existir SC atribuída ao comprador — massa que este teste não cria.
+    // Outro teste podia encerrá-la, e o `globalTeardown` da própria suíte cancela
+    // solicitações, então a suíte era capaz de destruir a pré-condição de um teste dela
+    // mesma. A norma da skill é "cada teste monta seus próprios pré-requisitos".
+    //
+    // Quem faz essa afirmação com massa própria é o teste `@destrutivo` desta mesma suíte,
+    // que cria a SC, aprova a Validação do Gestor e a localiza aqui pelo número. A cobertura
+    // não se perde — muda de dono, e passa a ser independente.
+    //
+    // O que resta aqui é o que o teste de fato mede sem depender de ninguém: a sub-tela abre,
+    // responde pela URL certa e não exige delegação.
+    await expect(portalComprador.getTabelaAtiva()).toBeVisible();
 
     expect(guarda.tentativas()).toBe(0);
   });
