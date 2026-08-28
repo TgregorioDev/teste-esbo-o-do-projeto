@@ -19,7 +19,29 @@ export default defineConfig({
   // Nunca é solução para flakiness — teste que passa no retry vai para investigação.
   retries: process.env.CI ? 2 : 0,
 
-  workers: process.env.CI ? '50%' : undefined,
+  // ⚠️ O limite de paralelismo é do SERVIDOR, não da máquina que roda a suíte.
+  //
+  // Medido em 28/08/2026, mesmo commit, mesmo ambiente, bloco `acompanhamento-contratos`:
+  //
+  //   | workers            | resultado         | timeouts de 120s |
+  //   |--------------------|-------------------|------------------|
+  //   | default (8 = 16/2) | 16 ok / 17 falhou |        13        |
+  //   | 3                  | 22 ok / 11 falhou |         0        |
+  //
+  // Os 13 timeouts NÃO eram defeito nem instabilidade: rodando serialmente, cada um desses
+  // testes leva 11–12s e reprova (ou passa) com veredito nomeado. Sob 8 abas simultâneas
+  // contra a MESMA instância de homologação, o mesmo teste estoura 120s — degradação de ~10x.
+  // O efeito prático era o pior possível: defeito real de produto chegando ao relatório
+  // disfarçado de "Test timeout exceeded", que é exatamente o que ninguém consegue investigar.
+  //
+  // Isto NÃO é "aumentar timeout para mascarar flakiness" (proibido pela skill
+  // `playwright-test-creator`): o timeout continua em 120s. É dimensionar a concorrência ao
+  // que o alvo sustenta — o Fluig de homologação é uma instância única e compartilhada, então
+  // `50%` da CPU do runner é uma métrica da máquina errada. Por isso o teto vale também no CI,
+  // onde um runner maior só pioraria a contenção.
+  //
+  // Se o ambiente ganhar capacidade, refaça a medição da tabela acima antes de subir o número.
+  workers: 3,
 
   // O portal carrega 800+ contratos e o modal encadeia sete datasets no Protheus:
   // o ambiente é legitimamente lento, e o timeout reflete isso — não mascara flakiness.
