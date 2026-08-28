@@ -75,13 +75,19 @@ test.describe('Resumo de Tarefas — coerência dos contadores (CT-TSK-01-H)', (
     await tarefasPage.expectCarregada();
 
     const { total } = await tarefasPage.resumoConsenso();
-    const mensagemVazioVisivel = await tarefasPage.avisoSemConsenso.isVisible();
 
-    expect(
-      mensagemVazioVisivel,
-      `painel anuncia total (${total}), mas a mensagem de "sem tarefas em consenso" ${
-        mensagemVazioVisivel ? 'está visível' : 'não está visível'
-      } — os dois precisam ser coerentes (total zero ⇔ mensagem visível)`,
-    ).toBe(total === 0);
+    // `expect.poll`, não `isVisible()` solto: `expectCarregada()` espera os painéis de
+    // Tarefas a concluir e Solicitações, mas NÃO o painel de consenso
+    // (`.panel-task-chart-agreement`), que pode ainda estar montando. Uma leitura
+    // instantânea com `total > 0` e a mensagem ainda não renderizada devolvia
+    // `false === false` e o teste passava sem ter observado o painel.
+    await expect
+      .poll(() => tarefasPage.avisoSemConsenso.isVisible(), {
+        timeout: 15_000,
+        message:
+          `painel anuncia total (${total}) — a mensagem de "sem tarefas em consenso" deveria ` +
+          `${total === 0 ? 'estar' : 'NÃO estar'} visível (total zero ⇔ mensagem visível)`,
+      })
+      .toBe(total === 0);
   });
 });

@@ -436,14 +436,24 @@ test.describe('Validação do Gestor Imediato (Tarefas em pool)', () => {
     try {
       await expect(async () => {
         const atividade = await central.lerNomeAtividadeAtual();
-        expect(atividade.length).toBeGreaterThan(0);
-        expect(atividade).not.toMatch(/Validação do Gestor/i);
+        // Destino ESPECÍFICO, não "mudou de alguma forma": aprovar na Validação do Gestor
+        // (seq 7) encaminha para a Validação Orçamentária (seq 14) — é a transição medida em
+        // `catalogo-de-processos.md`. A versão anterior aceitava qualquer etapa diferente de
+        // "Validação do Gestor", inclusive Correção, Cancelamento ou um estado de erro.
+        expect(atividade).toMatch(/Or[çc]ament/i);
       }).toPass({ timeout: 30_000 });
       atividadeMudou = true;
     } catch {
       // segue false — ou a mensagem de alçada explica, ou nem uma coisa nem outra (falha)
     }
-    const alcadaVisivel = await mensagemAlcada.isVisible().catch(() => false);
+
+    // Leitura COM espera: `isVisible()` não tem retry, e a mensagem de alçada (quando existe)
+    // chega junto com o desfecho assíncrono da decisão. Lida instantaneamente, dava sempre
+    // `false` e o ramo virava código morto — a disjunção passava só pelo `atividadeMudou`.
+    const alcadaVisivel = await mensagemAlcada
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false);
 
     expect(
       alcadaVisivel || atividadeMudou,
