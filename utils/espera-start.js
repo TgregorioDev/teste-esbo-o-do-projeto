@@ -14,14 +14,25 @@
  *    formulário ainda montando). O defeito, se houver, é anterior ao servidor;
  *  - **saiu e não voltou** → o servidor não respondeu no prazo. É ambiente, não fluxo.
  *
+ * ## `exigirSucesso`
+ *
+ * Faltava uma terceira distinção, e ela custou legibilidade em 28/08/2026: **saiu, voltou, e
+ * voltou 500**. Os chamadores cobriam isso com `expect(resposta.status()).toBe(200)` cru, que
+ * reprova com `Expected: 200 / Received: 500` e mais nada — indistinguível de qualquer outra
+ * igualdade quebrada, e sem o corpo da resposta, que é onde o Fluig diz o que recusou. Três
+ * cenários destrutivos reprovaram exatamente assim na execução completa.
+ *
+ * Com `exigirSucesso: true` a checagem passa a ser do helper, que já tem a resposta em mãos e
+ * pode ler o corpo. O veredito sai nomeado e com a razão do servidor junto.
+ *
  * @template T
  * @param {import('@playwright/test').Page} page
  * @param {() => Promise<T>} acionar o que dispara o envio (o clique em Confirmar)
- * @param {{ timeout?: number, contexto?: string }} [opcoes]
+ * @param {{ timeout?: number, contexto?: string, exigirSucesso?: boolean }} [opcoes]
  * @returns {Promise<import('@playwright/test').Response>}
  */
 export async function esperarStartDaSolicitacao(page, acionar, opcoes = {}) {
-  const { timeout = 45_000, contexto = '' } = opcoes;
+  const { timeout = 45_000, contexto = '', exigirSucesso = false } = opcoes;
   /** @param {string} url */
   const ehStart = (url) => url.includes('/wf_solicitacao_compras/start');
 
@@ -38,7 +49,20 @@ export async function esperarStartDaSolicitacao(page, acionar, opcoes = {}) {
   try {
     await acionar();
     const resposta = await esperada;
-    if (resposta) return resposta;
+    if (resposta) {
+      if (exigirSucesso && resposta.status() !== 200) {
+        // O corpo é o que interessa: o Fluig devolve ali a razão da recusa. Ler pode falhar
+        // (resposta vazia, HTML de erro do WAF), e nesse caso o próprio fato de não ser
+        // legível já é informação — mas nunca pode derrubar o teste por outra causa.
+        const corpo = await resposta.text().catch(() => '(corpo ilegível)');
+        throw new Error(
+          `o start da Solicitação de Compra respondeu HTTP ${resposta.status()}${
+            contexto ? ` (${contexto})` : ''
+          } — a SC não foi criada. Corpo da resposta: ${corpo.replace(/\s+/g, ' ').trim().slice(0, 600)}`,
+        );
+      }
+      return resposta;
+    }
 
     const detalhe = enviadas.length
       ? `${enviadas.length} requisição(ões) de start saiu(ram), mas nenhuma resposta chegou em ` +

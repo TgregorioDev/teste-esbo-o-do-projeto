@@ -46,8 +46,10 @@ test.describe('A SC criada nasce no estado e no dono corretos (CT-E2E-01-H)', ()
     await solicitacaoModal.expectAberto();
     await solicitacaoModal.preencher(criarSolicitacaoCompra());
 
-    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar());
-    expect(resposta.status()).toBe(200);
+    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar(), {
+      contexto: 'SC de apoio do ciclo do Gestor Imediato',
+      exigirSucesso: true,
+    });
     const processInstanceId = (await resposta.json()).processInstanceId;
     testInfo.annotations.push({ type: 'sc-criada', description: String(processInstanceId) });
 
@@ -119,8 +121,10 @@ test.describe('Gestor Imediato assume do pool e aprova (CT-E2E-02-H)', () => {
     await solicitacaoModal.expectAberto();
     await solicitacaoModal.preencher(criarSolicitacaoCompra());
 
-    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar());
-    expect(resposta.status()).toBe(200);
+    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar(), {
+      contexto: 'SC que o Gestor Imediato vai APROVAR (CT-E2E-02-H)',
+      exigirSucesso: true,
+    });
     const processInstanceId = (await resposta.json()).processInstanceId;
     testInfo.annotations.push({ type: 'sc-criada', description: String(processInstanceId) });
 
@@ -173,8 +177,10 @@ test.describe('Gestor Imediato reprova com justificativa (CT-E2E-02-S1)', () => 
       }
     });
 
-    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar());
-    expect(resposta.status()).toBe(200);
+    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar(), {
+      contexto: 'SC que o Gestor Imediato vai REPROVAR (CT-E2E-02-S1)',
+      exigirSucesso: true,
+    });
     const processInstanceId = (await resposta.json()).processInstanceId;
     testInfo.annotations.push({ type: 'sc-criada', description: String(processInstanceId) });
     expect(corpoOriginal, 'o corpo original enviado deveria ter sido capturado para comparação depois').toBeTruthy();
