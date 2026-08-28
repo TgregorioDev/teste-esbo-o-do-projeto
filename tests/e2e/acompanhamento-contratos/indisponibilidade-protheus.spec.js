@@ -63,9 +63,11 @@ test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra'
     await abrirSolicitacaoComProtheusFora(page, contratosPage);
     await solicitacaoModal.expectAberto();
 
-    await expect(solicitacaoModal.getAlertasErro().first()).toContainText(
-      /Erro ao buscar dados da filial/i,
-    );
+    await expect(
+      solicitacaoModal.getAlertasErro().first(),
+      'defeito: com os datasets de filial e de itens fora, o modal abre SEM avisar que os dados '
+        + 'do contrato não puderam ser obtidos. o gateway de dataset do Fluig NUNCA responde 500 — o erro vem no CORPO de um 200 (medido em 28/08/2026, quatro cenários). Com o mock fiel a essa forma, o widget não reage: o tratamento de erro dele ramifica pelo STATUS HTTP. Em produção, portanto, o usuário nunca vê este aviso — a falha do Protheus é engolida em silêncio. VERMELHO INTENCIONAL: não conserte voltando o mock para 500',
+    ).toContainText(/Erro ao buscar dados da filial/i);
   });
 
   test('deve exibir um alerta por dado indisponível, nomeando o dado que faltou', async ({

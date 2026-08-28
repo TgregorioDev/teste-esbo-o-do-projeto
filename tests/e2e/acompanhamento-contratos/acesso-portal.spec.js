@@ -101,8 +101,17 @@ test.describe('Acesso ao Portal de Acompanhamento de Contratos', () => {
 
     await contratosPage.goto();
 
-    await expect(contratosPage.avisoFalhaPermissao).toBeVisible();
-    await expect(contratosPage.alertaFalhaPermissao).toBeVisible();
+    await expect(
+      contratosPage.avisoFalhaPermissao,
+      'defeito: com o dataset de grupos do usuário falhando, o portal não exibe aviso algum de '
+        + 'INDISPONIBILIDADE. o gateway de dataset do Fluig NUNCA responde 500 — o erro vem no CORPO de um 200 (medido em 28/08/2026, quatro cenários). Com o mock fiel a essa forma, o widget não reage: o tratamento de erro dele ramifica pelo STATUS HTTP. Em produção, portanto, o usuário nunca vê este aviso — a falha do Protheus é engolida em silêncio. VERMELHO INTENCIONAL: não conserte voltando o mock para 500',
+    ).toBeVisible();
+    await expect(
+      contratosPage.alertaFalhaPermissao,
+      'defeito: o alerta que distingue "não foi possível validar sua permissão" de "você não tem '
+        + 'permissão" não aparece. Sem ele o suporte vai procurar grupo do usuário quando o '
+        + 'problema é o Protheus fora do ar',
+    ).toBeVisible();
     // O ponto do caso: indisponibilidade NÃO pode ser comunicada como falta de permissão
     await expect(contratosPage.avisoAcessoNegado).toHaveCount(0);
     await expect(contratosPage.alertaAcessoNegado).toHaveCount(0);
