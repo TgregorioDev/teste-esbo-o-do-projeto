@@ -8,8 +8,8 @@ título do teste** — é o que torna esta contagem auditável em vez de declara
 | | |
 |---|---|
 | Casos no catálogo | **187** |
-| Com teste na suíte | **142** (76%) |
-| Sem teste | **45** |
+| Com teste na suíte | **141** (75%) |
+| Sem teste | **46** |
 
 O script falha se um teste citar um ID que não existe no catálogo, ou se um caso ficar sem teste
 e sem motivo declarado. As duas checagens existem para que a matriz não possa envelhecer em
@@ -83,7 +83,7 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-CMP-04-S1` | Reprovação do Gestor gera correção | ✅ | `e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js` · `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-05-H` | Validação Orçamentária dentro da alçada | ⬜ | a Validação Orçamentária (seq 14) tem responsável NOMINAL, vindo de API do Protheus por conta contábil e centro de custo — não cai em pool para a conta de automação, que não é gestor orçamentário de nenhum produto. O teste que existia citando este ID terminava em `expect(true).toBe(true)` e não exercitava o caso; foi substituído por um que afirma a própria regra de atribuição nominal. |
 | `CT-CMP-05-S1` | Valor acima da alçada sem aprovador | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
-| `CT-CMP-06-H` | Aprovação final (Compradores/Alçadas) e conclusão | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
+| `CT-CMP-06-H` | Aprovação final (Compradores/Alçadas) e conclusão | ⬜ | a SC precisa atravessar a Validação Orçamentária (seq 14, responsável NOMINAL fora do alcance da conta) para chegar à Validação dos Compradores (seq 119/257). A automação não produz essa massa sob demanda, e assumir a massa compartilhada que eventualmente aparece no pool interferiria em outros testes — violação de independência. O teste que resta mede a alcançabilidade do pool, em leitura pura. |
 | `CT-CMP-07-S1` | Regressão do fail-open do formulário clássico de SC | ✅ | `e2e/compras/fail-open-formulario-sc.spec.js` |
 | `CT-CMP-08-H` | Fechar o ciclo de retorno: reprovação → Correção → reenvio | ✅ | `e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js` |
 | `CT-COT-01-H` | Cotação sem parecer técnico (feliz) | ⬜ | a cotação é gerada pelo PROTHEUS e chega ao Fluig por integração (regras-de-negocio-compras.md §5); sem SC que passe da Validação Orçamentária, a fila do Controle de Cotações fica vazia. O spec detecta e avisa se a massa aparecer. |

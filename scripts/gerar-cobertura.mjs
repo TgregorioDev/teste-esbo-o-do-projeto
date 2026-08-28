@@ -49,6 +49,8 @@ const MOTIVOS = {
     'a negociação é restrita a quem já enviou proposta (regras-de-negocio-compras.md §7) e a decisão acontece na Central de Tarefas, não no Portal; sem cotação com proposta, a fila de Avaliação de Propostas fica vazia.',
   'CT-NEG-01-S1': 'idem CT-NEG-01-H',
   'CT-NEG-01-S2': 'idem CT-NEG-01-H',
+  'CT-CMP-06-H':
+    'a SC precisa atravessar a Validação Orçamentária (seq 14, responsável NOMINAL fora do alcance da conta) para chegar à Validação dos Compradores (seq 119/257). A automação não produz essa massa sob demanda, e assumir a massa compartilhada que eventualmente aparece no pool interferiria em outros testes — violação de independência. O teste que resta mede a alcançabilidade do pool, em leitura pura.',
   'CT-CMP-05-H':
     'a Validação Orçamentária (seq 14) tem responsável NOMINAL, vindo de API do Protheus por conta contábil e centro de custo — não cai em pool para a conta de automação, que não é gestor orçamentário de nenhum produto. O teste que existia citando este ID terminava em `expect(true).toBe(true)` e não exercitava o caso; foi substituído por um que afirma a própria regra de atribuição nominal.',
   'CT-TSK-02-S1':
