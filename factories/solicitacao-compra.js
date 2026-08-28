@@ -22,9 +22,27 @@ const QA_PREFIX = process.env.QA_DATA_PREFIX ?? 'QA';
 /** Tipos oferecidos pelo campo "Tipo de Solicitação" do modal. */
 export const TIPO_SOLICITACAO = {
   PLACEHOLDER: 'Selecione...',
-  RENOVACAO: 'Renovação Contratual',
   ADITIVO: 'Aditivo Contratual',
+  NOVA_CONTRATACAO: 'Nova Contratação',
 };
+
+/**
+ * ⚠️ `RENOVACAO: 'Renovação Contratual'` foi REMOVIDO daqui em 28/08/2026.
+ *
+ * O ambiente deixou de oferecer essa opção no combo "Tipo de Solicitação" — hoje ele serve
+ * apenas `Selecione...`, `Aditivo Contratual` e `Nova Contratação` (medido). Como era o valor
+ * DEFAULT da factory, todo teste que preenchia o modal pedia ao Playwright uma opção
+ * inexistente: `selectOption({ label })` ficava 45s esperando e reprovava com
+ * `TimeoutError: locator.selectOption` — um timeout opaco que não dizia a causa.
+ *
+ * Foram ~20 testes reprovando por isso, em `acompanhamento-contratos`, sem nenhuma pista de
+ * que a lista de tipos tinha mudado. O único que apontou a causa foi
+ * `modal-solicitacao-compra.spec.js`, que afirma a lista de opções — e é por isso que esse
+ * tipo de assertion vale a pena.
+ *
+ * `Nova Contratação` entrou na lista no mesmo período. Se a remoção de "Renovação Contratual"
+ * NÃO for intencional, é achado a levar ao time — está registrado nas divergências do README.
+ */
 
 /**
  * @typedef {Object} SolicitacaoCompra
@@ -42,7 +60,7 @@ export function criarSolicitacaoCompra(overrides = {}) {
   const id = randomUUID().slice(0, 8);
 
   return {
-    tipo: TIPO_SOLICITACAO.RENOVACAO,
+    tipo: TIPO_SOLICITACAO.ADITIVO,
     motivo: `${QA_PREFIX} ${faker.company.catchPhrase()} ${id}`,
     dataNecessidade: dataFutura(30),
     ...overrides,

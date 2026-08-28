@@ -129,6 +129,37 @@ export class AcompanhamentoContratosPage {
    * @returns {Promise<LinhaDeContrato[]>}
    */
   async lerLinhasDaGrade() {
+    // ⚠️ Esperar a grade PINTAR antes de ler.
+    //
+    // Isto era um `page.evaluate` instantâneo. Quando o DataTables ainda não tinha renderizado
+    // as linhas, devolvia `[]` — e `utils/massa-contratos.js` traduzia esse `[]` em
+    // "PRÉ-CONDIÇÃO AUSENTE: a integração com o Protheus está indisponível". Ou seja: a
+    // automação culpava o ambiente do cliente por uma corrida dela mesma.
+    //
+    // Medido em 28/08/2026: com a grade sustentando 840 registros em CINCO amostras seguidas
+    // (o critério de `docs/estado-do-gate.md`), testes destrutivos ainda reprovavam com essa
+    // mensagem. Falsa atribuição é pior que timeout opaco — o timeout ao menos não aponta um
+    // culpado errado.
+    //
+    // A espera usa o MESMO critério do leitor abaixo (linha com ≥8 células e número de
+    // contrato não vazio), e não a simples existência de `tbody tr`: a grade vazia renderiza
+    // uma linha de placeholder, que satisfaria `length > 0` sem haver dado nenhum. Se o prazo
+    // esgotar, segue e devolve o que houver — aí o `[]` é real e a mensagem de pré-condição
+    // volta a ser verdadeira.
+    await this.page
+      .waitForFunction(
+        () =>
+          [...document.querySelectorAll('tbody tr')].some((linha) => {
+            const c = linha.querySelectorAll('td');
+            return c.length >= 8 && (c[2]?.textContent ?? '').trim() !== '';
+          }),
+        undefined,
+        { timeout: 30_000 },
+      )
+      .catch(() => {
+        // Sem linha em 30s: pode ser grade legitimamente vazia. Quem chama decide.
+      });
+
     return this.page.evaluate(() => {
       /** @param {Element} c */
       const texto = (c) => (c?.textContent ?? '').trim();
