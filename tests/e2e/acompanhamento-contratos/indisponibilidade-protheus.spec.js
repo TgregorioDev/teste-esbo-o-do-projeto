@@ -15,6 +15,23 @@ import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
  *
  * A indisponibilidade é simulada no navegador porque a alternativa seria derrubar o serviço
  * de integração do cliente. O trecho de código exercitado é o mesmo.
+ *
+ * ## ⚠️ VERMELHO INTENCIONAL desde 28/08/2026 — não "conserte" revertendo o mock
+ *
+ * Estes testes ficaram verdes por meses porque `derrubarDataset` fabricava **HTTP 500**. O
+ * gateway de dataset do Fluig NUNCA responde 500: medido em quatro cenários (dataset válido,
+ * nome inexistente, erro de negócio do Protheus e dataset de sync quebrado), o
+ * `POST /api/public/ecm/dataset/datasets` respondeu **200 em todos**, com o erro no CORPO —
+ * exatamente como a skill `cassi-fluig-master` descreve. O 500 existe, mas na rota irmã
+ * `GET /dataset/search`, que não é a que o widget usa.
+ *
+ * Com o mock corrigido para a forma real, o alerta some. O que isso revela é o defeito:
+ * **o tratamento de erro do widget reage ao STATUS HTTP, não ao corpo.** Como em produção o
+ * status é sempre 200, o usuário NUNCA vê esses avisos — a falha do Protheus é engolida em
+ * silêncio, e a tela apenas não mostra dado.
+ *
+ * Voltar o mock para 500 deixaria os testes verdes de novo e esconderia isso. O vermelho é o
+ * resultado correto até o produto passar a ramificar pelo corpo da resposta.
  */
 test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra', () => {
   /**

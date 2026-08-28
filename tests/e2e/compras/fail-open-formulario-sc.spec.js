@@ -132,7 +132,20 @@ test.describe('Fail-open do formulário clássico de Solicitação de Compras (C
 
     // Torna a janela determinística. Sem isto o cenário é 2-em-9 e o teste seria flaky por
     // construção — ver o cabeçalho.
-    await derrubarDataset(page, DATASET_MATRICULA, 500);
+    //
+    // ⚠️ `servidor-fora` (HTTP 500) aqui é DELIBERADO, e é a exceção à forma padrão.
+    //
+    // Medido em 28/08/2026: o gateway de dataset do Fluig sempre responde 200 com o erro no
+    // corpo, e por isso `derrubarDataset` passou a fabricar 200 por padrão. Mas este teste
+    // não está simulando o modo de falha de produção — ele precisa de um INSTRUMENTO que
+    // impeça a montagem do formulário de terminar, para abrir a janela em que o fail-open é
+    // observável. O 500 é esse instrumento, e é ele que a assertion logo abaixo confere.
+    //
+    // A distinção importa: onde o teste afirma "assim o produto se comporta quando o Protheus
+    // falha", a forma tem de ser a real (ver `acompanhamento-contratos/`). Onde ele apenas
+    // fabrica uma condição de corrida para observar outra coisa, vale o que for determinístico
+    // — desde que dito, como está aqui.
+    await derrubarDataset(page, DATASET_MATRICULA, { forma: 'servidor-fora' });
 
     // ── Oráculo: as requisições de criação que SAÍRAM ────────────────────────────────────
     // Registradas antes da navegação, e nunca abortadas: o teste conta a tentativa e deixa o
