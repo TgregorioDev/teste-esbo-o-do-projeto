@@ -20,23 +20,28 @@ import { randomUUID } from 'node:crypto';
 const QA_PREFIX = process.env.QA_DATA_PREFIX ?? 'QA';
 
 /**
- * Tipos oferecidos pelo campo "Tipo de Solicitação" do modal, no catálogo que o time da Cassi
- * DECLAROU em algum momento (roteiro / README). NÃO é garantia de que a opção exista no
- * ambiente agora — o catálogo já mudou duas vezes em 11 dias (ver README > Divergências
- * abertas) e `RENOVACAO` está atualmente FORA do ambiente. Por isso nenhum destes literais é
- * mais usado como default de factory: quem precisa de um tipo específico o nomeia no próprio
- * teste, e `SolicitacaoCompraModal.selecionarTipo` confirma contra o combo real antes de
- * selecionar, falhando com PRÉ-CONDIÇÃO legível se o literal pedido não existir mais.
+ * Tipos oferecidos pelo campo "Tipo de Solicitação" do modal, conforme o catálogo VIGENTE do
+ * ambiente, medido em 31/08/2026 e CONFIRMADO pelo dono do ambiente como mudança intencional
+ * da Cassi.
+ *
+ * Histórico, porque a instabilidade é o motivo de o guardião existir: o roteiro de 20/08
+ * registrava "Renovação Contratual" + "Aditivo Contratual" + "Nova Solicitação"; o README
+ * seguinte registrava "Renovação Contratual" + "Aditivo Contratual"; hoje o ambiente oferece
+ * "Aditivo Contratual" + "Nova Contratação". Três composições em 11 dias.
+ *
+ * Nenhum destes literais é default de factory: quem precisa de um tipo específico o nomeia no
+ * próprio teste, e `SolicitacaoCompraModal.selecionarTipo` confirma contra o combo real antes
+ * de selecionar, falhando com PRÉ-CONDIÇÃO legível se o literal pedido não existir mais.
  *
  * `modal-solicitacao-compra.spec.js` ("deve oferecer os tipos contratuais de solicitação") é o
- * guardião do catálogo e usa `RENOVACAO` de propósito para flagrar a divergência — não remova
- * nem "corrija" este valor para fazer aquele teste passar (decisão pendente do dono do
- * ambiente).
+ * guardião do catálogo: ele afirma a lista EXATA e reprova a cada nova mudança, que é
+ * exatamente o que se espera dele. Atualizar este objeto sem atualizar aquele teste — ou
+ * vice-versa — reintroduz o ponto cego que custou 8 casos em 31/08/2026.
  */
 export const TIPO_SOLICITACAO = {
   PLACEHOLDER: 'Selecione...',
-  RENOVACAO: 'Renovação Contratual',
   ADITIVO: 'Aditivo Contratual',
+  NOVA_CONTRATACAO: 'Nova Contratação',
 };
 
 /**
