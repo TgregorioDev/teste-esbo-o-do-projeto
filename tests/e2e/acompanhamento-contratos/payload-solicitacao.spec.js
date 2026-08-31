@@ -2,7 +2,7 @@
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { envObrigatoria } from '../../../config/ambiente.js';
 import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
-import { criarSolicitacaoCompra } from '../../../factories/solicitacao-compra.js';
+import { criarSolicitacaoCompra, QUALQUER_TIPO_VALIDO } from '../../../factories/solicitacao-compra.js';
 import {
   capturarEnvioSolicitacao,
   extrairItens,
@@ -49,7 +49,12 @@ async function abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, c
   await contratosPage.abrirSolicitacaoCompra();
   await solicitacaoModal.expectAberto();
 
-  await solicitacaoModal.preencher(criarSolicitacaoCompra(overrides));
+  // Nenhuma assertion deste arquivo depende de QUAL tipo foi enviado (ver mapa de intenção do
+  // diagnóstico de 31/08/2026) — o helper declara a intenção agnóstica por padrão para as 10
+  // specs que o chamam sem se preocupar com o campo. Um `overrides.tipo` explícito do caller
+  // ainda vence (spread depois), para o dia em que algum caso passar a precisar de um tipo
+  // específico.
+  await solicitacaoModal.preencher(criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO, ...overrides }));
   await solicitacaoModal.confirmar();
 
   return contrato;
@@ -406,7 +411,7 @@ test.describe('Payload de start — duplo clique (CT-ACC-04-S3)', () => {
       await contratosPage.filtrarPorContrato(contrato.contrato);
       await contratosPage.abrirSolicitacaoCompra();
       await solicitacaoModal.expectAberto();
-      await solicitacaoModal.preencher(criarSolicitacaoCompra());
+      await solicitacaoModal.preencher(criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO }));
 
       await solicitacaoModal.botaoConfirmar.click();
 
@@ -469,7 +474,7 @@ test.describe('Payload de start — número de contrato incoerente (CT-ACC-04-S5
       el.disabled = true;
     }, contratoReferencia.contrato);
 
-    await solicitacaoModal.preencher(criarSolicitacaoCompra());
+    await solicitacaoModal.preencher(criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO }));
     await solicitacaoModal.confirmar();
     const payloadIncoerente = await capturaIncoerente.aguardarPayload(0);
     expect(capturaIncoerente.tentativas()).toBe(1);

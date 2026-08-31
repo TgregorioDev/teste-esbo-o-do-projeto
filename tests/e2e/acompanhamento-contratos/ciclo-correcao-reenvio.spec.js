@@ -2,7 +2,7 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
-import { criarSolicitacaoCompra } from '../../../factories/solicitacao-compra.js';
+import { criarSolicitacaoCompra, QUALQUER_TIPO_VALIDO } from '../../../factories/solicitacao-compra.js';
 import { capturarEnvioSolicitacao } from '../../../utils/captura-payload.js';
 import { criarJustificativaDecisao } from '../../../factories/produto-compra.js';
 import { TarefaSolicitacaoCompraPage } from '../../../pages/TarefaSolicitacaoCompraPage.js';
@@ -258,7 +258,7 @@ test.describe('Ciclo de retorno da SC: reprovação → Correção → reenvio (
     await contratosPage.filtrarPorContrato(contrato.contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
-    await solicitacaoModal.preencher(criarSolicitacaoCompra());
+    await solicitacaoModal.preencher(criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO }));
 
     // Captura o payload genuíno do widget como TEMPLATE. `capturarEnvioSolicitacao` ABORTA a
     // requisição: nada é criado aqui.

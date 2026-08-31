@@ -1,7 +1,7 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
-import { criarSolicitacaoCompra } from '../../../factories/solicitacao-compra.js';
+import { criarSolicitacaoCompra, QUALQUER_TIPO_VALIDO } from '../../../factories/solicitacao-compra.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
 
 /**
@@ -51,7 +51,7 @@ test.describe('Campos obrigatórios da Solicitação de Compra', () => {
     solicitacaoModal,
   }) => {
     const guarda = await abrirModal(page, contratosPage, solicitacaoModal);
-    const solicitacao = criarSolicitacaoCompra();
+    const solicitacao = criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO });
 
     await solicitacaoModal.preencher({ tipo: solicitacao.tipo });
     await solicitacaoModal.confirmar();
@@ -68,7 +68,7 @@ test.describe('Campos obrigatórios da Solicitação de Compra', () => {
     solicitacaoModal,
   }) => {
     const guarda = await abrirModal(page, contratosPage, solicitacaoModal);
-    const solicitacao = criarSolicitacaoCompra();
+    const solicitacao = criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO });
 
     await solicitacaoModal.preencher({
       tipo: solicitacao.tipo,
@@ -88,7 +88,9 @@ test.describe('Campos obrigatórios da Solicitação de Compra', () => {
     solicitacaoModal,
   }) => {
     // O tipo define a natureza do pedido (renovação ou aditivo) e governa o roteamento
-    // seguinte — não pode ser opcional.
+    // seguinte — não pode ser opcional. Este caso testa exatamente a AUSÊNCIA do tipo, então
+    // `tipo` nunca entra no override: declarar `QUALQUER_TIPO_VALIDO` aqui seria uma intenção
+    // que o teste nunca usa.
     const guarda = await abrirModal(page, contratosPage, solicitacaoModal);
     const solicitacao = criarSolicitacaoCompra();
 
