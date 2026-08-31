@@ -2,7 +2,7 @@
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { DATASET } from '../../../config/ambiente.js';
 import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
-import { criarSolicitacaoCompra } from '../../../factories/solicitacao-compra.js';
+import { criarSolicitacaoCompra, QUALQUER_TIPO_VALIDO } from '../../../factories/solicitacao-compra.js';
 import { derrubarDataset } from '../../../utils/dataset-fluig.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
 
@@ -156,7 +156,7 @@ test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra'
     const guarda = await abrirSolicitacaoComProtheusFora(page, contratosPage);
     await solicitacaoModal.expectAberto();
 
-    const solicitacao = criarSolicitacaoCompra();
+    const solicitacao = criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO });
     await solicitacaoModal.preencher(solicitacao);
     await solicitacaoModal.confirmar();
 

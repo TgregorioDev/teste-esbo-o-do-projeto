@@ -1,7 +1,7 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
-import { criarSolicitacaoCompra } from '../../../factories/solicitacao-compra.js';
+import { criarSolicitacaoCompra, QUALQUER_TIPO_VALIDO } from '../../../factories/solicitacao-compra.js';
 import { capturarEnvioSolicitacao, extrairItens } from '../../../utils/captura-payload.js';
 import { MinhasSolicitacoesPage } from '../../../pages/MinhasSolicitacoesPage.js';
 import { esperarStartDaSolicitacao } from '../../../utils/espera-start.js';
@@ -121,7 +121,7 @@ test.describe('Confirmar cria a SC e ela deveria chegar ao solicitante (CT-ACC-0
     await contratosPage.filtrarPorContrato(contrato.contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
-    await solicitacaoModal.preencher(criarSolicitacaoCompra());
+    await solicitacaoModal.preencher(criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO }));
 
     const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar());
 
@@ -258,7 +258,7 @@ test.describe('Item sem quantidade e sem valor no contrato não pode virar item 
     await contratosPage.filtrarPorContrato(alvo.contrato.contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
-    await solicitacaoModal.preencher(criarSolicitacaoCompra());
+    await solicitacaoModal.preencher(criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO }));
 
     /** @type {Record<string, any> | null} */
     let corpoEnviado = null;
@@ -300,7 +300,7 @@ test.describe('Bypass da validação de cliente no start direto (CT-ACC-04-S6 / 
     await contratosPage.filtrarPorContrato(contrato.contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
-    await solicitacaoModal.preencher(criarSolicitacaoCompra());
+    await solicitacaoModal.preencher(criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO }));
 
     // Captura o payload genuíno como TEMPLATE — capturado e ABORTADO, não cria nada aqui.
     const captura = await capturarEnvioSolicitacao(page);
@@ -430,7 +430,7 @@ test.describe('Segunda SC para o mesmo contrato/revisão sem alerta de duplicida
     await contratosPage.filtrarPorContrato(contrato.contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
-    await solicitacaoModal.preencher(criarSolicitacaoCompra());
+    await solicitacaoModal.preencher(criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO }));
 
     const resposta1 = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar(), {
       contexto: 'primeira SC do par que testa o alerta de duplicidade',
@@ -532,7 +532,7 @@ test.describe('Quantidade e valor em contrato de serviço sem CNB_QUANT (CT-ACC-
     await contratosPage.filtrarPorContrato(alvo.contrato.contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
-    await solicitacaoModal.preencher(criarSolicitacaoCompra());
+    await solicitacaoModal.preencher(criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO }));
 
     const captura = await capturarEnvioSolicitacao(page);
     await solicitacaoModal.confirmar();
