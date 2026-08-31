@@ -87,7 +87,13 @@ async function buscarItensSemAbrirModal(page, linha) {
  */
 async function descobrirContratoVigentePequeno(page, contratosPage, criterio = {}) {
   const excluir = new Set(criterio.excluirContratos ?? []);
-  for (let tentativa = 0; tentativa < 8; tentativa += 1) {
+  // 15 tentativas, e não 8: desde que `descobrirContratoVigente` distribui a escolha entre os
+  // 554 contratos vigentes (em vez de devolver sempre os primeiros da grade), a amostra deixou
+  // de cair sistematicamente nos mesmos candidatos. Cada tentativa é uma leitura de dataset
+  // (~0,1s, sem abrir modal), então ampliar a amostra custa pouco e evita `PRÉ-CONDIÇÃO
+  // AUSENTE` por azar de sorteio.
+  const MAX_TENTATIVAS = 15;
+  for (let tentativa = 0; tentativa < MAX_TENTATIVAS; tentativa += 1) {
     const candidato = await descobrirContratoVigente(contratosPage, { ...criterio, excluirContratos: [...excluir] });
     const itens = await buscarItensSemAbrirModal(page, candidato);
     excluir.add(candidato.contrato);
@@ -96,7 +102,7 @@ async function descobrirContratoVigentePequeno(page, contratosPage, criterio = {
     }
   }
   throw new Error(
-    `PRÉ-CONDIÇÃO AUSENTE: não foi possível achar, em 8 tentativas, um contrato vigente com até ` +
+    `PRÉ-CONDIÇÃO AUSENTE: não foi possível achar, em ${MAX_TENTATIVAS} tentativas, um contrato vigente com até ` +
       `${LIMITE_ITENS_SEGURO} itens (medido sem abrir modal). Isto NÃO é o defeito D-03 sendo ` +
       'reproduzido — é a suíte se recusando a arriscar abrir um contrato potencialmente gigante.',
   );

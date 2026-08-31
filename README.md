@@ -69,9 +69,37 @@ timeout esperando o filtro não diz "faltou massa". Quando não há massa, a des
 com *"PRÉ-CONDIÇÃO AUSENTE: a grade de contratos não retornou nenhuma linha… isto NÃO é defeito
 do produto"*, separando ambiente de defeito no próprio relatório.
 
-Contrato é pré-condição de **leitura**: a automação não pode criá-lo, porque nasce no Protheus
-por processo de negócio que esta suíte está proibida de executar. Já tudo que a automação
-**preenche** (justificativa, data, tipo) vem de factory com faker, sufixo único e prefixo `QA`.
+### Nenhum teste depende de um contrato específico
+
+Escolher "a primeira linha vigente da grade" era, na prática, escolher sempre o
+`000000000000001`: a suíte inteira pendurada num registro só. Desde 30/08/2026 a escolha é feita
+por **afinidade de hash** entre a identidade do teste (`titlePath`) e o número do contrato, entre
+os **554 vigentes** da base. Propriedades:
+
+- **determinística** — o mesmo teste escolhe sempre o mesmo contrato, em qualquer worker e em
+  qualquer ordem; é o que permite reproduzir uma falha;
+- **distribuída** — testes diferentes caem em contratos diferentes, então remover um contrato da
+  base afeta no máximo os testes que o escolhiam;
+- **exclusiva** — o contrato escolhido é reservado contra os outros workers (lock de diretório,
+  devolvido pela fixture `evidence` mesmo quando o teste falha), para que dois cenários de
+  escrita nunca disputem o mesmo registro sob `fullyParallel`;
+- **observável** — o contrato usado vai para o relatório como anotação `contrato-escolhido`.
+
+Quando todos os candidatos estão ocupados, a falha é `MASSA INSUFICIENTE`, que diz para reduzir
+`--workers` ou provisionar mais contratos — nunca um timeout opaco.
+
+### Contrato continua sendo pré-condição de leitura — e isso foi medido
+
+A automação **não pode criar contrato**, e a afirmação deixou de ser premissa: a investigação
+está em [`docs/criacao-de-contrato-inviavel.md`](docs/criacao-de-contrato-inviavel.md). Resumo —
+o contrato é uma linha da tabela CN9 do Protheus; os 19 datasets do ERP expostos ao portal são
+todos `get*`; 20 nomes plausíveis de dataset de escrita foram probados e nenhum existe; nenhum dos
+34 processos publicados cria contrato; e um contrato recém-incluído nasce "Em elaboração", só
+virando "Vigente" após aprovação de um gestor humano. Como nada é criado, **não há contrato a
+cancelar** ao fim da execução.
+
+Já tudo que a automação **preenche** (justificativa, data, tipo) vem de factory com faker, sufixo
+único e prefixo `QA`.
 
 > Ao escrever teste novo: **nunca fixe o valor de um contrato numa constante**. Não há oráculo
 > externo para o valor total — nem o payload nem a grade o expõem. Afirme sobre a coerência
@@ -244,7 +272,14 @@ no código de teste é necessária.
    usuário de Compras. Parte pode ser autoatendimento por desenho. **Quais deveriam exigir grupo
    de RH?** O que sobrar é defeito de segregação.
 2. **Tipo de Solicitação.** O roteiro registrava *Renovação Contratual*, *Aditivo Contratual* e
-   *Nova Solicitação*. O ambiente hoje oferece só as duas primeiras. A remoção foi intencional?
+   *Nova Solicitação*. **Medido de novo em 30/08/2026 e a lista mudou outra vez**: o combo agora
+   oferece *Aditivo Contratual* e ***Nova Contratação***, e **"Renovação Contratual" sumiu**.
+   Confirmado como **independente do contrato** — o `000000000000001` e outros dois vigentes
+   escolhidos ao acaso devolvem exatamente a mesma lista —, então não é efeito da distribuição de
+   massa. Consequência hoje: três testes reprovam por isso, dois deles porque
+   `factories/solicitacao-compra.js` usa *Renovação Contratual* como tipo padrão e o
+   `selectOption` não acha a opção. **Qual é a lista correta?** Sem essa resposta, mudar o padrão
+   da factory seria adivinhar.
 3. **Telemetria externa.** O envio de URL e título a serviço externo é aceitável para uma
    operadora de saúde? O teste está escrito contra "não deve enviar".
 4. **Confirmar sem itens.** O envio é corretamente bloqueado, mas o usuário não recebe mensagem
