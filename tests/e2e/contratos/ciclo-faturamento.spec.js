@@ -38,7 +38,7 @@ import { parseFornecedorDaGrade } from '../../../factories/medicao.js';
  * que CT-FAT-02-S1/S3/S4 (que dependem desse painel) não são alcançáveis por este usuário.
  */
 test.describe('Faturamento de Contratos — ciclo de medição', () => {
-  test('CT-FAT-01-H @destrutivo: deve criar uma medição válida a partir de um contrato vigente e roteá-la para a próxima atividade do workflow @bug', async ({
+  test('CT-FAT-01-H @destrutivo: deve criar uma medição válida a partir de um contrato vigente e roteá-la para a próxima atividade do workflow', async ({
     page,
   }, testInfo) => {
     // Buscar um contrato/competência com saldo em aberto é legitimamente demorado (cada

@@ -29,7 +29,7 @@ test.describe('Campos obrigatórios da Solicitação de Compra', () => {
     return guarda;
   }
 
-  test('deve listar os três campos pendentes quando nada é preenchido @bug', async ({
+  test('deve listar os três campos pendentes quando nada é preenchido', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -45,7 +45,7 @@ test.describe('Campos obrigatórios da Solicitação de Compra', () => {
     expect(guarda.tentativas(), 'nada deveria ter sido enviado ao servidor').toBe(0);
   });
 
-  test('deve cobrar apenas os campos restantes quando o tipo já foi informado @bug', async ({
+  test('deve cobrar apenas os campos restantes quando o tipo já foi informado', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -62,7 +62,7 @@ test.describe('Campos obrigatórios da Solicitação de Compra', () => {
     expect(guarda.tentativas()).toBe(0);
   });
 
-  test('deve cobrar somente o motivo quando tipo e data já foram informados @bug', async ({
+  test('deve cobrar somente o motivo quando tipo e data já foram informados', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -82,7 +82,7 @@ test.describe('Campos obrigatórios da Solicitação de Compra', () => {
     expect(guarda.tentativas()).toBe(0);
   });
 
-  test('deve cobrar o tipo de solicitação quando somente ele fica sem preencher @bug', async ({
+  test('deve cobrar o tipo de solicitação quando somente ele fica sem preencher', async ({
     page,
     contratosPage,
     solicitacaoModal,

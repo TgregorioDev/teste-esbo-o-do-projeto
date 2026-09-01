@@ -18,7 +18,7 @@ const SITUACOES_LEGIVEIS = [
 ];
 
 test.describe('Grade de contratos', () => {
-  test('CT-ACC-02-H — deve oferecer Planilha, Solicitação de Compra e Informações na linha do contrato @bug', async ({
+  test('CT-ACC-02-H — deve oferecer Planilha, Solicitação de Compra e Informações na linha do contrato', async ({
     contratosPage,
   }) => {
     await contratosPage.goto();
@@ -32,7 +32,7 @@ test.describe('Grade de contratos', () => {
     await expect(acoes.informacoes).toBeVisible();
   });
 
-  test('deve filtrar a grade pelo número do contrato @bug', async ({ contratosPage }) => {
+  test('deve filtrar a grade pelo número do contrato', async ({ contratosPage }) => {
     await contratosPage.goto();
     await contratosPage.expectCarregada();
     await contratosPage.filtrarPorContrato((await descobrirContratoVigente(contratosPage)).contrato);

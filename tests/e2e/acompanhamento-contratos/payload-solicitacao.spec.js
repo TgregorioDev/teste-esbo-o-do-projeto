@@ -277,7 +277,7 @@ test.describe('Payload de start — campos chumbados (D-04 / CT-ACC-07-S1)', () 
 });
 
 test.describe('Payload de start — integridade dos valores e do rateio (CT-ACC-08-S1 / CT-ACC-08-S2)', () => {
-  test('os valores monetários devem ser numericamente coerentes, sem NaN, sem casa perdida e sem inflação @bug', async ({
+  test('os valores monetários devem ser numericamente coerentes, sem NaN, sem casa perdida e sem inflação', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -311,7 +311,7 @@ test.describe('Payload de start — integridade dos valores e do rateio (CT-ACC-
     }
   });
 
-  test('as linhas de rateio devem trazer percentual, centro de custo e classe de valor preenchidos, somando 100% @bug', async ({
+  test('as linhas de rateio devem trazer percentual, centro de custo e classe de valor preenchidos, somando 100%', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -367,7 +367,7 @@ test.describe('Payload de start — integridade dos valores e do rateio (CT-ACC-
 });
 
 test.describe('Payload de start — duplo clique (CT-ACC-04-S3)', () => {
-  test('duplo clique em Confirmar não deve disparar duas requisições de start @bug', async ({
+  test('duplo clique em Confirmar não deve disparar duas requisições de start', async ({
     page,
     contratosPage,
     solicitacaoModal,
