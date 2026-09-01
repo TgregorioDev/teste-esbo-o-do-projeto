@@ -178,7 +178,7 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);
   });
 
-  test('CT-FAT-02-S1: lançar quantidade acima do Saldo a Medir não é alcançável pelo usuário desta automação — o campo de quantidade fica bloqueado até a etapa "Realizar Medição do Contrato"', async ({
+  test('CT-FAT-02-S1: lançar quantidade acima do Saldo a Medir não é alcançável pelo usuário desta automação — o campo de quantidade fica bloqueado até a etapa "Realizar Medição do Contrato" @bug', async ({
     page,
   }) => {
     test.setTimeout(240_000);
@@ -223,7 +223,7 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);
   });
 
-  test('CT-FAT-02-S4: fechar rateio contábil diferente de 100% não é alcançável pelo usuário desta automação — a aba "Rateio Contábil" fica bloqueada até a etapa "Realizar Medição do Contrato"', async ({
+  test('CT-FAT-02-S4: fechar rateio contábil diferente de 100% não é alcançável pelo usuário desta automação — a aba "Rateio Contábil" fica bloqueada até a etapa "Realizar Medição do Contrato" @bug', async ({
     page,
   }) => {
     test.setTimeout(240_000);
@@ -251,7 +251,7 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);
   });
 
-  test('CT-FAT-02-S3: reprovar uma validação (Validação CSE / Validação da Medição CSE / Validação do Fiscal de Contrato) não é alcançável — o usuário desta automação não pertence a nenhum grupo dessas etapas', async ({
+  test('CT-FAT-02-S3: reprovar uma validação (Validação CSE / Validação da Medição CSE / Validação do Fiscal de Contrato) não é alcançável — o usuário desta automação não pertence a nenhum grupo dessas etapas @bug', async ({
     page,
   }) => {
     const tarefas = new CentralTarefasComprasPage(page);

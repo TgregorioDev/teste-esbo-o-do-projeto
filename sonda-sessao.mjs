@@ -1,0 +1,15 @@
+import { chromium } from '@playwright/test';
+import dotenv from 'dotenv'; dotenv.config({ path: '.env.test', quiet: true });
+const b = await chromium.launch();
+const ctx = await b.newContext({ baseURL: process.env.BASE_URL, storageState: 'playwright/.auth/usuario.json', locale: 'pt-BR' });
+const p = await ctx.newPage();
+await p.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
+await p.waitForTimeout(4000);
+console.log('URL   :', p.url());
+console.log('TITULO:', JSON.stringify(await p.title()));
+const temLogin = await p.locator('input[type=password]').count();
+console.log('campo de senha na tela:', temLogin, temLogin > 0 ? '=> SESSAO INVALIDA (tela de login)' : '=> parece autenticado');
+await p.goto('/portal/p/1/acompanhamentoContrato', { waitUntil: 'domcontentloaded' });
+await p.waitForTimeout(6000);
+console.log('TITULO portal contratos:', JSON.stringify(await p.title()));
+await b.close();

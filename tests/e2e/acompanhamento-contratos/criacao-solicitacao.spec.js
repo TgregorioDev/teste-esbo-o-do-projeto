@@ -510,7 +510,7 @@ async function descobrirContratoComCascataDeQuantidade(page, contratosPage) {
  * é sobre o payload que o cliente monta, sem criar SC nenhuma.
  */
 test.describe('Quantidade e valor em contrato de serviço sem CNB_QUANT (CT-ACC-06-S2)', () => {
-  test('CT-ACC-06-S2 — item sem quantidade no contrato deve herdar a cascata e o preço real, nunca R$ 1,00', async ({
+  test('CT-ACC-06-S2 — item sem quantidade no contrato deve herdar a cascata e o preço real, nunca R$ 1,00 @bug', async ({
     page,
     contratosPage,
     solicitacaoModal,

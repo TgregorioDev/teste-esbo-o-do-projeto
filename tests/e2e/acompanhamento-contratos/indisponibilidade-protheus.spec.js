@@ -38,7 +38,7 @@ test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra'
     return guarda;
   }
 
-  test('deve avisar o usuário quando os dados do contrato não podem ser obtidos', async ({
+  test('deve avisar o usuário quando os dados do contrato não podem ser obtidos @bug', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -141,7 +141,7 @@ test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra'
     ).toMatch(/iten|planilha/i);
   });
 
-  test('não deve enviar solicitação alguma quando o contrato não trouxe itens', async ({
+  test('não deve enviar solicitação alguma quando o contrato não trouxe itens @bug', async ({
     page,
     contratosPage,
     solicitacaoModal,

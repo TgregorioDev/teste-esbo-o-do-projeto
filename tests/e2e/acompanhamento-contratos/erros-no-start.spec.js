@@ -31,7 +31,7 @@ async function abrirEPreencher(page, contratosPage, solicitacaoModal) {
 }
 
 test.describe('Erro no start — HTTP 500 (CT-ACC-05-S2)', () => {
-  test('deve avisar o usuário e permitir nova tentativa quando o start falha', async ({
+  test('deve avisar o usuário e permitir nova tentativa quando o start falha @bug', async ({
     page,
     contratosPage,
     solicitacaoModal,

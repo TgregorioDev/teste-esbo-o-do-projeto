@@ -16,7 +16,7 @@ test.describe('Abertura da Solicitação de Compra a partir do contrato', () => 
     await bloquearCriacaoDeSolicitacao(page);
   });
 
-  test('deve abrir o modal já vinculado ao contrato de origem', async ({
+  test('deve abrir o modal já vinculado ao contrato de origem @bug', async ({
     contratosPage,
     solicitacaoModal,
   }) => {
@@ -33,7 +33,7 @@ test.describe('Abertura da Solicitação de Compra a partir do contrato', () => 
     await expect(solicitacaoModal.campoContrato).toHaveValue(contrato.contrato);
   });
 
-  test('deve impedir a digitação do número do contrato no modal', async ({
+  test('deve impedir a digitação do número do contrato no modal @bug', async ({
     contratosPage,
     solicitacaoModal,
   }) => {
@@ -47,7 +47,7 @@ test.describe('Abertura da Solicitação de Compra a partir do contrato', () => 
     await expect(solicitacaoModal.campoContrato).toBeDisabled();
   });
 
-  test('deve abrir o modal com os campos do solicitante em branco', async ({
+  test('deve abrir o modal com os campos do solicitante em branco @bug', async ({
     contratosPage,
     solicitacaoModal,
   }) => {
@@ -62,7 +62,7 @@ test.describe('Abertura da Solicitação de Compra a partir do contrato', () => 
     await expect(solicitacaoModal.campoTipo).toHaveValue('');
   });
 
-  test('deve oferecer os tipos contratuais de solicitação', async ({
+  test('deve oferecer os tipos contratuais de solicitação @bug', async ({
     contratosPage,
     solicitacaoModal,
   }) => {
@@ -105,7 +105,7 @@ test.describe('Abertura da Solicitação de Compra a partir do contrato', () => 
     ).toEqual([TIPO_SOLICITACAO.ADITIVO, TIPO_SOLICITACAO.NOVA_CONTRATACAO]);
   });
 
-  test('deve fechar o modal sem criar solicitação', async ({
+  test('deve fechar o modal sem criar solicitação @bug', async ({
     page,
     contratosPage,
     solicitacaoModal,
