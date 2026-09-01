@@ -238,10 +238,24 @@ Quando houver sobreposição de CSS, use clique de mouse na coordenada (`page.mo
 
 ## Estado do quality gate
 
-`docs/estado-do-gate.md` guarda as medições de determinismo. Critério para a medição final: a
-grade de contratos sustentar os ~840 registros em cinco amostras seguidas — a integração com o
-Protheus oscilou entre 855 contratos, zero registros e indisponibilidade nos últimos dois dias, e
-medir instabilidade de ambiente como flakiness de teste seria conclusão errada.
+**Premissa declarada, não observação de rodapé: o ambiente da Cassi não é controlado.** A skill
+`playwright-test-creator` define determinismo como "mesmo código + ambiente controlado + dados
+equivalentes = mesmo resultado" — aqui a integração com o Protheus oscila por conta própria, sem
+qualquer mudança de código, e isso precisa ser assumido **antes** de interpretar qualquer
+execução, não descoberto depois de um relatório confuso.
+
+`docs/estabilidade-do-ambiente.md` é a fonte da verdade sobre essa premissa: o que a suíte
+pressupõe de cada integração externa, o histórico medido de quedas (com data, duração e
+evidência — duas ocorrências observadas em 31/08–01/09/2026, não uma série histórica), e acima de
+tudo **como distinguir, lendo a mensagem de um vermelho, instabilidade de ambiente (`PRÉ-CONDIÇÃO
+AUSENTE`) de defeito de produto e de flakiness real da suíte**. Leia antes de classificar qualquer
+falha relacionada a contrato ou a SIGAJURI.
+
+`docs/estado-do-gate.md` guarda as medições de determinismo do lado do teste. Critério para a
+medição final continua sendo o mesmo: a grade de contratos sustentar os ~840 registros em cinco
+amostras seguidas — verifique isso (protocolo em `docs/estabilidade-do-ambiente.md`) antes de
+medir ou reportar cobertura/determinismo, porque uma medição feita durante uma janela de queda
+mede o Protheus, não a suíte.
 
 ## Cobertura
 

@@ -153,7 +153,20 @@ test.describe('Negociação de Cotação — ponto de entrada real (Portal do Co
         'do produto — é o mesmo bloqueio de fundo que impede CT-COT: D-01 mantém toda ' +
         'Solicitação de Compra presa na conta de integração, então nenhuma Cotação real ' +
         'chega a existir para negociar. CT-NEG-01-H, CT-NEG-01-S1 e CT-NEG-01-S2 continuam ' +
-        'bloqueados até D-01 ser corrigido e/ou existir uma proposta real nesta fila.',
+        'bloqueados até D-01 ser corrigido e/ou existir uma proposta real nesta fila. ' +
+        '\n\nInvestigação de viabilidade de MASSA (reconfirmada ao vivo em 01/09/2026, mesma ' +
+        'rodada de `ciclo-cotacao.spec.js`): não é falta de massa no PRODUTO — a base tem ' +
+        'cotações reais em aberto agora (ex. processInstanceId 113025 em "Validação do ' +
+        'Comprador", assignee `fernanda.smartins.cassi.com.br.1`; 112994 em "Aguarda ' +
+        'Finalizar Cotação", requester `geise.matias.cassi.com.br.1`). O bloqueio é que essas ' +
+        'cadeias pertencem a compradores nominais reais da SY1, não a TOTVS-FS, e o "Atuar ' +
+        'como" que permitiria operar em nome deles está com `comboAtuarComo` em contagem 0 ' +
+        'nesta tela agora — sem delegação, sem visibilidade. Mesmo que a automação corrigisse ' +
+        'D-01 e levasse sua PRÓPRIA SC até virar Cotação, o comprador designado ainda seria um ' +
+        'nominal diferente de TOTVS-FS: o teto é cadastro no ERP (comprador na SY1), o mesmo ' +
+        'limite que `CLAUDE.md` já reconhece como fora do alcance da automação — não presunção, ' +
+        'medição repetida hoje. Candidato a exceção formal, mesmo padrão de ' +
+        '`docs/criacao-de-contrato-inviavel.md`.',
     );
   });
 });

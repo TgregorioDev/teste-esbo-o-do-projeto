@@ -106,6 +106,31 @@ Já tudo que a automação **preenche** (justificativa, data, tipo) vem de facto
 > interna do payload (itens com quantidades diferentes não podem compartilhar o mesmo total),
 > que vale para qualquer contrato.
 
+### Como ler um vermelho `PRÉ-CONDIÇÃO AUSENTE`
+
+**Vermelho com `PRÉ-CONDIÇÃO AUSENTE` é ambiente, não defeito nem regressão.** A distinção já
+existe nas mensagens de falha em código — a exigência é literal: *"isto NÃO é defeito do produto"*
+— mas até agora não estava explicada em lugar nenhum para quem só lê o relatório, o que obrigava
+reaprender a diferença toda vez.
+
+Um teste com essa mensagem não achou, **no momento da execução**, a massa que precisava (contrato
+com uma característica de itens específica, competência que o Protheus recuse, fila real de
+cotação/proposta/pool com algo dentro). Reexecutar o mesmo teste, sem qualquer mudança de código,
+pode dar verde — o dado é que mudou, não o comportamento sob teste. Isso é diferente de um
+vermelho por defeito real (mensagem cita o comportamento observado da aplicação, reprova de forma
+consistente entre execuções — ver "Testes vermelhos por defeito real do produto" abaixo) e
+diferente de flakiness da suíte (sem `PRÉ-CONDIÇÃO AUSENTE`, sem mensagem de domínio, resultado
+muda entre execuções idênticas sem o ambiente ter mudado).
+
+Dez casos da suíte dependem de massa ou serviço que a automação não tem como fabricar sozinha —
+contrato com característica rara, fila de Compras vazia no momento, o serviço SIGAJURI fora do ar.
+Cada um está registrado como **exceção formal e temporária** (com evidência, dono e data de
+revisão — não uma afirmação solta) em
+[`docs/excecoes-de-pre-condicao.md`](docs/excecoes-de-pre-condicao.md). Para o comportamento
+medido do ambiente por trás dessas mensagens — o que a suíte pressupõe de cada integração externa
+e como a oscilação recente do Protheus e do SIGAJURI foi medida — ver
+[`docs/estabilidade-do-ambiente.md`](docs/estabilidade-do-ambiente.md).
+
 ## Cobertura — medida, não estimada
 
 | | |
