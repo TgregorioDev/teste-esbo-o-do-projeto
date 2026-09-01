@@ -45,7 +45,7 @@ const PROCESS_ID = 'SIGAJURI_Consultivo';
  * completar por causa do D-JUR-01 acima — não há processo para medir prazo.
  */
 test.describe('SIGAJURI_Consultivo — solicitação, D-JUR-01', () => {
-  test('CT-JUR-01-H deveria criar a solicitação de Consultivo e vinculá-la à área informada @destrutivo', async ({
+  test('CT-JUR-01-H deveria criar a solicitação de Consultivo e vinculá-la à área informada @destrutivo @bug', async ({
     page,
   }) => {
     const sigajuri = new SigajuriPage(page);

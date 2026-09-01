@@ -214,7 +214,7 @@ test.describe('Questionário CliniCASSI — envio, D-CLI-01', () => {
  * de automação alcança.
  */
 test.describe('Questionário CliniCASSI — contexto da clínica (CT-CLI-02-S1, achado U-14)', () => {
-  test('Clínica/Unidade deveriam identificar a clínica do diagnóstico e não nascer vazias', async ({
+  test('Clínica/Unidade deveriam identificar a clínica do diagnóstico e não nascer vazias @bug', async ({
     page,
   }) => {
     const guarda = await bloquearEscritaNoAmbiente(page);

@@ -16,7 +16,7 @@ test.describe('Deep-link de rota SPA (defeito U-01)', () => {
   const rotas = ['/portal/p/1/principalprocess', '/portal/p/1/gestao_ferias'];
 
   for (const rota of rotas) {
-    test(`acessar ${rota} diretamente deve abrir a página, não redirecionar para 404`, async ({
+    test(`acessar ${rota} diretamente deve abrir a página, não redirecionar para 404 @bug`, async ({
       page,
     }) => {
       await page.goto(rota, { waitUntil: 'domcontentloaded' });

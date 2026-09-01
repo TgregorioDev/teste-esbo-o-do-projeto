@@ -109,7 +109,7 @@ async function descobrirContratoVigentePequeno(page, contratosPage, criterio = {
 }
 
 test.describe('Confirmar cria a SC e ela deveria chegar ao solicitante (CT-ACC-05-H / D-01)', () => {
-  test('@destrutivo a SC deveria nascer atribuída ao solicitante logado, não à conta de integração', async ({
+  test('@destrutivo @bug a SC deveria nascer atribuída ao solicitante logado, não à conta de integração', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -221,7 +221,7 @@ test.describe('Confirmar cria a SC e ela deveria chegar ao solicitante (CT-ACC-0
  * tem teste. O motivo está registrado em MOTIVOS, no próprio script.
  */
 test.describe('Item sem quantidade e sem valor no contrato não pode virar item da SC (CT-ACC-06-S1)', () => {
-  test('@destrutivo item de quantidade/valor zerado no contrato não deveria virar item extra na SC criada', async ({
+  test('@destrutivo @bug item de quantidade/valor zerado no contrato não deveria virar item extra na SC criada', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -289,7 +289,7 @@ test.describe('Item sem quantidade e sem valor no contrato não pode virar item 
 });
 
 test.describe('Bypass da validação de cliente no start direto (CT-ACC-04-S6 / D-10)', () => {
-  test('@destrutivo o servidor deveria recusar tipoSolicitacao vazio tanto quanto recusa motivoSolCompra vazio', async ({
+  test('@destrutivo @bug o servidor deveria recusar tipoSolicitacao vazio tanto quanto recusa motivoSolCompra vazio', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -419,7 +419,7 @@ test.describe('Bypass da validação de cliente no start direto (CT-ACC-04-S6 / 
 });
 
 test.describe('Segunda SC para o mesmo contrato/revisão sem alerta de duplicidade (CT-E2E-12-S1)', () => {
-  test('@destrutivo o portal deveria alertar sobre a SC já em andamento para o mesmo contrato/revisão', async ({
+  test('@destrutivo @bug o portal deveria alertar sobre a SC já em andamento para o mesmo contrato/revisão', async ({
     page,
     contratosPage,
     solicitacaoModal,

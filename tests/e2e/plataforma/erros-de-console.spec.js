@@ -149,7 +149,7 @@ function escutarErrosDeConsole(page) {
 
 test.describe('Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1)', () => {
   for (const { nome, rota, titulo } of ROTAS_CHAVE) {
-    test(`CT-PLT-06-S1: ${nome} (${rota}) deve carregar sem erro de console não catalogado`, async ({
+    test(`CT-PLT-06-S1 @bug: ${nome} (${rota}) deve carregar sem erro de console não catalogado`, async ({
       page,
     }) => {
       const console_ = escutarErrosDeConsole(page);

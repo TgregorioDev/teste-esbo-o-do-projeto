@@ -94,7 +94,7 @@ test.describe('Negociação de Cotação — formulário avulso (shell fora de c
     expect(guarda.tentativas(), 'abrir e ler o formulário não deveria escrever nada').toBe(0);
   });
 
-  test('CT-NEG — o Enviar do shell sem proposta real vinculada nunca deveria completar uma requisição de escrita', async ({
+  test('CT-NEG @bug — o Enviar do shell sem proposta real vinculada nunca deveria completar uma requisição de escrita', async ({
     page,
   }) => {
     const negociacao = new NegociacaoPage(page);

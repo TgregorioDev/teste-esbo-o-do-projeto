@@ -199,6 +199,19 @@ o produto não entrega. Cada um cita o defeito em comentário. A tabela dos defe
 **Não "conserte" um teste vermelho para ficar verde** — isso documenta o bug como se fosse regra.
 Se o defeito for corrigido no produto, o teste fica verde sozinho.
 
+**Todo teste nessa situação leva a tag `@bug` no título** (mesma convenção de `@destrutivo`; um
+teste pode ter as duas — `@destrutivo @bug`). Ela separa "o que deveria estar verde" de "defeito
+já conhecido" na regressão:
+
+```bash
+npx playwright test --grep-invert @bug        # só o que DEVERIA estar verde
+npx playwright test --grep @bug               # só os defeitos conhecidos
+PULAR_DESTRUTIVOS=1 npx playwright test --grep-invert @bug   # regressão rápida e limpa
+```
+
+Critério completo (quem recebe, quem não recebe, limite conhecido da tag e a alternativa
+`test.fail()` ainda pendente de decisão) está no README, seção "A tag `@bug`".
+
 ---
 
 ## Armadilhas já pagas (não repita)

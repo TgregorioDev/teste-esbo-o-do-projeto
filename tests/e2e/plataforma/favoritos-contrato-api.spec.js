@@ -123,7 +123,7 @@ async function listarFavoritos(page) {
 }
 
 test.describe('Plataforma — contrato de `addFavorites` (CT-PLT-07-S1) @destrutivo', () => {
-  test('CT-PLT-07-S1: favoritar o mesmo processo duas vezes deve responder erro de negócio em JSON (ou 200 idempotente), não 500 em texto puro @destrutivo', async ({
+  test('CT-PLT-07-S1: favoritar o mesmo processo duas vezes deve responder erro de negócio em JSON (ou 200 idempotente), não 500 em texto puro @destrutivo @bug', async ({
     page,
   }) => {
     await page.goto('/portal/p/1/pageprocessstart', { waitUntil: 'domcontentloaded' });

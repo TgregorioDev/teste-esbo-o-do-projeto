@@ -239,7 +239,7 @@ async function esperarEtapa(page, processInstanceId, { etapas, timeout, oQueSeEs
 }
 
 test.describe('Ciclo de retorno da SC: reprovação → Correção → reenvio (CT-CMP-08-H)', () => {
-  test('CT-CMP-08-H @destrutivo — reprovada e corrigida, a SC deveria voltar para a Validação do Gestor com o contrato de origem íntegro', async ({
+  test('CT-CMP-08-H @destrutivo @bug — reprovada e corrigida, a SC deveria voltar para a Validação do Gestor com o contrato de origem íntegro', async ({
     page,
     contratosPage,
     solicitacaoModal,

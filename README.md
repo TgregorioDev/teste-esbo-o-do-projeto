@@ -256,11 +256,56 @@ não o entrega. Ajustá-los para passar documentaria o defeito como se fosse reg
 | **CT-PLT-08-S1** 🔴 | catálogo de processos | o processo `teste` (categoria **admin**, resíduo de desenvolvimento) continua ofertado no catálogo de início — e abri-lo **serve o formulário completo da Solicitação de Compras**, 147 campos, com Validação do Gestor/Orçamentária/Comprador. Superfície administrativa exposta a usuário comum |
 | **CT-SEG-08-S1** 🟠 | catálogo de início | `bpm_addUserFluig` e `bpm_addUserGroup` — processos de **criação de usuário e de grupo** — constam do catálogo `onlyCanStart` desta conta não-admin e abrem o formulário. Mesma classe da segregação de RH, com alvo pior |
 | **CT-NOT-03-S1** 🟡 | API de notificação | `GET /notification/api/v1/notifications?limit=3` **ignora `limit`** e devolve 707; e `DELETE /notifications/{id}` responde `500 NotFoundException` apesar de cada item declarar `canRemove: true` — a rota de exclusão anunciada não existe |
-| **CT-PLT-06-S1** 🟡 | Portal do Comprador | dois erros de console não catalogados a cada carga: `404` em `/style-guide/css/fluig-style-guide.min.css` e `console.error` *"Comprador não encontrado"* na busca do colaborador no Protheus |
+| **CT-PLT-06-S1** 🟡 | Portal do Comprador | **atualizado 31/08/2026 — 2 → 4 erros**: aos dois já catalogados (`404` em `/style-guide/css/fluig-style-guide.min.css` e `console.error` *"Comprador não encontrado"* na busca do colaborador no Protheus) somaram-se as 2 ocorrências do U-16 (logo 404) abaixo, que agora atingem também esta rota |
 | **CT-PLT-07-S1** 🟡 | favoritos | favoritar o mesmo processo duas vezes (duplo clique, duas abas) responde **500 em `text/plain`** *"…já está nos seus favoritos"* — deveria ser 200 idempotente ou erro de negócio em JSON. Quebra qualquer cliente que faça parse do corpo |
+| **U-16** 🟡 | 8 rotas-chave (`erros-de-console.spec.js`) + Home | **NOVO, 31/08/2026 — regressão.** `GET /portal/api/servlet/image/1/custom/logo_image.png` (servlet de imagem do próprio Fluig, branding/logo customizado — não é dataset do ERP) → **404**, duas vezes por carga. Atinge 7 das 8 rotas de `erros-de-console.spec.js` (todas exceto Portal do Comprador, que já tinha erro próprio — ver CT-PLT-06-S1 acima) mais `home.spec.js` (NPS 403 vira 3 erros). Confirmado por `curl` direto (HTTP 404) e por 2 execuções completas do arquivo. Em 27/08/2026 essas 7 rotas carregavam **sem** erro de console — é regressão, não achado antigo |
+| **CT-PAR-01-S1 / CT-PAR-01-S2** 🔴 | Parecer Técnico (formulário avulso) | **NOVO, 31/08/2026.** A seção "Aprovação do Parecer Técnico" (Responsável/Email/Data/Hora) nasce `readonly` e vazia, sem caminho de UI para preenchê-la — mas o clique em Enviar completa `POST .../ecm/api/rest/ecm/workflowView/send` mesmo assim (confirmado com `bloquearTodaEscritaNoHost` interceptando qualquer não-GET). O catálogo (`CT-PAR-01-S1`, `docs/catalogo-casos.md:413`) exige que o sistema sinalize a ausência de responsável, não que rotule/perca a tarefa. Mesma família do fail-open já catalogado acima (D-04 / CT-CMP-02-S4 / Fail-open no formulário), instância nova, em processo diferente |
 
 Quando cada defeito for corrigido, o teste correspondente fica verde sozinho — nenhuma alteração
 no código de teste é necessária.
+
+### A tag `@bug`
+
+Todo teste que reprova **de propósito** por um dos defeitos desta tabela (ou por um defeito
+catalogado em comentário no próprio spec — nem todos os defeitos autodocumentados chegaram a
+entrar nesta tabela, ex. `D-JUR-01` em `sigajuri-consultivo.spec.js`/`sigajuri-contrato.spec.js`,
+`D-10` em `criacao-solicitacao.spec.js`, `CT-DEL-01-H`/`CT-DEL-01-S1` em
+`delegacao-fiscais-ciclo.spec.js`) leva a tag **`@bug`** no título, na mesma convenção de
+`@destrutivo` — um teste pode ter as duas: `@destrutivo @bug`. Hoje são **66 testes** (`npx
+playwright test --grep @bug --list | tail -1`).
+
+**Quem recebe:** o teste está escrito contra o comportamento esperado, reprova hoje por um defeito
+de produto já identificado, e ficaria verde sozinho no dia em que a TOTVS/Cassi corrigir o
+sistema — nenhuma mudança no código de teste seria necessária.
+
+**Quem NÃO recebe**, mesmo parecendo candidato:
+- Falha por **ausência de dado do ambiente** (ex.: `dsProtheus_getContratosxFornecedores_restGet`
+  vazio, fila de cotação/negociação vazia) — isso é ambiente, não defeito de produto catalogado.
+- Teste de **pré-condição ausente** (massa/usuário/grupo faltando).
+- Teste **verde que só exercita comportamento correto**, inclusive os "ACHADO"/invariante que
+  ficam verdes ENQUANTO o comportamento atual (correto ou não) persistir e virariam vermelhos se
+  ele mudasse — polaridade oposta à do `@bug` (que é vermelho HOJE, e viraria verde).
+- Teste cuja falha **não foi amarrada** a um defeito documentado (comentário do spec ou tabela
+  acima) — fica candidato para decisão do dono, não marcado.
+- Caso **intermitente**, onde a última medição de campo não reproduziu o defeito (ex.:
+  `CT-CLI-01-H`/`D-CLI-01` em `questionario-clinicassi.spec.js`) — nesses casos a incerteza foi
+  registrada como pendência em vez de aplicar a tag.
+
+**O que a tag habilita** — a pergunta de regressão do projeto passa a ser:
+
+```bash
+npx playwright test --grep-invert @bug        # só o que DEVERIA estar verde
+npx playwright test --grep @bug               # só os defeitos conhecidos
+PULAR_DESTRUTIVOS=1 npx playwright test --grep-invert @bug   # regressão rápida e limpa
+```
+
+**Limite conhecido da tag:** ela marca o que já se sabe quebrado, mas **não avisa quando o
+defeito é corrigido** — um teste `@bug` que passa a ficar verde continua rodando e passando,
+silenciosamente, sem chamar atenção para o fato de que a tag ficou desatualizada. A alternativa é
+o `test.fail()` nativo do Playwright, que inverte o veredito esperado e **reprova** se o teste
+passar (em vez de só marcar/filtrar) — sinalizando ativamente quando um defeito foi corrigido.
+Adotar `test.fail()` nestes casos é decisão pendente do dono do ambiente; não foi implementado
+nesta entrega.
 
 ---
 

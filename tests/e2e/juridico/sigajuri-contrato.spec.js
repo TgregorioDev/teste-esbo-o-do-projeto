@@ -29,7 +29,7 @@ const PROCESS_ID = 'SIGAJURI_Contrato';
  * o objetivo do caso, não um efeito colateral do outro defeito.
  */
 test.describe('SIGAJURI_Contrato — geração de minuta, D-JUR-01', () => {
-  test('CT-JUR-03-H deveria permitir montar uma minuta preenchendo Filial e Tipo Contrato', async ({
+  test('CT-JUR-03-H deveria permitir montar uma minuta preenchendo Filial e Tipo Contrato @bug', async ({
     page,
   }) => {
     const guarda = await bloquearEscritaNoAmbiente(page);

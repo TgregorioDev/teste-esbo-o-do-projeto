@@ -193,7 +193,7 @@ test.describe('SIGAJURI_Contencioso — roteamento por área e parte contrária'
     ).toBe(dados.uf);
   });
 
-  test('CT-JUR-04-S1 deveria oferecer campo para registrar a parte contrária em consultas contenciosas', async ({
+  test('CT-JUR-04-S1 deveria oferecer campo para registrar a parte contrária em consultas contenciosas @bug', async ({
     page,
   }) => {
     const guarda = await bloquearEscritaNoAmbiente(page);

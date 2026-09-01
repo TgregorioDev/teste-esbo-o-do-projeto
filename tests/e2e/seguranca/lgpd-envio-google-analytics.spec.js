@@ -19,7 +19,7 @@ import { test, expect } from '../../../fixtures/fixtures.js';
  * conteúdo das requisições ao relatório — só o número importa para provar o achado.
  */
 test.describe('LGPD — telemetria enviada a serviço externo', () => {
-  test('não deve enviar dados de navegação para o Google Analytics', async ({
+  test('não deve enviar dados de navegação para o Google Analytics @bug', async ({
     page,
     contratosPage,
   }) => {

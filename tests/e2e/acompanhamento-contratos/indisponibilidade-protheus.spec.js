@@ -51,7 +51,7 @@ test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra'
     );
   });
 
-  test('deve exibir um alerta por dado indisponível, nomeando o dado que faltou', async ({
+  test('@bug deve exibir um alerta por dado indisponível, nomeando o dado que faltou', async ({
     page,
     contratosPage,
     solicitacaoModal,

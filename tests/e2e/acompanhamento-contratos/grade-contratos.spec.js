@@ -42,7 +42,7 @@ test.describe('Grade de contratos', () => {
     );
   });
 
-  test('CT-ACC-02-S1 — deve exibir a situação do contrato por extenso, sem truncar', async ({ contratosPage }) => {
+  test('CT-ACC-02-S1 @bug — deve exibir a situação do contrato por extenso, sem truncar', async ({ contratosPage }) => {
     // Defeito conhecido D-08, em aberto: a grade corta o rótulo ("Finali" no lugar de
     // "Finalizado"), sem reticências e sem dica ao passar o mouse.
     // O teste é escrito contra o comportamento ESPERADO e por isso REPROVA hoje.

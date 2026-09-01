@@ -76,7 +76,7 @@ async function encontrarMedicaoComSaldo(contratosPage, medicao, maxContratos = 3
 }
 
 test.describe('Faturamento de Contratos — validações e bloqueios', () => {
-  test('CT-FAT-02-S2: competência recusada pelo Protheus deve bloquear a medição E avisar o usuário', async ({
+  test('CT-FAT-02-S2 @bug: competência recusada pelo Protheus deve bloquear a medição E avisar o usuário', async ({
     page,
   }) => {
     // Antes este teste levava 153s: procurava a competência bloqueada NAVEGANDO, uma cadeia de

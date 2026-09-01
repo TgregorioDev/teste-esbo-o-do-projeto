@@ -61,7 +61,7 @@ async function abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, c
 }
 
 test.describe('Payload de start — targetState e targetAssignee (D-01 / CT-E2E-01-H)', () => {
-  test('a SC deve nascer numa etapa de trabalho atribuída ao solicitante, não presa no marco de Início da conta de integração', async ({
+  test('@bug a SC deve nascer numa etapa de trabalho atribuída ao solicitante, não presa no marco de Início da conta de integração', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -102,7 +102,7 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
   // mesmo valor total, e item de quantidade 1 repetindo o total de outro item. Vale para
   // qualquer contrato, hoje e depois.
 
-  test('itens com quantidades diferentes não devem trazer o mesmo valor total', async ({
+  test('@bug itens com quantidades diferentes não devem trazer o mesmo valor total', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -144,7 +144,7 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
     ).toHaveLength(0);
   });
 
-  test('não deve existir item de quantidade 1 repetindo o valor total de outro item', async ({
+  test('@bug não deve existir item de quantidade 1 repetindo o valor total de outro item', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -176,7 +176,7 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
     ).toHaveLength(0);
   });
 
-  test('itens com quantidade e preço diferentes não deveriam compartilhar o mesmo valor total', async ({
+  test('@bug itens com quantidade e preço diferentes não deveriam compartilhar o mesmo valor total', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -221,7 +221,7 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
 });
 
 test.describe('Payload de start — campos chumbados (D-04 / CT-ACC-07-S1)', () => {
-  test('classeOrca, classificação e o descritor deveriam refletir o contrato de origem, não vir fixos para todos', async ({
+  test('@bug classeOrca, classificação e o descritor deveriam refletir o contrato de origem, não vir fixos para todos', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -341,7 +341,7 @@ test.describe('Payload de start — integridade dos valores e do rateio (CT-ACC-
     }
   });
 
-  test('classeValor do item deveria vir preenchido junto com classeOrca e classificação', async ({
+  test('@bug classeValor do item deveria vir preenchido junto com classeOrca e classificação', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -436,7 +436,7 @@ test.describe('Payload de start — duplo clique (CT-ACC-04-S3)', () => {
 });
 
 test.describe('Payload de start — número de contrato incoerente (CT-ACC-04-S5)', () => {
-  test('não deve permitir que nrContrato divirja do contrato real da revisão/filial/itens enviados', async ({
+  test('@bug não deve permitir que nrContrato divirja do contrato real da revisão/filial/itens enviados', async ({
     page,
     contratosPage,
     solicitacaoModal,

@@ -122,7 +122,7 @@ test.describe('Cotação de Produtos e Serviços — formulário avulso (shell f
     expect(guarda.tentativas(), 'abrir e ler o formulário não deveria escrever nada').toBe(0);
   });
 
-  test('CT-COT (defeito) — o shell aceita Enviar sem nenhuma validação de fornecedor/vínculos obrigatórios', async ({
+  test('CT-COT (defeito) — o shell aceita Enviar sem nenhuma validação de fornecedor/vínculos obrigatórios @bug', async ({
     page,
   }) => {
     const cotacao = new CotacaoPage(page);

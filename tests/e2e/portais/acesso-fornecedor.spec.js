@@ -104,7 +104,7 @@ test.describe('Redefinição de senha do fornecedor — link de reset', () => {
     ).toBe(0);
   });
 
-  test('CT-PFN-02-S2 deve recusar um token de redefinição expirado/adulterado sem efetivar a troca', async ({
+  test('CT-PFN-02-S2 @bug deve recusar um token de redefinição expirado/adulterado sem efetivar a troca', async ({
     page,
   }) => {
     const guarda = await bloquearCriacaoDeProcesso(page);

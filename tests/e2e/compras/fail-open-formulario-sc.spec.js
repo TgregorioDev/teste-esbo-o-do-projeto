@@ -124,7 +124,7 @@ function descreverDesfechoDoServidor(criacao) {
 }
 
 test.describe('Fail-open do formulário clássico de Solicitação de Compras (CT-CMP-07-S1)', () => {
-  test('CT-CMP-07-S1 @destrutivo — Enviar não deveria criar solicitação antes de o formulário terminar de montar', async ({
+  test('CT-CMP-07-S1 @destrutivo @bug — Enviar não deveria criar solicitação antes de o formulário terminar de montar', async ({
     page,
   }, testInfo) => {
     // Carga do formulário (~10s) + prazo para o servidor resolver o `send`.
