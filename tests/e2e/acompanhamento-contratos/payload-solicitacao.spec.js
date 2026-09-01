@@ -158,7 +158,7 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
     ).toHaveLength(0);
   });
 
-  test('@bug não deve existir item de quantidade 1 repetindo o valor total de outro item', async ({
+  test('não deve existir item de quantidade 1 repetindo o valor total de outro item', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -203,7 +203,7 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
     ).toHaveLength(0);
   });
 
-  test('@bug itens com quantidade e preço diferentes não deveriam compartilhar o mesmo valor total', async ({
+  test('itens com quantidade e preço diferentes não deveriam compartilhar o mesmo valor total', async ({
     page,
     contratosPage,
     solicitacaoModal,
