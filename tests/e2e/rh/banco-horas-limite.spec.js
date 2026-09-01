@@ -35,7 +35,7 @@ import { BancoHorasPage } from '../../../pages/BancoHorasPage.js';
  * `bloquearCriacaoDeSolicitacao`.
  */
 test.describe('Portal de Autorização de Horas Extras — limite de autorização', () => {
-  test('CT-BH-01-S2 — autorizar horas acima do limite deve bloquear', async ({ page }) => {
+  test('CT-BH-01-S2 @bug — autorizar horas acima do limite deve bloquear', async ({ page }) => {
     const bancoHorasPage = new BancoHorasPage(page);
 
     // Registro do listener de diálogo ANTES do goto — defeito U-02: sem isso o alert()
