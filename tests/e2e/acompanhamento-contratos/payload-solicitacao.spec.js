@@ -102,7 +102,7 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
   // mesmo valor total, e item de quantidade 1 repetindo o total de outro item. Vale para
   // qualquer contrato, hoje e depois.
 
-  test('@bug itens com quantidades diferentes não devem trazer o mesmo valor total', async ({
+  test('itens com quantidades diferentes não devem trazer o mesmo valor total', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -119,6 +119,20 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
       itens.length,
       `contrato ${contrato.contrato} deveria trazer itens no payload`,
     ).toBeGreaterThan(0);
+
+    // A assinatura de D-02 aqui é um PAR de itens com quantidades diferentes e mesmo total.
+    // Com menos de duas quantidades distintas não existe par possível, e o teste passaria
+    // sem exercitar o defeito — verde vazio, que é pior que vermelho. Desde que a escolha de
+    // contrato passou a ser distribuída (utils/massa-contratos.js), a amostra varia por
+    // teste, então a pré-condição precisa ser afirmada, não presumida.
+    const quantidades = new Set(itens.map((i) => Number(i.tbprod_quantidade)));
+    expect(
+      quantidades.size,
+      `PRÉ-CONDIÇÃO AUSENTE: o contrato ${contrato.contrato} trouxe ${itens.length} item(ns) com ` +
+        `quantidade(s) ${[...quantidades].join(', ')} — sem ao menos DUAS quantidades diferentes ` +
+        'não há par que possa colidir. Um verde aqui não significaria que D-02 deixou de ocorrer, ' +
+        'e sim que esta amostra não pôde exercitá-lo. NÃO é defeito do produto nem falha da automação.',
+    ).toBeGreaterThan(1);
 
     /** @type {string[]} */
     const colisoes = [];
@@ -157,6 +171,19 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
     expect(captura.tentativas()).toBe(1);
 
     const itens = extrairItens(payload.formFields);
+
+    // Este caso procura um item de quantidade 1 replicando o total de OUTRO item. Sem um item
+    // de quantidade 1, ou com um único item no payload, o cenário é inalcançável e o verde
+    // seria vazio — ver a nota do caso anterior sobre amostra distribuída.
+    const quantidadesLidas = itens.map((i) => Number(i.tbprod_quantidade));
+    expect(
+      itens.length > 1 && quantidadesLidas.includes(1),
+      `PRÉ-CONDIÇÃO AUSENTE: o contrato ${contrato.contrato} trouxe ${itens.length} item(ns) com ` +
+        `quantidade(s) ${quantidadesLidas.join(', ')} — este caso exige ao menos DOIS itens, sendo ` +
+        'um deles de quantidade 1, para que o item-fantasma possa existir. NÃO é defeito do ' +
+        'produto nem falha da automação.',
+    ).toBe(true);
+
     const totaisDeOutros = new Map(
       itens.map((item) => [item.indice, paraNumero(item.tbprod_valorTotal)]),
     );
@@ -176,7 +203,7 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
     ).toHaveLength(0);
   });
 
-  test('@bug itens com quantidade e preço diferentes não deveriam compartilhar o mesmo valor total', async ({
+  test('itens com quantidade e preço diferentes não deveriam compartilhar o mesmo valor total', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -194,6 +221,19 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
 
     const itens = extrairItens(payload.formFields);
     expect(itens.length, 'o contrato deveria trazer múltiplos itens no payload').toBeGreaterThan(1);
+
+    // A suspeita só nasce de itens com quantidade/preço GENUINAMENTE diferentes compartilhando
+    // o total. Se todos os itens tiverem a mesma assinatura, não há o que comparar e o verde
+    // seria vazio — ver a nota do primeiro caso sobre amostra distribuída.
+    const assinaturasDaMassa = new Set(
+      itens.map((i) => `${i.tbprod_quantidade}|${i.tbprod_precoUnitario}`),
+    );
+    expect(
+      assinaturasDaMassa.size,
+      `PRÉ-CONDIÇÃO AUSENTE: os ${itens.length} itens do payload têm assinatura quantidade|preço ` +
+        `única (${[...assinaturasDaMassa].join(' , ')}) — sem ao menos DUAS assinaturas distintas ` +
+        'não há como um total repetido indicar o defeito. NÃO é defeito do produto nem falha da automação.',
+    ).toBeGreaterThan(1);
 
     /** @type {Map<number, typeof itens>} */
     const porValorTotal = new Map();
