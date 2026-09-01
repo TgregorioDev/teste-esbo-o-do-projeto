@@ -203,7 +203,7 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
     ).toHaveLength(0);
   });
 
-  test('itens com quantidade e preço diferentes não deveriam compartilhar o mesmo valor total', async ({
+  test('@bug itens com quantidade e preço diferentes não deveriam compartilhar o mesmo valor total', async ({
     page,
     contratosPage,
     solicitacaoModal,
