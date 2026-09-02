@@ -212,6 +212,35 @@ PULAR_DESTRUTIVOS=1 npx playwright test --grep-invert @bug   # regressão rápid
 Critério completo (quem recebe, quem não recebe, limite conhecido da tag e a alternativa
 `test.fail()` ainda pendente de decisão) está no README, seção "A tag `@bug`".
 
+### A tag `@achado` — polaridade INVERTIDA
+
+Há uma segunda família, com semântica **oposta** à do `@bug`, e confundir as duas leva a
+conclusão errada. Um teste `@achado` afirma o comportamento **REAL medido**, não o esperado:
+
+| | `@bug` | `@achado` |
+|---|---|---|
+| Hoje está | vermelho | **verde** |
+| Fica verde quando | o defeito for corrigido | — |
+| Fica **vermelho** quando | — | o comportamento **mudar** (inclusive para melhor) |
+| Um vermelho significa | o defeito persiste | **reabra o assunto**, não "regressão" |
+
+São 8 testes em 4 arquivos: os 5 processos de RH que abrem sem bloqueio de grupo, o resíduo
+`teste` servindo o formulário da SC, o formulário de Rejeições com ids repetidos herdados do
+RDFC, e a identificação do solicitante bloqueada em Substituição de Cargos.
+
+Existem para que o achado **não dependa de alguém lembrar**. O dia em que um deles ficar
+vermelho é o dia em que aquele comportamento mudou — e alguém precisa decidir se a mudança foi
+intencional. Nunca "conserte" um `@achado` para ficar verde: isso apaga o registro de que o
+comportamento mudou.
+
+```bash
+npx playwright test --grep @achado          # os achados versionados
+npx playwright test --grep-invert "@bug|@achado"   # nem defeito conhecido, nem achado
+```
+
+**Não confunda com `catalogo-invariante.spec.js`**, que é invariante de catálogo: ele reprova a
+qualquer mudança de composição, boa ou ruim, e hoje já está vermelho — o catálogo mudou.
+
 ---
 
 ## Armadilhas já pagas (não repita)

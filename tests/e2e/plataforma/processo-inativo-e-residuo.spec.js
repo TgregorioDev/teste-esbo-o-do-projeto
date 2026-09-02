@@ -116,7 +116,7 @@ test.describe('Plataforma — processo inativo e resíduo de desenvolvimento (CT
     ).not.toContain('teste');
   });
 
-  test('CT-PLT-08-S1 (ACHADO): abrir o processo `teste` serve o formulário da Solicitação de Compras a um usuário comum', async ({
+  test('CT-PLT-08-S1 (ACHADO) @achado: abrir o processo `teste` serve o formulário da Solicitação de Compras a um usuário comum', async ({
     page,
   }, testInfo) => {
     // Este teste afirma sobre o comportamento REAL medido, não sobre o esperado — mesmo padrão
