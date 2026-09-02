@@ -50,95 +50,26 @@ export class CentralTarefasComprasPage {
     await this.page.goto(this.rota, { waitUntil: 'domcontentloaded' });
   }
 
-  /**
-   * Pré-condição: a sub-aba "Tarefas em pool" está ativa e os grupos já carregaram —
-   * quando há pelo menos uma tarefa em algum grupo.
-   *
-   * Confirmado em campo: o painel "Tarefas em pool (N)" só é um `link` clicável quando
-   * N > 0; com pool total vazio (N = 0) ele fica como texto inerte, sem navegação. Não é
-   * erro — é a MESMA semântica de "só aparece grupo com tarefa pendente" documentada na
-   * classe. Por isso este método NÃO lança quando o pool está vazio: `listarGrupos()`
-   * simplesmente devolve `[]` depois, e quem chama decide como reportar ausência de massa.
-   */
-  async abrirTarefasEmPool() {
-    await this.titulo.waitFor({ state: 'visible' });
-    await this.abaResumo.click();
-
-    const linkClicavel = await this.abaTarefasEmPool
-      .first()
-      .isVisible({ timeout: 10_000 })
-      .catch(() => false);
-    if (!linkClicavel) return;
-
-    await this.abaTarefasEmPool.click();
-    // "Grupos (N)" é a única sub-aba hoje, mas esperar por ela (em vez de tempo) confirma
-    // que a lista de grupos terminou de renderizar.
-    await this.page.getByRole('tab', { name: /^Grupos/ }).waitFor({ state: 'visible' });
-  }
-
-  /**
-   * Lê os grupos de pool disponíveis para o usuário autenticado, com a quantidade de
-   * tarefas pendentes anunciada em cada um. Só aparecem grupos com pelo menos 1 tarefa.
-   * @returns {Promise<Array<{ nome: string, quantidade: number, link: import('@playwright/test').Locator }>>}
-   */
-  async listarGrupos() {
-    const links = this.page.getByRole('link').filter({ hasText: /\(\d+\)$/ });
-    const textos = await links.allInnerTexts();
-    const grupos = [];
-    for (let i = 0; i < textos.length; i++) {
-      const m = textos[i].match(/^(.*)\((\d+)\)\s*$/s);
-      if (!m) continue;
-      grupos.push({ nome: m[1].trim(), quantidade: Number(m[2]), link: links.nth(i) });
-    }
-    return grupos;
-  }
-
-  /**
-   * Localiza, dentre os grupos com tarefa pendente, o primeiro cujo nome bate com o
-   * padrão informado. Não lança: quem chama decide como reportar ausência de massa
-   * (ver `PRÉ-CONDIÇÃO AUSENTE` em `utils/massa-contratos.js`, mesmo padrão do projeto).
-   * @param {RegExp} padraoNomeGrupo
-   * @returns {Promise<{ nome: string, quantidade: number, link: import('@playwright/test').Locator } | undefined>}
-   */
-  async encontrarGrupo(padraoNomeGrupo) {
-    const grupos = await this.listarGrupos();
-    return grupos.find((g) => padraoNomeGrupo.test(g.nome));
-  }
-
-  /**
-   * Abre um grupo de pool e espera a lista de tarefas (cartões com botão "Assumir")
-   * terminar de carregar.
-   * @param {import('@playwright/test').Locator} linkDoGrupo
-   */
-  async abrirGrupo(linkDoGrupo) {
-    await linkDoGrupo.click();
-    await this.page.getByRole('button', { name: 'Assumir' }).first().waitFor({ state: 'visible' });
-  }
-
-  /** Quantidade de tarefas com botão "Assumir" visíveis no grupo atualmente aberto. */
-  async contarTarefasAssumiveis() {
-    return this.page.getByRole('button', { name: 'Assumir' }).count();
-  }
-
-  /**
-   * Assume a tarefa de índice informado (0 = primeira) dentro do grupo já aberto e espera
-   * a tela de "Movimentar Solicitação" (com a seção de decisão da etapa) carregar.
-   * @param {number} [indice]
-   * @returns {Promise<number>} número do processo assumido, lido do heading da tela
-   */
-  async assumirTarefa(indice = 0) {
-    const botaoAssumir = this.page.getByRole('button', { name: 'Assumir' }).nth(indice);
-    await botaoAssumir.click();
-
-    const heading = this.page.getByRole('heading', { level: 2 }).filter({ hasText: /^\d+\s*-/ });
-    await heading.waitFor({ state: 'visible' });
-    const texto = await heading.innerText();
-    const numero = texto.match(/^(\d+)\s*-/)?.[1];
-    if (!numero) {
-      throw new Error(`Não foi possível ler o número do processo assumido no heading: "${texto}"`);
-    }
-    return Number(numero);
-  }
+  // ── Navegação por grupos do pool: REMOVIDA desta classe ────────────────────────────
+  //
+  // `abrirTarefasEmPool`, `listarGrupos`, `encontrarGrupo`, `abrirGrupo`,
+  // `contarTarefasAssumiveis` e `assumirTarefa(indice)` saíram daqui em 28/08/2026, sem
+  // nenhum chamador restante. Três motivos, todos medidos:
+  //
+  // 1. `abrirTarefasEmPool` decidia se o painel era clicável por
+  //    `isVisible({ timeout: 10_000 })` — opção `@deprecated This option is ignored` em
+  //    Playwright 1.62.1: a leitura era instantânea e o método desistia em silêncio, sem
+  //    nunca abrir a categoria. Com o resumo anunciando pool não-vazio, `listarGrupos()`
+  //    devolvia `[]`, e quem chamava lia isso como "não há grupo".
+  // 2. `listarGrupos` filtrava `getByRole('link')` por texto terminado em "(N)", ancoragem
+  //    que não se sustenta nesta tela.
+  // 3. `assumirTarefa(indice)` assumia a tarefa de um índice arbitrário — num pool que
+  //    mistura massa da automação com solicitações de colaboradores reais.
+  //
+  // A navegação correta é a de `pages/PoolTarefasPage.js`, ancorada em atributo
+  // (`a[data-change-tab-view][data-params-type-group="POOL"]`, lida por `data-node`) e
+  // exercitada por CT-TSK-02. Para assumir, use `assumirTarefaPorNumero` (abaixo) sobre um
+  // alvo cuja procedência QA já tenha sido confirmada no servidor.
 
   /**
    * Assume a tarefa cujo cartão mostra o número de processo informado (não apenas "a

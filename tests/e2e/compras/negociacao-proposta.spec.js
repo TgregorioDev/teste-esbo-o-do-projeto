@@ -41,22 +41,34 @@ async function bloquearTodaEscritaNoHost(page) {
  *    realizada pelo Protheus."** — a decisão de negócio não é tomada por este radio.
  * 2. **Fila real** — Portal do Comprador → "Avaliação de Propostas". Confirmado ao vivo:
  *    tabela carregada, colunas reais (Status, Núm. Cotação, Filial, Nº da SC, Parecer Téc.,
- *    Em Alçada, Dt. Validade, Valor Final), e uma única linha "Nenhum dado encontrado". Sem seletor
- *    "Atuar como" para tentar destravar — a fila está mesmo vazia para esta conta.
+ *    Em Alçada, Dt. Validade, Valor Final), e uma única linha "Nenhum dado encontrado".
+ *
+ *    ⚠️ Correção: este bloco afirmava não haver seletor "Atuar como" nesta sub-tela. É
+ *    **falso** — `tests/e2e/portais/ciclo-comprador.spec.js` troca a delegação nela com
+ *    sucesso. A conclusão vinha de um `toHaveCount(0)`, assertion de ausência satisfeita no
+ *    primeiro poll antes de a sub-SPA renderizar. A delegação destrava a VISÃO, não cria
+ *    massa: mesmo delegada, a fila segue vazia.
  *
  * ⚠️ O roteiro original registrava que as cotações da base estavam "Em Cotação" sem
  * propostas de fornecedor (o que já impediria aprovar algo). O que se confirma agora é mais
  * básico ainda: a fila de Avaliação de Propostas não tem NENHUMA cotação, com ou sem
- * proposta. E como CT-COT também está bloqueado (nenhuma Cotação real chega a existir —
- * D-01), não há como este projeto criar a própria condição: criar uma cotação real é
- * exatamente o que está impedido rio acima.
+ * proposta.
  *
- * CT-NEG-01-H (validar e aprovar), CT-NEG-01-S1 (reprovar com justificativa) e CT-NEG-01-S2
+ * ⚠️ **A causa NÃO é o D-01**, como este bloco dizia. A cotação é gerada pelo **Protheus** e
+ * chega ao Fluig por integração (skill `cassi-fluig-master`,
+ * `references/regras-de-negocio-compras.md` §5; o elo é `hd_numSc`). O bloqueio efetivo é
+ * anterior: nenhuma SC atravessa a **Validação Orçamentária** (seq 14, responsável NOMINAL
+ * fora do alcance da conta de automação), medida em
+ * `tests/e2e/portais/alcadas-orcamentaria.spec.js`. Vale ainda a regra §7: a negociação é
+ * restrita a quem JÁ enviou proposta, e a decisão acontece na Central de Tarefas, não neste
+ * Portal.
+ *
+ * Os cenários 01-H (validar e aprovar), 01-S1 (reprovar com justificativa) e 01-S2 de CT-NEG
  * (proposta fora do prazo bloqueada) dependem de uma proposta real — nenhum é alcançável
  * hoje, pelas duas rotas, pelo mesmo motivo de fundo que bloqueia CT-COT.
  */
 test.describe('Negociação de Cotação — formulário avulso (shell fora de contexto)', () => {
-  test('CT-NEG-01-H/S1/S2 (bloqueado) — proposta, fornecedor e validade são readonly; a aprovação real é declarada como responsabilidade do Protheus', async ({
+  test('o formulário avulso de Negociação é readonly em proposta, fornecedor e validade — a aprovação real é declarada como responsabilidade do Protheus', async ({
     page,
   }) => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);
@@ -73,7 +85,7 @@ test.describe('Negociação de Cotação — formulário avulso (shell fora de c
     await expect(negociacao.campoComprador).not.toBeEditable();
     await expect(
       negociacao.campoValidadeProposta,
-      'Validade da Proposta deveria ser readonly (CT-NEG-01-S2 não é provocável)',
+      'Validade da Proposta deveria ser readonly (cenário 01-S2 de CT-NEG não é provocável)',
     ).not.toBeEditable();
     await expect(negociacao.campoValidadeCotacao).not.toBeEditable();
     await expect(negociacao.campoSubTotal).not.toBeEditable();
@@ -139,21 +151,37 @@ test.describe('Negociação de Cotação — ponto de entrada real (Portal do Co
     await portalComprador.abrirEtapa('Avaliação de Propostas');
     await expect(page).toHaveURL(/avaliacaoPropostas/);
 
-    await expect(portalComprador.comboAtuarComo).toHaveCount(0);
+    // ⚠️ Saiu daqui `comboAtuarComo).toHaveCount(0)`: afirmava a AUSÊNCIA do seletor de
+    // delegação nesta sub-tela, enquanto `tests/e2e/portais/ciclo-comprador.spec.js` troca a
+    // delegação nela com sucesso. Assertion de ausência é satisfeita no primeiro poll, antes
+    // de a sub-SPA renderizar — era falso verde disfarçado de medição.
 
     const tabela = portalComprador.getTabelaAtiva();
     await expect(tabela).toBeVisible();
-    await expect(tabela.getByText('Nenhum dado encontrado')).toBeVisible();
+
+    // Grade vazia renderiza UMA linha de placeholder — por isso o corte é > 1.
+    const temProposta = (await tabela.locator('tbody tr').count()) > 1;
 
     expect(guarda.tentativas(), 'esta investigação é só leitura').toBe(0);
 
+    if (temProposta) {
+      throw new Error(
+        'MUDANÇA DE AMBIENTE: a fila de "Avaliação de Propostas" passou a ter cotação. Os ' +
+          'casos CT-NEG (cenários 01-H, 01-S1, 01-S2) estavam declarados como lacuna por falta ' +
+          'desta massa — agora são alcançáveis e devem ser implementados contra a proposta real.',
+      );
+    }
+
     throw new Error(
       'PRÉ-CONDIÇÃO AUSENTE: a fila de "Avaliação de Propostas" do Portal do Comprador não ' +
-        'tem nenhuma cotação, com ou sem proposta de fornecedor. Isto NÃO é defeito isolado ' +
-        'do produto — é o mesmo bloqueio de fundo que impede CT-COT: D-01 mantém toda ' +
-        'Solicitação de Compra presa na conta de integração, então nenhuma Cotação real ' +
-        'chega a existir para negociar. CT-NEG-01-H, CT-NEG-01-S1 e CT-NEG-01-S2 continuam ' +
-        'bloqueados até D-01 ser corrigido e/ou existir uma proposta real nesta fila.',
+        'tem nenhuma cotação, com ou sem proposta de fornecedor. Isto NÃO é defeito do produto ' +
+        'sob teste, e a causa NÃO é o D-01: a cotação é gerada pelo PROTHEUS e chega ao Fluig ' +
+        'por integração (skill `cassi-fluig-master`, `references/regras-de-negocio-compras.md` ' +
+        '§5). O bloqueio efetivo é anterior — a Validação Orçamentária (seq 14, responsável ' +
+        'NOMINAL), medida em `tests/e2e/portais/alcadas-orcamentaria.spec.js`. Vale também a ' +
+        'regra §7: a negociação é restrita a quem JÁ enviou proposta, e a decisão em si ' +
+        'acontece na Central de Tarefas, não neste Portal. Os casos CT-NEG estão declarados ' +
+        'como lacuna, com motivo, em `scripts/gerar-cobertura.mjs`.',
     );
   });
 });

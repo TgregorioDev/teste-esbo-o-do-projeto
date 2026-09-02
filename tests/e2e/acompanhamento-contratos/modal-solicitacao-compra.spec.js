@@ -66,21 +66,44 @@ test.describe('Abertura da Solicitação de Compra a partir do contrato', () => 
     contratosPage,
     solicitacaoModal,
   }) => {
-    // Ver README > Divergências abertas: o roteiro de 20/08 registrava também
-    // "Nova Solicitação", que não é mais oferecida pelo ambiente. Enquanto o time não
-    // confirmar se a remoção foi intencional, a assertion cobre o que é regra estável —
-    // o placeholder e os dois tipos contratuais — em vez de fixar a lista inteira.
+    // ⚠️ Assertion sobre a lista EXATA, não `toContain` de alguns itens.
+    //
+    // Histórico: o roteiro de 20/08 registrava "Nova Solicitação", que sumiu; em 28/08/2026
+    // sumiu também "Renovação Contratual" e apareceu "Nova Contratação". A versão anterior
+    // usava `toContain` do "que é regra estável", o que deixa remoção e adição passarem em
+    // silêncio — e foi caro: "Renovação Contratual" era o valor DEFAULT de
+    // `factories/solicitacao-compra.js`, então ~20 testes de `acompanhamento-contratos`
+    // passaram a reprovar com `TimeoutError: locator.selectOption` (o Playwright esperando
+    // por uma opção inexistente), sem que nada apontasse a causa.
+    //
+    // Fixar a lista inteira é o que transforma este teste em guarda de regressão de verdade:
+    // qualquer mudança no combo — para mais ou para menos — reprova aqui, com a lista lida
+    // na mensagem, em vez de virar timeout opaco vinte arquivos adiante.
+    //
+    // O ambiente serve o placeholder DUAS vezes (medido) — `[...new Set()]` normaliza isso,
+    // que é ruído de template e não regra de negócio.
     await contratosPage.goto();
     await contratosPage.expectCarregada();
     await contratosPage.filtrarPorContrato((await descobrirContratoVigente(contratosPage)).contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
 
-    const opcoes = (await solicitacaoModal.getOpcoesDeTipo().allInnerTexts()).map((t) => t.trim());
+    // `\s+` (que em JS cobre o `U+00A0` destes rótulos), não só `trim()` — ver a nota de
+    // NBSP em `components/SolicitacaoCompraModal.js`.
+    const opcoes = (await solicitacaoModal.getOpcoesDeTipo().allInnerTexts()).map((t) =>
+      t.replace(/\s+/g, ' ').trim(),
+    );
 
-    expect(opcoes).toContain(TIPO_SOLICITACAO.PLACEHOLDER);
-    expect(opcoes).toContain(TIPO_SOLICITACAO.RENOVACAO);
-    expect(opcoes).toContain(TIPO_SOLICITACAO.ADITIVO);
+    expect(
+      [...new Set(opcoes)],
+      'a lista de tipos do combo mudou no ambiente. Se a mudança for intencional, atualize ' +
+        '`TIPO_SOLICITACAO` em `factories/solicitacao-compra.js` (é de lá que sai o valor ' +
+        'default usado por toda a suíte) e registre nas divergências do README',
+    ).toEqual([
+      TIPO_SOLICITACAO.PLACEHOLDER,
+      TIPO_SOLICITACAO.ADITIVO,
+      TIPO_SOLICITACAO.NOVA_CONTRATACAO,
+    ]);
   });
 
   test('deve fechar o modal sem criar solicitação', async ({

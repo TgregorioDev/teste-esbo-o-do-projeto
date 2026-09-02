@@ -8,8 +8,8 @@ título do teste** — é o que torna esta contagem auditável em vez de declara
 | | |
 |---|---|
 | Casos no catálogo | **187** |
-| Com teste na suíte | **156** (83%) |
-| Sem teste | **31** |
+| Com teste na suíte | **141** (75%) |
+| Sem teste | **46** |
 
 O script falha se um teste citar um ID que não existe no catálogo, ou se um caso ficar sem teste
 e sem motivo declarado. As duas checagens existem para que a matriz não possa envelhecer em
@@ -55,7 +55,7 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-ADM-01-S2` | Reprocessamento após falha | ⬜ | reprocessar atividade de integração exige perfil de administrador |
 | `CT-AUT-01-H` | Login com credenciais válidas | ✅ | `e2e/auth/login.spec.js` |
 | `CT-AUT-02-S1` | Login com senha incorreta | ✅ | `e2e/auth/login.spec.js` |
-| `CT-AUT-02-S2` | Login com usuário inexistente | ✅ | `e2e/auth/login.spec.js` |
+| `CT-AUT-02-S2` | Login com usuário inexistente | ✅ | `e2e/auth/login.spec.js` · `e2e/auth/recuperacao-senha.spec.js` |
 | `CT-AUT-02-S3` | Campos obrigatórios vazios | ✅ | `e2e/auth/login.spec.js` |
 | `CT-AUT-03-H` | Recuperação de senha — envio de token | ✅ | `e2e/auth/recuperacao-senha.spec.js` |
 | `CT-AUT-03-S1` | Recuperação com e-mail vazio | ✅ | `e2e/auth/recuperacao-senha.spec.js` |
@@ -81,16 +81,16 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-CMP-03-S1` | Protheus indisponível ao carregar combos  ⭐ teste-mestre | ✅ | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
 | `CT-CMP-04-H` | Aprovação — Gestor Imediato (feliz) | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-04-S1` | Reprovação do Gestor gera correção | ✅ | `e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js` · `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
-| `CT-CMP-05-H` | Validação Orçamentária dentro da alçada | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
+| `CT-CMP-05-H` | Validação Orçamentária dentro da alçada | ⬜ | a Validação Orçamentária (seq 14) tem responsável NOMINAL, vindo de API do Protheus por conta contábil e centro de custo — não cai em pool para a conta de automação, que não é gestor orçamentário de nenhum produto. O teste que existia citando este ID terminava em `expect(true).toBe(true)` e não exercitava o caso; foi substituído por um que afirma a própria regra de atribuição nominal. |
 | `CT-CMP-05-S1` | Valor acima da alçada sem aprovador | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
-| `CT-CMP-06-H` | Aprovação final (Compradores/Alçadas) e conclusão | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
+| `CT-CMP-06-H` | Aprovação final (Compradores/Alçadas) e conclusão | ⬜ | a SC precisa atravessar a Validação Orçamentária (seq 14, responsável NOMINAL fora do alcance da conta) para chegar à Validação dos Compradores (seq 119/257). A automação não produz essa massa sob demanda, e assumir a massa compartilhada que eventualmente aparece no pool interferiria em outros testes — violação de independência. O teste que resta mede a alcançabilidade do pool, em leitura pura. |
 | `CT-CMP-07-S1` | Regressão do fail-open do formulário clássico de SC | ✅ | `e2e/compras/fail-open-formulario-sc.spec.js` |
 | `CT-CMP-08-H` | Fechar o ciclo de retorno: reprovação → Correção → reenvio | ✅ | `e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js` |
-| `CT-COT-01-H` | Cotação sem parecer técnico (feliz) | ✅ | `e2e/compras/abertura-cotacao.spec.js` · `e2e/compras/ciclo-cotacao.spec.js` |
-| `CT-COT-01-S1` | Cotação COM parecer técnico | ✅ | `e2e/compras/ciclo-cotacao.spec.js` |
-| `CT-COT-02-S1` | Totais inconsistentes | ✅ | `e2e/compras/ciclo-cotacao.spec.js` |
-| `CT-COT-02-S2` | Cotação com validade vencida | ✅ | `e2e/compras/ciclo-cotacao.spec.js` |
-| `CT-COT-02-S3` | CNPJ/CPF do fornecedor inválido | ✅ | `e2e/compras/ciclo-cotacao.spec.js` |
+| `CT-COT-01-H` | Cotação sem parecer técnico (feliz) | ⬜ | a cotação é gerada pelo PROTHEUS e chega ao Fluig por integração (regras-de-negocio-compras.md §5); sem SC que passe da Validação Orçamentária, a fila do Controle de Cotações fica vazia. O spec detecta e avisa se a massa aparecer. |
+| `CT-COT-01-S1` | Cotação COM parecer técnico | ⬜ | idem CT-COT-01-H |
+| `CT-COT-02-S1` | Totais inconsistentes | ⬜ | idem CT-COT-01-H |
+| `CT-COT-02-S2` | Cotação com validade vencida | ⬜ | idem CT-COT-01-H |
+| `CT-COT-02-S3` | CNPJ/CPF do fornecedor inválido | ⬜ | idem CT-COT-01-H |
 | `CT-DEL-01-H` | Delegar fiscal válido (feliz) | ✅ | `e2e/contratos/delegacao-fiscais-ciclo.spec.js` · `e2e/contratos/delegacao-fiscais.spec.js` |
 | `CT-DEL-01-S1` | Substituto inválido / sem permissão | ✅ | `e2e/contratos/delegacao-fiscais-ciclo.spec.js` |
 | `CT-DEL-01-S2` | Período sobreposto | ✅ | `e2e/contratos/delegacao-fiscais-ciclo.spec.js` |
@@ -107,10 +107,10 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-E2E-04-H` | Etapa 4 — Validação de Compradores / Alçadas | ✅ | `e2e/portais/alcadas-orcamentaria.spec.js` |
 | `CT-E2E-05-H` | Etapa 5 — Gerência de Compras atribui a SC a um comprador | ✅ | `e2e/portais/atribuicao-comprador.spec.js` · `e2e/portais/gerencia-compras.spec.js` |
 | `CT-E2E-06-H` | Etapa 6 — Portal do Comprador: Validação Inicial | ✅ | `e2e/portais/ciclo-comprador.spec.js` · `e2e/portais/portal-comprador.spec.js` |
-| `CT-E2E-07-H` | Etapa 7 — Controle de Cotações | ✅ | `e2e/portais/ciclo-comprador.spec.js` |
-| `CT-E2E-08-H` | Etapa 8 — Avaliação de Propostas | ✅ | `e2e/portais/ciclo-comprador.spec.js` |
-| `CT-E2E-09-H` | Etapa 9 — Definir Vencedor da Cotação | ✅ | `e2e/portais/ciclo-comprador.spec.js` |
-| `CT-E2E-10-H` | Etapa 10 — Encerramento e retorno ao ERP | ✅ | `e2e/portais/ciclo-comprador.spec.js` |
+| `CT-E2E-07-H` | Etapa 7 — Controle de Cotações | ⬜ | nenhuma SC atravessa a Validação Orçamentária (seq 14, responsável NOMINAL fora do alcance da conta de automação), então nenhuma chega a gerar cotação: o Controle de Cotações fica vazio mesmo com a delegação "Atuar como" aplicada. A estrutura da sub-tela (delegação + filtros) segue coberta por teste próprio. |
+| `CT-E2E-08-H` | Etapa 8 — Avaliação de Propostas | ⬜ | idem CT-E2E-07-H — sem cotação não há proposta a comparar nem SC rastreável por Nº SC / Proc. Fluig. As colunas da grade seguem cobertas por teste próprio. |
+| `CT-E2E-09-H` | Etapa 9 — Definir Vencedor da Cotação | ⬜ | idem CT-E2E-07-H — sem cotação analisada não há vencedor a definir. As colunas da grade seguem cobertas por teste próprio. |
+| `CT-E2E-10-H` | Etapa 10 — Encerramento e retorno ao ERP | ⬜ | o pedido no Protheus exige o ciclo completo, e a SC para na Validação Orçamentária. O teste que restou mede o TETO alcançável (a SC percorre até a seq 14 e para lá), que é afirmação positiva e verificável — não a etapa 10. |
 | `CT-E2E-11-H` | Rastreio transversal pelo Tracker | ✅ | `e2e/portais/ciclo-comprador.spec.js` · `e2e/portais/tracker-compras.spec.js` |
 | `CT-E2E-12-S1` | Duas SCs para o mesmo contrato/revisão | ✅ | `e2e/acompanhamento-contratos/criacao-solicitacao.spec.js` |
 | `CT-FAT-01-H` | Medição + 3 validações (feliz) | ✅ | `e2e/contratos/ciclo-faturamento.spec.js` · `e2e/contratos/faturamento-contratos.spec.js` |
@@ -149,9 +149,9 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-JUR-04-S1` | Contencioso sem parte contrária | ✅ | `e2e/juridico/sigajuri-contencioso.spec.js` |
 | `CT-JUR-05-H` | Follow-up de processo jurídico (feliz) | ⬜ | processo inoperante: só campos `readonly`, disparado por processo pai |
 | `CT-JUR-06-H` | Contencioso: nasce no pool certo? | ✅ | `e2e/juridico/sigajuri-contencioso.spec.js` |
-| `CT-NEG-01-H` | Validação de proposta — aprovada (feliz) | ✅ | `e2e/compras/negociacao-proposta.spec.js` |
-| `CT-NEG-01-S1` | Validação de proposta — reprovada | ✅ | `e2e/compras/negociacao-proposta.spec.js` |
-| `CT-NEG-01-S2` | Proposta fora do prazo | ✅ | `e2e/compras/negociacao-proposta.spec.js` |
+| `CT-NEG-01-H` | Validação de proposta — aprovada (feliz) | ⬜ | a negociação é restrita a quem já enviou proposta (regras-de-negocio-compras.md §7) e a decisão acontece na Central de Tarefas, não no Portal; sem cotação com proposta, a fila de Avaliação de Propostas fica vazia. |
+| `CT-NEG-01-S1` | Validação de proposta — reprovada | ⬜ | idem CT-NEG-01-H |
+| `CT-NEG-01-S2` | Proposta fora do prazo | ⬜ | idem CT-NEG-01-H |
 | `CT-NOT-01-H` | Disparo multicanal (feliz) | ✅ | `e2e/notificacoes/disparo-multicanal.spec.js` |
 | `CT-NOT-01-S1` | Falha de canal não derruba o processo | ⬜ | os datasets de canal são invocados server-side; não há requisição a interceptar |
 | `CT-NOT-02-S1` | Alertas automáticos sem duplicidade | ✅ | `e2e/notificacoes/alertas-automaticos.spec.js` |
@@ -204,11 +204,11 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-SUB-01-S2` | Período retroativo/ inválido | ⬜ | idem CT-SUB-01-S1 |
 | `CT-SUB-02-H` | Delegação de Tarefas (`wf_SubstituiçãoCargosFluig`) | ✅ | `e2e/rh/delegacao-tarefas.spec.js` |
 | `CT-TSK-01-H` | Resumo reflete a carga real | ✅ | `e2e/tarefas/resumo-tarefas.spec.js` |
-| `CT-TSK-02-H` | Assumir tarefa do pool | ✅ | `e2e/tarefas/assumir-tarefa-pool.spec.js` · `e2e/tarefas/minhas-solicitacoes.spec.js` |
-| `CT-TSK-02-S1` | Concorrência ao assumir a mesma tarefa | ✅ | `e2e/tarefas/assumir-tarefa-pool.spec.js` · `e2e/tarefas/minhas-solicitacoes.spec.js` |
+| `CT-TSK-02-H` | Assumir tarefa do pool | ✅ | `e2e/tarefas/assumir-tarefa-pool.spec.js` |
+| `CT-TSK-02-S1` | Concorrência ao assumir a mesma tarefa | ⬜ | só existe UMA conta de automação: dois contextos disputando a mesma tarefa são a MESMA identidade para o servidor, e o 500 resultante é exceção genérica de backend, não o aviso de concorrência entre usuários distintos que o caso descreve. Detalhe da investigação no cabeçalho de `tests/e2e/tarefas/assumir-tarefa-pool.spec.js`. |
 | `CT-TSK-03-H` | Tarefa atrasada é sinalizada | ✅ | `e2e/tarefas/minhas-solicitacoes.spec.js` |
 | `CT-TSK-04-H` | Consulta de "Minhas Solicitações" | ✅ | `e2e/tarefas/minhas-solicitacoes.spec.js` |
 | `CT-TSK-05-H` | Cancelar solicitação — o fluxo do produto, nunca testado | ✅ | `e2e/tarefas/cancelamento-solicitacao.spec.js` |
 | `CT-TSK-05-S1` | Cancelamento sem motivo derruba com NPE 500 | ✅ | `e2e/tarefas/cancelamento-solicitacao.spec.js` |
 | `CT-TSK-07-H` | "Somente salvar" — salvar sem movimentar | ✅ | `e2e/tarefas/acoes-da-tarefa.spec.js` |
-| `CT-TSK-08-H` | Transferir atividade | ✅ | `e2e/tarefas/acoes-da-tarefa.spec.js` |
+| `CT-TSK-08-H` | Transferir atividade | ✅ | `e2e/tarefas/acoes-da-tarefa.spec.js` · `e2e/tarefas/assumir-tarefa-pool.spec.js` |

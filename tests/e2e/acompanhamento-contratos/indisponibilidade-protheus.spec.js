@@ -15,6 +15,23 @@ import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
  *
  * A indisponibilidade é simulada no navegador porque a alternativa seria derrubar o serviço
  * de integração do cliente. O trecho de código exercitado é o mesmo.
+ *
+ * ## ⚠️ VERMELHO INTENCIONAL desde 28/08/2026 — não "conserte" revertendo o mock
+ *
+ * Estes testes ficaram verdes por meses porque `derrubarDataset` fabricava **HTTP 500**. O
+ * gateway de dataset do Fluig NUNCA responde 500: medido em quatro cenários (dataset válido,
+ * nome inexistente, erro de negócio do Protheus e dataset de sync quebrado), o
+ * `POST /api/public/ecm/dataset/datasets` respondeu **200 em todos**, com o erro no CORPO —
+ * exatamente como a skill `cassi-fluig-master` descreve. O 500 existe, mas na rota irmã
+ * `GET /dataset/search`, que não é a que o widget usa.
+ *
+ * Com o mock corrigido para a forma real, o alerta some. O que isso revela é o defeito:
+ * **o tratamento de erro do widget reage ao STATUS HTTP, não ao corpo.** Como em produção o
+ * status é sempre 200, o usuário NUNCA vê esses avisos — a falha do Protheus é engolida em
+ * silêncio, e a tela apenas não mostra dado.
+ *
+ * Voltar o mock para 500 deixaria os testes verdes de novo e esconderia isso. O vermelho é o
+ * resultado correto até o produto passar a ramificar pelo corpo da resposta.
  */
 test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra', () => {
   /**
@@ -46,9 +63,11 @@ test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra'
     await abrirSolicitacaoComProtheusFora(page, contratosPage);
     await solicitacaoModal.expectAberto();
 
-    await expect(solicitacaoModal.getAlertasErro().first()).toContainText(
-      /Erro ao buscar dados da filial/i,
-    );
+    await expect(
+      solicitacaoModal.getAlertasErro().first(),
+      'defeito: com os datasets de filial e de itens fora, o modal abre SEM avisar que os dados '
+        + 'do contrato não puderam ser obtidos. o gateway de dataset do Fluig NUNCA responde 500 — o erro vem no CORPO de um 200 (medido em 28/08/2026, quatro cenários). Com o mock fiel a essa forma, o widget não reage: o tratamento de erro dele ramifica pelo STATUS HTTP. Em produção, portanto, o usuário nunca vê este aviso — a falha do Protheus é engolida em silêncio. VERMELHO INTENCIONAL: não conserte voltando o mock para 500',
+    ).toContainText(/Erro ao buscar dados da filial/i);
   });
 
   test('deve exibir um alerta por dado indisponível, nomeando o dado que faltou', async ({
@@ -160,13 +179,41 @@ test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra'
     await solicitacaoModal.preencher(solicitacao);
     await solicitacaoModal.confirmar();
 
-    expect(
-      guarda.tentativas(),
-      `solicitação chegou a ser enviada mesmo sem itens: ${guarda.urls().join(', ')}`,
-    ).toBe(0);
+    // ⚠️ Sincronizar ANTES de contar. A versão anterior lia `guarda.tentativas()` na linha
+    // seguinte ao clique: `click()` resolve quando o evento é despachado, e o widget ainda
+    // aguarda `itensLoadingPromise` antes de eventualmente disparar o `/start`. Contar ali
+    // afirmava "nada foi enviado" antes do instante em que o envio aconteceria — se a trava
+    // `listProdutos.length > 0` fosse removida do produto, o teste continuaria verde.
+    //
+    // A condição observável de "a tentativa terminou" é o Confirmar voltar a ficar
+    // habilitado (a trava antiduplo-clique o desabilita enquanto a criação está em voo).
+    await expect(solicitacaoModal.botaoConfirmar).toBeEnabled({ timeout: 30_000 });
+
+    // E a contagem é sustentada por uma janela, não lida uma vez: `expect.poll` reavalia,
+    // então um `/start` que saísse com atraso ainda seria pego.
+    await expect
+      .poll(() => guarda.tentativas(), {
+        message: `solicitação chegou a ser enviada mesmo sem itens: ${guarda.urls().join(', ')}`,
+        timeout: 10_000,
+      })
+      .toBe(0);
 
     // O modal permanece aberto: não pode haver falso sucesso nem fechamento silencioso
     await expect(solicitacaoModal.getDialog()).toBeVisible();
-    await expect(page.getByText(/iniciado com sucesso/i)).toHaveCount(0);
+
+    // ⚠️ VERMELHO INTENCIONAL — não "conserte" para verde.
+    //
+    // `docs/catalogo-casos.md` (CT-ACC-04-S2) exige o aviso "Nenhum item de contrato foi
+    // carregado. Verifique se o contrato possui itens e tente novamente." A versão anterior
+    // rebaixou essa metade do resultado esperado a COMENTÁRIO ("o aviso ao usuário está em
+    // aberto com o time") e deixou só o bloqueio — removendo justamente a assertion que
+    // reprovaria e viraria achado. O bloqueio sem aviso é falha silenciosa para quem usa o
+    // portal: a pessoa clica em Confirmar e nada acontece.
+    await expect(
+      page.getByText(/Nenhum item de contrato foi carregado/i),
+      'o produto bloqueia o envio sem itens (correto), mas não avisa o usuário — o modal ' +
+        'apenas não faz nada ao Confirmar. O catálogo exige a mensagem explícita; enquanto ' +
+        'ela não existir, este teste reprova de propósito.',
+    ).toBeVisible({ timeout: 15_000 });
   });
 });

@@ -27,6 +27,30 @@ test.describe('Portal de Autorização de Horas Extras', () => {
       const bancoHorasPage = new BancoHorasPage(page);
       const dialogosObservados = await bancoHorasPage.gotoCapturandoAlertaNativo();
 
+      // ⚠️ Esperar a inicialização TERMINAR antes de ler o array.
+      //
+      // `goto` resolve em `domcontentloaded`, e o `alert()` de U-02 é disparado pela
+      // inicialização do widget, depois disso. `expect(array).toEqual([])` é um instantâneo
+      // síncrono, sem polling: lido cedo, o array está vazio e o teste — que existe para
+      // REPROVAR contra U-02 — fica verde sem ter observado nada.
+      //
+      // A sequência medida é: `alert()` nativo → modal SweetAlert2 "Ops!". Esperar por
+      // qualquer um dos dois é esperar o fim da inicialização, e aí a leitura tem sentido.
+      await expect
+        .poll(
+          async () =>
+            dialogosObservados.length > 0 ||
+            (await bancoHorasPage.tituloAvisoProtheusOffline.isVisible().catch(() => false)),
+          {
+            timeout: 30_000,
+            message:
+              'o widget de Banco de Horas não deu sinal de inicialização em 30s: nenhum ' +
+              'alert() nativo e nenhum modal "Ops!". Sem um dos dois não há veredito sobre ' +
+              'U-02 — a tela pode nem ter carregado.',
+          },
+        )
+        .toBe(true);
+
       expect(
         dialogosObservados,
         'o widget não deveria expor erro de configuração de servidor ao usuário final via alert() nativo — ver defeito U-02',

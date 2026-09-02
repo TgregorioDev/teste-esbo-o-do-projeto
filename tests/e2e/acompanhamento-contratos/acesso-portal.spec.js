@@ -11,6 +11,23 @@ import { derrubarDataset, responderDatasetCom } from '../../../utils/dataset-flu
  * há como reproduzi-los de outra forma: exigiriam provisionar um segundo usuário sem o
  * grupo, ou derrubar um serviço do ambiente do cliente. A interceptação exercita
  * exatamente o mesmo trecho de código que rodaria na situação real.
+ *
+ * ## ⚠️ VERMELHO INTENCIONAL desde 28/08/2026 — não "conserte" revertendo o mock
+ *
+ * Estes testes ficaram verdes por meses porque `derrubarDataset` fabricava **HTTP 500**. O
+ * gateway de dataset do Fluig NUNCA responde 500: medido em quatro cenários (dataset válido,
+ * nome inexistente, erro de negócio do Protheus e dataset de sync quebrado), o
+ * `POST /api/public/ecm/dataset/datasets` respondeu **200 em todos**, com o erro no CORPO —
+ * exatamente como a skill `cassi-fluig-master` descreve. O 500 existe, mas na rota irmã
+ * `GET /dataset/search`, que não é a que o widget usa.
+ *
+ * Com o mock corrigido para a forma real, o alerta some. O que isso revela é o defeito:
+ * **o tratamento de erro do widget reage ao STATUS HTTP, não ao corpo.** Como em produção o
+ * status é sempre 200, o usuário NUNCA vê esses avisos — a falha do Protheus é engolida em
+ * silêncio, e a tela apenas não mostra dado.
+ *
+ * Voltar o mock para 500 deixaria os testes verdes de novo e esconderia isso. O vermelho é o
+ * resultado correto até o produto passar a ramificar pelo corpo da resposta.
  */
 test.describe('Acesso ao Portal de Acompanhamento de Contratos', () => {
   test('CT-ACC-01-H — deve listar os contratos para usuário com o grupo de acesso', async ({ contratosPage }) => {
@@ -84,8 +101,17 @@ test.describe('Acesso ao Portal de Acompanhamento de Contratos', () => {
 
     await contratosPage.goto();
 
-    await expect(contratosPage.avisoFalhaPermissao).toBeVisible();
-    await expect(contratosPage.alertaFalhaPermissao).toBeVisible();
+    await expect(
+      contratosPage.avisoFalhaPermissao,
+      'defeito: com o dataset de grupos do usuário falhando, o portal não exibe aviso algum de '
+        + 'INDISPONIBILIDADE. o gateway de dataset do Fluig NUNCA responde 500 — o erro vem no CORPO de um 200 (medido em 28/08/2026, quatro cenários). Com o mock fiel a essa forma, o widget não reage: o tratamento de erro dele ramifica pelo STATUS HTTP. Em produção, portanto, o usuário nunca vê este aviso — a falha do Protheus é engolida em silêncio. VERMELHO INTENCIONAL: não conserte voltando o mock para 500',
+    ).toBeVisible();
+    await expect(
+      contratosPage.alertaFalhaPermissao,
+      'defeito: o alerta que distingue "não foi possível validar sua permissão" de "você não tem '
+        + 'permissão" não aparece. Sem ele o suporte vai procurar grupo do usuário quando o '
+        + 'problema é o Protheus fora do ar',
+    ).toBeVisible();
     // O ponto do caso: indisponibilidade NÃO pode ser comunicada como falta de permissão
     await expect(contratosPage.avisoAcessoNegado).toHaveCount(0);
     await expect(contratosPage.alertaAcessoNegado).toHaveCount(0);

@@ -117,9 +117,9 @@ test.describe('Confirmar cria a SC e ela deveria chegar ao solicitante (CT-ACC-0
     await solicitacaoModal.expectAberto();
     await solicitacaoModal.preencher(criarSolicitacaoCompra());
 
-    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar());
-
-    expect(resposta.status(), 'o start deveria responder 200').toBe(200);
+    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar(), {
+      exigirSucesso: true,
+    });
     const corpoResposta = await resposta.json();
     const processInstanceId = corpoResposta.processInstanceId;
     expect(processInstanceId, 'a resposta deveria trazer processInstanceId').toBeTruthy();
@@ -262,8 +262,10 @@ test.describe('Item sem quantidade e sem valor no contrato não pode virar item 
       }
     });
 
-    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar());
-    expect(resposta.status()).toBe(200);
+    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar(), {
+      contexto: 'SC criada a partir de contrato com item de quantidade/valor zerado (CT-ACC-06-S1)',
+      exigirSucesso: true,
+    });
     const processInstanceId = (await resposta.json()).processInstanceId;
     testInfo.annotations.push({ type: 'sc-criada', description: String(processInstanceId) });
 

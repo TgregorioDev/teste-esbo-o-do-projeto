@@ -1,8 +1,11 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
+import { CentralTarefasPage } from '../../../pages/CentralTarefasPage.js';
+import { PoolTarefasPage } from '../../../pages/PoolTarefasPage.js';
 import { FormularioSolicitacaoCompraPage } from '../../../pages/FormularioSolicitacaoCompraPage.js';
 import { criarProdutoCompra, criarJustificativaDecisao } from '../../../factories/produto-compra.js';
+import { classificarAlvosDoLivro } from '../../../utils/cancelamento-fluig.js';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,8 +14,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ANEXO_VALIDO = path.join(__dirname, '../../../fixtures/anexos/documento-valido.pdf');
 
 /**
- * CT-CMP-04-H, CT-CMP-04-S1, CT-CMP-05-S1, CT-CMP-05-H e CT-CMP-06-H — ciclo de APROVAÇÃO
- * da Solicitação de Compras, a partir da Central de Tarefas → Tarefas em pool.
+ * CT-CMP-04-H, CT-CMP-04-S1 e CT-CMP-05-S1 — ciclo de APROVAÇÃO da Solicitação de Compras,
+ * a partir da Central de Tarefas → Tarefas em pool.
+ *
+ * O caso CT-CMP-06 (Validação dos Compradores) também NÃO é coberto aqui: a SC precisa
+ * atravessar a Validação Orçamentária, de responsável nominal, para chegar à seq 119/257 —
+ * fora do alcance desta conta. Assumir massa compartilhada daquele pool interferiria em
+ * outros testes; o motivo está declarado em `scripts/gerar-cobertura.mjs`.
+ *
+ * O caso CT-CMP-05 (Validação Orçamentária dentro da alçada) NÃO é coberto aqui: a etapa tem
+ * responsável nominal e não é alcançável por esta conta. O motivo está declarado em
+ * `scripts/gerar-cobertura.mjs`; o teste que resta sobre ela afirma justamente a regra de
+ * atribuição nominal, não o caso de negócio.
  *
  * ## Cada teste cria a própria massa — e por que isso exige esperar, não só descobrir
  *
@@ -428,14 +441,24 @@ test.describe('Validação do Gestor Imediato (Tarefas em pool)', () => {
     try {
       await expect(async () => {
         const atividade = await central.lerNomeAtividadeAtual();
-        expect(atividade.length).toBeGreaterThan(0);
-        expect(atividade).not.toMatch(/Validação do Gestor/i);
+        // Destino ESPECÍFICO, não "mudou de alguma forma": aprovar na Validação do Gestor
+        // (seq 7) encaminha para a Validação Orçamentária (seq 14) — é a transição medida em
+        // `catalogo-de-processos.md`. A versão anterior aceitava qualquer etapa diferente de
+        // "Validação do Gestor", inclusive Correção, Cancelamento ou um estado de erro.
+        expect(atividade).toMatch(/Or[çc]ament/i);
       }).toPass({ timeout: 30_000 });
       atividadeMudou = true;
     } catch {
       // segue false — ou a mensagem de alçada explica, ou nem uma coisa nem outra (falha)
     }
-    const alcadaVisivel = await mensagemAlcada.isVisible().catch(() => false);
+
+    // Leitura COM espera: `isVisible()` não tem retry, e a mensagem de alçada (quando existe)
+    // chega junto com o desfecho assíncrono da decisão. Lida instantaneamente, dava sempre
+    // `false` e o ramo virava código morto — a disjunção passava só pelo `atividadeMudou`.
+    const alcadaVisivel = await mensagemAlcada
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false);
 
     expect(
       alcadaVisivel || atividadeMudou,
@@ -452,95 +475,162 @@ test.describe('Validação do Gestor Imediato (Tarefas em pool)', () => {
 
 test.describe('Etapas designadas nominalmente (verificação de alcançabilidade)', () => {
   /**
-   * CT-CMP-05-H — Validação Orçamentária.
+   * Validação Orçamentária — a etapa NÃO cai em pool para esta conta.
    *
-   * `docs/politica-de-escrita.md` marca esta etapa como designada a aprovador nominal
-   * (AL/DHL) — mas a mesma política manda VERIFICAR antes de declarar bloqueio (o documento
-   * de casos errou sobre RH da mesma forma). Este teste investiga se, no momento da
-   * execução, existe algum caminho de pool (delegação/substituto/"sem gestor" — o Histórico
-   * já mostrou a atividade "Validação Orçamentária (Sem Gestor)" como estado válido do BPMN)
-   * alcançável pelo usuário de automação.
+   * ## Por que este teste não cobre mais o caso CT-CMP-05 (cenário H)
    *
-   * Não é `@destrutivo`: só lê a Central de Tarefas para determinar alcançabilidade — não
-   * assume nem movimenta nada.
+   * A versão anterior terminava em `expect(true).toBe(true)`: media a alcançabilidade,
+   * anotava o resultado e passava em qualquer cenário. Uma medição sem critério de
+   * aprovação não é teste — e, pior, `docs/cobertura.md` creditava a ela o caso
+   * o caso CT-CMP-05 ("Validação Orçamentária dentro da alçada"), que nunca foi exercitado.
+   * O caso está agora declarado como lacuna, com motivo, em `scripts/gerar-cobertura.mjs`.
+   *
+   * ## O que este teste passa a afirmar
+   *
+   * A regra documentada: a **seq 14 "Validação Orçamentária" tem responsável NOMINAL**,
+   * vindo de API do Protheus amarrada a conta contábil e centro de custo do produto
+   * (`regras-de-negocio-compras.md` §3; `catalogo-de-processos.md`, âncoras de etapa).
+   * Só há desvio para GRUPO quando o produto não tem gestor único, e, não havendo gestor
+   * nenhum, a solicitação cai na Gerência de Compras (seq 257) — nunca num pool
+   * "Orçamentária" para a conta de automação.
+   *
+   * O teste afirma exatamente isso, e reprova se um grupo de Orçamentária aparecer no pool
+   * desta conta: aí a regra de atribuição mudou no ERP e a suíte precisa saber.
+   *
+   * A assertion só é significativa com o pool efetivamente carregado — daí a pré-condição
+   * de haver ao menos um grupo listado. Sem isso, "nenhum grupo de Orçamentária" seria
+   * verdade por vacuidade, que é a armadilha de assertion de ausência já paga pelo projeto
+   * (ver `docs/mapa-do-ambiente.md`, onda 3).
+   *
+   * ## O seletor de grupos que esta correção consertou
+   *
+   * Medido ao implementar isto: com o resumo anunciando "Tarefas em pool (1)" e o grupo
+   * "Validação dos Compradores" presente, `CentralTarefasComprasPage.listarGrupos()`
+   * devolvia `[]` — ela filtrava `getByRole('link')` por texto terminado em "(N)", o que não
+   * se sustenta nesta tela. A versão anterior deste teste não percebia: `[]` caía no ramo
+   * "NÃO ALCANÇÁVEL" e passava. O Page Object foi corrigido para ancorar em atributo
+   * (`a[data-change-tab-view][data-params-type-group="POOL"]`, lido por `data-node`), o
+   * mesmo gancho de `PoolTarefasPage` exercitado por CT-TSK-02.
+   *
+   * Ainda assim a pré-condição aqui usa o RESUMO da Central, não a listagem: "há massa de
+   * pool" é pergunta de contagem, e o resumo é a fonte que
+   * `tests/e2e/tarefas/assumir-tarefa-pool.spec.js` já usa para a mesma decisão.
+   *
+   * Não é `@destrutivo`: só lê a Central de Tarefas — não assume nem movimenta nada.
    */
-  test('deve verificar se a Validação Orçamentária está alcançável por pool para o usuário de automação', async ({
+  test('a Validação Orçamentária não deve aparecer como grupo de pool — é etapa de responsável nominal', async ({
     page,
   }) => {
-    const central = new CentralTarefasComprasPage(page);
-    await central.goto();
-    await central.abrirTarefasEmPool();
+    const tarefasPage = new CentralTarefasPage(page);
+    const poolPage = new PoolTarefasPage(page);
 
-    const grupos = await central.listarGrupos();
-    const grupoOrcamentaria = grupos.find((g) => GRUPO_ORCAMENTARIA.test(g.nome));
+    await tarefasPage.goto();
+    await tarefasPage.expectCarregada();
 
+    const resumo = await tarefasPage.resumoTarefasEmPool();
+    if (resumo.total === 0) {
+      throw new Error(
+        'PRÉ-CONDIÇÃO AUSENTE: o Resumo de Tarefas anuncia "Tarefas em pool (0)" no momento ' +
+          'da execução. Sem pool carregado, afirmar que a "Validação Orçamentária" está ' +
+          'ausente dele seria verdade por vacuidade — isto NÃO é defeito do produto sob ' +
+          'teste. Reexecute quando houver massa de pool (o usuário pertence a "Validação do ' +
+          'Gestor Imediato" e "Validação dos Compradores").',
+      );
+    }
+
+    await poolPage.abrirGruposDoPool();
+    const grupos = await poolPage.listarGrupos();
+    const nomes = grupos.map((g) => g.descricao);
     test.info().annotations.push({
-      type: 'alcancabilidade-validacao-orcamentaria',
-      description: grupoOrcamentaria
-        ? `ALCANÇÁVEL: grupo "${grupoOrcamentaria.nome}" com ${grupoOrcamentaria.quantidade} tarefa(s) no pool`
-        : `NÃO ALCANÇÁVEL agora: grupos de pool disponíveis são [${grupos.map((g) => g.nome).join(', ') || 'nenhum'}]`,
+      type: 'grupos-de-pool-observados',
+      description: nomes.join(' | '),
     });
 
-    // A ausência de grupo de pool para Validação Orçamentária no momento da execução é o
-    // resultado documentado — o teste passa reportando o achado (não falha, pois "não
-    // alcançável hoje" é informação válida sobre o ambiente, verificada e não presumida).
-    expect(true).toBe(true);
+    expect(
+      nomes.filter((nome) => GRUPO_ORCAMENTARIA.test(nome)),
+      'a Validação Orçamentária (seq 14) é etapa de responsável NOMINAL, vinda de API do ' +
+        'Protheus por conta contábil e centro de custo (regras-de-negocio-compras.md §3): ela ' +
+        'não deve cair em pool para a conta de automação. Se apareceu, a regra de atribuição ' +
+        `mudou no ERP e o caso CT-CMP-05 passa a ser alcançável. Grupos lidos: [${nomes.join(', ')}]`,
+    ).toEqual([]);
   });
 
   /**
-   * CT-CMP-06-H — Validação dos Compradores.
+   * Validação dos Compradores — alcançabilidade do pool, sem assumir nada.
    *
-   * O usuário de automação PERTENCE ao pool de Validação dos Compradores conforme o roteiro
-   * de casos. Este teste verifica se há tarefa alcançável nesse pool AGORA e, se houver,
-   * assume e movimenta de fato (documentando a ação real observada); se não houver, reporta
-   * o achado sem falhar — mesma lógica de verificação do teste acima.
+   * ## Por que este teste não assume mais tarefa, e não cita mais CT-CMP-06
+   *
+   * A versão anterior escolhia `comCarimbo[0]` — a primeira tarefa com carimbo `QA` do pool.
+   * Isso resolveu o risco grave (não pega mais a solicitação de um colaborador real), mas
+   * parou na metade: "uma tarefa QA" não é "a MINHA tarefa". As SCs que os outros testes
+   * desta suíte criam também carregam carimbo `QA` e chegam a este mesmo pool — então este
+   * teste assumia a massa do vizinho, que ficava esperando por uma tarefa que já não estava
+   * mais lá.
+   *
+   * A regra da skill `playwright-test-creator` é "cada teste monta seus próprios
+   * pré-requisitos". O teste do pool do Gestor Imediato
+   * (`tests/e2e/tarefas/assumir-tarefa-pool.spec.js`) foi reescrito exatamente assim: cria a
+   * SC, espera ELA chegar ao pool e assume ELA, por id.
+   *
+   * **Aqui isso não é possível.** Para uma SC alcançar a "Validação dos Compradores"
+   * (seq 119/257) ela precisa atravessar a Validação Orçamentária (seq 14), que é etapa de
+   * responsável NOMINAL fora do alcance da conta de automação — é o teto medido em
+   * `tests/e2e/portais/alcadas-orcamentaria.spec.js`. Medido em 28/08/2026: SCs desta suíte
+   * chegaram ao pool "Validação dos Compradores" por conta própria, mas por roteamento do
+   * BPMN em tempo não determinístico, não por uma ação que o teste possa executar.
+   *
+   * Entre assumir massa compartilhada (interferindo em outro teste) e não cobrir o caso, a
+   * segunda é a única compatível com a norma. O caso CT-CMP-06 passa a lacuna declarada, com
+   * motivo, em `scripts/gerar-cobertura.mjs`.
+   *
+   * O que resta é medição real e útil: o pool de Validação dos Compradores existe e é
+   * alcançável para esta conta, com tarefas pendentes. Leitura pura — não assume, não
+   * movimenta, não toca a massa de ninguém.
    */
-  test('@destrutivo deve assumir e movimentar uma tarefa do pool de Validação dos Compradores quando disponível', async ({
+  test('o pool de Validação dos Compradores é alcançável e lista tarefas pendentes', async ({
     page,
-  }) => {
-    const central = new CentralTarefasComprasPage(page);
-    await central.goto();
-    await central.abrirTarefasEmPool();
+  }, testInfo) => {
+    const tarefasPage = new CentralTarefasPage(page);
+    const poolPage = new PoolTarefasPage(page);
 
-    const grupo = await central.encontrarGrupo(GRUPO_COMPRADOR);
+    await tarefasPage.goto();
+    await tarefasPage.expectCarregada();
+
+    const resumo = await tarefasPage.resumoTarefasEmPool();
+    if (resumo.total === 0) {
+      throw new Error(
+        'PRÉ-CONDIÇÃO AUSENTE: o Resumo de Tarefas anuncia "Tarefas em pool (0)" no momento ' +
+          'da execução — não há tarefa de pool em etapa nenhuma. Isto NÃO é defeito do ' +
+          'produto sob teste.',
+      );
+    }
+
+    await poolPage.abrirGruposDoPool();
+    const grupos = await poolPage.listarGrupos();
+    const grupo = grupos.find((g) => GRUPO_COMPRADOR.test(g.descricao));
 
     if (!grupo) {
-      const grupos = await central.listarGrupos();
-      test.info().annotations.push({
-        type: 'alcancabilidade-validacao-compradores',
-        description: `NÃO ALCANÇÁVEL agora: grupos de pool disponíveis são [${grupos.map((g) => g.nome).join(', ') || 'nenhum'}]`,
-      });
-      expect(true).toBe(true);
-      return;
+      throw new Error(
+        'PRÉ-CONDIÇÃO AUSENTE: nenhum grupo de "Validação dos Compradores" no pool do usuário ' +
+          `de automação no momento da execução (grupos disponíveis: [${grupos.map((g) => g.descricao).join(', ') || 'nenhum'}]). ` +
+          'Isto NÃO é defeito do produto sob teste — é falta de massa nessa etapa, que a ' +
+          'automação não consegue produzir sob demanda (a SC precisa atravessar a Validação ' +
+          'Orçamentária, de responsável nominal).',
+      );
     }
 
-    await central.abrirGrupo(grupo.link);
-    const numeroProcesso = await central.assumirTarefa(0);
+    await poolPage.abrirGrupo(grupo.indice);
+    const numeros = await poolPage.listarIdentificadoresDoGrupo();
 
-    // A tela pós-"Assumir" de Compras segue o mesmo padrão de decisão (Sim/Não +
-    // Justificativa) observado na Validação do Gestor Imediato, quando aplicável.
-    const temDecisaoPadrao = await central
-      .radioAprovarSim()
-      .isVisible({ timeout: 5_000 })
-      .catch(() => false);
+    expect(
+      numeros.length,
+      `o grupo "${grupo.descricao}" anuncia ${grupo.total} tarefa(s), mas nenhum número de ` +
+        'solicitação foi lido nos cartões — o layout do cartão pode ter mudado.',
+    ).toBeGreaterThan(0);
 
-    test.info().annotations.push({
-      type: 'validacao-compradores-alcancada',
-      description: `processo=${numeroProcesso} telaComDecisaoSimNao=${temDecisaoPadrao}`,
+    testInfo.annotations.push({
+      type: 'pool-validacao-compradores',
+      description: `grupo="${grupo.descricao}" total=${grupo.total} ids=${JSON.stringify(numeros)}`,
     });
-
-    if (temDecisaoPadrao) {
-      const justificativa = criarJustificativaDecisao('validação do comprador');
-      await central.decidirEEnviar({ aprovar: true, justificativa });
-      await central.abrirDetalheAposConfirmacao();
-      await expect(async () => {
-        const atividade = await central.lerNomeAtividadeAtual();
-        expect(atividade.length).toBeGreaterThan(0);
-      }).toPass({ timeout: 30_000 });
-    } else {
-      // Página carregou sem tela branca e sem travar — suficiente para provar
-      // alcançabilidade quando o padrão de decisão difere do já mapeado.
-      await expect(central.headingAtual()).toBeVisible();
-    }
   });
 });

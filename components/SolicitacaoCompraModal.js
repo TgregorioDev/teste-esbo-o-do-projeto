@@ -47,7 +47,40 @@ export class SolicitacaoCompraModal {
    * @param {Partial<import('../factories/solicitacao-compra.js').SolicitacaoCompra>} dados
    */
   async preencher(dados) {
-    if (dados.tipo !== undefined) await this.campoTipo.selectOption({ label: dados.tipo });
+    if (dados.tipo !== undefined) {
+      // Conferir a opção ANTES de tentar selecioná-la. `selectOption({ label })` com um rótulo
+      // que não existe não falha na hora: fica repetindo até o timeout e reporta
+      // `TimeoutError: locator.selectOption ... waiting for element to be visible and enabled`
+      // — mensagem que aponta acionabilidade quando o problema é a OPÇÃO. Medido em
+      // 28/08/2026: o ambiente removeu "Renovação Contratual" do combo e ~20 testes passaram a
+      // reprovar com esse timeout, sem nenhuma pista da causa real.
+      // ⚠️ Casar por texto NORMALIZADO e selecionar por VALUE, nunca por label literal.
+      //
+      // Os rótulos deste combo vêm com `U+00A0` (espaço não-quebrável) — a armadilha já
+      // registrada em `docs/mapa-do-ambiente.md` e na skill `cassi-fluig-master`. Comparar
+      // `'Aditivo Contratual'` com o rótulo cru falha por um caractere invisível, e
+      // `selectOption({ label })` sofre do mesmo mal: não encontra a opção e fica repetindo
+      // até o timeout. `\s` do JavaScript cobre o NBSP, então normalizar resolve os dois.
+      const opcoes = await this.campoTipo.locator('option').evaluateAll((nós) =>
+        nós.map((n) => ({
+          value: /** @type {HTMLOptionElement} */ (n).value,
+          texto: (n.textContent ?? '').replace(/\s+/g, ' ').trim(),
+        })),
+      );
+      const alvo = dados.tipo.replace(/\s+/g, ' ').trim();
+      const opcao = opcoes.find((o) => o.texto === alvo);
+
+      if (!opcao) {
+        throw new Error(
+          `O combo "Tipo de Solicitação" não oferece "${dados.tipo}". Opções disponíveis: ` +
+            `${JSON.stringify(opcoes.map((o) => o.texto))}. A lista de tipos mudou no ` +
+            'ambiente — atualize `TIPO_SOLICITACAO` em `factories/solicitacao-compra.js` e ' +
+            'leve a mudança ao time.',
+        );
+      }
+
+      await this.campoTipo.selectOption(opcao.value);
+    }
     if (dados.dataNecessidade !== undefined) await this.campoDataNecessidade.fill(dados.dataNecessidade);
     if (dados.motivo !== undefined) await this.campoMotivo.fill(dados.motivo);
   }
