@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Falhas da suíte E2E — Fluig Cassi — 02/09/2026 (versão leve, sem screenshots embutidas)</title>
+<style>
+  :root {
+    --fundo: #0f1115; --cartao: #171a21; --borda: #262b36; --texto: #e6e9ef;
+    --suave: #9aa4b2; --codigo: #0b0d11;
+    --produto: #ef4444; --ambiente: #f59e0b; --infra: #8b5cf6; --sem-veredito: #64748b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --fundo:#f6f7f9; --cartao:#fff; --borda:#e2e5ea; --texto:#1b1f27; --suave:#5b6472; --codigo:#f1f3f6; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--fundo); color:var(--texto);
+         font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .capa { padding:32px 24px 20px; border-bottom:1px solid var(--borda); }
+  .capa h1 { margin:0 0 6px; font-size:26px; }
+  .capa p { margin:0; color:var(--suave); }
+  .numeros { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+  .numero { background:var(--cartao); border:1px solid var(--borda); border-radius:10px; padding:10px 14px; }
+  .numero b { display:block; font-size:22px; }
+  .numero span { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  main { padding:24px; max-width:1100px; margin:0 auto; }
+  .filtros { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+  .filtros button { background:var(--cartao); color:var(--texto); border:1px solid var(--borda);
+                    border-radius:999px; padding:6px 14px; cursor:pointer; font-size:13px; }
+  .filtros button[aria-pressed="true"] { border-color:var(--texto); font-weight:600; }
+  .falha { background:var(--cartao); border:1px solid var(--borda); border-radius:14px;
+           padding:20px; margin-bottom:20px; }
+  .falha[hidden] { display:none; }
+  .cabecalho { display:flex; justify-content:space-between; align-items:center; }
+  .ordem { color:var(--suave); font-size:13px; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px;
+           font-weight:600; color:#fff; }
+  .badge.produto { background:var(--produto); }
+  .badge.ambiente { background:var(--ambiente); color:#231a05; }
+  .badge.infra { background:var(--infra); }
+  .badge.sem-veredito { background:var(--sem-veredito); }
+  .falha h2 { margin:12px 0 4px; font-size:18px; line-height:1.35; }
+  .suite { margin:0 0 14px; color:var(--suave); font-size:13px; }
+  .meta { display:flex; flex-wrap:wrap; gap:18px; margin:0 0 4px; }
+  .meta div { display:flex; flex-direction:column; }
+  .meta dt { color:var(--suave); font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  .meta dd { margin:2px 0 0; font-size:13px; }
+  .bloco { margin-top:18px; }
+  .bloco h3 { margin:0 0 8px; font-size:13px; text-transform:uppercase;
+              letter-spacing:.05em; color:var(--suave); }
+  .resumo { margin:0 0 8px; font-weight:600; }
+  pre { background:var(--codigo); border:1px solid var(--borda); border-radius:10px;
+        padding:12px 14px; overflow-x:auto; font-size:12.5px; line-height:1.5; margin:0;
+        white-space:pre-wrap; word-break:break-word; }
+  pre.codigo, pre.cmd { white-space:pre; }
+  code { background:var(--codigo); padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .codigo .linha { display:block; }
+  .codigo .num { display:inline-block; width:44px; color:var(--suave); user-select:none; }
+  .codigo .alvo { background:rgba(239,68,68,.16); font-weight:600; }
+  figure { margin:0 0 12px; }
+  figure img { max-width:100%; border:1px solid var(--borda); border-radius:10px; display:block; }
+  figcaption { color:var(--suave); font-size:12px; margin-top:5px; }
+  details > summary { cursor:pointer; color:var(--suave); font-size:13px; padding:6px 0; }
+  details[open] > summary { margin-bottom:8px; }
+  .dica { color:var(--suave); font-size:13px; margin:8px 0 0; }
+  a { color:inherit; }
+  footer { padding:20px 24px 44px; color:var(--suave); font-size:13px; max-width:1100px; margin:0 auto; }
+  .badge.divergencia { background:#0ea5e9; color:#06202b; }
+  .sumario { background:var(--cartao); border:1px solid var(--borda); border-radius:14px; padding:20px 24px; margin-bottom:22px; }
+  .sumario h2 { margin:0 0 12px; font-size:20px; }
+  .sumario h3 { margin:18px 0 8px; font-size:14px; text-transform:uppercase; letter-spacing:.05em; color:var(--suave); }
+  .sumario table { border-collapse:collapse; width:100%; font-size:13.5px; }
+  .sumario th, .sumario td { border-bottom:1px solid var(--borda); padding:6px 8px; text-align:left; vertical-align:top; }
+  .sumario th { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .grupo { border-top:1px solid var(--borda); padding-top:14px; margin-top:14px; }
+  .grupo h3 { text-transform:none; letter-spacing:0; font-size:16px; color:var(--texto); margin:0 0 6px; }
+  .gid { display:inline-block; background:var(--codigo); border:1px solid var(--borda); border-radius:6px; padding:0 6px; font-size:12px; margin-right:6px; }
+  .suave { color:var(--suave); font-size:13px; margin:0 0 8px; }
+  .lista-testes { font-size:13px; color:var(--suave); }
+  .analise { border-left:3px solid #0ea5e9; padding-left:14px; }
+  .analise p { margin:0 0 8px; }
+  .analise .g, .g { color:var(--suave); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="capa">
+  <h1>Falhas da suíte E2E — TOTVS Fluig Cassi</h1>
+  <p>Execução de 02/09/2026 · 233 testes, 81 reprovados · destrutivos incluídos · com análise de causa raiz</p>
+  </div>
+<main>
+<nav class="filtros" style="margin:16px 0"><a href="index.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">Sumário</a> <a href="area-acompanhamento-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">acompanhamento-contratos (27)</a> <a href="area-api.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">api (2)</a> <a href="area-compras.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">compras (13)</a> <a href="area-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">contratos (4)</a> <a href="area-documentos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">documentos (5)</a> <a href="area-juridico.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">juridico (3)</a> <a href="area-notificacoes.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">notificacoes (2)</a> <a href="area-plataforma.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">plataforma (8)</a> <a href="area-portais.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;font-weight:700;border-color:var(--texto)">portais (2)</a> <a href="area-rh.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">rh (4)</a> <a href="area-saude.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">saude (1)</a> <a href="area-seguranca.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">seguranca (7)</a> <a href="area-tarefas.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">tarefas (3)</a></nav><h2>portais — 2 teste(s) reprovado(s)</h2><p class="dica"><a href="index.html">← voltar ao sumário e às causas raiz</a></p><article class="falha" id="f64" data-classe="novo" data-area="portais">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — achado desta execução (não catalogado)</span>
+      <span class="ordem">#65</span>
+    </div>
+    <h2>CT-PFN-02-S2 deve recusar um token de redefinição expirado/adulterado sem efetivar a troca</h2>
+    <p class="suite">e2e/portais/acesso-fornecedor.spec.js › Redefinição de senha do fornecedor — link de reset</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/portais/acesso-fornecedor.spec.js:107</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>6.6s</dd></div>
+      
+      <div><dt>Seed do faker</dt><dd><code>992164</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G10">G10</a> — Contratos de API — notificações, favoritos, reset de senha do fornecedor, medição e delegação de fiscais · <b>Referência:</b> CT-PFN-02-S2</p>
+    <p><b>O que acontece:</b> Enviar um token de redefinição de senha adulterado/expirado ao endpoint do Portal do Fornecedor responde <b>HTTP 500</b>.</p>
+    <p><b>Por que falha:</b> O endpoint não trata token inválido como erro controlado (4xx) — crasha. A troca não se efetiva, mas o comportamento é de exceção não tratada.</p>
+    <p><b>Onde falha:</b> <code>expect(status).toBeLessThan(500)</code> em <code>acesso-fornecedor.spec.js:134</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/portais/acesso-fornecedor.spec.js:134</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: endpoint deveria devolver um erro controlado (4xx), não crashar com 500</p>
+    <pre class="detalhe">expect(received).toBeLessThan(expected)
+
+Expected: &lt; 500
+Received:   500</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">128</span>    // aviso genérico "Senha não foi atualizada!". Escrito contra o comportamento CORRETO</span>
+<span class="linha"><span class="num">129</span>    // (erro controlado, sem detalhe de implementação) — REPROVA hoje de propósito; não</span>
+<span class="linha"><span class="num">130</span>    // "consertar" este teste para ele passar, ver CLAUDE.md.</span>
+<span class="linha"><span class="num">131</span>    expect(</span>
+<span class="linha"><span class="num">132</span>      resposta.status(),</span>
+<span class="linha"><span class="num">133</span>      'endpoint deveria devolver um erro controlado (4xx), não crashar com 500',</span>
+<span class="linha alvo"><span class="num">134</span>    ).toBeLessThan(500);</span>
+<span class="linha"><span class="num">135</span>    const corpoResposta = await resposta.text();</span>
+<span class="linha"><span class="num">136</span>    expect(</span>
+<span class="linha"><span class="num">137</span>      corpoResposta,</span>
+<span class="linha"><span class="num">138</span>      'a resposta do endpoint não deveria expor classe de exceção/stack trace',</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/portais/acesso-fornecedor.spec.js",
+    "Redefinição de senha do fornecedor — link de reset",
+    "CT-PFN-02-S2 deve recusar um token de redefinição expirado/adulterado sem efetivar a troca"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/portal_fornecedores_senha?token=qa-token-adulterado-46fcb570&amp;user=08821606894524",
+  "fakerSeed": 992164,
+  "reproduzirCom": "FAKER_SEED=992164 npx playwright test",
+  "erro": "Error: endpoint deveria devolver um erro controlado (4xx), não crashar com 500\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: &lt; \u001b[32m500\u001b[39m\nReceived:   \u001b[31m500\u001b[39m"
+}</pre>
+  </section>
+
+  
+
+  
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/portais/acesso-fornecedor.spec.js &gt;&gt; Redefinição de senha do fornecedor — link de reset &gt;&gt; CT-PFN-02-S2 deve recusar um token de redefinição expirado/adulterado sem efetivar a troca
+- Location: tests/e2e/portais/acesso-fornecedor.spec.js:107:3
+
+# Error details
+
+```
+Error: endpoint deveria devolver um erro controlado (4xx), não crashar com 500
+
+expect(received).toBeLessThan(expected)
+
+Expected: &lt; 500
+Received:   500
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e11]:
+  - generic [ref=e13]:
+    - img "CASSI" [ref=e14]
+    - heading "Bem vindo ao sistema de Compras e Contratos!" [level=1] [ref=e15]
+    - heading "Somos a CASSI" [level=2] [ref=e16]
+    - heading "Caixa de assistência dos funcionários do Banco do Brasil" [level=3] [ref=e17]
+    - paragraph [ref=e18]: Uma instituição sem fins lucrativos, que está entre as maiores administradoras de planos de saúde do País. Fundada em 27 de janeiro de 1944 por um grupo de funcionários do Banco do Brasil, atualmente temos mais de 720 mil participantes e estamos presentes em todo o território nacional.
+  - generic [ref=e21]:
+    - alert [ref=e23]:  Informe o seu CPF/CNPJ e uma nova senha para ser utilizada no Portal do Fornecedor CASSI.
+    - generic [ref=e24]:
+      - generic [ref=e25]: "CPF/CNPJ:"
+      - textbox "CPF/CNPJ:" [ref=e26]: 08.821.606/8945-24
+    - generic [ref=e27]:
+      - generic [ref=e28]: "Nova senha:"
+      - 'textbox "Nova senha: Repetir Nova senha:" [ref=e29]': QA-5fc379c8Aa1!
+    - generic [ref=e30]:
+      - generic [ref=e31]: "Repetir Nova senha:"
+      - textbox [ref=e32]: QA-5fc379c8Aa1!
+    - alert [ref=e34]:
+      - text: 
+      - button "Close " [ref=e35] [cursor=pointer]: × 
+      - text: Senha não foi atualizada!
+    - button "Atualizar senha" [active] [ref=e38] [cursor=pointer]
+    - button "Ir para o portal" [ref=e40] [cursor=pointer]
+```
+
+# Test source
+
+```ts
+  34  | test.describe('Acesso Normal — credencial de fornecedor inválida', () =&gt; {
+  35  |   test('CT-PFN-01-S1 deve recusar credencial inválida com mensagem genérica, sem vazar detalhe técnico', async ({
+  36  |     page,
+  37  |   }) =&gt; {
+  38  |     const guarda = await bloquearCriacaoDeProcesso(page);
+  39  |     const acessoFornecedor = new AcessoFornecedorPage(page);
+  40  | 
+  41  |     const credencialInexistente = {
+  42  |       cnpj: gerarCnpjFicticio(),
+  43  |       cpf: generateCpf(),
+  44  |       senha: `QA-${randomUUID().slice(0, 12)}`,
+  45  |     };
+  46  | 
+  47  |     const resposta = await acessoFornecedor.tentarAcessoNormal(credencialInexistente);
+  48  | 
+  49  |     // Rejeição controlada — 401, não um 5xx de crash.
+  50  |     expect(resposta.status()).toBe(401);
+  51  | 
+  52  |     // A tela mostra aviso genérico ao usuário — mensagem de negócio, não técnica.
+  53  |     await expect(acessoFornecedor.dialogCredencialInvalida).toBeVisible();
+  54  |     await expect(acessoFornecedor.mensagemCredencialInvalida).toBeVisible();
+  55  | 
+  56  |     // Sem vazamento técnico: nem no corpo da resposta HTTP, nem na tela, aparece stack
+  57  |     // trace, classe de exceção Java ou erro de SQL — só a mensagem de negócio (confirmado
+  58  |     // em campo: o corpo é sempre o texto simples "Fornecedor não localizado!").
+  59  |     const corpoResposta = await resposta.text();
+  60  |     expect(corpoResposta).not.toMatch(/exception|stacktrace|java\.lang|sqlexception|at\s+\w+(\.\w+)+\(/i);
+  61  |     const textoTela = await page.locator('body').innerText();
+  62  |     expect(textoTela).not.toMatch(/exception|stacktrace|java\.lang|sqlexception/i);
+  63  | 
+  64  |     await acessoFornecedor.botaoOkCredencialInvalida.click();
+  65  |     await expect(acessoFornecedor.dialogCredencialInvalida).toHaveCount(0);
+  66  | 
+  67  |     // Nenhum processo BPM foi criado/movimentado como efeito colateral da tentativa.
+  68  |     expect(
+  69  |       guarda.tentativas(),
+  70  |       `tentativa(s) de escrita de processo bloqueada(s): ${JSON.stringify(guarda.urls())}`,
+  71  |     ).toBe(0);
+  72  |   });
+  73  | });
+  74  | 
+  75  | test.describe('Redefinição de senha do fornecedor — link de reset', () =&gt; {
+  76  |   test('CT-PFN-02-S1 não deve efetivar a redefinição com um token que não corresponde a nenhum pedido pendente (equivalente a link reutilizado)', async ({
+  77  |     page,
+  78  |   }) =&gt; {
+  79  |     const guarda = await bloquearCriacaoDeProcesso(page);
+  80  |     const acessoFornecedor = new AcessoFornecedorPage(page);
+  81  |     const cpfCnpj = gerarCnpjFicticio();
+  82  | 
+  83  |     // Não há como emitir e depois consumir um token REAL sem fornecedor de teste (a mesma
+  84  |     // limitação documentada para os casos H, ver docs/mapa-do-ambiente.md). O que É possível
+  85  |     // provar sem consumir nada real: um token BEM FORMADO (a cara de um token de verdade,
+  86  |     // base64) que não corresponde a nenhum pedido pendente é recusado — a mesma garantia de
+  87  |     // servidor que rejeitaria um token genuíno já usado uma vez, porque do ponto de vista do
+  88  |     // backend as duas situações são indistinguíveis: "não é o token válido corrente".
+  89  |     const tokenBemFormadoMasFabricado = Buffer.from(`qa-reset-${randomUUID()}`).toString('base64');
+  90  | 
+  91  |     await acessoFornecedor.abrirRedefinicaoComToken(tokenBemFormadoMasFabricado, cpfCnpj);
+  92  |     const resposta = await acessoFornecedor.submeterRedefinicaoDeSenha({
+  93  |       cpfCnpj,
+  94  |       novaSenha: `QA-${randomUUID().slice(0, 8)}Aa1!`,
+  95  |     });
+  96  | 
+  97  |     // Rejeitado — nunca 2xx.
+  98  |     expect(resposta.ok()).toBe(false);
+  99  |     await expect(acessoFornecedor.alertaSenhaNaoAtualizada).toBeVisible();
+  100 | 
+  101 |     expect(
+  102 |       guarda.tentativas(),
+  103 |       `tentativa(s) de escrita de processo bloqueada(s): ${JSON.stringify(guarda.urls())}`,
+  104 |     ).toBe(0);
+  105 |   });
+  106 | 
+  107 |   test('CT-PFN-02-S2 deve recusar um token de redefinição expirado/adulterado sem efetivar a troca', async ({
+  108 |     page,
+  109 |   }) =&gt; {
+  110 |     const guarda = await bloquearCriacaoDeProcesso(page);
+  111 |     const acessoFornecedor = new AcessoFornecedorPage(page);
+  112 |     const cpfCnpj = gerarCnpjFicticio();
+  113 |     const tokenAdulterado = `qa-token-adulterado-${randomUUID().slice(0, 8)}`;
+  114 | 
+  115 |     await acessoFornecedor.abrirRedefinicaoComToken(tokenAdulterado, cpfCnpj);
+  116 |     const resposta = await acessoFornecedor.submeterRedefinicaoDeSenha({
+  117 |       cpfCnpj,
+  118 |       novaSenha: `QA-${randomUUID().slice(0, 8)}Aa1!`,
+  119 |     });
+  120 | 
+  121 |     expect(resposta.ok()).toBe(false);
+  122 |     await expect(acessoFornecedor.alertaSenhaNaoAtualizada).toBeVisible();
+  123 | 
+  124 |     // Defeito real encontrado nesta investigação (não existia caso escrito antes): o
+  125 |     // endpoint de redefinição responde 500 com o corpo
+  126 |     // `{"message": "...", "exception": "java.lang...."}` — vazamento técnico na CAMADA DE
+  127 |     // REDE (visível em qualquer DevTools) mesmo a TELA absorvendo isso e mostrando só o
+  128 |     // aviso genérico "Senha não foi atualizada!". Escrito contra o comportamento CORRETO
+  129 |     // (erro controlado, sem detalhe de implementação) — REPROVA hoje de propósito; não
+  130 |     // "consertar" este teste para ele passar, ver CLAUDE.md.
+  131 |     expect(
+  132 |       resposta.status(),
+  133 |       'endpoint deveria devolver um erro controlado (4xx), não crashar com 500',
+&gt; 134 |     ).toBeLessThan(500);
+      |       ^ Error: endpoint deveria devolver um erro controlado (4xx), não crashar com 500
+  135 |     const corpoResposta = await resposta.text();
+  136 |     expect(
+  137 |       corpoResposta,
+  138 |       'a resposta do endpoint não deveria expor classe de exceção/stack trace',
+  139 |     ).not.toMatch(/exception|java\.lang|stacktrace/i);
+  140 | 
+  141 |     expect(
+  142 |       guarda.tentativas(),
+  143 |       `tentativa(s) de escrita de processo bloqueada(s): ${JSON.stringify(guarda.urls())}`,
+  144 |     ).toBe(0);
+  145 |   });
+  146 | });
+  147 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=992164 npx playwright test tests/e2e/portais/acesso-fornecedor.spec.js -g "CT-PFN-02-S2 deve recusar um token de redefinição expirado/adulterado sem efetivar a troca"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/portais/e2e-portais-acesso-fornece-303b3-terado-sem-efetivar-a-troca-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/portais/e2e-portais-acesso-fornece-303b3-terado-sem-efetivar-a-troca-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/portais/e2e-portais-acesso-fornece-303b3-terado-sem-efetivar-a-troca-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/portais/e2e-portais-acesso-fornece-303b3-terado-sem-efetivar-a-troca-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+<article class="falha" id="f65" data-classe="catalogado" data-area="portais">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — já catalogado no README</span>
+      <span class="ordem">#66</span>
+    </div>
+    <h2>deve listar as solicitações pendentes de atribuição ao abrir a aba Atribuir</h2>
+    <p class="suite">e2e/portais/gerencia-compras.spec.js › Gerência de Compras</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/portais/gerencia-compras.spec.js:31</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>47.4s</dd></div>
+      
+      <div><dt>Seed do faker</dt><dd><code>99639</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G11">G11</a> — Plataforma — deep-link 404, erros de console, resíduo <code>teste</code>, Aba Atribuir, Clínica vazia, cache _Sync · <b>Referência:</b> Aba Atribuir</p>
+    <p><b>O que acontece:</b> A aba "Atribuir" da Gerência de Compras nunca lista SCs (1 linha = cabeçalho) em 30 s de poll; a aba "Transferir", com o mesmo mecanismo, lista dados reais.</p>
+    <p><b>Por que falha:</b> A grade de Atribuir não renderiza dados para esta conta; reclicar não resolve.</p>
+    <p><b>Onde falha:</b> <code>expect(linhas).toBeGreaterThan(1)</code> em <code>gerencia-compras.spec.js:58</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/portais/gerencia-compras.spec.js:58</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: aba Atribuir deveria listar as SCs pendentes de atribuição</p>
+    <pre class="detalhe">aba Atribuir deveria listar as SCs pendentes de atribuição
+
+expect(received).toBeGreaterThan(expected)
+
+Expected: &gt; 1
+Received:   1
+
+Call Log:
+- Timeout 30000ms exceeded while waiting on the predicate</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">52</span>    // Linha 1 é sempre o estado "Nenhum dado encontrado"; dado real exige mais de uma linha.</span>
+<span class="linha"><span class="num">53</span>    await expect</span>
+<span class="linha"><span class="num">54</span>      .poll(() =&gt; gerenciaCompras.getLinhasDaTabelaAtiva().count(), {</span>
+<span class="linha"><span class="num">55</span>        message: 'aba Atribuir deveria listar as SCs pendentes de atribuição',</span>
+<span class="linha"><span class="num">56</span>        timeout: 30_000,</span>
+<span class="linha"><span class="num">57</span>      })</span>
+<span class="linha alvo"><span class="num">58</span>      .toBeGreaterThan(1);</span>
+<span class="linha"><span class="num">59</span></span>
+<span class="linha"><span class="num">60</span>    expect(guarda.tentativas()).toBe(0);</span>
+<span class="linha"><span class="num">61</span>  });</span>
+<span class="linha"><span class="num">62</span></span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/portais/gerencia-compras.spec.js",
+    "Gerência de Compras",
+    "deve listar as solicitações pendentes de atribuição ao abrir a aba Atribuir"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/gerenciaCompras#/",
+  "fakerSeed": 99639,
+  "reproduzirCom": "FAKER_SEED=99639 npx playwright test",
+  "erro": "Error: aba Atribuir deveria listar as SCs pendentes de atribuição\n\naba Atribuir deveria listar as SCs pendentes de atribuição\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: &gt; \u001b[32m1\u001b[39m\nReceived:   \u001b[31m1\u001b[39m\n\nCall Log:\n- Timeout 30000ms exceeded while waiting on the predicate"
+}</pre>
+  </section>
+
+  
+
+  
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/portais/gerencia-compras.spec.js &gt;&gt; Gerência de Compras &gt;&gt; deve listar as solicitações pendentes de atribuição ao abrir a aba Atribuir
+- Location: tests/e2e/portais/gerencia-compras.spec.js:31:3
+
+# Error details
+
+```
+Error: aba Atribuir deveria listar as SCs pendentes de atribuição
+
+aba Atribuir deveria listar as SCs pendentes de atribuição
+
+expect(received).toBeGreaterThan(expected)
+
+Expected: &gt; 1
+Received:   1
+
+Call Log:
+- Timeout 30000ms exceeded while waiting on the predicate
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]:
+            - text: 
+            - link [ref=e8] [cursor=pointer]:
+              - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+              - img "Logo da empresa" [ref=e9]
+          - generic [ref=e10]:
+            - button "Abrir notificações" [ref=e12] [cursor=pointer]:
+              - generic [ref=e13]: 9+
+              - generic [ref=e14]: 
+            - img "Usuário TBC (TOTVS)" [ref=e17] [cursor=pointer]
+        - text:  
+    - navigation
+  - navigation "Menu de navegação principal responsivo" [ref=e18]:
+    - generic [ref=e20]:
+      - list [ref=e21]:
+        - listitem [ref=e22]:
+          - link "Home" [ref=e23] [cursor=pointer]:
+            - /url: /portal/p/1/home
+            - generic [ref=e24]: 
+        - listitem [ref=e26]:
+          - link "Buscar" [ref=e27] [cursor=pointer]:
+            - /url: "#"
+            - generic [ref=e28]: 
+            - generic [ref=e30]: 
+        - listitem [ref=e32]:
+          - link "Favoritos" [ref=e33] [cursor=pointer]:
+            - /url: /portal/p/1/principalfavorites
+            - generic [ref=e34]: 
+            - generic [ref=e36]: 
+      - list [ref=e38]:
+        - listitem [ref=e39]:
+          - link "Documentos" [ref=e40] [cursor=pointer]:
+            - /url: /portal/p/1/ecmnavigation
+            - generic [ref=e41]: 
+        - listitem [ref=e43]:
+          - link "Processos" [ref=e44] [cursor=pointer]:
+            - /url: /portal/p/1/principalprocess
+            - generic [ref=e45]: 
+            - generic [ref=e47]: 
+        - listitem [ref=e49]:
+          - link "Central de Tarefas" [ref=e50] [cursor=pointer]:
+            - /url: /portal/p/1/pagecentraltask
+            - generic [ref=e51]: 
+        - listitem [ref=e53]:
+          - link "Social" [ref=e54] [cursor=pointer]:
+            - /url: /portal/p/1/social
+            - generic [ref=e55]: 
+        - listitem [ref=e57]:
+          - link "Comunidades" [ref=e58] [cursor=pointer]:
+            - /url: /portal/p/1/communities
+            - generic [ref=e59]: 
+        - listitem [ref=e61]:
+          - link "Gerencia Compras" [ref=e62] [cursor=pointer]:
+            - /url: "#"
+            - generic [ref=e63]: 
+            - generic [ref=e65]: 
+      - list [ref=e67]:
+        - listitem [ref=e68]:
+          - link "Store" [ref=e69] [cursor=pointer]:
+            - /url: /portal/p/1/mysolutions
+            - generic [ref=e70]: 
+        - listitem [ref=e72]:
+          - link "Lixeira" [ref=e73] [cursor=pointer]:
+            - /url: /portal/p/1/pagerecyclebin
+            - generic [ref=e74]: 
+      - list [ref=e76]:
+        - listitem [ref=e77]:
+          - link "Fechar menu" [ref=e78] [cursor=pointer]:
+            - /url: "#"
+            - generic [ref=e80]: 
+  - generic [ref=e91]:
+    - heading "Gerência de Compras" [level=1] [ref=e93]
+    - generic [ref=e94]:
+      - tablist [ref=e97]:
+        - tab "Atribuir" [active] [selected] [ref=e99] [cursor=pointer]
+        - tab "Transferir" [ref=e103] [cursor=pointer]
+      - generic [ref=e106]:
+        - generic [ref=e115]:
+          - generic [ref=e116]:
+            - generic [ref=e117]:
+              - generic [ref=e120]:
+                - generic [ref=e121]: Filial
+                - generic [ref=e125]:
+                  - textbox "Filial" [ref=e126]:
+                    - /placeholder: Selecione a Filial
+                  - button "Pesquisar" [ref=e128] [cursor=pointer]:
+                    - generic [ref=e129]: 
+                - generic:
+                  - alert
+              - generic [ref=e133]:
+                - generic [ref=e134]: Valor Estimado
+                - generic [ref=e137]:
+                  - generic: 
+                  - textbox "Valor Estimado" [ref=e138]:
+                    - /placeholder: ""
+                - generic:
+                  - alert
+              - generic [ref=e141]:
+                - generic [ref=e142]: Grupo de Produto
+                - generic [ref=e146]:
+                  - textbox "Grupo de Produto" [ref=e147]:
+                    - /placeholder: Selecione o Grupo de Produto
+                  - button "Pesquisar" [ref=e149] [cursor=pointer]:
+                    - generic [ref=e150]: 
+                - generic:
+                  - alert
+            - button "Filtrar" [ref=e154] [cursor=pointer]
+          - button "Atribuir em lote" [ref=e159] [cursor=pointer]
+          - table [ref=e171]:
+            - rowgroup [ref=e172]:
+              - row [ref=e173]:
+                - columnheader "Processo" [ref=e174] [cursor=pointer]:
+                  - generic [ref=e175]:
+                    - generic [ref=e176]: Processo
+                    - generic [ref=e177]: 
+                - columnheader "Filial" [ref=e180] [cursor=pointer]:
+                  - generic [ref=e181]:
+                    - generic [ref=e182]: Filial
+                    - generic [ref=e183]: 
+                - columnheader "Comprador" [ref=e186]
+                - columnheader "Solicitante" [ref=e189] [cursor=pointer]:
+                  - generic [ref=e190]:
+                    - generic [ref=e191]: Solicitante
+                    - generic [ref=e192]: 
+                - columnheader "Num SC" [ref=e195] [cursor=pointer]:
+                  - generic [ref=e196]:
+                    - generic [ref=e197]: Num SC
+                    - generic [ref=e198]: 
+                - columnheader "Grupos de Produto" [ref=e201]
+                - columnheader [ref=e204]
+                - columnheader [ref=e205]
+            - rowgroup [ref=e206]:
+              - row [ref=e207]:
+                - cell "Nenhum dado encontrado" [ref=e208]
+        - text:                                                                                                                                         
+```
+
+# Test source
+
+```ts
+  1  | // @ts-check
+  2  | import { test, expect } from '../../../fixtures/fixtures.js';
+  3  | import { GerenciaComprasPage } from '../../../pages/GerenciaComprasPage.js';
+  4  | import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
+  5  | 
+  6  | /**
+  7  |  * Gerência de Compras — caso CT-E2E-05-H (parcial, somente leitura).
+  8  |  *
+  9  |  * Cobre: as abas Atribuir/Transferir estão disponíveis e listam SCs. NÃO cobre: atribuir um
+  10 |  * comprador a uma SC — é escrita real e não tem exclusão disponível no ambiente do cliente.
+  11 |  * Nenhum teste clica em "Transferir", "Transferir em Lote" nem preenche "Selecione um
+  12 |  * comprador"; `bloquearCriacaoDeSolicitacao` fica de guarda contra qualquer clique acidental
+  13 |  * que caia em `process-management`.
+  14 |  */
+  15 | test.describe('Gerência de Compras', () =&gt; {
+  16 |   test('deve oferecer as abas Atribuir e Transferir ao carregar', async ({ page }) =&gt; {
+  17 |     const guarda = await bloquearCriacaoDeSolicitacao(page);
+  18 |     const gerenciaCompras = new GerenciaComprasPage(page);
+  19 | 
+  20 |     await gerenciaCompras.goto();
+  21 |     await gerenciaCompras.expectCarregada();
+  22 | 
+  23 |     await expect(page).toHaveTitle('Cassi - Fluig Plataforma - Gerencia Compras');
+  24 |     await expect(gerenciaCompras.titulo).toBeVisible();
+  25 |     await expect(gerenciaCompras.abaAtribuir).toBeVisible();
+  26 |     await expect(gerenciaCompras.abaTransferir).toBeVisible();
+  27 | 
+  28 |     expect(guarda.tentativas()).toBe(0);
+  29 |   });
+  30 | 
+  31 |   test('deve listar as solicitações pendentes de atribuição ao abrir a aba Atribuir', async ({
+  32 |     page,
+  33 |   }) =&gt; {
+  34 |     // Defeito confirmado em campo: ver docstring de GerenciaComprasPage. A tabela da aba
+  35 |     // Atribuir nunca renderizou dados nos testes de campo (múltiplas cargas, ~30s de
+  36 |     // observação, inclusive com um segundo clique na aba) — fica presa em "Nenhum dado
+  37 |     // encontrado" mesmo depois de o dataset que a alimenta já ter respondido. A assertion
+  38 |     // abaixo é escrita contra o comportamento ESPERADO (a tabela deveria listar as SCs
+  39 |     // pendentes de atribuição); o produto hoje não entrega isso, e o teste deve reprovar.
+  40 |     const guarda = await bloquearCriacaoDeSolicitacao(page);
+  41 |     const gerenciaCompras = new GerenciaComprasPage(page);
+  42 | 
+  43 |     await gerenciaCompras.goto();
+  44 |     await gerenciaCompras.expectCarregada();
+  45 |     await gerenciaCompras.abrirAbaAtribuir();
+  46 | 
+  47 |     // A tabela do painel precisa existir e estar visível antes de qualquer leitura de
+  48 |     // conteúdo — sem isso, um locator vazio (0 elementos) faria `toBeHidden()` passar por
+  49 |     // vacuidade, mascarando o defeito em vez de expô-lo.
+  50 |     await expect(gerenciaCompras.getTabelaAtiva()).toBeVisible();
+  51 | 
+  52 |     // Linha 1 é sempre o estado "Nenhum dado encontrado"; dado real exige mais de uma linha.
+  53 |     await expect
+  54 |       .poll(() =&gt; gerenciaCompras.getLinhasDaTabelaAtiva().count(), {
+  55 |         message: 'aba Atribuir deveria listar as SCs pendentes de atribuição',
+  56 |         timeout: 30_000,
+  57 |       })
+&gt; 58 |       .toBeGreaterThan(1);
+     |        ^ Error: aba Atribuir deveria listar as SCs pendentes de atribuição
+  59 | 
+  60 |     expect(guarda.tentativas()).toBe(0);
+  61 |   });
+  62 | 
+  63 |   test('deve listar as solicitações pendentes de transferência ao abrir a aba Transferir', async ({
+  64 |     page,
+  65 |   }) =&gt; {
+  66 |     const guarda = await bloquearCriacaoDeSolicitacao(page);
+  67 |     const gerenciaCompras = new GerenciaComprasPage(page);
+  68 | 
+  69 |     await gerenciaCompras.goto();
+  70 |     await gerenciaCompras.expectCarregada();
+  71 |     await gerenciaCompras.abrirAbaTransferir();
+  72 | 
+  73 |     await expect(gerenciaCompras.getTabelaAtiva()).toBeVisible();
+  74 | 
+  75 |     // Confirmado em campo: esta aba carrega, mas devagar (~20-25s) — o dataset que a
+  76 |     // alimenta é o mais lento dos dois que a página dispara. Timeout maior que o default do
+  77 |     // projeto (30s) por margem, documentado aqui e não escondido: não é flakiness, é a
+  78 |     // latência real medida no ambiente. Linha 1 é sempre o estado "Nenhum dado encontrado";
+  79 |     // dado real exige mais de uma linha.
+  80 |     await expect
+  81 |       .poll(() =&gt; gerenciaCompras.getLinhasDaTabelaAtiva().count(), { timeout: 45_000 })
+  82 |       .toBeGreaterThan(1);
+  83 | 
+  84 |     await expect(gerenciaCompras.getLinhasDaTabelaAtiva().first()).toBeVisible();
+  85 | 
+  86 |     // O ponto do caso: leitura, não escrita — nenhuma transferência foi disparada.
+  87 |     expect(guarda.tentativas()).toBe(0);
+  88 |   });
+  89 | });
+  90 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=99639 npx playwright test tests/e2e/portais/gerencia-compras.spec.js -g "deve listar as solicitações pendentes de atribuição ao abrir a aba Atribuir"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/portais/e2e-portais-gerencia-compr-c2071-ção-ao-abrir-a-aba-Atribuir-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/portais/e2e-portais-gerencia-compr-c2071-ção-ao-abrir-a-aba-Atribuir-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/portais/e2e-portais-gerencia-compr-c2071-ção-ao-abrir-a-aba-Atribuir-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/portais/e2e-portais-gerencia-compr-c2071-ção-ao-abrir-a-aba-Atribuir-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+</main>
+<footer>
+  <p>Relatório da execução de 02/09/2026 — gerado por <code>scripts/relatorio-falhas.mjs</code> (evidências) +
+  <code>relatorios/gerar-final.mjs</code> (análise). Screenshots e aria-snapshots estão embutidos; trace e vídeo de cada
+  falha ficam em <code>test-results/&lt;fatia&gt;/</code> nos caminhos indicados em cada cartão
+  (<code>npx playwright show-trace &lt;trace.zip&gt;</code>).</p>
+</footer>
+
+</body>
+</html>

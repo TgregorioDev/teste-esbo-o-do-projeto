@@ -1,0 +1,132 @@
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js:242
+CT-CMP-08-H @destrutivo — reprovada e corrigida, a SC deveria voltar para a Validação do Gestor com o contrato de origem íntegro
+ERRO: Error: DEFEITO (CT-CMP-08-H): a SC 113180 não pode ser reenviada depois de corrigida. O Fluig RECUSOU a movimentação da etapa "Ajustar Informações" com: "× Close Erro Erro ao validar as informações do formulário para movimentação. Error: Error: Existem campos de rateio sem preenchimento. Preencha todos os campos e tente novamente. Ok, entendi". A SC continua em "Ajustar Informações" com "TOTVS-FS" — ou seja, o caminho de retorno é um beco sem saída: o gestor reprova, a solicitação volta para o solicitante e ele não consegue devolvê-la ao fluxo. Histórico: ["mov1|294:Compra Centralizada?|COMPLETED|TOTVS-FS","mov2|233:Grava SC e Anexos|COMPLETED|System:Auto","mov3|7:Validação do Gestor|COMPLETED|System:Auto","mov4|7:Validação do Gestor|TRANSFERRED|Pool:Group:G.P.Requisicao_de_Compras_Gestor_Imediato","mov4|9:Sol. Validação do Gestor|COMPLETED|TOTVS-FS","mov5|11:Ajustar Informações|COMPLETED|System:Auto","mov6|11:Ajustar Informações|NOT_COMPLETED|TOTVS-FS"]
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/ciclo-gestor.spec.js:36
+@destrutivo estado inicial e responsável deveriam refletir uma etapa de trabalho do solicitante
+ERRO: TimeoutError: page.waitForResponse: Timeout 45000ms exceeded while waiting for event "response"
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/ciclo-gestor.spec.js:109
+@destrutivo aprovada pelo Gestor Imediato, a SC deveria avançar para Validação Orçamentária
+ERRO: Error: SC 113178: estado atual "Início" — esperando "Validação do Gestor" (bloqueado por D-01: a SC nasce presa no marco de Início e não chega a nenhuma etapa de trabalho, logo nunca aparece em pool algum)
+expect(received).toBe(expected) // Object.is equality
+Expected: "Validação do Gestor"
+Received: "Início"
+Call Log:
+- Timeout 45000ms exceeded while waiting on the predicate
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/ciclo-gestor.spec.js:155
+@destrutivo reprovada, a SC deveria voltar para Ajustar Informações com o solicitante, itens e contrato íntegros
+ERRO: Error: Timeout 45000ms exceeded while waiting on the predicate
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:106
+@destrutivo a SC deveria nascer atribuída ao solicitante logado, não à conta de integração
+ERRO: Error: a SC 113182 nasceu com responsável "Usuário Integrador Fluig" — deveria ser o solicitante logado (ou uma etapa/pool legítima), não a conta de integração
+expect(received).not.toBe(expected) // Object.is equality
+Expected: not "Usuário Integrador Fluig"
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:218
+@destrutivo item de quantidade/valor zerado no contrato não deveria virar item extra na SC criada
+ERRO: Error: contrato 000000000000001: o Protheus tem 7 itens (5 com quantidade e valor + 2 sem nenhum dos dois), mas a SC nasceu com 7. Os itens sem quantidade não foram descartados: o serviço FABRICA quantidade para eles (cascata `resolveQuant` → fallback 1 em contrato de serviços) e com isso eles passam pelo filtro `quant > 0`. Quantidades enviadas: [29,1,1,29,29,29,29]
+expect(received).toBe(expected) // Object.is equality
+Expected: 5
+Received: 7
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:286
+@destrutivo o servidor deveria recusar tipoSolicitacao vazio tanto quanto recusa motivoSolCompra vazio
+ERRO: Error: tipoSolicitacao vazio deveria ser recusado pelo servidor (como motivoSolCompra vazio é), mas respondeu 200: {"possibleAssignees":[],"toShowPossibleAssignees":false,"jointActivity":false,"reachedPercentageForJointActivity":null,"highestTaskForJointActivity":null,"highestAssigneeForJointActivity":null,"nextState":0,"nextGateway":null,"nextStateName":null,"gatewayComment":null,"gatewayCondition":0,"useManage
+expect(received).not.toBe(expected) // Object.is equality
+Expected: not 200
+ANEXO starts-diretos: { "o que este teste mede": "se o SERVIDOR valida os campos que o modal marca como obrigatórios, quando o start é disparado direto, sem passar pela tela", "atenção": "a screenshot deste teste mostra um alerta de erro do passo de captura, que foi abortado de propósito. Ela não é evidência do resultado.", "tipoSolicitacao vazio": { "status": 200, "esperado": "recusa (4xx/5xx)", "corpo": "{\"possibleA
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:416
+@destrutivo o portal deveria alertar sobre a SC já em andamento para o mesmo contrato/revisão
+ERRO: Error: nenhum aviso apareceu ao reabrir a SC do contrato 000000000000001, mesmo já existindo a solicitação 113185 em andamento para o mesmo contrato/revisão
+expect(locator).toBeVisible() failed
+Locator: getByText(/113185|em andamento|já existe|já possui/i)
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+Call log:
+  - nenhum aviso apareceu ao reabrir a SC do contrato 000000000000001, mesmo já existindo a solicitação 113185 em andamento para o mesmo contrato/revisão with timeout 5000ms
+  - waiting for getByText(/113185|em andamento|já existe|já possui/i)
+
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:507
+CT-ACC-06-S2 — item sem quantidade no contrato deve herdar a cascata e o preço real, nunca R$ 1,00
+ERRO: Error: contrato 000000000000002: o item tem CNB_QUANT vazio e CNB_QTDORI=36, então a SC deveria trazer essa quantidade pela cascata (CNB_QUANT → CNB_QTDORI → CNB_QTRDRZ → 1). Quantidades enviadas: [1]
+expect(received).toBeDefined()
+Received: undefined
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/erros-no-start.spec.js:67
+deve avisar quando a SC é criada mas não pôde ser atribuída ao solicitante, em vez de anunciar sucesso pleno
+ERRO: Error: defeito D-01 (sintoma): a transferência da tarefa falhou (dsFluig_postProcessesTransfer → HTTP 500) e a aplicação deveria avisar que a SC não pôde ser atribuída ao solicitante. Abaixo, TODOS os avisos que ela exibiu — se aparecer apenas o toast de sucesso, o erro foi engolido e a tarefa fica presa na conta de integração sem o usuário saber
+defeito D-01 (sintoma): a transferência da tarefa falhou (dsFluig_postProcessesTransfer → HTTP 500) e a aplicação deveria avisar que a SC não pôde ser atribuída ao solicitante. Abaixo, TODOS os avisos que ela exibiu — se aparecer apenas o toast de sucesso, o erro foi engolido e a tarefa fica presa na conta de integração sem o usuário saber
+expect(received).toEqual(expected) // deep equality
+Expected: ArrayContaining [StringMatching /n(ã|a)o p(ô|o)de ser atribu(í|i)da/i]
+Received: ["Sucesso! Processo 999999 iniciado com sucesso! × Close"]
+Call Log:
+- Timeout 15000ms exceeded while waiting on the predicate
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/grade-contratos.spec.js:45
+CT-ACC-02-S1 — deve exibir a situação do contrato por extenso, sem truncar
+ERRO: Error: situações exibidas de forma truncada/ilegível na grade: ["Finali","Paralisa","Sol.Finali","Cancel."]
+expect(received).toEqual(expected) // deep equality
+- Expected  - 1
++ Received  + 6
+- Array []
++ Array [
++   "Finali",
++   "Paralisa",
++   "Sol.Finali",
++   "Cancel.",
++ ]
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/indisponibilidade-protheus.spec.js:54
+deve exibir um alerta por dado indisponível, nomeando o dado que faltou
+ERRO: Error: defeito: o alerta não nomeia o dado que faltou — a falha do dataset `dsProtheus_getItensPlanilha_restGetAll` (itens da planilha do contrato) é anunciada ao usuário com o rótulo "Erro ao buscar dados da filial". Rótulo errado, e é a origem da leitura de que o "mesmo alerta aparece duas vezes" quando os dois datasets caem juntos
+expect(received).toMatch(expected)
+Expected pattern: /iten|planilha/i
+Received string:  "ERRO: Erro ao buscar dados da filial: "
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js:65
+deve oferecer os tipos contratuais de solicitação
+ERRO: Error: expect(received).toContain(expected) // indexOf
+Expected value: "Renovação Contratual"
+Received array: ["Selecione...", "Selecione...", "Aditivo Contratual", "Nova Contratação"]
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:59
+a SC deve nascer numa etapa de trabalho atribuída ao solicitante, não presa no marco de Início da conta de integração
+ERRO: Error: a SC nasceu presa no marco de Início do BPMN (targetState=6)
+expect(received).not.toBe(expected) // Object.is equality
+Expected: not 6
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:142
+não deve existir item de quantidade 1 repetindo o valor total de outro item
+ERRO: Error: contrato 000000000000001: item-fantasma replicando o valor cheio como se fosse produto próprio
+expect(received).toHaveLength(expected)
+Expected length: 0
+Received length: 2
+Received array:  ["#1 (qtd=1, valorTotal=1,00)", "#3 (qtd=1, valorTotal=1,00)"]
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:219
+classeOrca, classificação e o descritor deveriam refletir o contrato de origem, não vir fixos para todos
+ERRO: Error: campoDescritor não acompanha a filial: LIMPO="Sol. Compras - CASSI SEDE" (CASSI - CENTRAL DE ATENDIMENTO), MEDIO="Sol. Compras - CASSI SEDE" (UNIDADE - CLINICASSI CURITIBA - PR)
+expect(received).not.toBe(expected) // Object.is equality
+Expected: not "Sol. Compras - CASSI SEDE"
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:339
+classeValor do item deveria vir preenchido junto com classeOrca e classificação
+ERRO: Error: tbprod_classeValor do item veio vazio (classeOrca e classificacao vieram preenchidos no mesmo item)
+expect(received).toHaveLength(expected)
+Expected length: 0
+Received length: 7
+Received array:  ["#1", "#2", "#3", "#4", "#5", "#6", "#7"]
+
+#### [extra-aditivo] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:434
+não deve permitir que nrContrato divirja do contrato real da revisão/filial/itens enviados
+ERRO: Error: nrContrato aponta para o MEDIO (revisão real "003"), mas revisaContrato enviado foi ""
+expect(received).toBe(expected) // Object.is equality
+Expected: "003"
+Received: ""

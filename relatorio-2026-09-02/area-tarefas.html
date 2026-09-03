@@ -1,0 +1,1601 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Falhas da suíte E2E — Fluig Cassi — 02/09/2026 (versão leve, sem screenshots embutidas)</title>
+<style>
+  :root {
+    --fundo: #0f1115; --cartao: #171a21; --borda: #262b36; --texto: #e6e9ef;
+    --suave: #9aa4b2; --codigo: #0b0d11;
+    --produto: #ef4444; --ambiente: #f59e0b; --infra: #8b5cf6; --sem-veredito: #64748b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --fundo:#f6f7f9; --cartao:#fff; --borda:#e2e5ea; --texto:#1b1f27; --suave:#5b6472; --codigo:#f1f3f6; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--fundo); color:var(--texto);
+         font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .capa { padding:32px 24px 20px; border-bottom:1px solid var(--borda); }
+  .capa h1 { margin:0 0 6px; font-size:26px; }
+  .capa p { margin:0; color:var(--suave); }
+  .numeros { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+  .numero { background:var(--cartao); border:1px solid var(--borda); border-radius:10px; padding:10px 14px; }
+  .numero b { display:block; font-size:22px; }
+  .numero span { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  main { padding:24px; max-width:1100px; margin:0 auto; }
+  .filtros { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+  .filtros button { background:var(--cartao); color:var(--texto); border:1px solid var(--borda);
+                    border-radius:999px; padding:6px 14px; cursor:pointer; font-size:13px; }
+  .filtros button[aria-pressed="true"] { border-color:var(--texto); font-weight:600; }
+  .falha { background:var(--cartao); border:1px solid var(--borda); border-radius:14px;
+           padding:20px; margin-bottom:20px; }
+  .falha[hidden] { display:none; }
+  .cabecalho { display:flex; justify-content:space-between; align-items:center; }
+  .ordem { color:var(--suave); font-size:13px; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px;
+           font-weight:600; color:#fff; }
+  .badge.produto { background:var(--produto); }
+  .badge.ambiente { background:var(--ambiente); color:#231a05; }
+  .badge.infra { background:var(--infra); }
+  .badge.sem-veredito { background:var(--sem-veredito); }
+  .falha h2 { margin:12px 0 4px; font-size:18px; line-height:1.35; }
+  .suite { margin:0 0 14px; color:var(--suave); font-size:13px; }
+  .meta { display:flex; flex-wrap:wrap; gap:18px; margin:0 0 4px; }
+  .meta div { display:flex; flex-direction:column; }
+  .meta dt { color:var(--suave); font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  .meta dd { margin:2px 0 0; font-size:13px; }
+  .bloco { margin-top:18px; }
+  .bloco h3 { margin:0 0 8px; font-size:13px; text-transform:uppercase;
+              letter-spacing:.05em; color:var(--suave); }
+  .resumo { margin:0 0 8px; font-weight:600; }
+  pre { background:var(--codigo); border:1px solid var(--borda); border-radius:10px;
+        padding:12px 14px; overflow-x:auto; font-size:12.5px; line-height:1.5; margin:0;
+        white-space:pre-wrap; word-break:break-word; }
+  pre.codigo, pre.cmd { white-space:pre; }
+  code { background:var(--codigo); padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .codigo .linha { display:block; }
+  .codigo .num { display:inline-block; width:44px; color:var(--suave); user-select:none; }
+  .codigo .alvo { background:rgba(239,68,68,.16); font-weight:600; }
+  figure { margin:0 0 12px; }
+  figure img { max-width:100%; border:1px solid var(--borda); border-radius:10px; display:block; }
+  figcaption { color:var(--suave); font-size:12px; margin-top:5px; }
+  details > summary { cursor:pointer; color:var(--suave); font-size:13px; padding:6px 0; }
+  details[open] > summary { margin-bottom:8px; }
+  .dica { color:var(--suave); font-size:13px; margin:8px 0 0; }
+  a { color:inherit; }
+  footer { padding:20px 24px 44px; color:var(--suave); font-size:13px; max-width:1100px; margin:0 auto; }
+  .badge.divergencia { background:#0ea5e9; color:#06202b; }
+  .sumario { background:var(--cartao); border:1px solid var(--borda); border-radius:14px; padding:20px 24px; margin-bottom:22px; }
+  .sumario h2 { margin:0 0 12px; font-size:20px; }
+  .sumario h3 { margin:18px 0 8px; font-size:14px; text-transform:uppercase; letter-spacing:.05em; color:var(--suave); }
+  .sumario table { border-collapse:collapse; width:100%; font-size:13.5px; }
+  .sumario th, .sumario td { border-bottom:1px solid var(--borda); padding:6px 8px; text-align:left; vertical-align:top; }
+  .sumario th { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .grupo { border-top:1px solid var(--borda); padding-top:14px; margin-top:14px; }
+  .grupo h3 { text-transform:none; letter-spacing:0; font-size:16px; color:var(--texto); margin:0 0 6px; }
+  .gid { display:inline-block; background:var(--codigo); border:1px solid var(--borda); border-radius:6px; padding:0 6px; font-size:12px; margin-right:6px; }
+  .suave { color:var(--suave); font-size:13px; margin:0 0 8px; }
+  .lista-testes { font-size:13px; color:var(--suave); }
+  .analise { border-left:3px solid #0ea5e9; padding-left:14px; }
+  .analise p { margin:0 0 8px; }
+  .analise .g, .g { color:var(--suave); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="capa">
+  <h1>Falhas da suíte E2E — TOTVS Fluig Cassi</h1>
+  <p>Execução de 02/09/2026 · 233 testes, 81 reprovados · destrutivos incluídos · com análise de causa raiz</p>
+  </div>
+<main>
+<nav class="filtros" style="margin:16px 0"><a href="index.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">Sumário</a> <a href="area-acompanhamento-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">acompanhamento-contratos (27)</a> <a href="area-api.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">api (2)</a> <a href="area-compras.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">compras (13)</a> <a href="area-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">contratos (4)</a> <a href="area-documentos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">documentos (5)</a> <a href="area-juridico.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">juridico (3)</a> <a href="area-notificacoes.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">notificacoes (2)</a> <a href="area-plataforma.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">plataforma (8)</a> <a href="area-portais.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">portais (2)</a> <a href="area-rh.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">rh (4)</a> <a href="area-saude.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">saude (1)</a> <a href="area-seguranca.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">seguranca (7)</a> <a href="area-tarefas.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;font-weight:700;border-color:var(--texto)">tarefas (3)</a></nav><h2>tarefas — 3 teste(s) reprovado(s)</h2><p class="dica"><a href="index.html">← voltar ao sumário e às causas raiz</a></p><article class="falha" id="f78" data-classe="precondicao" data-area="tarefas">
+  <header>
+    <div class="cabecalho">
+      <span class="badge ambiente">Pré-condição ausente (ambiente / massa / latência)</span>
+      <span class="ordem">#79</span>
+    </div>
+    <h2>CT-TSK-07-H @destrutivo — "Somente salvar" deve persistir o rascunho sem movimentar a atividade</h2>
+    <p class="suite">e2e/tarefas/acoes-da-tarefa.spec.js › Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08)</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/tarefas/acoes-da-tarefa.spec.js:184</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>225.4s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>15227</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G12">G12</a> — BPMN lento — a SC não sai de "Grava SC e Anexos" dentro dos 180 s do orçamento de espera · <b>Referência:</b> PRÉ-CONDIÇÃO AUSENTE</p>
+    <p><b>O que acontece:</b> A SC #113163, criada pelo próprio teste, não apareceu com "Assumir tarefa" na Validação do Gestor em 180 s; a atividade atual ainda era "Grava SC e Anexos". O teste aborta antes de exercitar "Somente salvar".</p>
+    <p><b>Por que falha:</b> Latência do BPMN acima do orçamento (referência de campo: ~76 s). Reexecutado isolado (15h35–15h40) com o mesmo resultado (SCs 113187–113191). O mesmo caminho em <code>portais/*.spec.js</code> (helper <code>aprovarValidacaoDoGestor</code>, espera de 150 s) chegou à Validação do Gestor em 5 testes entre 15h16 e 15h20 — o fluxo funciona; a latência oscila.</p>
+    <p><b>Onde falha:</b> Poll <code>toPass({ timeout: 180_000 })</code> por <code>botaoAssumirTarefaAtual()</code> — <code>aprovacoes-solicitacao-compras.spec.js:281</code> / <code>acoes-da-tarefa.spec.js:83</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/tarefas/acoes-da-tarefa.spec.js:86</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113163, criada por este teste, não ficou assumível ("Assumir tarefa") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada: "Grava SC e Anexos". Causa do polling: expect(locator).toBeVisible() failed</p>
+    <pre class="detalhe">Locator: getByRole('button', { name: 'Assumir tarefa' })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">80</span>    await expect(async () =&gt; {</span>
+<span class="linha"><span class="num">81</span>      await central.abrirDetalheDaSolicitacao(numeroProcesso);</span>
+<span class="linha"><span class="num">82</span>      await expect(central.botaoAssumirTarefaAtual()).toBeVisible({ timeout: 5_000 });</span>
+<span class="linha"><span class="num">83</span>    }).toPass({ timeout: 180_000, intervals: [10_000, 15_000, 20_000, 30_000] });</span>
+<span class="linha"><span class="num">84</span>  } catch (erroDePoll) {</span>
+<span class="linha"><span class="num">85</span>    const atividadeObservada = await central.lerNomeAtividadeAtual().catch(() =&gt; '(não foi possível ler)');</span>
+<span class="linha alvo"><span class="num">86</span>    throw new Error(</span>
+<span class="linha"><span class="num">87</span>      `PRÉ-CONDIÇÃO AUSENTE: a SC #${numeroProcesso}, criada por este teste, não ficou assumível ` +</span>
+<span class="linha"><span class="num">88</span>        `("Assumir tarefa") em ${GRUPO_GESTOR_IMEDIATO.source} dentro de 180s. Isto NÃO é defeito ` +</span>
+<span class="linha"><span class="num">89</span>        'da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do ' +</span>
+<span class="linha"><span class="num">90</span>        'observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente ' +</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/tarefas/acoes-da-tarefa.spec.js",
+    "Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08)",
+    "CT-TSK-07-H @destrutivo — \"Somente salvar\" deve persistir o rascunho sem movimentar a atividade"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?app_ecm_workflowview_detailsProcessInstanceID=113163",
+  "fakerSeed": 15227,
+  "reproduzirCom": "FAKER_SEED=15227 npx playwright test",
+  "erro": "Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113163, criada por este teste, não ficou assumível (\"Assumir tarefa\") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada: \"Grava SC e Anexos\". Causa do polling: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: 'Assumir tarefa' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: 'Assumir tarefa' })\u001b[22m\n\n\nCall Log:\n- Timeout 180000ms exceeded while waiting on the predicate"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for getByRole('button', { name: 'Assumir tarefa' })
+
+
+Call Log:
+- Timeout 180000ms exceeded while waiting on the predicate</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/tarefas/acoes-da-tarefa.spec.js &gt;&gt; Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08) &gt;&gt; CT-TSK-07-H @destrutivo — "Somente salvar" deve persistir o rascunho sem movimentar a atividade
+- Location: tests/e2e/tarefas/acoes-da-tarefa.spec.js:184:3
+
+# Error details
+
+```
+Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113163, criada por este teste, não ficou assumível ("Assumir tarefa") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada: "Grava SC e Anexos". Causa do polling: expect(locator).toBeVisible() failed
+
+Locator: getByRole('button', { name: 'Assumir tarefa' })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for getByRole('button', { name: 'Assumir tarefa' })
+
+
+Call Log:
+- Timeout 180000ms exceeded while waiting on the predicate
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=f28e1]:
+  - generic [ref=f28e2]:
+    - generic [ref=f28e3]:
+      - navigation [ref=f28e4]:
+        - generic [ref=f28e5]:
+          - generic [ref=f28e6]:
+            - generic [ref=f28e7]:
+              - text: 
+              - link [ref=f28e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=f28e9]
+            - generic [ref=f28e10]:
+              - text: 
+              - button "Abrir ajuda" [ref=f28e12] [cursor=pointer]:
+                - generic [ref=f28e13]: 
+              - button "Abrir notificações" [ref=f28e15] [cursor=pointer]:
+                - generic [ref=f28e16]: 9+
+                - generic [ref=f28e17]: 
+              - img "Usuário TBC (TOTVS)" [ref=f28e20] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=f28e21]:
+      - generic [ref=f28e23]:
+        - list [ref=f28e24]:
+          - listitem [ref=f28e25]:
+            - link "Home" [ref=f28e26] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=f28e27]: 
+          - listitem [ref=f28e29]:
+            - link "Buscar" [ref=f28e30] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=f28e31]: 
+              - generic [ref=f28e33]: 
+          - listitem [ref=f28e35]:
+            - link "Favoritos" [ref=f28e36] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=f28e37]: 
+              - generic [ref=f28e39]: 
+        - list [ref=f28e41]:
+          - listitem [ref=f28e42]:
+            - link "Documentos" [ref=f28e43] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=f28e44]: 
+          - listitem [ref=f28e46]:
+            - link "Processos" [ref=f28e47] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=f28e48]: 
+              - generic [ref=f28e50]: 
+          - listitem [ref=f28e52]:
+            - link "Central de Tarefas" [ref=f28e53] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=f28e54]: 
+          - listitem [ref=f28e56]:
+            - link "Social" [ref=f28e57] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=f28e58]: 
+          - listitem [ref=f28e60]:
+            - link "Comunidades" [ref=f28e61] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=f28e62]: 
+          - listitem [ref=f28e64]:
+            - link "Páginas" [ref=f28e65] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=f28e66]: 
+              - generic [ref=f28e68]: 
+        - list [ref=f28e70]:
+          - listitem [ref=f28e71]:
+            - link "Store" [ref=f28e72] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=f28e73]: 
+          - listitem [ref=f28e75]:
+            - link "Lixeira" [ref=f28e76] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=f28e77]: 
+        - list [ref=f28e79]:
+          - listitem [ref=f28e80]:
+            - link "Fechar menu" [ref=f28e81] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=f28e83]: 
+    - generic [ref=f28e94]:
+      - generic [ref=f28e95]:
+        - list [ref=f28e97]:
+          - listitem [ref=f28e98]:
+            - link "Início" [ref=f28e99] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=f28e100]:
+            - text: 
+            - link "Central de Tarefas" [ref=f28e101] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+          - listitem [ref=f28e102]: Solicitação de Compras
+        - generic [ref=f28e103]:
+          - heading "Detalhes da Solicitação" [level=2] [ref=f28e104]
+          - list [ref=f28e105]:
+            - listitem [ref=f28e106]:
+              - link " Formulário" [ref=f28e107] [cursor=pointer]:
+                - /url: "#form-tab"
+                - generic [ref=f28e108]: 
+                - generic [ref=f28e109]: Formulário
+            - listitem [ref=f28e110]:
+              - link " Informações" [ref=f28e111] [cursor=pointer]:
+                - /url: "#informations-tab"
+                - generic [ref=f28e112]: 
+                - generic [ref=f28e113]: Informações
+            - listitem [ref=f28e114]:
+              - link " Histórico 4" [expanded] [ref=f28e115]:
+                - /url: "#historic-tab"
+                - generic [ref=f28e116]: 
+                - generic [ref=f28e117]: Histórico
+                - generic "Quantidade de registros" [ref=f28e118]: "4"
+            - listitem [ref=f28e119]:
+              - link " Anexos 1" [ref=f28e120] [cursor=pointer]:
+                - /url: "#attachments-tab"
+                - generic [ref=f28e121]: 
+                - generic [ref=f28e122]: Anexos
+                - generic "Quantidade de registros" [ref=f28e123]: "1"
+            - text:  
+      - generic [ref=f28e125]:
+        - text:  
+        - generic [ref=f28e127]:
+          - generic [ref=f28e128]:
+            - generic [ref=f28e129]:
+              - generic [ref=f28e131]:
+                - button "Por usuário " [ref=f28e133] [cursor=pointer]:
+                  - generic [ref=f28e134]: Por usuário
+                  - generic [ref=f28e135]: 
+                - textbox "Digite a palavra-chave que deseja buscar" [ref=f28e137]
+                - generic [ref=f28e138]: 
+              - generic [ref=f28e140]:
+                - generic [ref=f28e141] [cursor=pointer]: 
+                - text:  
+            - generic [ref=f28e142]:
+              - img "TOTVS-FS" [ref=f28e144]
+              - textbox "Digite um comentário nesta solicitação..." [ref=f28e146]
+              - button "Comentar" [disabled] [ref=f28e148]
+            - generic [ref=f28e150]:
+              - generic [ref=f28e151] [cursor=pointer]:
+                - generic [ref=f28e152]: 
+                - generic [ref=f28e153]: Mais recente
+              - separator [ref=f28e154]
+          - generic [ref=f28e155]:
+            - generic [ref=f28e156]:
+              - separator
+              - generic [ref=f28e157]:
+                - generic [ref=f28e158]: 
+                - generic [ref=f28e161]:
+                  - strong [ref=f28e162]: "Atividade atual:"
+                  - strong
+                  - text: Grava SC e Anexos (Em progresso)
+                  - generic [ref=f28e164]:
+                    - strong [ref=f28e165]: "Responsável:"
+                    - text: System:Auto |
+                    - strong [ref=f28e166]: "Prazo:"
+                    - text: Sem prazo definido
+            - generic [ref=f28e167]:
+              - separator [ref=f28e168]
+              - generic [ref=f28e169]:
+                - generic [ref=f28e170]:
+                  - generic [ref=f28e171]: 
+                  - generic [ref=f28e172]: 
+                - generic [ref=f28e173]:
+                  - generic [ref=f28e174]:
+                    - strong [ref=f28e175]: Grava SC e Anexos
+                    - text: Executando atividade de serviço do sistema
+                  - generic [ref=f28e176]: 02/09/2026 15:06:18 - 1 minuto atrás
+                  - generic [ref=f28e177]: "Falha ao executar evento de serviço. Processo: wf_solicitacao_compras - Atividade: 233 - Tentativa: 1 - Erro java.lang.Exception: Cannot convert NaN to java.lang.Integer (servicetask233#267) - Tempo de Execução 63 s. Nova tentativa em 02/09 15:10"
+                - separator
+            - generic [ref=f28e179]:
+              - separator [ref=f28e180]
+              - generic [ref=f28e181]:
+                - generic [ref=f28e182]:
+                  - generic [ref=f28e183]: 
+                  - generic [ref=f28e184]: 
+                - generic [ref=f28e186]:
+                  - strong [ref=f28e187]: Compra Centralizada?
+                  - text: Tarefa Automática
+                  - generic [ref=f28e188]: 02/09/2026 15:05:12 - 2 minutos atrás
+                  - generic [ref=f28e189]: "Tarefa Automática: Decisão tomada conforme condição 2 Atividade Destino: Compra Centralizada?."
+            - generic [ref=f28e191]:
+              - separator [ref=f28e192]
+              - generic [ref=f28e193]:
+                - generic [ref=f28e194]: 
+                - generic [ref=f28e199]:
+                  - strong [ref=f28e201]: Usuário TBC (TOTVS)
+                  - text: movimentou a atividade
+                  - strong [ref=f28e202]: Início
+                  - text: para a atividade
+                  - strong [ref=f28e203]: Compra Centralizada?
+                  - generic [ref=f28e204]: 02/09/2026 15:05:12 - 2 minutos atrás
+            - generic [ref=f28e205]:
+              - separator [ref=f28e206]
+              - generic [ref=f28e212]:
+                - strong [ref=f28e214]: Usuário TBC (TOTVS)
+                - text: Anexou um documento na atividade
+                - strong [ref=f28e215]: Início
+                - generic [ref=f28e216] [cursor=pointer]:
+                  - generic [ref=f28e217]: 
+                  - text: PUBLICA - Documentação - QA Polarised logistical middleware b059ef48 - anexo
+                - generic [ref=f28e218]: 02/09/2026 15:05:11 - 3 minutos atrás
+            - generic [ref=f28e219]:
+              - separator [ref=f28e220]
+              - generic [ref=f28e226]:
+                - strong [ref=f28e227]: Usuário TBC (TOTVS)
+                - text: iniciou a solicitação
+                - strong [ref=f28e228]: "113163"
+                - generic [ref=f28e229]: 02/09/2026 15:05:11 - 3 minutos atrás
+        - text:          
+      - button "Cancelar Solicitação" [ref=f28e235] [cursor=pointer]
+  - text:  
+```
+
+# Test source
+
+```ts
+  1   | // @ts-check
+  2   | import { test, expect } from '../../../fixtures/fixtures.js';
+  3   | import { AcoesDaTarefaPage } from '../../../pages/AcoesDaTarefaPage.js';
+  4   | import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
+  5   | import { TarefaSolicitacaoCompraPage } from '../../../pages/TarefaSolicitacaoCompraPage.js';
+  6   | import { criarSolicitacaoCompletaEEnviar } from '../../../pages/PreenchimentoSolicitacaoCompraPage.js';
+  7   | import { criarProdutoCompra, criarJustificativaDecisao } from '../../../factories/produto-compra.js';
+  8   | import { envObrigatoria } from '../../../config/ambiente.js';
+  9   | 
+  10  | /**
+  11  |  * CT-TSK-07-H e CT-TSK-08-H — as ações da tarefa que a suíte nunca exercitou.
+  12  |  *
+  13  |  * O menu do rodapé de "Movimentar Solicitação" tem QUATRO saídas: Enviar, Somente salvar,
+  14  |  * Cancelar Solicitação e Transferir. A suíte inteira só exercitava a primeira. Aqui entram a
+  15  |  * segunda (rascunho — o que o usuário real usa o dia inteiro para não perder trabalho) e a
+  16  |  * quarta (transferência — o mecanismo de continuidade quando alguém sai de férias).
+  17  |  *
+  18  |  * ## A massa: SC própria, assumida na "Validação do Gestor"
+  19  |  *
+  20  |  * Estes dois casos exigem uma tarefa que seja **do próprio usuário**, com `currentMovto &gt; 1` e
+  21  |  * com **campo editável** para provar persistência. Medido em 27/08/2026, nenhum atalho serve:
+  22  |  *
+  23  |  * - `prc_questionario_v2` cria solicitação em ~6s e a tarefa cai no próprio solicitante, mas a
+  24  |  *   etapa "Acompanhamento Status" **não tem um único campo editável visível** (só `input`
+  25  |  *   `hidden`), então não há rascunho a salvar; e ao acionar Transferir o servidor responde
+  26  |  *   *"Não foi encontrado nenhum usuário habilitado para ser movimentada a tarefa Acompanhamento
+  27  |  *   Status"* — a atividade é atribuída por "Executor Atividade", sem destino alternativo.
+  28  |  * - `SIGAJURI_Contencioso` nasce em pool de um grupo do jurídico, do qual a conta não participa.
+  29  |  *
+  30  |  * Sobra o caminho real: criar a SC pelo formulário clássico e assumi-la no pool "Validação do
+  31  |  * Gestor Imediato" — a etapa tem `radio` "Aprovar?" + `textarea` "Justificativa" (campo
+  32  |  * editável, e o rascunho de verdade que o usuário perderia) e um GRUPO por trás, que é o que dá
+  33  |  * candidatos à transferência.
+  34  |  *
+  35  |  * Cada teste cria a SUA SC: solicitação transferida ou movimentada não pode ser reaproveitada,
+  36  |  * e depender de estado entre testes quebraria a independência.
+  37  |  *
+  38  |  * ## Limpeza
+  39  |  *
+  40  |  * Automática. `fixtures/fixtures.js` escuta as respostas de `/start` e `/workflowView/send` e
+  41  |  * registra o `processInstanceId` no livro-razão; `fixtures/global-teardown.js` cancela ao fim
+  42  |  * da invocação. Vale inclusive para a SC de CT-TSK-08-H **depois de transferida**: a tarefa sai
+  43  |  * da conta da automação, mas o cancelamento é prerrogativa do REQUISITANTE (medido na skill
+  44  |  * `cassi-fluig-master`: a 112302 foi cancelada com a tarefa em posse de outro usuário).
+  45  |  */
+  46  | 
+  47  | /**
+  48  |  * Login da conta de automação — o `assignee` que a transferência tem de deixar de apontar.
+  49  |  * Lido do ambiente em tempo de execução (`envObrigatoria` falha alto se faltar), nunca fixado
+  50  |  * numa constante: é credencial, e vive só em `.env.test`.
+  51  |  * @returns {string}
+  52  |  */
+  53  | function loginDaAutomacao() {
+  54  |   return envObrigatoria('QA_USERNAME');
+  55  | }
+  56  | 
+  57  | /** Grupo de pool em que toda SC criada por este formulário estaciona (fallback do gestor). */
+  58  | const GRUPO_GESTOR_IMEDIATO = /Validação do Gestor Imediato/;
+  59  | 
+  60  | /**
+  61  |  * Cria uma SC (massa própria do teste) e espera, por condição observável, até que ela chegue
+  62  |  * assumível ao pool "Validação do Gestor Imediato"; devolve com a tarefa já ASSUMIDA.
+  63  |  *
+  64  |  * Equivalente ao helper homônimo de `tests/e2e/compras/aprovacoes-solicitacao-compras.spec.js`
+  65  |  * — mesma técnica e mesmos porquês, aqui reduzido ao que estes dois casos precisam. Entre o
+  66  |  * Enviar e a tarefa ficar assumível existe uma cadeia de atividades automáticas do BPMN
+  67  |  * (~76s observados em campo) sem evento de rede estável para aguardar: o polling é sobre a
+  68  |  * tela de detalhe da PRÓPRIA solicitação (fonte de verdade), não sobre o painel-resumo da
+  69  |  * Central, que pode vir com contagem de cache desatualizada.
+  70  |  *
+  71  |  * @param {import('@playwright/test').Page} page
+  72  |  * @returns {Promise&lt;{ massa: ReturnType&lt;typeof criarProdutoCompra&gt;, numeroProcesso: string }&gt;}
+  73  |  */
+  74  | async function criarEAssumirNoPoolGestorImediato(page) {
+  75  |   const massa = criarProdutoCompra();
+  76  |   const numeroProcesso = await criarSolicitacaoCompletaEEnviar(page, massa);
+  77  |   const central = new CentralTarefasComprasPage(page);
+  78  | 
+  79  |   try {
+  80  |     await expect(async () =&gt; {
+  81  |       await central.abrirDetalheDaSolicitacao(numeroProcesso);
+  82  |       await expect(central.botaoAssumirTarefaAtual()).toBeVisible({ timeout: 5_000 });
+  83  |     }).toPass({ timeout: 180_000, intervals: [10_000, 15_000, 20_000, 30_000] });
+  84  |   } catch (erroDePoll) {
+  85  |     const atividadeObservada = await central.lerNomeAtividadeAtual().catch(() =&gt; '(não foi possível ler)');
+&gt; 86  |     throw new Error(
+      |           ^ Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113163, criada por este teste, não ficou assumível ("Assumir tarefa") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada: "Grava SC e Anexos". Causa do polling: expect(locator).toBeVisible() failed
+  87  |       `PRÉ-CONDIÇÃO AUSENTE: a SC #${numeroProcesso}, criada por este teste, não ficou assumível ` +
+  88  |         `("Assumir tarefa") em ${GRUPO_GESTOR_IMEDIATO.source} dentro de 180s. Isto NÃO é defeito ` +
+  89  |         'da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do ' +
+  90  |         'observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente ' +
+  91  |         'que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). ' +
+  92  |         `Atividade atual observada: "${atividadeObservada}". ` +
+  93  |         `Causa do polling: ${erroDePoll instanceof Error ? erroDePoll.message : erroDePoll}`,
+  94  |     );
+  95  |   }
+  96  | 
+  97  |   await central.assumirTarefaAtual(numeroProcesso);
+  98  |   return { massa, numeroProcesso };
+  99  | }
+  100 | 
+  101 | /**
+  102 |  * Lê da URL corrente os parâmetros que identificam a tarefa aberta — o Fluig os coloca na
+  103 |  * navegação ao assumir (`app_ecm_workflowview_currentMovto`, `..._taskUserId`), e é assim que
+  104 |  * o teste consegue REABRIR a mesma tarefa depois, sem inventar o movto.
+  105 |  *
+  106 |  * @param {import('@playwright/test').Page} page
+  107 |  * @returns {{ processInstanceId: string, currentMovto: string, taskUserId: string }}
+  108 |  */
+  109 | function lerIdentificacaoDaTarefa(page) {
+  110 |   const p = new URL(page.url()).searchParams;
+  111 |   const processInstanceId = p.get('app_ecm_workflowview_processInstanceId') ?? '';
+  112 |   const currentMovto = p.get('app_ecm_workflowview_currentMovto') ?? '';
+  113 |   const taskUserId = p.get('app_ecm_workflowview_taskUserId') ?? '';
+  114 |   if (!processInstanceId || !currentMovto || !taskUserId) {
+  115 |     throw new Error(
+  116 |       'Não foi possível identificar a tarefa a partir da URL da tela de movimentação ' +
+  117 |         `(${page.url()}) — esperados processInstanceId, currentMovto e taskUserId.`,
+  118 |     );
+  119 |   }
+  120 |   return { processInstanceId, currentMovto, taskUserId };
+  121 | }
+  122 | 
+  123 | /**
+  124 |  * Estado da solicitação NO SERVIDOR: etapa corrente e responsável pela tarefa aberta.
+  125 |  *
+  126 |  * Duas chamadas porque `expand` aceita **um único valor** por vez neste ambiente (dois
+  127 |  * devolvem `null` em silêncio), e porque o responsável só aparece na coleção de tarefas.
+  128 |  * Sempre por `page.evaluate` + `fetch`: `page.request` leva 403 do WAF em
+  129 |  * `/process-management/api/v2/**`.
+  130 |  *
+  131 |  * @param {import('@playwright/test').Page} page
+  132 |  * @param {number|string} processInstanceId
+  133 |  * @returns {Promise&lt;{ etapa: string, sequencia: number, movto: number, responsaveis: string[], historico: Array&lt;{ movto: number, etapa: string, status: string, assignee: string }&gt; }&gt;}
+  134 |  */
+  135 | async function lerEstadoNoServidor(page, processInstanceId) {
+  136 |   return page.evaluate(async (id) =&gt; {
+  137 |     const h = { Referer: `${location.origin}/portal/p/1/home` };
+  138 |     const rMov = await fetch(`/process-management/api/v2/requests/${id}?expand=currentMovements`, {
+  139 |       credentials: 'include',
+  140 |       headers: h,
+  141 |     });
+  142 |     const jMov = await rMov.json().catch(() =&gt; ({}));
+  143 |     const movimentos = Array.isArray(jMov.currentMovements) ? jMov.currentMovements : [];
+  144 |     const atual = movimentos.find((/** @type {any} */ m) =&gt; m.active === true) ?? movimentos[0] ?? {};
+  145 | 
+  146 |     const rTasks = await fetch(`/process-management/api/v2/requests/${id}/tasks?pageSize=60`, {
+  147 |       credentials: 'include',
+  148 |       headers: h,
+  149 |     });
+  150 |     const jTasks = await rTasks.json().catch(() =&gt; ({}));
+  151 |     const tarefas = Array.isArray(jTasks.items) ? jTasks.items : [];
+  152 |     // Só `NOT_COMPLETED` é tarefa EM ABERTO. Medido em 27/08/2026: uma transferência deixa no
+  153 |     // histórico linhas `TRANSFERRED` — o registro de quem tinha a tarefa antes e para onde ela
+  154 |     // foi —, e contá-las como abertas faz o responsável ANTIGO parecer ainda responsável
+  155 |     // (foi exatamente o falso vermelho da primeira execução de CT-TSK-08-H).
+  156 |     const abertas = tarefas.filter((/** @type {any} */ t) =&gt; String(t.status ?? '') === 'NOT_COMPLETED');
+  157 | 
+  158 |     return {
+  159 |       etapa: String(atual?.state?.stateName ?? atual?.state?.stateDescription ?? '?'),
+  160 |       sequencia: Number(atual?.state?.sequence ?? -1),
+  161 |       movto: Number(atual?.movementSequence ?? -1),
+  162 |       responsaveis: abertas.map((/** @type {any} */ t) =&gt;
+  163 |         String(t.assignee?.code ?? t.assignee?.login ?? t.colleagueId ?? t.userId ?? '?'),
+  164 |       ),
+  165 |       historico: tarefas.map((/** @type {any} */ t) =&gt; ({
+  166 |         movto: Number(t.movementSequence ?? -1),
+  167 |         etapa: String(t.state?.stateName ?? '?'),
+  168 |         status: String(t.status ?? '?'),
+  169 |         assignee: String(t.assignee?.code ?? '?'),
+  170 |       })),
+  171 |     };
+  172 |   }, processInstanceId);
+  173 | }
+  174 | 
+  175 | test.describe('Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08)', () =&gt; {
+  176 |   /**
+  177 |    * CT-TSK-07-H — "Somente salvar" salva sem movimentar.
+  178 |    *
+  179 |    * As duas metades importam, e por isso são duas assertions distintas: **salvar que perde** é
+  180 |    * defeito (o usuário perde o preenchimento de um formulário de 20 campos, e a tela confirmou
+  181 |    * o salvamento); **salvar que movimenta** é defeito igual (a tarefa some da mão de quem
+  182 |    * estava trabalhando nela).
+  183 |    */
+  184 |   test('CT-TSK-07-H @destrutivo — "Somente salvar" deve persistir o rascunho sem movimentar a atividade', async ({
+  185 |     page,
+  186 |   }, testInfo) =&gt; {
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=15227 npx playwright test tests/e2e/tarefas/acoes-da-tarefa.spec.js -g "CT-TSK-07-H @destrutivo — \"Somente salvar\" deve persistir o rascunho sem movimentar a atividade"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/tarefas/e2e-tarefas-acoes-da-taref-4de7b--sem-movimentar-a-atividade-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/tarefas/e2e-tarefas-acoes-da-taref-4de7b--sem-movimentar-a-atividade-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/tarefas/e2e-tarefas-acoes-da-taref-4de7b--sem-movimentar-a-atividade-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/tarefas/e2e-tarefas-acoes-da-taref-4de7b--sem-movimentar-a-atividade-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+<article class="falha" id="f79" data-classe="precondicao" data-area="tarefas">
+  <header>
+    <div class="cabecalho">
+      <span class="badge ambiente">Pré-condição ausente (ambiente / massa / latência)</span>
+      <span class="ordem">#80</span>
+    </div>
+    <h2>CT-TSK-08-H @destrutivo — transferir deve trocar o responsável mantendo a mesma atividade</h2>
+    <p class="suite">e2e/tarefas/acoes-da-tarefa.spec.js › Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08)</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/tarefas/acoes-da-tarefa.spec.js:297</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>220.1s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>819977</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G12">G12</a> — BPMN lento — a SC não sai de "Grava SC e Anexos" dentro dos 180 s do orçamento de espera · <b>Referência:</b> PRÉ-CONDIÇÃO AUSENTE</p>
+    <p><b>O que acontece:</b> A SC #113162, criada pelo próprio teste, não apareceu com "Assumir tarefa" na Validação do Gestor em 180 s; a atividade atual ainda era "Grava SC e Anexos". O teste aborta antes de exercitar Transferir.</p>
+    <p><b>Por que falha:</b> Latência do BPMN acima do orçamento (referência de campo: ~76 s). Reexecutado isolado (15h35–15h40) com o mesmo resultado (SCs 113187–113191). O mesmo caminho em <code>portais/*.spec.js</code> (helper <code>aprovarValidacaoDoGestor</code>, espera de 150 s) chegou à Validação do Gestor em 5 testes entre 15h16 e 15h20 — o fluxo funciona; a latência oscila.</p>
+    <p><b>Onde falha:</b> Poll <code>toPass({ timeout: 180_000 })</code> por <code>botaoAssumirTarefaAtual()</code> — <code>aprovacoes-solicitacao-compras.spec.js:281</code> / <code>acoes-da-tarefa.spec.js:83</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/tarefas/acoes-da-tarefa.spec.js:86</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113162, criada por este teste, não ficou assumível ("Assumir tarefa") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada: "Grava SC e Anexos". Causa do polling: expect(locator).toBeVisible() failed</p>
+    <pre class="detalhe">Locator: getByRole('button', { name: 'Assumir tarefa' })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">80</span>    await expect(async () =&gt; {</span>
+<span class="linha"><span class="num">81</span>      await central.abrirDetalheDaSolicitacao(numeroProcesso);</span>
+<span class="linha"><span class="num">82</span>      await expect(central.botaoAssumirTarefaAtual()).toBeVisible({ timeout: 5_000 });</span>
+<span class="linha"><span class="num">83</span>    }).toPass({ timeout: 180_000, intervals: [10_000, 15_000, 20_000, 30_000] });</span>
+<span class="linha"><span class="num">84</span>  } catch (erroDePoll) {</span>
+<span class="linha"><span class="num">85</span>    const atividadeObservada = await central.lerNomeAtividadeAtual().catch(() =&gt; '(não foi possível ler)');</span>
+<span class="linha alvo"><span class="num">86</span>    throw new Error(</span>
+<span class="linha"><span class="num">87</span>      `PRÉ-CONDIÇÃO AUSENTE: a SC #${numeroProcesso}, criada por este teste, não ficou assumível ` +</span>
+<span class="linha"><span class="num">88</span>        `("Assumir tarefa") em ${GRUPO_GESTOR_IMEDIATO.source} dentro de 180s. Isto NÃO é defeito ` +</span>
+<span class="linha"><span class="num">89</span>        'da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do ' +</span>
+<span class="linha"><span class="num">90</span>        'observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente ' +</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/tarefas/acoes-da-tarefa.spec.js",
+    "Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08)",
+    "CT-TSK-08-H @destrutivo — transferir deve trocar o responsável mantendo a mesma atividade"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?app_ecm_workflowview_detailsProcessInstanceID=113162",
+  "fakerSeed": 819977,
+  "reproduzirCom": "FAKER_SEED=819977 npx playwright test",
+  "erro": "Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113162, criada por este teste, não ficou assumível (\"Assumir tarefa\") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada: \"Grava SC e Anexos\". Causa do polling: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: 'Assumir tarefa' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: 'Assumir tarefa' })\u001b[22m\n\n\nCall Log:\n- Timeout 180000ms exceeded while waiting on the predicate"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for getByRole('button', { name: 'Assumir tarefa' })
+
+
+Call Log:
+- Timeout 180000ms exceeded while waiting on the predicate</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/tarefas/acoes-da-tarefa.spec.js &gt;&gt; Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08) &gt;&gt; CT-TSK-08-H @destrutivo — transferir deve trocar o responsável mantendo a mesma atividade
+- Location: tests/e2e/tarefas/acoes-da-tarefa.spec.js:297:3
+
+# Error details
+
+```
+Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113162, criada por este teste, não ficou assumível ("Assumir tarefa") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada: "Grava SC e Anexos". Causa do polling: expect(locator).toBeVisible() failed
+
+Locator: getByRole('button', { name: 'Assumir tarefa' })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for getByRole('button', { name: 'Assumir tarefa' })
+
+
+Call Log:
+- Timeout 180000ms exceeded while waiting on the predicate
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=f28e1]:
+  - generic [ref=f28e2]:
+    - generic [ref=f28e3]:
+      - navigation [ref=f28e4]:
+        - generic [ref=f28e5]:
+          - generic [ref=f28e6]:
+            - generic [ref=f28e7]:
+              - text: 
+              - link [ref=f28e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=f28e9]
+            - generic [ref=f28e10]:
+              - text: 
+              - button "Abrir ajuda" [ref=f28e12] [cursor=pointer]:
+                - generic [ref=f28e13]: 
+              - button "Abrir notificações" [ref=f28e15] [cursor=pointer]:
+                - generic [ref=f28e16]: 9+
+                - generic [ref=f28e17]: 
+              - img "Usuário TBC (TOTVS)" [ref=f28e20] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=f28e21]:
+      - generic [ref=f28e23]:
+        - list [ref=f28e24]:
+          - listitem [ref=f28e25]:
+            - link "Home" [ref=f28e26] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=f28e27]: 
+          - listitem [ref=f28e29]:
+            - link "Buscar" [ref=f28e30] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=f28e31]: 
+              - generic [ref=f28e33]: 
+          - listitem [ref=f28e35]:
+            - link "Favoritos" [ref=f28e36] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=f28e37]: 
+              - generic [ref=f28e39]: 
+        - list [ref=f28e41]:
+          - listitem [ref=f28e42]:
+            - link "Documentos" [ref=f28e43] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=f28e44]: 
+          - listitem [ref=f28e46]:
+            - link "Processos" [ref=f28e47] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=f28e48]: 
+              - generic [ref=f28e50]: 
+          - listitem [ref=f28e52]:
+            - link "Central de Tarefas" [ref=f28e53] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=f28e54]: 
+          - listitem [ref=f28e56]:
+            - link "Social" [ref=f28e57] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=f28e58]: 
+          - listitem [ref=f28e60]:
+            - link "Comunidades" [ref=f28e61] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=f28e62]: 
+          - listitem [ref=f28e64]:
+            - link "Páginas" [ref=f28e65] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=f28e66]: 
+              - generic [ref=f28e68]: 
+        - list [ref=f28e70]:
+          - listitem [ref=f28e71]:
+            - link "Store" [ref=f28e72] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=f28e73]: 
+          - listitem [ref=f28e75]:
+            - link "Lixeira" [ref=f28e76] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=f28e77]: 
+        - list [ref=f28e79]:
+          - listitem [ref=f28e80]:
+            - link "Fechar menu" [ref=f28e81] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=f28e83]: 
+    - generic [ref=f28e94]:
+      - generic [ref=f28e95]:
+        - list [ref=f28e97]:
+          - listitem [ref=f28e98]:
+            - link "Início" [ref=f28e99] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=f28e100]:
+            - text: 
+            - link "Central de Tarefas" [ref=f28e101] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+          - listitem [ref=f28e102]: Solicitação de Compras
+        - generic [ref=f28e103]:
+          - heading "Detalhes da Solicitação" [level=2] [ref=f28e104]
+          - list [ref=f28e105]:
+            - listitem [ref=f28e106]:
+              - link " Formulário" [ref=f28e107] [cursor=pointer]:
+                - /url: "#form-tab"
+                - generic [ref=f28e108]: 
+                - generic [ref=f28e109]: Formulário
+            - listitem [ref=f28e110]:
+              - link " Informações" [ref=f28e111] [cursor=pointer]:
+                - /url: "#informations-tab"
+                - generic [ref=f28e112]: 
+                - generic [ref=f28e113]: Informações
+            - listitem [ref=f28e114]:
+              - link " Histórico 4" [expanded] [ref=f28e115]:
+                - /url: "#historic-tab"
+                - generic [ref=f28e116]: 
+                - generic [ref=f28e117]: Histórico
+                - generic "Quantidade de registros" [ref=f28e118]: "4"
+            - listitem [ref=f28e119]:
+              - link " Anexos 1" [ref=f28e120] [cursor=pointer]:
+                - /url: "#attachments-tab"
+                - generic [ref=f28e121]: 
+                - generic [ref=f28e122]: Anexos
+                - generic "Quantidade de registros" [ref=f28e123]: "1"
+            - text:  
+      - generic [ref=f28e125]:
+        - text:  
+        - generic [ref=f28e127]:
+          - generic [ref=f28e128]:
+            - generic [ref=f28e129]:
+              - generic [ref=f28e131]:
+                - button "Por usuário " [ref=f28e133] [cursor=pointer]:
+                  - generic [ref=f28e134]: Por usuário
+                  - generic [ref=f28e135]: 
+                - textbox "Digite a palavra-chave que deseja buscar" [ref=f28e137]
+                - generic [ref=f28e138]: 
+              - generic [ref=f28e140]:
+                - generic [ref=f28e141] [cursor=pointer]: 
+                - text:  
+            - generic [ref=f28e142]:
+              - img "TOTVS-FS" [ref=f28e144]
+              - textbox "Digite um comentário nesta solicitação..." [ref=f28e146]
+              - button "Comentar" [disabled] [ref=f28e148]
+            - generic [ref=f28e150]:
+              - generic [ref=f28e151] [cursor=pointer]:
+                - generic [ref=f28e152]: 
+                - generic [ref=f28e153]: Mais recente
+              - separator [ref=f28e154]
+          - generic [ref=f28e155]:
+            - generic [ref=f28e156]:
+              - separator
+              - generic [ref=f28e157]:
+                - generic [ref=f28e158]: 
+                - generic [ref=f28e161]:
+                  - strong [ref=f28e162]: "Atividade atual:"
+                  - strong
+                  - text: Grava SC e Anexos (Em progresso)
+                  - generic [ref=f28e164]:
+                    - strong [ref=f28e165]: "Responsável:"
+                    - text: System:Auto |
+                    - strong [ref=f28e166]: "Prazo:"
+                    - text: Sem prazo definido
+            - generic [ref=f28e167]:
+              - separator [ref=f28e168]
+              - generic [ref=f28e169]:
+                - generic [ref=f28e170]:
+                  - generic [ref=f28e171]: 
+                  - generic [ref=f28e172]: 
+                - generic [ref=f28e173]:
+                  - generic [ref=f28e174]:
+                    - strong [ref=f28e175]: Grava SC e Anexos
+                    - text: Executando atividade de serviço do sistema
+                  - generic [ref=f28e176]: 02/09/2026 15:06:14 - 1 minuto atrás
+                  - generic [ref=f28e177]: "Falha ao executar evento de serviço. Processo: wf_solicitacao_compras - Atividade: 233 - Tentativa: 1 - Erro java.lang.Exception: Cannot convert NaN to java.lang.Integer (servicetask233#267) - Tempo de Execução 65 s. Nova tentativa em 02/09 15:10"
+                - separator
+            - generic [ref=f28e179]:
+              - separator [ref=f28e180]
+              - generic [ref=f28e181]:
+                - generic [ref=f28e182]:
+                  - generic [ref=f28e183]: 
+                  - generic [ref=f28e184]: 
+                - generic [ref=f28e186]:
+                  - strong [ref=f28e187]: Compra Centralizada?
+                  - text: Tarefa Automática
+                  - generic [ref=f28e188]: 02/09/2026 15:05:06 - 3 minutos atrás
+                  - generic [ref=f28e189]: "Tarefa Automática: Decisão tomada conforme condição 2 Atividade Destino: Compra Centralizada?."
+            - generic [ref=f28e191]:
+              - separator [ref=f28e192]
+              - generic [ref=f28e193]:
+                - generic [ref=f28e194]: 
+                - generic [ref=f28e199]:
+                  - strong [ref=f28e201]: Usuário TBC (TOTVS)
+                  - text: movimentou a atividade
+                  - strong [ref=f28e202]: Início
+                  - text: para a atividade
+                  - strong [ref=f28e203]: Compra Centralizada?
+                  - generic [ref=f28e204]: 02/09/2026 15:05:06 - 3 minutos atrás
+            - generic [ref=f28e205]:
+              - separator [ref=f28e206]
+              - generic [ref=f28e212]:
+                - strong [ref=f28e214]: Usuário TBC (TOTVS)
+                - text: Anexou um documento na atividade
+                - strong [ref=f28e215]: Início
+                - generic [ref=f28e216] [cursor=pointer]:
+                  - generic [ref=f28e217]: 
+                  - text: PUBLICA - Documentação - QA Monitored dedicated process improvement f3876617 - anexo
+                - generic [ref=f28e218]: 02/09/2026 15:05:05 - 3 minutos atrás
+            - generic [ref=f28e219]:
+              - separator [ref=f28e220]
+              - generic [ref=f28e226]:
+                - strong [ref=f28e227]: Usuário TBC (TOTVS)
+                - text: iniciou a solicitação
+                - strong [ref=f28e228]: "113162"
+                - generic [ref=f28e229]: 02/09/2026 15:05:05 - 3 minutos atrás
+        - text:          
+      - button "Cancelar Solicitação" [ref=f28e235] [cursor=pointer]
+  - text:  
+```
+
+# Test source
+
+```ts
+  1   | // @ts-check
+  2   | import { test, expect } from '../../../fixtures/fixtures.js';
+  3   | import { AcoesDaTarefaPage } from '../../../pages/AcoesDaTarefaPage.js';
+  4   | import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
+  5   | import { TarefaSolicitacaoCompraPage } from '../../../pages/TarefaSolicitacaoCompraPage.js';
+  6   | import { criarSolicitacaoCompletaEEnviar } from '../../../pages/PreenchimentoSolicitacaoCompraPage.js';
+  7   | import { criarProdutoCompra, criarJustificativaDecisao } from '../../../factories/produto-compra.js';
+  8   | import { envObrigatoria } from '../../../config/ambiente.js';
+  9   | 
+  10  | /**
+  11  |  * CT-TSK-07-H e CT-TSK-08-H — as ações da tarefa que a suíte nunca exercitou.
+  12  |  *
+  13  |  * O menu do rodapé de "Movimentar Solicitação" tem QUATRO saídas: Enviar, Somente salvar,
+  14  |  * Cancelar Solicitação e Transferir. A suíte inteira só exercitava a primeira. Aqui entram a
+  15  |  * segunda (rascunho — o que o usuário real usa o dia inteiro para não perder trabalho) e a
+  16  |  * quarta (transferência — o mecanismo de continuidade quando alguém sai de férias).
+  17  |  *
+  18  |  * ## A massa: SC própria, assumida na "Validação do Gestor"
+  19  |  *
+  20  |  * Estes dois casos exigem uma tarefa que seja **do próprio usuário**, com `currentMovto &gt; 1` e
+  21  |  * com **campo editável** para provar persistência. Medido em 27/08/2026, nenhum atalho serve:
+  22  |  *
+  23  |  * - `prc_questionario_v2` cria solicitação em ~6s e a tarefa cai no próprio solicitante, mas a
+  24  |  *   etapa "Acompanhamento Status" **não tem um único campo editável visível** (só `input`
+  25  |  *   `hidden`), então não há rascunho a salvar; e ao acionar Transferir o servidor responde
+  26  |  *   *"Não foi encontrado nenhum usuário habilitado para ser movimentada a tarefa Acompanhamento
+  27  |  *   Status"* — a atividade é atribuída por "Executor Atividade", sem destino alternativo.
+  28  |  * - `SIGAJURI_Contencioso` nasce em pool de um grupo do jurídico, do qual a conta não participa.
+  29  |  *
+  30  |  * Sobra o caminho real: criar a SC pelo formulário clássico e assumi-la no pool "Validação do
+  31  |  * Gestor Imediato" — a etapa tem `radio` "Aprovar?" + `textarea` "Justificativa" (campo
+  32  |  * editável, e o rascunho de verdade que o usuário perderia) e um GRUPO por trás, que é o que dá
+  33  |  * candidatos à transferência.
+  34  |  *
+  35  |  * Cada teste cria a SUA SC: solicitação transferida ou movimentada não pode ser reaproveitada,
+  36  |  * e depender de estado entre testes quebraria a independência.
+  37  |  *
+  38  |  * ## Limpeza
+  39  |  *
+  40  |  * Automática. `fixtures/fixtures.js` escuta as respostas de `/start` e `/workflowView/send` e
+  41  |  * registra o `processInstanceId` no livro-razão; `fixtures/global-teardown.js` cancela ao fim
+  42  |  * da invocação. Vale inclusive para a SC de CT-TSK-08-H **depois de transferida**: a tarefa sai
+  43  |  * da conta da automação, mas o cancelamento é prerrogativa do REQUISITANTE (medido na skill
+  44  |  * `cassi-fluig-master`: a 112302 foi cancelada com a tarefa em posse de outro usuário).
+  45  |  */
+  46  | 
+  47  | /**
+  48  |  * Login da conta de automação — o `assignee` que a transferência tem de deixar de apontar.
+  49  |  * Lido do ambiente em tempo de execução (`envObrigatoria` falha alto se faltar), nunca fixado
+  50  |  * numa constante: é credencial, e vive só em `.env.test`.
+  51  |  * @returns {string}
+  52  |  */
+  53  | function loginDaAutomacao() {
+  54  |   return envObrigatoria('QA_USERNAME');
+  55  | }
+  56  | 
+  57  | /** Grupo de pool em que toda SC criada por este formulário estaciona (fallback do gestor). */
+  58  | const GRUPO_GESTOR_IMEDIATO = /Validação do Gestor Imediato/;
+  59  | 
+  60  | /**
+  61  |  * Cria uma SC (massa própria do teste) e espera, por condição observável, até que ela chegue
+  62  |  * assumível ao pool "Validação do Gestor Imediato"; devolve com a tarefa já ASSUMIDA.
+  63  |  *
+  64  |  * Equivalente ao helper homônimo de `tests/e2e/compras/aprovacoes-solicitacao-compras.spec.js`
+  65  |  * — mesma técnica e mesmos porquês, aqui reduzido ao que estes dois casos precisam. Entre o
+  66  |  * Enviar e a tarefa ficar assumível existe uma cadeia de atividades automáticas do BPMN
+  67  |  * (~76s observados em campo) sem evento de rede estável para aguardar: o polling é sobre a
+  68  |  * tela de detalhe da PRÓPRIA solicitação (fonte de verdade), não sobre o painel-resumo da
+  69  |  * Central, que pode vir com contagem de cache desatualizada.
+  70  |  *
+  71  |  * @param {import('@playwright/test').Page} page
+  72  |  * @returns {Promise&lt;{ massa: ReturnType&lt;typeof criarProdutoCompra&gt;, numeroProcesso: string }&gt;}
+  73  |  */
+  74  | async function criarEAssumirNoPoolGestorImediato(page) {
+  75  |   const massa = criarProdutoCompra();
+  76  |   const numeroProcesso = await criarSolicitacaoCompletaEEnviar(page, massa);
+  77  |   const central = new CentralTarefasComprasPage(page);
+  78  | 
+  79  |   try {
+  80  |     await expect(async () =&gt; {
+  81  |       await central.abrirDetalheDaSolicitacao(numeroProcesso);
+  82  |       await expect(central.botaoAssumirTarefaAtual()).toBeVisible({ timeout: 5_000 });
+  83  |     }).toPass({ timeout: 180_000, intervals: [10_000, 15_000, 20_000, 30_000] });
+  84  |   } catch (erroDePoll) {
+  85  |     const atividadeObservada = await central.lerNomeAtividadeAtual().catch(() =&gt; '(não foi possível ler)');
+&gt; 86  |     throw new Error(
+      |           ^ Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113162, criada por este teste, não ficou assumível ("Assumir tarefa") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada: "Grava SC e Anexos". Causa do polling: expect(locator).toBeVisible() failed
+  87  |       `PRÉ-CONDIÇÃO AUSENTE: a SC #${numeroProcesso}, criada por este teste, não ficou assumível ` +
+  88  |         `("Assumir tarefa") em ${GRUPO_GESTOR_IMEDIATO.source} dentro de 180s. Isto NÃO é defeito ` +
+  89  |         'da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do ' +
+  90  |         'observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente ' +
+  91  |         'que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). ' +
+  92  |         `Atividade atual observada: "${atividadeObservada}". ` +
+  93  |         `Causa do polling: ${erroDePoll instanceof Error ? erroDePoll.message : erroDePoll}`,
+  94  |     );
+  95  |   }
+  96  | 
+  97  |   await central.assumirTarefaAtual(numeroProcesso);
+  98  |   return { massa, numeroProcesso };
+  99  | }
+  100 | 
+  101 | /**
+  102 |  * Lê da URL corrente os parâmetros que identificam a tarefa aberta — o Fluig os coloca na
+  103 |  * navegação ao assumir (`app_ecm_workflowview_currentMovto`, `..._taskUserId`), e é assim que
+  104 |  * o teste consegue REABRIR a mesma tarefa depois, sem inventar o movto.
+  105 |  *
+  106 |  * @param {import('@playwright/test').Page} page
+  107 |  * @returns {{ processInstanceId: string, currentMovto: string, taskUserId: string }}
+  108 |  */
+  109 | function lerIdentificacaoDaTarefa(page) {
+  110 |   const p = new URL(page.url()).searchParams;
+  111 |   const processInstanceId = p.get('app_ecm_workflowview_processInstanceId') ?? '';
+  112 |   const currentMovto = p.get('app_ecm_workflowview_currentMovto') ?? '';
+  113 |   const taskUserId = p.get('app_ecm_workflowview_taskUserId') ?? '';
+  114 |   if (!processInstanceId || !currentMovto || !taskUserId) {
+  115 |     throw new Error(
+  116 |       'Não foi possível identificar a tarefa a partir da URL da tela de movimentação ' +
+  117 |         `(${page.url()}) — esperados processInstanceId, currentMovto e taskUserId.`,
+  118 |     );
+  119 |   }
+  120 |   return { processInstanceId, currentMovto, taskUserId };
+  121 | }
+  122 | 
+  123 | /**
+  124 |  * Estado da solicitação NO SERVIDOR: etapa corrente e responsável pela tarefa aberta.
+  125 |  *
+  126 |  * Duas chamadas porque `expand` aceita **um único valor** por vez neste ambiente (dois
+  127 |  * devolvem `null` em silêncio), e porque o responsável só aparece na coleção de tarefas.
+  128 |  * Sempre por `page.evaluate` + `fetch`: `page.request` leva 403 do WAF em
+  129 |  * `/process-management/api/v2/**`.
+  130 |  *
+  131 |  * @param {import('@playwright/test').Page} page
+  132 |  * @param {number|string} processInstanceId
+  133 |  * @returns {Promise&lt;{ etapa: string, sequencia: number, movto: number, responsaveis: string[], historico: Array&lt;{ movto: number, etapa: string, status: string, assignee: string }&gt; }&gt;}
+  134 |  */
+  135 | async function lerEstadoNoServidor(page, processInstanceId) {
+  136 |   return page.evaluate(async (id) =&gt; {
+  137 |     const h = { Referer: `${location.origin}/portal/p/1/home` };
+  138 |     const rMov = await fetch(`/process-management/api/v2/requests/${id}?expand=currentMovements`, {
+  139 |       credentials: 'include',
+  140 |       headers: h,
+  141 |     });
+  142 |     const jMov = await rMov.json().catch(() =&gt; ({}));
+  143 |     const movimentos = Array.isArray(jMov.currentMovements) ? jMov.currentMovements : [];
+  144 |     const atual = movimentos.find((/** @type {any} */ m) =&gt; m.active === true) ?? movimentos[0] ?? {};
+  145 | 
+  146 |     const rTasks = await fetch(`/process-management/api/v2/requests/${id}/tasks?pageSize=60`, {
+  147 |       credentials: 'include',
+  148 |       headers: h,
+  149 |     });
+  150 |     const jTasks = await rTasks.json().catch(() =&gt; ({}));
+  151 |     const tarefas = Array.isArray(jTasks.items) ? jTasks.items : [];
+  152 |     // Só `NOT_COMPLETED` é tarefa EM ABERTO. Medido em 27/08/2026: uma transferência deixa no
+  153 |     // histórico linhas `TRANSFERRED` — o registro de quem tinha a tarefa antes e para onde ela
+  154 |     // foi —, e contá-las como abertas faz o responsável ANTIGO parecer ainda responsável
+  155 |     // (foi exatamente o falso vermelho da primeira execução de CT-TSK-08-H).
+  156 |     const abertas = tarefas.filter((/** @type {any} */ t) =&gt; String(t.status ?? '') === 'NOT_COMPLETED');
+  157 | 
+  158 |     return {
+  159 |       etapa: String(atual?.state?.stateName ?? atual?.state?.stateDescription ?? '?'),
+  160 |       sequencia: Number(atual?.state?.sequence ?? -1),
+  161 |       movto: Number(atual?.movementSequence ?? -1),
+  162 |       responsaveis: abertas.map((/** @type {any} */ t) =&gt;
+  163 |         String(t.assignee?.code ?? t.assignee?.login ?? t.colleagueId ?? t.userId ?? '?'),
+  164 |       ),
+  165 |       historico: tarefas.map((/** @type {any} */ t) =&gt; ({
+  166 |         movto: Number(t.movementSequence ?? -1),
+  167 |         etapa: String(t.state?.stateName ?? '?'),
+  168 |         status: String(t.status ?? '?'),
+  169 |         assignee: String(t.assignee?.code ?? '?'),
+  170 |       })),
+  171 |     };
+  172 |   }, processInstanceId);
+  173 | }
+  174 | 
+  175 | test.describe('Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08)', () =&gt; {
+  176 |   /**
+  177 |    * CT-TSK-07-H — "Somente salvar" salva sem movimentar.
+  178 |    *
+  179 |    * As duas metades importam, e por isso são duas assertions distintas: **salvar que perde** é
+  180 |    * defeito (o usuário perde o preenchimento de um formulário de 20 campos, e a tela confirmou
+  181 |    * o salvamento); **salvar que movimenta** é defeito igual (a tarefa some da mão de quem
+  182 |    * estava trabalhando nela).
+  183 |    */
+  184 |   test('CT-TSK-07-H @destrutivo — "Somente salvar" deve persistir o rascunho sem movimentar a atividade', async ({
+  185 |     page,
+  186 |   }, testInfo) =&gt; {
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=819977 npx playwright test tests/e2e/tarefas/acoes-da-tarefa.spec.js -g "CT-TSK-08-H @destrutivo — transferir deve trocar o responsável mantendo a mesma atividade"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/tarefas/e2e-tarefas-acoes-da-taref-63925--mantendo-a-mesma-atividade-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/tarefas/e2e-tarefas-acoes-da-taref-63925--mantendo-a-mesma-atividade-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/tarefas/e2e-tarefas-acoes-da-taref-63925--mantendo-a-mesma-atividade-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/tarefas/e2e-tarefas-acoes-da-taref-63925--mantendo-a-mesma-atividade-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+<article class="falha" id="f80" data-classe="precondicao" data-area="tarefas">
+  <header>
+    <div class="cabecalho">
+      <span class="badge ambiente">Pré-condição ausente (ambiente / massa / latência)</span>
+      <span class="ordem">#81</span>
+    </div>
+    <h2>assumir a primeira tarefa disponível de um grupo do pool deve movê-la para "Tarefas a concluir"</h2>
+    <p class="suite">e2e/tarefas/assumir-tarefa-pool.spec.js › Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H) @destrutivo</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/tarefas/assumir-tarefa-pool.spec.js:34</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>9.7s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>585433</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G13">G13</a> — Filas vazias — nada para operar em Cotação, Negociação e pool de tarefas · <b>Referência:</b> CT-TSK-02-H</p>
+    <p><b>O que acontece:</b> O Resumo de Tarefas anunciava "Tarefas em pool (0)" — nada para assumir.</p>
+    <p><b>Por que falha:</b> Sem massa nos pools "Validação do Gestor Imediato" e "Validação dos Compradores" no instante do teste (as SCs dos testes de ciclo ainda não tinham chegado lá — G12). Reexecutado isolado às 15h35: mesmo resultado.</p>
+    <p><b>Onde falha:</b> <code>assumir-tarefa-pool.spec.js:46</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/tarefas/assumir-tarefa-pool.spec.js:46</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: PRÉ-CONDIÇÃO AUSENTE: o Resumo de Tarefas anuncia "Tarefas em pool (0)" no momento da execução. Não há tarefa de pool disponível para assumir agora — isto NÃO é defeito do produto sob teste. Reexecute quando houver massa (o usuário TOTVS-FS pertence aos pools "Validação do Gestor Imediato" e "Validação dos Compradores").</p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">40</span>    await tarefasPage.goto();</span>
+<span class="linha"><span class="num">41</span>    await tarefasPage.expectCarregada();</span>
+<span class="linha"><span class="num">42</span></span>
+<span class="linha"><span class="num">43</span>    const poolAntes = await tarefasPage.resumoTarefasEmPool();</span>
+<span class="linha"><span class="num">44</span></span>
+<span class="linha"><span class="num">45</span>    if (poolAntes.total === 0) {</span>
+<span class="linha alvo"><span class="num">46</span>      throw new Error(</span>
+<span class="linha"><span class="num">47</span>        'PRÉ-CONDIÇÃO AUSENTE: o Resumo de Tarefas anuncia "Tarefas em pool (0)" no momento ' +</span>
+<span class="linha"><span class="num">48</span>          'da execução. Não há tarefa de pool disponível para assumir agora — isto NÃO é ' +</span>
+<span class="linha"><span class="num">49</span>          'defeito do produto sob teste. Reexecute quando houver massa (o usuário TOTVS-FS ' +</span>
+<span class="linha"><span class="num">50</span>          'pertence aos pools "Validação do Gestor Imediato" e "Validação dos Compradores").',</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/tarefas/assumir-tarefa-pool.spec.js",
+    "Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H) @destrutivo",
+    "assumir a primeira tarefa disponível de um grupo do pool deve movê-la para \"Tarefas a concluir\""
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pagecentraltask",
+  "fakerSeed": 585433,
+  "reproduzirCom": "FAKER_SEED=585433 npx playwright test",
+  "erro": "Error: PRÉ-CONDIÇÃO AUSENTE: o Resumo de Tarefas anuncia \"Tarefas em pool (0)\" no momento da execução. Não há tarefa de pool disponível para assumir agora — isto NÃO é defeito do produto sob teste. Reexecute quando houver massa (o usuário TOTVS-FS pertence aos pools \"Validação do Gestor Imediato\" e \"Validação dos Compradores\")."
+}</pre>
+  </section>
+
+  
+
+  
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/tarefas/assumir-tarefa-pool.spec.js &gt;&gt; Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H) @destrutivo &gt;&gt; assumir a primeira tarefa disponível de um grupo do pool deve movê-la para "Tarefas a concluir"
+- Location: tests/e2e/tarefas/assumir-tarefa-pool.spec.js:34:3
+
+# Error details
+
+```
+Error: PRÉ-CONDIÇÃO AUSENTE: o Resumo de Tarefas anuncia "Tarefas em pool (0)" no momento da execução. Não há tarefa de pool disponível para assumir agora — isto NÃO é defeito do produto sob teste. Reexecute quando houver massa (o usuário TOTVS-FS pertence aos pools "Validação do Gestor Imediato" e "Validação dos Compradores").
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - generic [ref=e7]:
+              - text: 
+              - link [ref=e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=e9]
+            - generic [ref=e10]:
+              - text: 
+              - button "Abrir ajuda" [ref=e12] [cursor=pointer]:
+                - generic [ref=e13]: 
+              - button "Abrir notificações" [ref=e15] [cursor=pointer]:
+                - generic [ref=e16]: 9+
+                - generic [ref=e17]: 
+              - img "Usuário TBC (TOTVS)" [ref=e20] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=e21]:
+      - generic [ref=e23]:
+        - list [ref=e24]:
+          - listitem [ref=e25]:
+            - link "Home" [ref=e26] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=e27]: 
+          - listitem [ref=e29]:
+            - link "Buscar" [ref=e30] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e31]: 
+              - generic [ref=e33]: 
+          - listitem [ref=e35]:
+            - link "Favoritos" [ref=e36] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=e37]: 
+              - generic [ref=e39]: 
+        - list [ref=e41]:
+          - listitem [ref=e42]:
+            - link "Documentos" [ref=e43] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=e44]: 
+          - listitem [ref=e46]:
+            - link "Processos" [ref=e47] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=e48]: 
+              - generic [ref=e50]: 
+          - listitem [ref=e52]:
+            - link "Central de Tarefas" [ref=e53] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=e54]: 
+          - listitem [ref=e56]:
+            - link "Social" [ref=e57] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=e58]: 
+          - listitem [ref=e60]:
+            - link "Comunidades" [ref=e61] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=e62]: 
+          - listitem [ref=e64]:
+            - link "Páginas" [ref=e65] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e66]: 
+              - generic [ref=e68]: 
+        - list [ref=e70]:
+          - listitem [ref=e71]:
+            - link "Store" [ref=e72] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=e73]: 
+          - listitem [ref=e75]:
+            - link "Lixeira" [ref=e76] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=e77]: 
+        - list [ref=e79]:
+          - listitem [ref=e80]:
+            - link "Fechar menu" [ref=e81] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e83]: 
+    - generic [ref=e92]:
+      - generic [ref=e96]:
+        - generic [ref=e97]:
+          - heading "Central de tarefas" [level=2] [ref=e99]
+          - button "Você" [ref=e102] [cursor=pointer]:
+            - generic [ref=e103]:
+              - generic [ref=e105]: Você
+              - generic [ref=e106]: 
+        - generic [ref=e107]:
+          - tablist [ref=e109]:
+            - tab [ref=e110]:
+              - link "Resumo de Tarefas" [active] [ref=e111] [cursor=pointer]:
+                - /url: "#centralTaskroot"
+              - menu "Resumo de Tarefas" [ref=e113]: Visão geral das tarefas por meio de gráficos e legendas.
+            - text:      
+            - listitem [ref=e114]:
+              - link "Mais opções" [ref=e115] [cursor=pointer]:
+                - /url: "#"
+                - generic [ref=e117]: 
+              - text:          
+          - text:  
+          - link [ref=e119] [cursor=pointer]:
+            - /url: /portal/p/1/pageprocessstart
+            - button "Nova solicitação" [ref=e120]
+      - generic [ref=e125]:
+        - generic [ref=e127]:
+          - generic [ref=e128]:
+            - heading "Tarefas a concluir (15)" [level=1] [ref=e129]:
+              - generic [ref=e130]: 
+              - generic [ref=e132]: Tarefas a concluir
+              - generic [ref=e133]: (15)
+            - paragraph [ref=e134]: Tarefas originadas em solicitações de processos sob sua responsabilidade.
+          - generic [ref=e136]:
+            - generic [ref=e137]:
+              - list [ref=e142]:
+                - listitem [ref=e143] [cursor=pointer]:
+                  - generic [ref=e144]: 
+                  - generic [ref=e145]: "2"
+                  - generic [ref=e146]: No prazo
+                - listitem [ref=e147] [cursor=pointer]:
+                  - generic [ref=e148]: 
+                  - generic [ref=e149]: "4"
+                  - generic [ref=e150]: Próx. a vencer
+                  - generic [ref=e152]: 
+                - listitem [ref=e153] [cursor=pointer]:
+                  - generic [ref=e154]: 
+                  - generic [ref=e155]: "9"
+                  - generic [ref=e156]: Atrasadas
+              - separator [ref=e157]
+            - generic [ref=e159]:
+              - generic [ref=e160]: 
+              - paragraph [ref=e161]:
+                - text: Você possui
+                - generic [ref=e162]: tarefas atrasadas
+                - text: . Mantenha suas pendências dentro do prazo para melhorar sua performance.
+          - text: 
+        - generic [ref=e164]:
+          - generic [ref=e165]:
+            - heading "Documentos (27)" [level=1] [ref=e166]:
+              - generic [ref=e167]:
+                - generic [ref=e168]: 
+                - generic [ref=e170]: Documentos
+                - generic [ref=e171]: (27)
+                - text: 
+            - paragraph [ref=e172]: Pendências em documentos.
+          - list [ref=e175]:
+            - listitem [ref=e176] [cursor=pointer]:
+              - generic [ref=e177]:
+                - generic [ref=e178]: 
+                - generic [ref=e179]: Para aprovar
+              - heading "7" [level=2] [ref=e180]
+            - listitem [ref=e181] [cursor=pointer]:
+              - generic [ref=e182]:
+                - generic [ref=e183]: 
+                - generic [ref=e184]: Meus documentos
+              - heading "20" [level=2] [ref=e185]
+            - listitem [ref=e186]:
+              - generic [ref=e187]:
+                - generic [ref=e188]: 
+                - generic [ref=e189]: Documentos em consenso
+              - heading "0" [level=2] [ref=e190]
+            - listitem [ref=e191]:
+              - generic [ref=e192]:
+                - generic [ref=e193]: 
+                - generic [ref=e194]: Documentos em checkout
+              - heading "0" [level=2] [ref=e195]
+          - text: 
+        - generic [ref=e197]:
+          - generic [ref=e198]:
+            - heading "Solicitações (124)" [level=1] [ref=e199]:
+              - generic [ref=e200]:
+                - generic [ref=e201]: 
+                - generic [ref=e203]: Solicitações
+                - generic [ref=e204]: (124)
+                - text: 
+            - paragraph [ref=e205]: Solicitações gerenciadas ou iniciadas por você.
+          - generic [ref=e208]:
+            - generic [ref=e211] [cursor=pointer]:
+              - generic [ref=e212]: "39"
+              - generic [ref=e213]: Solicitadas por mim
+            - generic [ref=e216] [cursor=pointer]:
+              - generic [ref=e217]: "85"
+              - generic [ref=e218]: Sob minha gerência
+          - text: 
+        - generic [ref=e220]:
+          - generic [ref=e221]:
+            - heading "Tarefas em pool (0)" [level=1] [ref=e222]:
+              - generic [ref=e223]:
+                - generic [ref=e224]: 
+                - generic [ref=e226]: Tarefas em pool
+                - generic [ref=e227]: (0)
+                - text: 
+            - paragraph [ref=e228]: Tarefas para grupos e papéis que você está associado.
+          - generic [ref=e232]:
+            - generic [ref=e233]: 
+            - generic [ref=e234]:
+              - strong [ref=e235]: Você não possui tarefas em pool vinculadas.
+              - text: Quando houver novas tarefas elas serão exibidas aqui.
+        - generic [ref=e237]:
+          - generic [ref=e238]:
+            - heading "Tarefas em consenso (0)" [level=1] [ref=e239]:
+              - generic [ref=e240]:
+                - generic [ref=e241]: 
+                - generic [ref=e243]: Tarefas em consenso
+                - generic [ref=e244]: (0)
+                - text: 
+            - paragraph [ref=e245]: Tarefas em consenso com outro usuário.
+          - generic [ref=e249]:
+            - generic [ref=e250]: 
+            - generic [ref=e251]:
+              - strong [ref=e252]: Você não possui tarefas em consenso.
+              - text: Quando houver novas tarefas em conseso elas serão exibidas aqui.
+  - text: 
+```
+
+# Test source
+
+```ts
+  1   | // @ts-check
+  2   | import { test, expect } from '../../../fixtures/fixtures.js';
+  3   | import { CentralTarefasPage } from '../../../pages/CentralTarefasPage.js';
+  4   | import { PoolTarefasPage, descobrirGrupoComTarefas } from '../../../pages/PoolTarefasPage.js';
+  5   | 
+  6   | /**
+  7   |  * Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H). @destrutivo
+  8   |  *
+  9   |  * Escreve no ambiente: assumir uma tarefa de pool transfere a responsabilidade do GRUPO
+  10  |  * para o usuário TOTVS-FS — efeito real no workflow, sem operação de desfazer disponível
+  11  |  * (o Fluig não expõe "devolver ao pool"). Autorizado por `docs/politica-de-escrita.md`
+  12  |  * (base de homologação). Fica fora da execução padrão via `@destrutivo` + `grepInvert`.
+  13  |  *
+  14  |  * Pré-condição é de LEITURA (precisa existir tarefa no pool no momento da execução) — o
+  15  |  * teste não pode inventar massa. Se não houver, falha com "PRÉ-CONDIÇÃO AUSENTE" em vez de
+  16  |  * timeout opaco, mesmo padrão de `utils/massa-contratos.js`.
+  17  |  *
+  18  |  * ## CT-TSK-02-S1 (concorrência) — não implementado
+  19  |  *
+  20  |  * Investigado e descartado: só existe UMA conta de automação (TOTVS-FS). Dois contextos de
+  21  |  * navegador na mesma conta disputando a mesma tarefa não reproduzem "dois usuários" — são a
+  22  |  * MESMA identidade para o servidor. Confirmado em campo (duas chamadas `takeTask` disparadas
+  23  |  * em paralelo, via `Promise.all`, para a mesma tarefa/mesmo `taskUserId`): uma responde
+  24  |  * `200 OK`, a outra `500` com `{"content":"ERROR","message":{"message":"Tarefa não
+  25  |  * encontrada."}}` — não há duplicação, mas também não é o aviso amigável "tarefa já foi
+  26  |  * assumida por outro usuário" que o caso descreve; é uma exceção genérica de backend (stack
+  27  |  * trace, sem tratamento de UI), porque o servidor nunca chega a avaliar "outro usuário" —
+  28  |  * ambas as chamadas SÃO o mesmo usuário. Um teste automatizado aqui documentaria um artefato
+  29  |  * de reuso de sessão como se fosse a regra de negócio de concorrência entre usuários
+  30  |  * distintos, o que seria enganoso. Ver relatório da implementação para o detalhe da
+  31  |  * investigação.
+  32  |  */
+  33  | test.describe('Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H) @destrutivo', () =&gt; {
+  34  |   test('assumir a primeira tarefa disponível de um grupo do pool deve movê-la para "Tarefas a concluir"', async ({
+  35  |     page,
+  36  |   }) =&gt; {
+  37  |     const tarefasPage = new CentralTarefasPage(page);
+  38  |     const poolPage = new PoolTarefasPage(page);
+  39  | 
+  40  |     await tarefasPage.goto();
+  41  |     await tarefasPage.expectCarregada();
+  42  | 
+  43  |     const poolAntes = await tarefasPage.resumoTarefasEmPool();
+  44  | 
+  45  |     if (poolAntes.total === 0) {
+&gt; 46  |       throw new Error(
+      |             ^ Error: PRÉ-CONDIÇÃO AUSENTE: o Resumo de Tarefas anuncia "Tarefas em pool (0)" no momento da execução. Não há tarefa de pool disponível para assumir agora — isto NÃO é defeito do produto sob teste. Reexecute quando houver massa (o usuário TOTVS-FS pertence aos pools "Validação do Gestor Imediato" e "Validação dos Compradores").
+  47  |         'PRÉ-CONDIÇÃO AUSENTE: o Resumo de Tarefas anuncia "Tarefas em pool (0)" no momento ' +
+  48  |           'da execução. Não há tarefa de pool disponível para assumir agora — isto NÃO é ' +
+  49  |           'defeito do produto sob teste. Reexecute quando houver massa (o usuário TOTVS-FS ' +
+  50  |           'pertence aos pools "Validação do Gestor Imediato" e "Validação dos Compradores").',
+  51  |       );
+  52  |     }
+  53  | 
+  54  |     await poolPage.abrirGruposDoPool();
+  55  |     const grupos = await poolPage.listarGrupos();
+  56  |     const grupoEscolhido = descobrirGrupoComTarefas(grupos);
+  57  | 
+  58  |     await poolPage.abrirGrupo(grupoEscolhido.indice);
+  59  |     const identificadoresDoGrupo = await poolPage.listarIdentificadoresDoGrupo();
+  60  |     expect(
+  61  |       identificadoresDoGrupo.length,
+  62  |       `a listagem in-page do grupo deveria trazer ao menos um identificador de solicitação (cartões: ${JSON.stringify(identificadoresDoGrupo)})`,
+  63  |     ).toBeGreaterThan(0);
+  64  | 
+  65  |     // "Assumir" abre um diálogo de confirmação ("Você assumiu a solicitação &lt;N&gt;") — a
+  66  |     // condição observável real de sucesso; o id vem do próprio diálogo.
+  67  |     const idSolicitacao = await poolPage.assumirTarefa(0);
+  68  |     expect(
+  69  |       identificadoresDoGrupo,
+  70  |       `a solicitação assumida (${idSolicitacao}) deveria ser uma das listadas no grupo (${JSON.stringify(identificadoresDoGrupo)})`,
+  71  |     ).toContain(idSolicitacao);
+  72  | 
+  73  |     // "Acessar tarefa" abre a solicitação assumida em nova aba (mesmo padrão dos cards do
+  74  |     // catálogo de processos, target="_blank").
+  75  |     const abaDaTarefa = await poolPage.acessarTarefaAssumida();
+  76  |     expect(
+  77  |       abaDaTarefa.url(),
+  78  |       `"Acessar tarefa" deveria abrir a tela de movimentação da solicitação assumida (${idSolicitacao})`,
+  79  |     ).toContain(idSolicitacao);
+  80  |     await expect(abaDaTarefa).toHaveTitle('Cassi - Fluig Plataforma - Movimentar Solicitação');
+  81  |     await abaDaTarefa.close();
+  82  | 
+  83  |     // Volta para a Central de Tarefas e confirma o efeito de negócio esperado: a tarefa
+  84  |     // saiu do pool e foi para "minhas tarefas".
+  85  |     //
+  86  |     // A prova NÃO é o contador agregado de "Tarefas em pool"/"Tarefas a concluir" antes vs.
+  87  |     // depois: este é um ambiente de homologação compartilhado com fluxo contínuo de novas
+  88  |     // tarefas de pool (confirmado em campo nesta implementação — o total voltou a subir
+  89  |     // entre o "antes" e o "depois" porque chegou massa nova no meio do teste, não porque a
+  90  |     // assunção falhou). Uma assertion de contador aqui seria tão frágil quanto fixar o valor
+  91  |     // de um contrato (ver `utils/massa-contratos.js`). A prova real e específica é a
+  92  |     // solicitação assumida (identificada pelo diálogo de confirmação) aparecer nos cartões
+  93  |     // de "Tarefas a concluir" — não apenas "algum contador mudou".
+  94  |     await tarefasPage.goto();
+  95  |     await tarefasPage.expectCarregada();
+  96  | 
+  97  |     // ⚠️ NÃO basta ler os cartões renderizados. A UI traz `rows=15` em ordem CRESCENTE de
+  98  |     // `processInstanceId`, e a tarefa recém-assumida tem o maior id — fica no fim da fila,
+  99  |     // fora do lote exibido. Medido em 25/08/2026: este teste reprovava com
+  100 |     // `([112097…112307]) deveriam incluir 112312`, e a tarefa ESTAVA na listagem; o oráculo é
+  101 |     // que era míope. A varredura paginada vive em `utils/central-tarefas-paginacao.js`.
+  102 |     const registro = await poolPage.localizarTarefaAConcluirPorId(idSolicitacao);
+  103 | 
+  104 |     expect(
+  105 |       registro,
+  106 |       `a solicitação assumida (${idSolicitacao}) deveria estar em "Tarefas a concluir" — ` +
+  107 |         'varrida a listagem inteira, paginando em ordem decrescente, e ela não apareceu. ' +
+  108 |         'Assumir do pool transfere a responsabilidade do GRUPO para o usuário, então ela tem ' +
+  109 |         'de sair do pool e entrar nas tarefas dele.',
+  110 |     ).not.toBeNull();
+  111 | 
+  112 |     // O efeito de negócio é a RESPONSABILIDADE ter mudado de mão — não só o id constar da
+  113 |     // lista. `colleagueName` é o campo que expõe isso (o mesmo usado para provar D-01 em
+  114 |     // "Minhas Solicitações").
+  115 |     expect(
+  116 |       registro?.processInstanceId !== undefined ? String(registro.processInstanceId) : null,
+  117 |       'o registro encontrado tem que ser exatamente a solicitação assumida',
+  118 |     ).toBe(String(idSolicitacao));
+  119 |   });
+  120 | });
+  121 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=585433 npx playwright test tests/e2e/tarefas/assumir-tarefa-pool.spec.js -g "assumir a primeira tarefa disponível de um grupo do pool deve movê-la para \"Tarefas a concluir\""</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/tarefas/e2e-tarefas-assumir-tarefa-538fe-la-para-Tarefas-a-concluir--e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/tarefas/e2e-tarefas-assumir-tarefa-538fe-la-para-Tarefas-a-concluir--e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/tarefas/e2e-tarefas-assumir-tarefa-538fe-la-para-Tarefas-a-concluir--e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/tarefas/e2e-tarefas-assumir-tarefa-538fe-la-para-Tarefas-a-concluir--e2e/error-context.md</code></p>
+  </section>
+</article>
+</main>
+<footer>
+  <p>Relatório da execução de 02/09/2026 — gerado por <code>scripts/relatorio-falhas.mjs</code> (evidências) +
+  <code>relatorios/gerar-final.mjs</code> (análise). Screenshots e aria-snapshots estão embutidos; trace e vídeo de cada
+  falha ficam em <code>test-results/&lt;fatia&gt;/</code> nos caminhos indicados em cada cartão
+  (<code>npx playwright show-trace &lt;trace.zip&gt;</code>).</p>
+</footer>
+
+</body>
+</html>

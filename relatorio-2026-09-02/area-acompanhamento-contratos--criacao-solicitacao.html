@@ -1,0 +1,2489 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Falhas da suíte E2E — Fluig Cassi — 02/09/2026 (versão leve, sem screenshots embutidas)</title>
+<style>
+  :root {
+    --fundo: #0f1115; --cartao: #171a21; --borda: #262b36; --texto: #e6e9ef;
+    --suave: #9aa4b2; --codigo: #0b0d11;
+    --produto: #ef4444; --ambiente: #f59e0b; --infra: #8b5cf6; --sem-veredito: #64748b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --fundo:#f6f7f9; --cartao:#fff; --borda:#e2e5ea; --texto:#1b1f27; --suave:#5b6472; --codigo:#f1f3f6; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--fundo); color:var(--texto);
+         font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .capa { padding:32px 24px 20px; border-bottom:1px solid var(--borda); }
+  .capa h1 { margin:0 0 6px; font-size:26px; }
+  .capa p { margin:0; color:var(--suave); }
+  .numeros { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+  .numero { background:var(--cartao); border:1px solid var(--borda); border-radius:10px; padding:10px 14px; }
+  .numero b { display:block; font-size:22px; }
+  .numero span { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  main { padding:24px; max-width:1100px; margin:0 auto; }
+  .filtros { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+  .filtros button { background:var(--cartao); color:var(--texto); border:1px solid var(--borda);
+                    border-radius:999px; padding:6px 14px; cursor:pointer; font-size:13px; }
+  .filtros button[aria-pressed="true"] { border-color:var(--texto); font-weight:600; }
+  .falha { background:var(--cartao); border:1px solid var(--borda); border-radius:14px;
+           padding:20px; margin-bottom:20px; }
+  .falha[hidden] { display:none; }
+  .cabecalho { display:flex; justify-content:space-between; align-items:center; }
+  .ordem { color:var(--suave); font-size:13px; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px;
+           font-weight:600; color:#fff; }
+  .badge.produto { background:var(--produto); }
+  .badge.ambiente { background:var(--ambiente); color:#231a05; }
+  .badge.infra { background:var(--infra); }
+  .badge.sem-veredito { background:var(--sem-veredito); }
+  .falha h2 { margin:12px 0 4px; font-size:18px; line-height:1.35; }
+  .suite { margin:0 0 14px; color:var(--suave); font-size:13px; }
+  .meta { display:flex; flex-wrap:wrap; gap:18px; margin:0 0 4px; }
+  .meta div { display:flex; flex-direction:column; }
+  .meta dt { color:var(--suave); font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  .meta dd { margin:2px 0 0; font-size:13px; }
+  .bloco { margin-top:18px; }
+  .bloco h3 { margin:0 0 8px; font-size:13px; text-transform:uppercase;
+              letter-spacing:.05em; color:var(--suave); }
+  .resumo { margin:0 0 8px; font-weight:600; }
+  pre { background:var(--codigo); border:1px solid var(--borda); border-radius:10px;
+        padding:12px 14px; overflow-x:auto; font-size:12.5px; line-height:1.5; margin:0;
+        white-space:pre-wrap; word-break:break-word; }
+  pre.codigo, pre.cmd { white-space:pre; }
+  code { background:var(--codigo); padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .codigo .linha { display:block; }
+  .codigo .num { display:inline-block; width:44px; color:var(--suave); user-select:none; }
+  .codigo .alvo { background:rgba(239,68,68,.16); font-weight:600; }
+  figure { margin:0 0 12px; }
+  figure img { max-width:100%; border:1px solid var(--borda); border-radius:10px; display:block; }
+  figcaption { color:var(--suave); font-size:12px; margin-top:5px; }
+  details > summary { cursor:pointer; color:var(--suave); font-size:13px; padding:6px 0; }
+  details[open] > summary { margin-bottom:8px; }
+  .dica { color:var(--suave); font-size:13px; margin:8px 0 0; }
+  a { color:inherit; }
+  footer { padding:20px 24px 44px; color:var(--suave); font-size:13px; max-width:1100px; margin:0 auto; }
+  .badge.divergencia { background:#0ea5e9; color:#06202b; }
+  .sumario { background:var(--cartao); border:1px solid var(--borda); border-radius:14px; padding:20px 24px; margin-bottom:22px; }
+  .sumario h2 { margin:0 0 12px; font-size:20px; }
+  .sumario h3 { margin:18px 0 8px; font-size:14px; text-transform:uppercase; letter-spacing:.05em; color:var(--suave); }
+  .sumario table { border-collapse:collapse; width:100%; font-size:13.5px; }
+  .sumario th, .sumario td { border-bottom:1px solid var(--borda); padding:6px 8px; text-align:left; vertical-align:top; }
+  .sumario th { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .grupo { border-top:1px solid var(--borda); padding-top:14px; margin-top:14px; }
+  .grupo h3 { text-transform:none; letter-spacing:0; font-size:16px; color:var(--texto); margin:0 0 6px; }
+  .gid { display:inline-block; background:var(--codigo); border:1px solid var(--borda); border-radius:6px; padding:0 6px; font-size:12px; margin-right:6px; }
+  .suave { color:var(--suave); font-size:13px; margin:0 0 8px; }
+  .lista-testes { font-size:13px; color:var(--suave); }
+  .analise { border-left:3px solid #0ea5e9; padding-left:14px; }
+  .analise p { margin:0 0 8px; }
+  .analise .g, .g { color:var(--suave); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="capa">
+  <h1>Falhas da suíte E2E — TOTVS Fluig Cassi</h1>
+  <p>Execução de 02/09/2026 · 233 testes, 81 reprovados · destrutivos incluídos · com análise de causa raiz</p>
+  </div>
+<main>
+<nav class="filtros" style="margin:16px 0"><a href="index.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">Sumário</a> <a href="area-acompanhamento-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;font-weight:700;border-color:var(--texto)">acompanhamento-contratos (27)</a> <a href="area-api.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">api (2)</a> <a href="area-compras.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">compras (13)</a> <a href="area-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">contratos (4)</a> <a href="area-documentos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">documentos (5)</a> <a href="area-juridico.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">juridico (3)</a> <a href="area-notificacoes.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">notificacoes (2)</a> <a href="area-plataforma.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">plataforma (8)</a> <a href="area-portais.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">portais (2)</a> <a href="area-rh.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">rh (4)</a> <a href="area-saude.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">saude (1)</a> <a href="area-seguranca.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">seguranca (7)</a> <a href="area-tarefas.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">tarefas (3)</a></nav><h2>acompanhamento-contratos — 27 teste(s) reprovado(s)</h2><p class="dica"><a href="index.html">← voltar ao sumário e às causas raiz</a></p><p class="dica">Arquivos desta área: <a href="area-acompanhamento-contratos--ciclo-correcao-reenvio.html">ciclo-correcao-reenvio (1)</a> · <a href="area-acompanhamento-contratos--ciclo-gestor.html">ciclo-gestor (3)</a> · <a href="area-acompanhamento-contratos--criacao-solicitacao.html">criacao-solicitacao (5)</a> · <a href="area-acompanhamento-contratos--erros-no-start.html">erros-no-start (2)</a> · <a href="area-acompanhamento-contratos--grade-contratos.html">grade-contratos (1)</a> · <a href="area-acompanhamento-contratos--indisponibilidade-protheus.html">indisponibilidade-protheus (2)</a> · <a href="area-acompanhamento-contratos--modal-solicitacao-compra.html">modal-solicitacao-compra (1)</a> · <a href="area-acompanhamento-contratos--payload-solicitacao.html">payload-solicitacao (10)</a> · <a href="area-acompanhamento-contratos--validacoes-solicitacao.html">validacoes-solicitacao (2)</a></p><article class="falha" id="f6" data-classe="divergencia" data-area="acompanhamento-contratos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge divergencia">Divergência ambiente × suíte (o ambiente mudou)</span>
+      <span class="ordem">#7</span>
+    </div>
+    <h2>@destrutivo a SC deveria nascer atribuída ao solicitante logado, não à conta de integração</h2>
+    <p class="suite">e2e/acompanhamento-contratos/criacao-solicitacao.spec.js › Confirmar cria a SC e ela deveria chegar ao solicitante (CT-ACC-05-H / D-01)</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:106</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>78.3s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>698490</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G1">G1</a> — O combo "Tipo de Solicitação" perdeu a opção "Renovação Contratual" — 24 testes caem no mesmo <code>selectOption</code> · <b>Referência:</b> CT-ACC-05-H / D-01</p>
+    <p><b>O que acontece:</b> O teste preenche o modal da Solicitação de Compra com a factory padrão (tipo "Renovação Contratual"). O <code>selectOption</code> no combo "Tipo de Solicitação" não encontra a opção, tenta por 45 s (<code>actionTimeout</code>) e falha com <code>did not find some options</code>.</p>
+    <p><b>Por que falha:</b> O ambiente não oferece mais "Renovação Contratual" (oferece "Aditivo Contratual" e "Nova Contratação"). A falha ocorre antes da assertion que dá nome ao teste — não é veredito sobre o produto.</p>
+    <p><b>Onde falha:</b> <code>components/SolicitacaoCompraModal.js</code> → <code>campoTipo.selectOption(...)</code>, chamado de <code>preencher()</code>. <span class="g">(local exato registrado pelo Playwright: <code>components/SolicitacaoCompraModal.js:50</code>)</span></p>
+    <p><b>Reexecução com "Aditivo Contratual":</b> Reexecutado com "Aditivo": a SC 113182 nasceu com responsável "Usuário Integrador Fluig" em vez do solicitante — D-01 confirmado.</p>
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">TimeoutError: locator.selectOption: Timeout 45000ms exceeded.</p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">44</span>  /**</span>
+<span class="linha"><span class="num">45</span>   * Preenche apenas os campos informados — permite montar o cenário de campo faltante</span>
+<span class="linha"><span class="num">46</span>   * sem precisar de um método por combinação.</span>
+<span class="linha"><span class="num">47</span>   * @param {Partial&lt;import('../factories/solicitacao-compra.js').SolicitacaoCompra&gt;} dados</span>
+<span class="linha"><span class="num">48</span>   */</span>
+<span class="linha"><span class="num">49</span>  async preencher(dados) {</span>
+<span class="linha alvo"><span class="num">50</span>    if (dados.tipo !== undefined) await this.campoTipo.selectOption({ label: dados.tipo });</span>
+<span class="linha"><span class="num">51</span>    if (dados.dataNecessidade !== undefined) await this.campoDataNecessidade.fill(dados.dataNecessidade);</span>
+<span class="linha"><span class="num">52</span>    if (dados.motivo !== undefined) await this.campoMotivo.fill(dados.motivo);</span>
+<span class="linha"><span class="num">53</span>  }</span>
+<span class="linha"><span class="num">54</span></span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js",
+    "Confirmar cria a SC e ela deveria chegar ao solicitante (CT-ACC-05-H / D-01)",
+    "@destrutivo a SC deveria nascer atribuída ao solicitante logado, não à conta de integração"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/acompanhamentoContrato",
+  "fakerSeed": 698490,
+  "reproduzirCom": "FAKER_SEED=698490 npx playwright test",
+  "erro": "TimeoutError: locator.selectOption: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })\u001b[22m\n\u001b[2m    - locator resolved to &lt;select class=\"form-control\" id=\"tipoSolicitacao\" name=\"tipoSolicitacao\"&gt;…&lt;/select&gt;\u001b[22m\n\u001b[2m  - attempting select option action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    88 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m       - did not find some options\u001b[22m\n\u001b[2m     - retrying select option action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })
+    - locator resolved to &lt;select class="form-control" id="tipoSolicitacao" name="tipoSolicitacao"&gt;…&lt;/select&gt;
+  - attempting select option action
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+    - waiting 20ms
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+      - waiting 100ms
+    88 × waiting for element to be visible and enabled
+       - did not find some options
+     - retrying select option action
+       - waiting 500ms</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/acompanhamento-contratos/criacao-solicitacao.spec.js &gt;&gt; Confirmar cria a SC e ela deveria chegar ao solicitante (CT-ACC-05-H / D-01) &gt;&gt; @destrutivo a SC deveria nascer atribuída ao solicitante logado, não à conta de integração
+- Location: tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:106:3
+
+# Error details
+
+```
+TimeoutError: locator.selectOption: Timeout 45000ms exceeded.
+Call log:
+  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })
+    - locator resolved to &lt;select class="form-control" id="tipoSolicitacao" name="tipoSolicitacao"&gt;…&lt;/select&gt;
+  - attempting select option action
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+    - waiting 20ms
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+      - waiting 100ms
+    88 × waiting for element to be visible and enabled
+       - did not find some options
+     - retrying select option action
+       - waiting 500ms
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - generic [ref=e7]:
+              - text: 
+              - link [ref=e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=e9]
+            - generic [ref=e10]:
+              - button "Abrir notificações" [ref=e12] [cursor=pointer]:
+                - generic [ref=e13]: 9+
+                - generic [ref=e14]: 
+              - img "Usuário TBC (TOTVS)" [ref=e17] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=e18]:
+      - generic [ref=e20]:
+        - list [ref=e21]:
+          - listitem [ref=e22]:
+            - link "Home" [ref=e23] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=e24]: 
+          - listitem [ref=e26]:
+            - link "Buscar" [ref=e27] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e28]: 
+              - generic [ref=e30]: 
+          - listitem [ref=e32]:
+            - link "Favoritos" [ref=e33] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=e34]: 
+              - generic [ref=e36]: 
+        - list [ref=e38]:
+          - listitem [ref=e39]:
+            - link "Documentos" [ref=e40] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=e41]: 
+          - listitem [ref=e43]:
+            - link "Processos" [ref=e44] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=e45]: 
+              - generic [ref=e47]: 
+          - listitem [ref=e49]:
+            - link "Central de Tarefas" [ref=e50] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=e51]: 
+          - listitem [ref=e53]:
+            - link "Social" [ref=e54] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=e55]: 
+          - listitem [ref=e57]:
+            - link "Comunidades" [ref=e58] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=e59]: 
+          - listitem [ref=e61]:
+            - link "Acompanhamento de Contratos" [ref=e62] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e63]: 
+              - generic [ref=e65]: 
+        - list [ref=e67]:
+          - listitem [ref=e68]:
+            - link "Store" [ref=e69] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=e70]: 
+          - listitem [ref=e72]:
+            - link "Lixeira" [ref=e73] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=e74]: 
+        - list [ref=e76]:
+          - listitem [ref=e77]:
+            - link "Fechar menu" [ref=e78] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e80]: 
+    - generic [ref=e90]:
+      - heading "Acompanhamento de Contratos" [level=3] [ref=e91]
+      - generic [ref=e94]:
+        - generic [ref=e95]:
+          - generic [ref=e98]:
+            - text: Exibir
+            - combobox "Exibir resultados por página" [ref=e99]:
+              - option "Todos" [selected]
+              - option "10"
+              - option "25"
+              - option "50"
+              - option "75"
+              - option "100"
+            - text: resultados por página
+          - generic [ref=e101]:
+            - generic [ref=e102]: Pesquisar
+            - searchbox "Pesquisar" [ref=e103]: "000000000000001"
+        - generic [ref=e106]:
+          - table [ref=e109]:
+            - rowgroup [ref=e110]:
+              - row [ref=e111]:
+                - 'columnheader "Filial: Activate to sort" [ref=e112] [cursor=pointer]':
+                  - button "Filial" [ref=e113]
+                - 'columnheader "Tipo Contrato: Activate to sort" [ref=e115] [cursor=pointer]':
+                  - button "Tipo Contrato" [ref=e116]
+                - 'columnheader "Contrato: Activate to invert sorting" [ref=e118] [cursor=pointer]':
+                  - button "Contrato" [ref=e119]
+                - 'columnheader "Data Inicio: Activate to sort" [ref=e121] [cursor=pointer]':
+                  - button "Data Inicio" [ref=e122]
+                - 'columnheader "Data Fim: Activate to sort" [ref=e124] [cursor=pointer]':
+                  - button "Data Fim" [ref=e125]
+                - 'columnheader "Nº Revisão: Activate to sort" [ref=e127] [cursor=pointer]':
+                  - button "Nº Revisão" [ref=e128]
+                - 'columnheader "Status: Activate to sort" [ref=e130] [cursor=pointer]':
+                  - button "Status" [ref=e131]
+                - 'columnheader "Fornecedor: Activate to sort" [ref=e133] [cursor=pointer]':
+                  - button "Fornecedor" [ref=e134]
+                - columnheader "Ação" [ref=e136]
+          - table [ref=e148]:
+            - rowgroup:
+              - row "Fornecedor Ação":
+                - columnheader:
+                  - textbox "Filtrar" [ref=e159]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e160]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e161]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e162]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e163]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e164]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e165]
+                - columnheader "Fornecedor"
+                - columnheader "Ação"
+            - rowgroup [ref=e166]:
+              - row [ref=e167]:
+                - 'columnheader "Filial: Activate to sort" [ref=e168] [cursor=pointer]':
+                  - button "Filial" [ref=e169]
+                - 'columnheader "Tipo Contrato: Activate to sort" [ref=e170] [cursor=pointer]':
+                  - button "Tipo Contrato" [ref=e171]
+                - 'columnheader "Contrato: Activate to invert sorting" [ref=e172] [cursor=pointer]':
+                  - button "Contrato" [ref=e173]
+                - 'columnheader "Data Inicio: Activate to sort" [ref=e174] [cursor=pointer]':
+                  - button "Data Inicio" [ref=e175]
+                - 'columnheader "Data Fim: Activate to sort" [ref=e176] [cursor=pointer]':
+                  - button "Data Fim" [ref=e177]
+                - 'columnheader "Nº Revisão: Activate to sort" [ref=e178] [cursor=pointer]':
+                  - button "Nº Revisão" [ref=e179]
+                - 'columnheader "Status: Activate to sort" [ref=e180] [cursor=pointer]':
+                  - button "Status" [ref=e181]
+                - 'columnheader "Fornecedor: Activate to sort" [ref=e182] [cursor=pointer]':
+                  - button "Fornecedor" [ref=e183]
+                - columnheader "Ação" [ref=e184]
+            - rowgroup [ref=e185]:
+              - row [ref=e186]:
+                - cell "3517" [ref=e187]
+                - cell "076 - TELEFONIA FIXA" [ref=e188]
+                - cell "000000000000001" [ref=e189]
+                - cell "10/03/2025" [ref=e190]
+                - cell "09/03/2028" [ref=e191]
+                - cell "003" [ref=e192]
+                - cell "Vigente" [ref=e193]
+                - cell "02558157 - 0001" [ref=e195]
+                - cell [ref=e196]:
+                  - link "" [ref=e197] [cursor=pointer]:
+                    - /url: "#"
+                  - link "" [ref=e198] [cursor=pointer]:
+                    - /url: "#"
+                  - link "" [ref=e199] [cursor=pointer]:
+                    - /url: "#"
+          - table [ref=e202]:
+            - rowgroup [ref=e203]:
+              - row [ref=e204]:
+                - columnheader [ref=e205]:
+                  - textbox "Filtrar" [ref=e206]
+                - columnheader [ref=e207]:
+                  - textbox "Filtrar" [ref=e208]
+                - columnheader [ref=e209]:
+                  - textbox "Filtrar" [ref=e210]
+                - columnheader [ref=e211]:
+                  - textbox "Filtrar" [ref=e212]
+                - columnheader [ref=e213]:
+                  - textbox "Filtrar" [ref=e214]
+                - columnheader [ref=e215]:
+                  - textbox "Filtrar" [ref=e216]
+                - columnheader [ref=e217]:
+                  - textbox "Filtrar" [ref=e218]
+                - columnheader "Fornecedor" [ref=e219]
+                - columnheader "Ação" [ref=e220]
+        - generic [ref=e231]:
+          - status [ref=e233]: Mostrando de 1 até 1 de 1 registros (Filtrados de 845 registros)
+          - navigation [ref=e236]:
+            - link "First" [disabled] [ref=e237]: Primeiro
+            - link "Previous" [disabled] [ref=e238]: Anterior
+            - link "1" [ref=e239] [cursor=pointer]
+            - link "Next" [disabled] [ref=e240]: Próximo
+            - link "Last" [disabled] [ref=e241]: Último
+  - dialog [active] [ref=e243]:
+    - generic [ref=e245]:
+      - generic [ref=e246]:
+        - button "Close " [ref=e247] [cursor=pointer]:
+          - generic [ref=e248]: × 
+        - heading "Solicitação de Compra" [level=4] [ref=e250]
+      - generic [ref=e252]:
+        - alert [ref=e254]:
+          - text: 
+          - heading [level=2]
+          - paragraph
+          - list [ref=e255]:
+            - listitem [ref=e256]:
+              - generic [ref=e257]:
+                - heading "Aditivo contratual" [level=4] [ref=e258]
+                - text: Continuidade do contrato existente (aumento de quantidade de itens ou aumento da vigência sempre envolvendo alçada de valor).
+                - strong [ref=e259]: Protheus
+                - text: = abre revisão aberta e FC irá editar o contrato.
+            - listitem [ref=e260]:
+              - generic [ref=e261]:
+                - heading "Nova Contratação" [level=4] [ref=e262]
+                - text: Geração de um novo contrato, podendo ser com o fornecedor atual ou diferente. Aqui pode usar um contrato como referência.
+                - strong [ref=e263]: Protheus
+                - text: = gera novo contrato igual quando vem de SC.
+        - generic [ref=e264]:
+          - generic [ref=e265]:
+            - generic [ref=e266]: Tipo de Solicitação
+            - combobox "Tipo de Solicitação" [ref=e267]:
+              - option "Selecione..." [disabled]
+              - option "Selecione..." [disabled] [selected]
+              - option "Aditivo Contratual"
+              - option "Nova Contratação"
+          - generic [ref=e268]:
+            - generic [ref=e269]: Contrato
+            - textbox "Contrato" [disabled] [ref=e270]:
+              - /placeholder: Número do Contrato
+              - text: "000000000000001"
+          - generic [ref=e271]:
+            - generic [ref=e272]: Data de Necessidade
+            - textbox "Data de Necessidade" [ref=e273]
+        - generic [ref=e275]:
+          - generic [ref=e276]: Motivo da Solicitação
+          - textbox "Motivo da Solicitação" [ref=e277]:
+            - /placeholder: "Justificativa para a Solicitação. Ex: Aquisição de equipamentos para expansão de Departamentos."
+      - generic [ref=e278]:
+        - button "Confirmar" [ref=e279] [cursor=pointer]
+        - button "Fechar" [ref=e280] [cursor=pointer]
+```
+
+# Test source
+
+```ts
+  1  | // @ts-check
+  2  | 
+  3  | /**
+  4  |  * Modal "Solicitação de Compra", aberto a partir de uma linha do Portal de
+  5  |  * Acompanhamento de Contratos.
+  6  |  *
+  7  |  * É componente e não página: vive sobre o portal, e o mesmo modal é acionado de qualquer
+  8  |  * linha da grade.
+  9  |  *
+  10 |  * Ao abrir, o widget encadeia sete datasets (filial, itens da planilha, produtos, rateios,
+  11 |  * centro de custo, classe de valor e preço histórico). O carregamento dos itens é o que
+  12 |  * habilita o envio — por isso `expectAberto` espera pelo campo já preenchido, e não por tempo.
+  13 |  */
+  14 | export class SolicitacaoCompraModal {
+  15 |   /** @param {import('@playwright/test').Page} page */
+  16 |   constructor(page) {
+  17 |     this.page = page;
+  18 | 
+  19 |     this.dialog = page
+  20 |       .getByRole('dialog')
+  21 |       .filter({ has: page.getByRole('heading', { name: 'Solicitação de Compra' }) });
+  22 | 
+  23 |     this.titulo = this.dialog.getByRole('heading', { name: 'Solicitação de Compra' });
+  24 |     this.campoTipo = this.dialog.getByRole('combobox', { name: 'Tipo de Solicitação' });
+  25 |     this.campoContrato = this.dialog.getByRole('textbox', { name: 'Contrato' });
+  26 |     this.campoDataNecessidade = this.dialog.getByRole('textbox', { name: 'Data de Necessidade' });
+  27 |     this.campoMotivo = this.dialog.getByRole('textbox', { name: 'Motivo da Solicitação' });
+  28 |     this.botaoConfirmar = this.dialog.getByRole('button', { name: 'Confirmar' });
+  29 |     this.botaoFechar = this.dialog.getByRole('button', { name: 'Fechar' });
+  30 | 
+  31 |     // O alerta é renderizado FORA do dialog, na raiz da página.
+  32 |     this.alertaCamposObrigatorios = page.getByRole('alert').filter({ hasText: 'Campos Obrigatórios' });
+  33 |     // Defeito D-11: quando o Protheus não responde, este alerta é renderizado DUAS vezes.
+  34 |     // O locator devolve a coleção de propósito — há teste que afirma a contagem esperada.
+  35 |     this.alertasErro = page.getByRole('alert').filter({ hasText: 'ERRO' });
+  36 |   }
+  37 | 
+  38 |   /** Pré-condição: o modal abriu e já trouxe o contrato de origem. */
+  39 |   async expectAberto() {
+  40 |     await this.titulo.waitFor({ state: 'visible' });
+  41 |     await this.campoContrato.waitFor({ state: 'visible' });
+  42 |   }
+  43 | 
+  44 |   /**
+  45 |    * Preenche apenas os campos informados — permite montar o cenário de campo faltante
+  46 |    * sem precisar de um método por combinação.
+  47 |    * @param {Partial&lt;import('../factories/solicitacao-compra.js').SolicitacaoCompra&gt;} dados
+  48 |    */
+  49 |   async preencher(dados) {
+&gt; 50 |     if (dados.tipo !== undefined) await this.campoTipo.selectOption({ label: dados.tipo });
+     |                                                        ^ TimeoutError: locator.selectOption: Timeout 45000ms exceeded.
+  51 |     if (dados.dataNecessidade !== undefined) await this.campoDataNecessidade.fill(dados.dataNecessidade);
+  52 |     if (dados.motivo !== undefined) await this.campoMotivo.fill(dados.motivo);
+  53 |   }
+  54 | 
+  55 |   /**
+  56 |    * Aciona Confirmar.
+  57 |    *
+  58 |    * ⚠️ Com os quatro campos obrigatórios válidos, isto CRIA uma solicitação real no
+  59 |    * ambiente — registro que não tem exclusão disponível. Cenários que chegam a criar são
+  60 |    * marcados `@destrutivo` e não entram na execução padrão (ver README).
+  61 |    */
+  62 |   async confirmar() {
+  63 |     await this.botaoConfirmar.click();
+  64 |   }
+  65 | 
+  66 |   /** @returns {import('@playwright/test').Locator} */
+  67 |   getAlertaCamposObrigatorios() {
+  68 |     return this.alertaCamposObrigatorios;
+  69 |   }
+  70 | 
+  71 |   /**
+  72 |    * Coleção de alertas de erro exibidos. Ver D-11: hoje o mesmo erro sai duplicado.
+  73 |    * @returns {import('@playwright/test').Locator}
+  74 |    */
+  75 |   getAlertasErro() {
+  76 |     return this.alertasErro;
+  77 |   }
+  78 | 
+  79 |   /** @returns {import('@playwright/test').Locator} */
+  80 |   getDialog() {
+  81 |     return this.dialog;
+  82 |   }
+  83 | 
+  84 |   /** @returns {import('@playwright/test').Locator} */
+  85 |   getOpcoesDeTipo() {
+  86 |     return this.campoTipo.locator('option');
+  87 |   }
+  88 | }
+  89 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=698490 npx playwright test tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js -g "@destrutivo a SC deveria nascer atribuída ao solicitante logado, não à conta de integração"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-b4b5d-o-não-à-conta-de-integração-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-b4b5d-o-não-à-conta-de-integração-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-b4b5d-o-não-à-conta-de-integração-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-b4b5d-o-não-à-conta-de-integração-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+
+<article class="falha" id="f7" data-classe="divergencia" data-area="acompanhamento-contratos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge divergencia">Divergência ambiente × suíte (o ambiente mudou)</span>
+      <span class="ordem">#8</span>
+    </div>
+    <h2>@destrutivo item de quantidade/valor zerado no contrato não deveria virar item extra na SC criada</h2>
+    <p class="suite">e2e/acompanhamento-contratos/criacao-solicitacao.spec.js › Item sem quantidade e sem valor no contrato não pode virar item da SC (CT-ACC-06-S1)</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:218</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>80.4s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>228675</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G1">G1</a> — O combo "Tipo de Solicitação" perdeu a opção "Renovação Contratual" — 24 testes caem no mesmo <code>selectOption</code> · <b>Referência:</b> CT-ACC-06-S1</p>
+    <p><b>O que acontece:</b> O teste preenche o modal da Solicitação de Compra com a factory padrão (tipo "Renovação Contratual"). O <code>selectOption</code> no combo "Tipo de Solicitação" não encontra a opção, tenta por 45 s (<code>actionTimeout</code>) e falha com <code>did not find some options</code>.</p>
+    <p><b>Por que falha:</b> O ambiente não oferece mais "Renovação Contratual" (oferece "Aditivo Contratual" e "Nova Contratação"). A falha ocorre antes da assertion que dá nome ao teste — não é veredito sobre o produto.</p>
+    <p><b>Onde falha:</b> <code>components/SolicitacaoCompraModal.js</code> → <code>campoTipo.selectOption(...)</code>, chamado de <code>preencher()</code>. <span class="g">(local exato registrado pelo Playwright: <code>components/SolicitacaoCompraModal.js:50</code>)</span></p>
+    <p><b>Reexecução com "Aditivo Contratual":</b> Reexecutado com "Aditivo": contrato 000000000000001 tem 7 itens (5 com qtd/valor + 2 sem nada) e a SC nasceu com 7 — o serviço fabrica quantidade para os itens vazios (cascata <code>resolveQuant</code> → fallback 1) e eles passam pelo filtro <code>quant &gt; 0</code>. Quantidades enviadas: [29,1,1,29,29,29,29]. Defeito confirmado.</p>
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">TimeoutError: locator.selectOption: Timeout 45000ms exceeded.</p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">44</span>  /**</span>
+<span class="linha"><span class="num">45</span>   * Preenche apenas os campos informados — permite montar o cenário de campo faltante</span>
+<span class="linha"><span class="num">46</span>   * sem precisar de um método por combinação.</span>
+<span class="linha"><span class="num">47</span>   * @param {Partial&lt;import('../factories/solicitacao-compra.js').SolicitacaoCompra&gt;} dados</span>
+<span class="linha"><span class="num">48</span>   */</span>
+<span class="linha"><span class="num">49</span>  async preencher(dados) {</span>
+<span class="linha alvo"><span class="num">50</span>    if (dados.tipo !== undefined) await this.campoTipo.selectOption({ label: dados.tipo });</span>
+<span class="linha"><span class="num">51</span>    if (dados.dataNecessidade !== undefined) await this.campoDataNecessidade.fill(dados.dataNecessidade);</span>
+<span class="linha"><span class="num">52</span>    if (dados.motivo !== undefined) await this.campoMotivo.fill(dados.motivo);</span>
+<span class="linha"><span class="num">53</span>  }</span>
+<span class="linha"><span class="num">54</span></span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js",
+    "Item sem quantidade e sem valor no contrato não pode virar item da SC (CT-ACC-06-S1)",
+    "@destrutivo item de quantidade/valor zerado no contrato não deveria virar item extra na SC criada"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/acompanhamentoContrato",
+  "fakerSeed": 228675,
+  "reproduzirCom": "FAKER_SEED=228675 npx playwright test",
+  "erro": "TimeoutError: locator.selectOption: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })\u001b[22m\n\u001b[2m    - locator resolved to &lt;select class=\"form-control\" id=\"tipoSolicitacao\" name=\"tipoSolicitacao\"&gt;…&lt;/select&gt;\u001b[22m\n\u001b[2m  - attempting select option action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    88 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m       - did not find some options\u001b[22m\n\u001b[2m     - retrying select option action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })
+    - locator resolved to &lt;select class="form-control" id="tipoSolicitacao" name="tipoSolicitacao"&gt;…&lt;/select&gt;
+  - attempting select option action
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+    - waiting 20ms
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+      - waiting 100ms
+    88 × waiting for element to be visible and enabled
+       - did not find some options
+     - retrying select option action
+       - waiting 500ms</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/acompanhamento-contratos/criacao-solicitacao.spec.js &gt;&gt; Item sem quantidade e sem valor no contrato não pode virar item da SC (CT-ACC-06-S1) &gt;&gt; @destrutivo item de quantidade/valor zerado no contrato não deveria virar item extra na SC criada
+- Location: tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:218:3
+
+# Error details
+
+```
+TimeoutError: locator.selectOption: Timeout 45000ms exceeded.
+Call log:
+  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })
+    - locator resolved to &lt;select class="form-control" id="tipoSolicitacao" name="tipoSolicitacao"&gt;…&lt;/select&gt;
+  - attempting select option action
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+    - waiting 20ms
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+      - waiting 100ms
+    88 × waiting for element to be visible and enabled
+       - did not find some options
+     - retrying select option action
+       - waiting 500ms
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - generic [ref=e7]:
+              - text: 
+              - link [ref=e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=e9]
+            - generic [ref=e10]:
+              - button "Abrir notificações" [ref=e12] [cursor=pointer]:
+                - generic [ref=e13]: 9+
+                - generic [ref=e14]: 
+              - img "Usuário TBC (TOTVS)" [ref=e17] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=e18]:
+      - generic [ref=e20]:
+        - list [ref=e21]:
+          - listitem [ref=e22]:
+            - link "Home" [ref=e23] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=e24]: 
+          - listitem [ref=e26]:
+            - link "Buscar" [ref=e27] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e28]: 
+              - generic [ref=e30]: 
+          - listitem [ref=e32]:
+            - link "Favoritos" [ref=e33] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=e34]: 
+              - generic [ref=e36]: 
+        - list [ref=e38]:
+          - listitem [ref=e39]:
+            - link "Documentos" [ref=e40] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=e41]: 
+          - listitem [ref=e43]:
+            - link "Processos" [ref=e44] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=e45]: 
+              - generic [ref=e47]: 
+          - listitem [ref=e49]:
+            - link "Central de Tarefas" [ref=e50] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=e51]: 
+          - listitem [ref=e53]:
+            - link "Social" [ref=e54] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=e55]: 
+          - listitem [ref=e57]:
+            - link "Comunidades" [ref=e58] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=e59]: 
+          - listitem [ref=e61]:
+            - link "Acompanhamento de Contratos" [ref=e62] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e63]: 
+              - generic [ref=e65]: 
+        - list [ref=e67]:
+          - listitem [ref=e68]:
+            - link "Store" [ref=e69] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=e70]: 
+          - listitem [ref=e72]:
+            - link "Lixeira" [ref=e73] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=e74]: 
+        - list [ref=e76]:
+          - listitem [ref=e77]:
+            - link "Fechar menu" [ref=e78] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e80]: 
+    - generic [ref=e90]:
+      - heading "Acompanhamento de Contratos" [level=3] [ref=e91]
+      - generic [ref=e94]:
+        - generic [ref=e95]:
+          - generic [ref=e98]:
+            - text: Exibir
+            - combobox "Exibir resultados por página" [ref=e99]:
+              - option "Todos" [selected]
+              - option "10"
+              - option "25"
+              - option "50"
+              - option "75"
+              - option "100"
+            - text: resultados por página
+          - generic [ref=e101]:
+            - generic [ref=e102]: Pesquisar
+            - searchbox "Pesquisar" [ref=e103]: "000000000000001"
+        - generic [ref=e106]:
+          - table [ref=e109]:
+            - rowgroup [ref=e110]:
+              - row [ref=e111]:
+                - 'columnheader "Filial: Activate to sort" [ref=e112] [cursor=pointer]':
+                  - button "Filial" [ref=e113]
+                - 'columnheader "Tipo Contrato: Activate to sort" [ref=e115] [cursor=pointer]':
+                  - button "Tipo Contrato" [ref=e116]
+                - 'columnheader "Contrato: Activate to invert sorting" [ref=e118] [cursor=pointer]':
+                  - button "Contrato" [ref=e119]
+                - 'columnheader "Data Inicio: Activate to sort" [ref=e121] [cursor=pointer]':
+                  - button "Data Inicio" [ref=e122]
+                - 'columnheader "Data Fim: Activate to sort" [ref=e124] [cursor=pointer]':
+                  - button "Data Fim" [ref=e125]
+                - 'columnheader "Nº Revisão: Activate to sort" [ref=e127] [cursor=pointer]':
+                  - button "Nº Revisão" [ref=e128]
+                - 'columnheader "Status: Activate to sort" [ref=e130] [cursor=pointer]':
+                  - button "Status" [ref=e131]
+                - 'columnheader "Fornecedor: Activate to sort" [ref=e133] [cursor=pointer]':
+                  - button "Fornecedor" [ref=e134]
+                - columnheader "Ação" [ref=e136]
+          - table [ref=e148]:
+            - rowgroup:
+              - row "Fornecedor Ação":
+                - columnheader:
+                  - textbox "Filtrar" [ref=e159]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e160]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e161]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e162]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e163]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e164]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e165]
+                - columnheader "Fornecedor"
+                - columnheader "Ação"
+            - rowgroup [ref=e166]:
+              - row [ref=e167]:
+                - 'columnheader "Filial: Activate to sort" [ref=e168] [cursor=pointer]':
+                  - button "Filial" [ref=e169]
+                - 'columnheader "Tipo Contrato: Activate to sort" [ref=e170] [cursor=pointer]':
+                  - button "Tipo Contrato" [ref=e171]
+                - 'columnheader "Contrato: Activate to invert sorting" [ref=e172] [cursor=pointer]':
+                  - button "Contrato" [ref=e173]
+                - 'columnheader "Data Inicio: Activate to sort" [ref=e174] [cursor=pointer]':
+                  - button "Data Inicio" [ref=e175]
+                - 'columnheader "Data Fim: Activate to sort" [ref=e176] [cursor=pointer]':
+                  - button "Data Fim" [ref=e177]
+                - 'columnheader "Nº Revisão: Activate to sort" [ref=e178] [cursor=pointer]':
+                  - button "Nº Revisão" [ref=e179]
+                - 'columnheader "Status: Activate to sort" [ref=e180] [cursor=pointer]':
+                  - button "Status" [ref=e181]
+                - 'columnheader "Fornecedor: Activate to sort" [ref=e182] [cursor=pointer]':
+                  - button "Fornecedor" [ref=e183]
+                - columnheader "Ação" [ref=e184]
+            - rowgroup [ref=e185]:
+              - row [ref=e186]:
+                - cell "3517" [ref=e187]
+                - cell "076 - TELEFONIA FIXA" [ref=e188]
+                - cell "000000000000001" [ref=e189]
+                - cell "10/03/2025" [ref=e190]
+                - cell "09/03/2028" [ref=e191]
+                - cell "003" [ref=e192]
+                - cell "Vigente" [ref=e193]
+                - cell "02558157 - 0001" [ref=e195]
+                - cell [ref=e196]:
+                  - link "" [ref=e197] [cursor=pointer]:
+                    - /url: "#"
+                  - link "" [ref=e198] [cursor=pointer]:
+                    - /url: "#"
+                  - link "" [ref=e199] [cursor=pointer]:
+                    - /url: "#"
+          - table [ref=e202]:
+            - rowgroup [ref=e203]:
+              - row [ref=e204]:
+                - columnheader [ref=e205]:
+                  - textbox "Filtrar" [ref=e206]
+                - columnheader [ref=e207]:
+                  - textbox "Filtrar" [ref=e208]
+                - columnheader [ref=e209]:
+                  - textbox "Filtrar" [ref=e210]
+                - columnheader [ref=e211]:
+                  - textbox "Filtrar" [ref=e212]
+                - columnheader [ref=e213]:
+                  - textbox "Filtrar" [ref=e214]
+                - columnheader [ref=e215]:
+                  - textbox "Filtrar" [ref=e216]
+                - columnheader [ref=e217]:
+                  - textbox "Filtrar" [ref=e218]
+                - columnheader "Fornecedor" [ref=e219]
+                - columnheader "Ação" [ref=e220]
+        - generic [ref=e231]:
+          - status [ref=e233]: Mostrando de 1 até 1 de 1 registros (Filtrados de 845 registros)
+          - navigation [ref=e236]:
+            - link "First" [disabled] [ref=e237]: Primeiro
+            - link "Previous" [disabled] [ref=e238]: Anterior
+            - link "1" [ref=e239] [cursor=pointer]
+            - link "Next" [disabled] [ref=e240]: Próximo
+            - link "Last" [disabled] [ref=e241]: Último
+  - dialog [active] [ref=e243]:
+    - generic [ref=e245]:
+      - generic [ref=e246]:
+        - button "Close " [ref=e247] [cursor=pointer]:
+          - generic [ref=e248]: × 
+        - heading "Solicitação de Compra" [level=4] [ref=e250]
+      - generic [ref=e252]:
+        - alert [ref=e254]:
+          - text: 
+          - heading [level=2]
+          - paragraph
+          - list [ref=e255]:
+            - listitem [ref=e256]:
+              - generic [ref=e257]:
+                - heading "Aditivo contratual" [level=4] [ref=e258]
+                - text: Continuidade do contrato existente (aumento de quantidade de itens ou aumento da vigência sempre envolvendo alçada de valor).
+                - strong [ref=e259]: Protheus
+                - text: = abre revisão aberta e FC irá editar o contrato.
+            - listitem [ref=e260]:
+              - generic [ref=e261]:
+                - heading "Nova Contratação" [level=4] [ref=e262]
+                - text: Geração de um novo contrato, podendo ser com o fornecedor atual ou diferente. Aqui pode usar um contrato como referência.
+                - strong [ref=e263]: Protheus
+                - text: = gera novo contrato igual quando vem de SC.
+        - generic [ref=e264]:
+          - generic [ref=e265]:
+            - generic [ref=e266]: Tipo de Solicitação
+            - combobox "Tipo de Solicitação" [ref=e267]:
+              - option "Selecione..." [disabled]
+              - option "Selecione..." [disabled] [selected]
+              - option "Aditivo Contratual"
+              - option "Nova Contratação"
+          - generic [ref=e268]:
+            - generic [ref=e269]: Contrato
+            - textbox "Contrato" [disabled] [ref=e270]:
+              - /placeholder: Número do Contrato
+              - text: "000000000000001"
+          - generic [ref=e271]:
+            - generic [ref=e272]: Data de Necessidade
+            - textbox "Data de Necessidade" [ref=e273]
+        - generic [ref=e275]:
+          - generic [ref=e276]: Motivo da Solicitação
+          - textbox "Motivo da Solicitação" [ref=e277]:
+            - /placeholder: "Justificativa para a Solicitação. Ex: Aquisição de equipamentos para expansão de Departamentos."
+      - generic [ref=e278]:
+        - button "Confirmar" [ref=e279] [cursor=pointer]
+        - button "Fechar" [ref=e280] [cursor=pointer]
+```
+
+# Test source
+
+```ts
+  1  | // @ts-check
+  2  | 
+  3  | /**
+  4  |  * Modal "Solicitação de Compra", aberto a partir de uma linha do Portal de
+  5  |  * Acompanhamento de Contratos.
+  6  |  *
+  7  |  * É componente e não página: vive sobre o portal, e o mesmo modal é acionado de qualquer
+  8  |  * linha da grade.
+  9  |  *
+  10 |  * Ao abrir, o widget encadeia sete datasets (filial, itens da planilha, produtos, rateios,
+  11 |  * centro de custo, classe de valor e preço histórico). O carregamento dos itens é o que
+  12 |  * habilita o envio — por isso `expectAberto` espera pelo campo já preenchido, e não por tempo.
+  13 |  */
+  14 | export class SolicitacaoCompraModal {
+  15 |   /** @param {import('@playwright/test').Page} page */
+  16 |   constructor(page) {
+  17 |     this.page = page;
+  18 | 
+  19 |     this.dialog = page
+  20 |       .getByRole('dialog')
+  21 |       .filter({ has: page.getByRole('heading', { name: 'Solicitação de Compra' }) });
+  22 | 
+  23 |     this.titulo = this.dialog.getByRole('heading', { name: 'Solicitação de Compra' });
+  24 |     this.campoTipo = this.dialog.getByRole('combobox', { name: 'Tipo de Solicitação' });
+  25 |     this.campoContrato = this.dialog.getByRole('textbox', { name: 'Contrato' });
+  26 |     this.campoDataNecessidade = this.dialog.getByRole('textbox', { name: 'Data de Necessidade' });
+  27 |     this.campoMotivo = this.dialog.getByRole('textbox', { name: 'Motivo da Solicitação' });
+  28 |     this.botaoConfirmar = this.dialog.getByRole('button', { name: 'Confirmar' });
+  29 |     this.botaoFechar = this.dialog.getByRole('button', { name: 'Fechar' });
+  30 | 
+  31 |     // O alerta é renderizado FORA do dialog, na raiz da página.
+  32 |     this.alertaCamposObrigatorios = page.getByRole('alert').filter({ hasText: 'Campos Obrigatórios' });
+  33 |     // Defeito D-11: quando o Protheus não responde, este alerta é renderizado DUAS vezes.
+  34 |     // O locator devolve a coleção de propósito — há teste que afirma a contagem esperada.
+  35 |     this.alertasErro = page.getByRole('alert').filter({ hasText: 'ERRO' });
+  36 |   }
+  37 | 
+  38 |   /** Pré-condição: o modal abriu e já trouxe o contrato de origem. */
+  39 |   async expectAberto() {
+  40 |     await this.titulo.waitFor({ state: 'visible' });
+  41 |     await this.campoContrato.waitFor({ state: 'visible' });
+  42 |   }
+  43 | 
+  44 |   /**
+  45 |    * Preenche apenas os campos informados — permite montar o cenário de campo faltante
+  46 |    * sem precisar de um método por combinação.
+  47 |    * @param {Partial&lt;import('../factories/solicitacao-compra.js').SolicitacaoCompra&gt;} dados
+  48 |    */
+  49 |   async preencher(dados) {
+&gt; 50 |     if (dados.tipo !== undefined) await this.campoTipo.selectOption({ label: dados.tipo });
+     |                                                        ^ TimeoutError: locator.selectOption: Timeout 45000ms exceeded.
+  51 |     if (dados.dataNecessidade !== undefined) await this.campoDataNecessidade.fill(dados.dataNecessidade);
+  52 |     if (dados.motivo !== undefined) await this.campoMotivo.fill(dados.motivo);
+  53 |   }
+  54 | 
+  55 |   /**
+  56 |    * Aciona Confirmar.
+  57 |    *
+  58 |    * ⚠️ Com os quatro campos obrigatórios válidos, isto CRIA uma solicitação real no
+  59 |    * ambiente — registro que não tem exclusão disponível. Cenários que chegam a criar são
+  60 |    * marcados `@destrutivo` e não entram na execução padrão (ver README).
+  61 |    */
+  62 |   async confirmar() {
+  63 |     await this.botaoConfirmar.click();
+  64 |   }
+  65 | 
+  66 |   /** @returns {import('@playwright/test').Locator} */
+  67 |   getAlertaCamposObrigatorios() {
+  68 |     return this.alertaCamposObrigatorios;
+  69 |   }
+  70 | 
+  71 |   /**
+  72 |    * Coleção de alertas de erro exibidos. Ver D-11: hoje o mesmo erro sai duplicado.
+  73 |    * @returns {import('@playwright/test').Locator}
+  74 |    */
+  75 |   getAlertasErro() {
+  76 |     return this.alertasErro;
+  77 |   }
+  78 | 
+  79 |   /** @returns {import('@playwright/test').Locator} */
+  80 |   getDialog() {
+  81 |     return this.dialog;
+  82 |   }
+  83 | 
+  84 |   /** @returns {import('@playwright/test').Locator} */
+  85 |   getOpcoesDeTipo() {
+  86 |     return this.campoTipo.locator('option');
+  87 |   }
+  88 | }
+  89 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=228675 npx playwright test tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js -g "@destrutivo item de quantidade/valor zerado no contrato não deveria virar item extra na SC criada"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-f48c7-rar-item-extra-na-SC-criada-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-f48c7-rar-item-extra-na-SC-criada-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-f48c7-rar-item-extra-na-SC-criada-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-f48c7-rar-item-extra-na-SC-criada-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+
+<article class="falha" id="f8" data-classe="divergencia" data-area="acompanhamento-contratos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge divergencia">Divergência ambiente × suíte (o ambiente mudou)</span>
+      <span class="ordem">#9</span>
+    </div>
+    <h2>@destrutivo o servidor deveria recusar tipoSolicitacao vazio tanto quanto recusa motivoSolCompra vazio</h2>
+    <p class="suite">e2e/acompanhamento-contratos/criacao-solicitacao.spec.js › Bypass da validação de cliente no start direto (CT-ACC-04-S6 / D-10)</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:286</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>68.5s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>95168</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G1">G1</a> — O combo "Tipo de Solicitação" perdeu a opção "Renovação Contratual" — 24 testes caem no mesmo <code>selectOption</code> · <b>Referência:</b> CT-ACC-04-S6 / D-10</p>
+    <p><b>O que acontece:</b> O teste preenche o modal da Solicitação de Compra com a factory padrão (tipo "Renovação Contratual"). O <code>selectOption</code> no combo "Tipo de Solicitação" não encontra a opção, tenta por 45 s (<code>actionTimeout</code>) e falha com <code>did not find some options</code>.</p>
+    <p><b>Por que falha:</b> O ambiente não oferece mais "Renovação Contratual" (oferece "Aditivo Contratual" e "Nova Contratação"). A falha ocorre antes da assertion que dá nome ao teste — não é veredito sobre o produto.</p>
+    <p><b>Onde falha:</b> <code>components/SolicitacaoCompraModal.js</code> → <code>campoTipo.selectOption(...)</code>, chamado de <code>preencher()</code>. <span class="g">(local exato registrado pelo Playwright: <code>components/SolicitacaoCompraModal.js:50</code>)</span></p>
+    <p><b>Reexecução com "Aditivo Contratual":</b> Reexecutado com "Aditivo": start direto com <code>tipoSolicitacao</code> vazio respondeu <b>200</b> (o servidor recusa <code>motivoSolCompra</code> vazio, mas não o tipo). Validação só no cliente — contornável. Defeito confirmado, não catalogado no README.</p>
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">TimeoutError: locator.selectOption: Timeout 45000ms exceeded.</p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">44</span>  /**</span>
+<span class="linha"><span class="num">45</span>   * Preenche apenas os campos informados — permite montar o cenário de campo faltante</span>
+<span class="linha"><span class="num">46</span>   * sem precisar de um método por combinação.</span>
+<span class="linha"><span class="num">47</span>   * @param {Partial&lt;import('../factories/solicitacao-compra.js').SolicitacaoCompra&gt;} dados</span>
+<span class="linha"><span class="num">48</span>   */</span>
+<span class="linha"><span class="num">49</span>  async preencher(dados) {</span>
+<span class="linha alvo"><span class="num">50</span>    if (dados.tipo !== undefined) await this.campoTipo.selectOption({ label: dados.tipo });</span>
+<span class="linha"><span class="num">51</span>    if (dados.dataNecessidade !== undefined) await this.campoDataNecessidade.fill(dados.dataNecessidade);</span>
+<span class="linha"><span class="num">52</span>    if (dados.motivo !== undefined) await this.campoMotivo.fill(dados.motivo);</span>
+<span class="linha"><span class="num">53</span>  }</span>
+<span class="linha"><span class="num">54</span></span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js",
+    "Bypass da validação de cliente no start direto (CT-ACC-04-S6 / D-10)",
+    "@destrutivo o servidor deveria recusar tipoSolicitacao vazio tanto quanto recusa motivoSolCompra vazio"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/acompanhamentoContrato",
+  "fakerSeed": 95168,
+  "reproduzirCom": "FAKER_SEED=95168 npx playwright test",
+  "erro": "TimeoutError: locator.selectOption: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })\u001b[22m\n\u001b[2m    - locator resolved to &lt;select class=\"form-control\" id=\"tipoSolicitacao\" name=\"tipoSolicitacao\"&gt;…&lt;/select&gt;\u001b[22m\n\u001b[2m  - attempting select option action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    88 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m       - did not find some options\u001b[22m\n\u001b[2m     - retrying select option action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })
+    - locator resolved to &lt;select class="form-control" id="tipoSolicitacao" name="tipoSolicitacao"&gt;…&lt;/select&gt;
+  - attempting select option action
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+    - waiting 20ms
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+      - waiting 100ms
+    88 × waiting for element to be visible and enabled
+       - did not find some options
+     - retrying select option action
+       - waiting 500ms</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/acompanhamento-contratos/criacao-solicitacao.spec.js &gt;&gt; Bypass da validação de cliente no start direto (CT-ACC-04-S6 / D-10) &gt;&gt; @destrutivo o servidor deveria recusar tipoSolicitacao vazio tanto quanto recusa motivoSolCompra vazio
+- Location: tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:286:3
+
+# Error details
+
+```
+TimeoutError: locator.selectOption: Timeout 45000ms exceeded.
+Call log:
+  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })
+    - locator resolved to &lt;select class="form-control" id="tipoSolicitacao" name="tipoSolicitacao"&gt;…&lt;/select&gt;
+  - attempting select option action
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+    - waiting 20ms
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+      - waiting 100ms
+    88 × waiting for element to be visible and enabled
+       - did not find some options
+     - retrying select option action
+       - waiting 500ms
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - generic [ref=e7]:
+              - text: 
+              - link [ref=e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=e9]
+            - generic [ref=e10]:
+              - button "Abrir notificações" [ref=e12] [cursor=pointer]:
+                - generic [ref=e13]: 9+
+                - generic [ref=e14]: 
+              - img "Usuário TBC (TOTVS)" [ref=e17] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=e18]:
+      - generic [ref=e20]:
+        - list [ref=e21]:
+          - listitem [ref=e22]:
+            - link "Home" [ref=e23] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=e24]: 
+          - listitem [ref=e26]:
+            - link "Buscar" [ref=e27] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e28]: 
+              - generic [ref=e30]: 
+          - listitem [ref=e32]:
+            - link "Favoritos" [ref=e33] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=e34]: 
+              - generic [ref=e36]: 
+        - list [ref=e38]:
+          - listitem [ref=e39]:
+            - link "Documentos" [ref=e40] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=e41]: 
+          - listitem [ref=e43]:
+            - link "Processos" [ref=e44] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=e45]: 
+              - generic [ref=e47]: 
+          - listitem [ref=e49]:
+            - link "Central de Tarefas" [ref=e50] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=e51]: 
+          - listitem [ref=e53]:
+            - link "Social" [ref=e54] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=e55]: 
+          - listitem [ref=e57]:
+            - link "Comunidades" [ref=e58] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=e59]: 
+          - listitem [ref=e61]:
+            - link "Acompanhamento de Contratos" [ref=e62] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e63]: 
+              - generic [ref=e65]: 
+        - list [ref=e67]:
+          - listitem [ref=e68]:
+            - link "Store" [ref=e69] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=e70]: 
+          - listitem [ref=e72]:
+            - link "Lixeira" [ref=e73] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=e74]: 
+        - list [ref=e76]:
+          - listitem [ref=e77]:
+            - link "Fechar menu" [ref=e78] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e80]: 
+    - generic [ref=e90]:
+      - heading "Acompanhamento de Contratos" [level=3] [ref=e91]
+      - generic [ref=e94]:
+        - generic [ref=e95]:
+          - generic [ref=e98]:
+            - text: Exibir
+            - combobox "Exibir resultados por página" [ref=e99]:
+              - option "Todos" [selected]
+              - option "10"
+              - option "25"
+              - option "50"
+              - option "75"
+              - option "100"
+            - text: resultados por página
+          - generic [ref=e101]:
+            - generic [ref=e102]: Pesquisar
+            - searchbox "Pesquisar" [ref=e103]: "000000000000001"
+        - generic [ref=e106]:
+          - table [ref=e109]:
+            - rowgroup [ref=e110]:
+              - row [ref=e111]:
+                - 'columnheader "Filial: Activate to sort" [ref=e112] [cursor=pointer]':
+                  - button "Filial" [ref=e113]
+                - 'columnheader "Tipo Contrato: Activate to sort" [ref=e115] [cursor=pointer]':
+                  - button "Tipo Contrato" [ref=e116]
+                - 'columnheader "Contrato: Activate to invert sorting" [ref=e118] [cursor=pointer]':
+                  - button "Contrato" [ref=e119]
+                - 'columnheader "Data Inicio: Activate to sort" [ref=e121] [cursor=pointer]':
+                  - button "Data Inicio" [ref=e122]
+                - 'columnheader "Data Fim: Activate to sort" [ref=e124] [cursor=pointer]':
+                  - button "Data Fim" [ref=e125]
+                - 'columnheader "Nº Revisão: Activate to sort" [ref=e127] [cursor=pointer]':
+                  - button "Nº Revisão" [ref=e128]
+                - 'columnheader "Status: Activate to sort" [ref=e130] [cursor=pointer]':
+                  - button "Status" [ref=e131]
+                - 'columnheader "Fornecedor: Activate to sort" [ref=e133] [cursor=pointer]':
+                  - button "Fornecedor" [ref=e134]
+                - columnheader "Ação" [ref=e136]
+          - table [ref=e148]:
+            - rowgroup:
+              - row "Fornecedor Ação":
+                - columnheader:
+                  - textbox "Filtrar" [ref=e159]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e160]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e161]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e162]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e163]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e164]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e165]
+                - columnheader "Fornecedor"
+                - columnheader "Ação"
+            - rowgroup [ref=e166]:
+              - row [ref=e167]:
+                - 'columnheader "Filial: Activate to sort" [ref=e168] [cursor=pointer]':
+                  - button "Filial" [ref=e169]
+                - 'columnheader "Tipo Contrato: Activate to sort" [ref=e170] [cursor=pointer]':
+                  - button "Tipo Contrato" [ref=e171]
+                - 'columnheader "Contrato: Activate to invert sorting" [ref=e172] [cursor=pointer]':
+                  - button "Contrato" [ref=e173]
+                - 'columnheader "Data Inicio: Activate to sort" [ref=e174] [cursor=pointer]':
+                  - button "Data Inicio" [ref=e175]
+                - 'columnheader "Data Fim: Activate to sort" [ref=e176] [cursor=pointer]':
+                  - button "Data Fim" [ref=e177]
+                - 'columnheader "Nº Revisão: Activate to sort" [ref=e178] [cursor=pointer]':
+                  - button "Nº Revisão" [ref=e179]
+                - 'columnheader "Status: Activate to sort" [ref=e180] [cursor=pointer]':
+                  - button "Status" [ref=e181]
+                - 'columnheader "Fornecedor: Activate to sort" [ref=e182] [cursor=pointer]':
+                  - button "Fornecedor" [ref=e183]
+                - columnheader "Ação" [ref=e184]
+            - rowgroup [ref=e185]:
+              - row [ref=e186]:
+                - cell "3517" [ref=e187]
+                - cell "076 - TELEFONIA FIXA" [ref=e188]
+                - cell "000000000000001" [ref=e189]
+                - cell "10/03/2025" [ref=e190]
+                - cell "09/03/2028" [ref=e191]
+                - cell "003" [ref=e192]
+                - cell "Vigente" [ref=e193]
+                - cell "02558157 - 0001" [ref=e195]
+                - cell [ref=e196]:
+                  - link "" [ref=e197] [cursor=pointer]:
+                    - /url: "#"
+                  - link "" [ref=e198] [cursor=pointer]:
+                    - /url: "#"
+                  - link "" [ref=e199] [cursor=pointer]:
+                    - /url: "#"
+          - table [ref=e202]:
+            - rowgroup [ref=e203]:
+              - row [ref=e204]:
+                - columnheader [ref=e205]:
+                  - textbox "Filtrar" [ref=e206]
+                - columnheader [ref=e207]:
+                  - textbox "Filtrar" [ref=e208]
+                - columnheader [ref=e209]:
+                  - textbox "Filtrar" [ref=e210]
+                - columnheader [ref=e211]:
+                  - textbox "Filtrar" [ref=e212]
+                - columnheader [ref=e213]:
+                  - textbox "Filtrar" [ref=e214]
+                - columnheader [ref=e215]:
+                  - textbox "Filtrar" [ref=e216]
+                - columnheader [ref=e217]:
+                  - textbox "Filtrar" [ref=e218]
+                - columnheader "Fornecedor" [ref=e219]
+                - columnheader "Ação" [ref=e220]
+        - generic [ref=e231]:
+          - status [ref=e233]: Mostrando de 1 até 1 de 1 registros (Filtrados de 845 registros)
+          - navigation [ref=e236]:
+            - link "First" [disabled] [ref=e237]: Primeiro
+            - link "Previous" [disabled] [ref=e238]: Anterior
+            - link "1" [ref=e239] [cursor=pointer]
+            - link "Next" [disabled] [ref=e240]: Próximo
+            - link "Last" [disabled] [ref=e241]: Último
+  - dialog [active] [ref=e243]:
+    - generic [ref=e245]:
+      - generic [ref=e246]:
+        - button "Close " [ref=e247] [cursor=pointer]:
+          - generic [ref=e248]: × 
+        - heading "Solicitação de Compra" [level=4] [ref=e250]
+      - generic [ref=e252]:
+        - alert [ref=e254]:
+          - text: 
+          - heading [level=2]
+          - paragraph
+          - list [ref=e255]:
+            - listitem [ref=e256]:
+              - generic [ref=e257]:
+                - heading "Aditivo contratual" [level=4] [ref=e258]
+                - text: Continuidade do contrato existente (aumento de quantidade de itens ou aumento da vigência sempre envolvendo alçada de valor).
+                - strong [ref=e259]: Protheus
+                - text: = abre revisão aberta e FC irá editar o contrato.
+            - listitem [ref=e260]:
+              - generic [ref=e261]:
+                - heading "Nova Contratação" [level=4] [ref=e262]
+                - text: Geração de um novo contrato, podendo ser com o fornecedor atual ou diferente. Aqui pode usar um contrato como referência.
+                - strong [ref=e263]: Protheus
+                - text: = gera novo contrato igual quando vem de SC.
+        - generic [ref=e264]:
+          - generic [ref=e265]:
+            - generic [ref=e266]: Tipo de Solicitação
+            - combobox "Tipo de Solicitação" [ref=e267]:
+              - option "Selecione..." [disabled]
+              - option "Selecione..." [disabled] [selected]
+              - option "Aditivo Contratual"
+              - option "Nova Contratação"
+          - generic [ref=e268]:
+            - generic [ref=e269]: Contrato
+            - textbox "Contrato" [disabled] [ref=e270]:
+              - /placeholder: Número do Contrato
+              - text: "000000000000001"
+          - generic [ref=e271]:
+            - generic [ref=e272]: Data de Necessidade
+            - textbox "Data de Necessidade" [ref=e273]
+        - generic [ref=e275]:
+          - generic [ref=e276]: Motivo da Solicitação
+          - textbox "Motivo da Solicitação" [ref=e277]:
+            - /placeholder: "Justificativa para a Solicitação. Ex: Aquisição de equipamentos para expansão de Departamentos."
+      - generic [ref=e278]:
+        - button "Confirmar" [ref=e279] [cursor=pointer]
+        - button "Fechar" [ref=e280] [cursor=pointer]
+```
+
+# Test source
+
+```ts
+  1  | // @ts-check
+  2  | 
+  3  | /**
+  4  |  * Modal "Solicitação de Compra", aberto a partir de uma linha do Portal de
+  5  |  * Acompanhamento de Contratos.
+  6  |  *
+  7  |  * É componente e não página: vive sobre o portal, e o mesmo modal é acionado de qualquer
+  8  |  * linha da grade.
+  9  |  *
+  10 |  * Ao abrir, o widget encadeia sete datasets (filial, itens da planilha, produtos, rateios,
+  11 |  * centro de custo, classe de valor e preço histórico). O carregamento dos itens é o que
+  12 |  * habilita o envio — por isso `expectAberto` espera pelo campo já preenchido, e não por tempo.
+  13 |  */
+  14 | export class SolicitacaoCompraModal {
+  15 |   /** @param {import('@playwright/test').Page} page */
+  16 |   constructor(page) {
+  17 |     this.page = page;
+  18 | 
+  19 |     this.dialog = page
+  20 |       .getByRole('dialog')
+  21 |       .filter({ has: page.getByRole('heading', { name: 'Solicitação de Compra' }) });
+  22 | 
+  23 |     this.titulo = this.dialog.getByRole('heading', { name: 'Solicitação de Compra' });
+  24 |     this.campoTipo = this.dialog.getByRole('combobox', { name: 'Tipo de Solicitação' });
+  25 |     this.campoContrato = this.dialog.getByRole('textbox', { name: 'Contrato' });
+  26 |     this.campoDataNecessidade = this.dialog.getByRole('textbox', { name: 'Data de Necessidade' });
+  27 |     this.campoMotivo = this.dialog.getByRole('textbox', { name: 'Motivo da Solicitação' });
+  28 |     this.botaoConfirmar = this.dialog.getByRole('button', { name: 'Confirmar' });
+  29 |     this.botaoFechar = this.dialog.getByRole('button', { name: 'Fechar' });
+  30 | 
+  31 |     // O alerta é renderizado FORA do dialog, na raiz da página.
+  32 |     this.alertaCamposObrigatorios = page.getByRole('alert').filter({ hasText: 'Campos Obrigatórios' });
+  33 |     // Defeito D-11: quando o Protheus não responde, este alerta é renderizado DUAS vezes.
+  34 |     // O locator devolve a coleção de propósito — há teste que afirma a contagem esperada.
+  35 |     this.alertasErro = page.getByRole('alert').filter({ hasText: 'ERRO' });
+  36 |   }
+  37 | 
+  38 |   /** Pré-condição: o modal abriu e já trouxe o contrato de origem. */
+  39 |   async expectAberto() {
+  40 |     await this.titulo.waitFor({ state: 'visible' });
+  41 |     await this.campoContrato.waitFor({ state: 'visible' });
+  42 |   }
+  43 | 
+  44 |   /**
+  45 |    * Preenche apenas os campos informados — permite montar o cenário de campo faltante
+  46 |    * sem precisar de um método por combinação.
+  47 |    * @param {Partial&lt;import('../factories/solicitacao-compra.js').SolicitacaoCompra&gt;} dados
+  48 |    */
+  49 |   async preencher(dados) {
+&gt; 50 |     if (dados.tipo !== undefined) await this.campoTipo.selectOption({ label: dados.tipo });
+     |                                                        ^ TimeoutError: locator.selectOption: Timeout 45000ms exceeded.
+  51 |     if (dados.dataNecessidade !== undefined) await this.campoDataNecessidade.fill(dados.dataNecessidade);
+  52 |     if (dados.motivo !== undefined) await this.campoMotivo.fill(dados.motivo);
+  53 |   }
+  54 | 
+  55 |   /**
+  56 |    * Aciona Confirmar.
+  57 |    *
+  58 |    * ⚠️ Com os quatro campos obrigatórios válidos, isto CRIA uma solicitação real no
+  59 |    * ambiente — registro que não tem exclusão disponível. Cenários que chegam a criar são
+  60 |    * marcados `@destrutivo` e não entram na execução padrão (ver README).
+  61 |    */
+  62 |   async confirmar() {
+  63 |     await this.botaoConfirmar.click();
+  64 |   }
+  65 | 
+  66 |   /** @returns {import('@playwright/test').Locator} */
+  67 |   getAlertaCamposObrigatorios() {
+  68 |     return this.alertaCamposObrigatorios;
+  69 |   }
+  70 | 
+  71 |   /**
+  72 |    * Coleção de alertas de erro exibidos. Ver D-11: hoje o mesmo erro sai duplicado.
+  73 |    * @returns {import('@playwright/test').Locator}
+  74 |    */
+  75 |   getAlertasErro() {
+  76 |     return this.alertasErro;
+  77 |   }
+  78 | 
+  79 |   /** @returns {import('@playwright/test').Locator} */
+  80 |   getDialog() {
+  81 |     return this.dialog;
+  82 |   }
+  83 | 
+  84 |   /** @returns {import('@playwright/test').Locator} */
+  85 |   getOpcoesDeTipo() {
+  86 |     return this.campoTipo.locator('option');
+  87 |   }
+  88 | }
+  89 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=95168 npx playwright test tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js -g "@destrutivo o servidor deveria recusar tipoSolicitacao vazio tanto quanto recusa motivoSolCompra vazio"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-6847d-ecusa-motivoSolCompra-vazio-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-6847d-ecusa-motivoSolCompra-vazio-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-6847d-ecusa-motivoSolCompra-vazio-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-6847d-ecusa-motivoSolCompra-vazio-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+
+<article class="falha" id="f9" data-classe="divergencia" data-area="acompanhamento-contratos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge divergencia">Divergência ambiente × suíte (o ambiente mudou)</span>
+      <span class="ordem">#10</span>
+    </div>
+    <h2>@destrutivo o portal deveria alertar sobre a SC já em andamento para o mesmo contrato/revisão</h2>
+    <p class="suite">e2e/acompanhamento-contratos/criacao-solicitacao.spec.js › Segunda SC para o mesmo contrato/revisão sem alerta de duplicidade (CT-E2E-12-S1)</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:416</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>58.4s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>875768</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G1">G1</a> — O combo "Tipo de Solicitação" perdeu a opção "Renovação Contratual" — 24 testes caem no mesmo <code>selectOption</code> · <b>Referência:</b> CT-E2E-12-S1</p>
+    <p><b>O que acontece:</b> O teste preenche o modal da Solicitação de Compra com a factory padrão (tipo "Renovação Contratual"). O <code>selectOption</code> no combo "Tipo de Solicitação" não encontra a opção, tenta por 45 s (<code>actionTimeout</code>) e falha com <code>did not find some options</code>.</p>
+    <p><b>Por que falha:</b> O ambiente não oferece mais "Renovação Contratual" (oferece "Aditivo Contratual" e "Nova Contratação"). A falha ocorre antes da assertion que dá nome ao teste — não é veredito sobre o produto.</p>
+    <p><b>Onde falha:</b> <code>components/SolicitacaoCompraModal.js</code> → <code>campoTipo.selectOption(...)</code>, chamado de <code>preencher()</code>. <span class="g">(local exato registrado pelo Playwright: <code>components/SolicitacaoCompraModal.js:50</code>)</span></p>
+    <p><b>Reexecução com "Aditivo Contratual":</b> Reexecutado com "Aditivo": com a SC 113185 já em andamento para o contrato 000000000000001, reabrir o modal do mesmo contrato não exibe aviso algum de duplicidade. Defeito confirmado, não catalogado no README.</p>
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">TimeoutError: locator.selectOption: Timeout 45000ms exceeded.</p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">44</span>  /**</span>
+<span class="linha"><span class="num">45</span>   * Preenche apenas os campos informados — permite montar o cenário de campo faltante</span>
+<span class="linha"><span class="num">46</span>   * sem precisar de um método por combinação.</span>
+<span class="linha"><span class="num">47</span>   * @param {Partial&lt;import('../factories/solicitacao-compra.js').SolicitacaoCompra&gt;} dados</span>
+<span class="linha"><span class="num">48</span>   */</span>
+<span class="linha"><span class="num">49</span>  async preencher(dados) {</span>
+<span class="linha alvo"><span class="num">50</span>    if (dados.tipo !== undefined) await this.campoTipo.selectOption({ label: dados.tipo });</span>
+<span class="linha"><span class="num">51</span>    if (dados.dataNecessidade !== undefined) await this.campoDataNecessidade.fill(dados.dataNecessidade);</span>
+<span class="linha"><span class="num">52</span>    if (dados.motivo !== undefined) await this.campoMotivo.fill(dados.motivo);</span>
+<span class="linha"><span class="num">53</span>  }</span>
+<span class="linha"><span class="num">54</span></span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js",
+    "Segunda SC para o mesmo contrato/revisão sem alerta de duplicidade (CT-E2E-12-S1)",
+    "@destrutivo o portal deveria alertar sobre a SC já em andamento para o mesmo contrato/revisão"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/acompanhamentoContrato",
+  "fakerSeed": 875768,
+  "reproduzirCom": "FAKER_SEED=875768 npx playwright test",
+  "erro": "TimeoutError: locator.selectOption: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })\u001b[22m\n\u001b[2m    - locator resolved to &lt;select class=\"form-control\" id=\"tipoSolicitacao\" name=\"tipoSolicitacao\"&gt;…&lt;/select&gt;\u001b[22m\n\u001b[2m  - attempting select option action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    88 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m       - did not find some options\u001b[22m\n\u001b[2m     - retrying select option action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })
+    - locator resolved to &lt;select class="form-control" id="tipoSolicitacao" name="tipoSolicitacao"&gt;…&lt;/select&gt;
+  - attempting select option action
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+    - waiting 20ms
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+      - waiting 100ms
+    88 × waiting for element to be visible and enabled
+       - did not find some options
+     - retrying select option action
+       - waiting 500ms</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/acompanhamento-contratos/criacao-solicitacao.spec.js &gt;&gt; Segunda SC para o mesmo contrato/revisão sem alerta de duplicidade (CT-E2E-12-S1) &gt;&gt; @destrutivo o portal deveria alertar sobre a SC já em andamento para o mesmo contrato/revisão
+- Location: tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:416:3
+
+# Error details
+
+```
+TimeoutError: locator.selectOption: Timeout 45000ms exceeded.
+Call log:
+  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })
+    - locator resolved to &lt;select class="form-control" id="tipoSolicitacao" name="tipoSolicitacao"&gt;…&lt;/select&gt;
+  - attempting select option action
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+    - waiting 20ms
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+      - waiting 100ms
+    88 × waiting for element to be visible and enabled
+       - did not find some options
+     - retrying select option action
+       - waiting 500ms
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - generic [ref=e7]:
+              - text: 
+              - link [ref=e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=e9]
+            - generic [ref=e10]:
+              - button "Abrir notificações" [ref=e12] [cursor=pointer]:
+                - generic [ref=e13]: 9+
+                - generic [ref=e14]: 
+              - img "Usuário TBC (TOTVS)" [ref=e17] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=e18]:
+      - generic [ref=e20]:
+        - list [ref=e21]:
+          - listitem [ref=e22]:
+            - link "Home" [ref=e23] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=e24]: 
+          - listitem [ref=e26]:
+            - link "Buscar" [ref=e27] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e28]: 
+              - generic [ref=e30]: 
+          - listitem [ref=e32]:
+            - link "Favoritos" [ref=e33] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=e34]: 
+              - generic [ref=e36]: 
+        - list [ref=e38]:
+          - listitem [ref=e39]:
+            - link "Documentos" [ref=e40] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=e41]: 
+          - listitem [ref=e43]:
+            - link "Processos" [ref=e44] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=e45]: 
+              - generic [ref=e47]: 
+          - listitem [ref=e49]:
+            - link "Central de Tarefas" [ref=e50] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=e51]: 
+          - listitem [ref=e53]:
+            - link "Social" [ref=e54] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=e55]: 
+          - listitem [ref=e57]:
+            - link "Comunidades" [ref=e58] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=e59]: 
+          - listitem [ref=e61]:
+            - link "Acompanhamento de Contratos" [ref=e62] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e63]: 
+              - generic [ref=e65]: 
+        - list [ref=e67]:
+          - listitem [ref=e68]:
+            - link "Store" [ref=e69] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=e70]: 
+          - listitem [ref=e72]:
+            - link "Lixeira" [ref=e73] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=e74]: 
+        - list [ref=e76]:
+          - listitem [ref=e77]:
+            - link "Fechar menu" [ref=e78] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e80]: 
+    - generic [ref=e90]:
+      - heading "Acompanhamento de Contratos" [level=3] [ref=e91]
+      - generic [ref=e94]:
+        - generic [ref=e95]:
+          - generic [ref=e98]:
+            - text: Exibir
+            - combobox "Exibir resultados por página" [ref=e99]:
+              - option "Todos" [selected]
+              - option "10"
+              - option "25"
+              - option "50"
+              - option "75"
+              - option "100"
+            - text: resultados por página
+          - generic [ref=e101]:
+            - generic [ref=e102]: Pesquisar
+            - searchbox "Pesquisar" [ref=e103]: "000000000000001"
+        - generic [ref=e106]:
+          - table [ref=e109]:
+            - rowgroup [ref=e110]:
+              - row [ref=e111]:
+                - 'columnheader "Filial: Activate to sort" [ref=e112] [cursor=pointer]':
+                  - button "Filial" [ref=e113]
+                - 'columnheader "Tipo Contrato: Activate to sort" [ref=e115] [cursor=pointer]':
+                  - button "Tipo Contrato" [ref=e116]
+                - 'columnheader "Contrato: Activate to invert sorting" [ref=e118] [cursor=pointer]':
+                  - button "Contrato" [ref=e119]
+                - 'columnheader "Data Inicio: Activate to sort" [ref=e121] [cursor=pointer]':
+                  - button "Data Inicio" [ref=e122]
+                - 'columnheader "Data Fim: Activate to sort" [ref=e124] [cursor=pointer]':
+                  - button "Data Fim" [ref=e125]
+                - 'columnheader "Nº Revisão: Activate to sort" [ref=e127] [cursor=pointer]':
+                  - button "Nº Revisão" [ref=e128]
+                - 'columnheader "Status: Activate to sort" [ref=e130] [cursor=pointer]':
+                  - button "Status" [ref=e131]
+                - 'columnheader "Fornecedor: Activate to sort" [ref=e133] [cursor=pointer]':
+                  - button "Fornecedor" [ref=e134]
+                - columnheader "Ação" [ref=e136]
+          - table [ref=e148]:
+            - rowgroup:
+              - row "Fornecedor Ação":
+                - columnheader:
+                  - textbox "Filtrar" [ref=e159]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e160]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e161]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e162]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e163]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e164]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e165]
+                - columnheader "Fornecedor"
+                - columnheader "Ação"
+            - rowgroup [ref=e166]:
+              - row [ref=e167]:
+                - 'columnheader "Filial: Activate to sort" [ref=e168] [cursor=pointer]':
+                  - button "Filial" [ref=e169]
+                - 'columnheader "Tipo Contrato: Activate to sort" [ref=e170] [cursor=pointer]':
+                  - button "Tipo Contrato" [ref=e171]
+                - 'columnheader "Contrato: Activate to invert sorting" [ref=e172] [cursor=pointer]':
+                  - button "Contrato" [ref=e173]
+                - 'columnheader "Data Inicio: Activate to sort" [ref=e174] [cursor=pointer]':
+                  - button "Data Inicio" [ref=e175]
+                - 'columnheader "Data Fim: Activate to sort" [ref=e176] [cursor=pointer]':
+                  - button "Data Fim" [ref=e177]
+                - 'columnheader "Nº Revisão: Activate to sort" [ref=e178] [cursor=pointer]':
+                  - button "Nº Revisão" [ref=e179]
+                - 'columnheader "Status: Activate to sort" [ref=e180] [cursor=pointer]':
+                  - button "Status" [ref=e181]
+                - 'columnheader "Fornecedor: Activate to sort" [ref=e182] [cursor=pointer]':
+                  - button "Fornecedor" [ref=e183]
+                - columnheader "Ação" [ref=e184]
+            - rowgroup [ref=e185]:
+              - row [ref=e186]:
+                - cell "3517" [ref=e187]
+                - cell "076 - TELEFONIA FIXA" [ref=e188]
+                - cell "000000000000001" [ref=e189]
+                - cell "10/03/2025" [ref=e190]
+                - cell "09/03/2028" [ref=e191]
+                - cell "003" [ref=e192]
+                - cell "Vigente" [ref=e193]
+                - cell "02558157 - 0001" [ref=e195]
+                - cell [ref=e196]:
+                  - link "" [ref=e197] [cursor=pointer]:
+                    - /url: "#"
+                  - link "" [ref=e198] [cursor=pointer]:
+                    - /url: "#"
+                  - link "" [ref=e199] [cursor=pointer]:
+                    - /url: "#"
+          - table [ref=e202]:
+            - rowgroup [ref=e203]:
+              - row [ref=e204]:
+                - columnheader [ref=e205]:
+                  - textbox "Filtrar" [ref=e206]
+                - columnheader [ref=e207]:
+                  - textbox "Filtrar" [ref=e208]
+                - columnheader [ref=e209]:
+                  - textbox "Filtrar" [ref=e210]
+                - columnheader [ref=e211]:
+                  - textbox "Filtrar" [ref=e212]
+                - columnheader [ref=e213]:
+                  - textbox "Filtrar" [ref=e214]
+                - columnheader [ref=e215]:
+                  - textbox "Filtrar" [ref=e216]
+                - columnheader [ref=e217]:
+                  - textbox "Filtrar" [ref=e218]
+                - columnheader "Fornecedor" [ref=e219]
+                - columnheader "Ação" [ref=e220]
+        - generic [ref=e231]:
+          - status [ref=e233]: Mostrando de 1 até 1 de 1 registros (Filtrados de 845 registros)
+          - navigation [ref=e236]:
+            - link "First" [disabled] [ref=e237]: Primeiro
+            - link "Previous" [disabled] [ref=e238]: Anterior
+            - link "1" [ref=e239] [cursor=pointer]
+            - link "Next" [disabled] [ref=e240]: Próximo
+            - link "Last" [disabled] [ref=e241]: Último
+  - dialog [active] [ref=e243]:
+    - generic [ref=e245]:
+      - generic [ref=e246]:
+        - button "Close " [ref=e247] [cursor=pointer]:
+          - generic [ref=e248]: × 
+        - heading "Solicitação de Compra" [level=4] [ref=e250]
+      - generic [ref=e252]:
+        - alert [ref=e254]:
+          - text: 
+          - heading [level=2]
+          - paragraph
+          - list [ref=e255]:
+            - listitem [ref=e256]:
+              - generic [ref=e257]:
+                - heading "Aditivo contratual" [level=4] [ref=e258]
+                - text: Continuidade do contrato existente (aumento de quantidade de itens ou aumento da vigência sempre envolvendo alçada de valor).
+                - strong [ref=e259]: Protheus
+                - text: = abre revisão aberta e FC irá editar o contrato.
+            - listitem [ref=e260]:
+              - generic [ref=e261]:
+                - heading "Nova Contratação" [level=4] [ref=e262]
+                - text: Geração de um novo contrato, podendo ser com o fornecedor atual ou diferente. Aqui pode usar um contrato como referência.
+                - strong [ref=e263]: Protheus
+                - text: = gera novo contrato igual quando vem de SC.
+        - generic [ref=e264]:
+          - generic [ref=e265]:
+            - generic [ref=e266]: Tipo de Solicitação
+            - combobox "Tipo de Solicitação" [ref=e267]:
+              - option "Selecione..." [disabled]
+              - option "Selecione..." [disabled] [selected]
+              - option "Aditivo Contratual"
+              - option "Nova Contratação"
+          - generic [ref=e268]:
+            - generic [ref=e269]: Contrato
+            - textbox "Contrato" [disabled] [ref=e270]:
+              - /placeholder: Número do Contrato
+              - text: "000000000000001"
+          - generic [ref=e271]:
+            - generic [ref=e272]: Data de Necessidade
+            - textbox "Data de Necessidade" [ref=e273]
+        - generic [ref=e275]:
+          - generic [ref=e276]: Motivo da Solicitação
+          - textbox "Motivo da Solicitação" [ref=e277]:
+            - /placeholder: "Justificativa para a Solicitação. Ex: Aquisição de equipamentos para expansão de Departamentos."
+      - generic [ref=e278]:
+        - button "Confirmar" [ref=e279] [cursor=pointer]
+        - button "Fechar" [ref=e280] [cursor=pointer]
+```
+
+# Test source
+
+```ts
+  1  | // @ts-check
+  2  | 
+  3  | /**
+  4  |  * Modal "Solicitação de Compra", aberto a partir de uma linha do Portal de
+  5  |  * Acompanhamento de Contratos.
+  6  |  *
+  7  |  * É componente e não página: vive sobre o portal, e o mesmo modal é acionado de qualquer
+  8  |  * linha da grade.
+  9  |  *
+  10 |  * Ao abrir, o widget encadeia sete datasets (filial, itens da planilha, produtos, rateios,
+  11 |  * centro de custo, classe de valor e preço histórico). O carregamento dos itens é o que
+  12 |  * habilita o envio — por isso `expectAberto` espera pelo campo já preenchido, e não por tempo.
+  13 |  */
+  14 | export class SolicitacaoCompraModal {
+  15 |   /** @param {import('@playwright/test').Page} page */
+  16 |   constructor(page) {
+  17 |     this.page = page;
+  18 | 
+  19 |     this.dialog = page
+  20 |       .getByRole('dialog')
+  21 |       .filter({ has: page.getByRole('heading', { name: 'Solicitação de Compra' }) });
+  22 | 
+  23 |     this.titulo = this.dialog.getByRole('heading', { name: 'Solicitação de Compra' });
+  24 |     this.campoTipo = this.dialog.getByRole('combobox', { name: 'Tipo de Solicitação' });
+  25 |     this.campoContrato = this.dialog.getByRole('textbox', { name: 'Contrato' });
+  26 |     this.campoDataNecessidade = this.dialog.getByRole('textbox', { name: 'Data de Necessidade' });
+  27 |     this.campoMotivo = this.dialog.getByRole('textbox', { name: 'Motivo da Solicitação' });
+  28 |     this.botaoConfirmar = this.dialog.getByRole('button', { name: 'Confirmar' });
+  29 |     this.botaoFechar = this.dialog.getByRole('button', { name: 'Fechar' });
+  30 | 
+  31 |     // O alerta é renderizado FORA do dialog, na raiz da página.
+  32 |     this.alertaCamposObrigatorios = page.getByRole('alert').filter({ hasText: 'Campos Obrigatórios' });
+  33 |     // Defeito D-11: quando o Protheus não responde, este alerta é renderizado DUAS vezes.
+  34 |     // O locator devolve a coleção de propósito — há teste que afirma a contagem esperada.
+  35 |     this.alertasErro = page.getByRole('alert').filter({ hasText: 'ERRO' });
+  36 |   }
+  37 | 
+  38 |   /** Pré-condição: o modal abriu e já trouxe o contrato de origem. */
+  39 |   async expectAberto() {
+  40 |     await this.titulo.waitFor({ state: 'visible' });
+  41 |     await this.campoContrato.waitFor({ state: 'visible' });
+  42 |   }
+  43 | 
+  44 |   /**
+  45 |    * Preenche apenas os campos informados — permite montar o cenário de campo faltante
+  46 |    * sem precisar de um método por combinação.
+  47 |    * @param {Partial&lt;import('../factories/solicitacao-compra.js').SolicitacaoCompra&gt;} dados
+  48 |    */
+  49 |   async preencher(dados) {
+&gt; 50 |     if (dados.tipo !== undefined) await this.campoTipo.selectOption({ label: dados.tipo });
+     |                                                        ^ TimeoutError: locator.selectOption: Timeout 45000ms exceeded.
+  51 |     if (dados.dataNecessidade !== undefined) await this.campoDataNecessidade.fill(dados.dataNecessidade);
+  52 |     if (dados.motivo !== undefined) await this.campoMotivo.fill(dados.motivo);
+  53 |   }
+  54 | 
+  55 |   /**
+  56 |    * Aciona Confirmar.
+  57 |    *
+  58 |    * ⚠️ Com os quatro campos obrigatórios válidos, isto CRIA uma solicitação real no
+  59 |    * ambiente — registro que não tem exclusão disponível. Cenários que chegam a criar são
+  60 |    * marcados `@destrutivo` e não entram na execução padrão (ver README).
+  61 |    */
+  62 |   async confirmar() {
+  63 |     await this.botaoConfirmar.click();
+  64 |   }
+  65 | 
+  66 |   /** @returns {import('@playwright/test').Locator} */
+  67 |   getAlertaCamposObrigatorios() {
+  68 |     return this.alertaCamposObrigatorios;
+  69 |   }
+  70 | 
+  71 |   /**
+  72 |    * Coleção de alertas de erro exibidos. Ver D-11: hoje o mesmo erro sai duplicado.
+  73 |    * @returns {import('@playwright/test').Locator}
+  74 |    */
+  75 |   getAlertasErro() {
+  76 |     return this.alertasErro;
+  77 |   }
+  78 | 
+  79 |   /** @returns {import('@playwright/test').Locator} */
+  80 |   getDialog() {
+  81 |     return this.dialog;
+  82 |   }
+  83 | 
+  84 |   /** @returns {import('@playwright/test').Locator} */
+  85 |   getOpcoesDeTipo() {
+  86 |     return this.campoTipo.locator('option');
+  87 |   }
+  88 | }
+  89 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=875768 npx playwright test tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js -g "@destrutivo o portal deveria alertar sobre a SC já em andamento para o mesmo contrato/revisão"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-daaae-ra-o-mesmo-contrato-revisão-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-daaae-ra-o-mesmo-contrato-revisão-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-daaae-ra-o-mesmo-contrato-revisão-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-daaae-ra-o-mesmo-contrato-revisão-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+
+<article class="falha" id="f10" data-classe="divergencia" data-area="acompanhamento-contratos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge divergencia">Divergência ambiente × suíte (o ambiente mudou)</span>
+      <span class="ordem">#11</span>
+    </div>
+    <h2>CT-ACC-06-S2 — item sem quantidade no contrato deve herdar a cascata e o preço real, nunca R$ 1,00</h2>
+    <p class="suite">e2e/acompanhamento-contratos/criacao-solicitacao.spec.js › Quantidade e valor em contrato de serviço sem CNB_QUANT (CT-ACC-06-S2)</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:507</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>59.3s</dd></div>
+      
+      <div><dt>Seed do faker</dt><dd><code>728859</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G1">G1</a> — O combo "Tipo de Solicitação" perdeu a opção "Renovação Contratual" — 24 testes caem no mesmo <code>selectOption</code> · <b>Referência:</b> CT-ACC-06-S2</p>
+    <p><b>O que acontece:</b> O teste preenche o modal da Solicitação de Compra com a factory padrão (tipo "Renovação Contratual"). O <code>selectOption</code> no combo "Tipo de Solicitação" não encontra a opção, tenta por 45 s (<code>actionTimeout</code>) e falha com <code>did not find some options</code>.</p>
+    <p><b>Por que falha:</b> O ambiente não oferece mais "Renovação Contratual" (oferece "Aditivo Contratual" e "Nova Contratação"). A falha ocorre antes da assertion que dá nome ao teste — não é veredito sobre o produto.</p>
+    <p><b>Onde falha:</b> <code>components/SolicitacaoCompraModal.js</code> → <code>campoTipo.selectOption(...)</code>, chamado de <code>preencher()</code>. <span class="g">(local exato registrado pelo Playwright: <code>components/SolicitacaoCompraModal.js:50</code>)</span></p>
+    <p><b>Reexecução com "Aditivo Contratual":</b> Reexecutado com "Aditivo": contrato 000000000000002 tem <code>CNB_QUANT</code> vazio e <code>CNB_QTDORI=36</code>; a SC deveria herdar 36 pela cascata e enviou quantidade 1. Defeito confirmado.</p>
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">TimeoutError: locator.selectOption: Timeout 45000ms exceeded.</p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">44</span>  /**</span>
+<span class="linha"><span class="num">45</span>   * Preenche apenas os campos informados — permite montar o cenário de campo faltante</span>
+<span class="linha"><span class="num">46</span>   * sem precisar de um método por combinação.</span>
+<span class="linha"><span class="num">47</span>   * @param {Partial&lt;import('../factories/solicitacao-compra.js').SolicitacaoCompra&gt;} dados</span>
+<span class="linha"><span class="num">48</span>   */</span>
+<span class="linha"><span class="num">49</span>  async preencher(dados) {</span>
+<span class="linha alvo"><span class="num">50</span>    if (dados.tipo !== undefined) await this.campoTipo.selectOption({ label: dados.tipo });</span>
+<span class="linha"><span class="num">51</span>    if (dados.dataNecessidade !== undefined) await this.campoDataNecessidade.fill(dados.dataNecessidade);</span>
+<span class="linha"><span class="num">52</span>    if (dados.motivo !== undefined) await this.campoMotivo.fill(dados.motivo);</span>
+<span class="linha"><span class="num">53</span>  }</span>
+<span class="linha"><span class="num">54</span></span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js",
+    "Quantidade e valor em contrato de serviço sem CNB_QUANT (CT-ACC-06-S2)",
+    "CT-ACC-06-S2 — item sem quantidade no contrato deve herdar a cascata e o preço real, nunca R$ 1,00"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/acompanhamentoContrato",
+  "fakerSeed": 728859,
+  "reproduzirCom": "FAKER_SEED=728859 npx playwright test",
+  "erro": "TimeoutError: locator.selectOption: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })\u001b[22m\n\u001b[2m    - locator resolved to &lt;select class=\"form-control\" id=\"tipoSolicitacao\" name=\"tipoSolicitacao\"&gt;…&lt;/select&gt;\u001b[22m\n\u001b[2m  - attempting select option action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    87 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m       - did not find some options\u001b[22m\n\u001b[2m     - retrying select option action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })
+    - locator resolved to &lt;select class="form-control" id="tipoSolicitacao" name="tipoSolicitacao"&gt;…&lt;/select&gt;
+  - attempting select option action
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+    - waiting 20ms
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+      - waiting 100ms
+    87 × waiting for element to be visible and enabled
+       - did not find some options
+     - retrying select option action
+       - waiting 500ms</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/acompanhamento-contratos/criacao-solicitacao.spec.js &gt;&gt; Quantidade e valor em contrato de serviço sem CNB_QUANT (CT-ACC-06-S2) &gt;&gt; CT-ACC-06-S2 — item sem quantidade no contrato deve herdar a cascata e o preço real, nunca R$ 1,00
+- Location: tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:507:3
+
+# Error details
+
+```
+TimeoutError: locator.selectOption: Timeout 45000ms exceeded.
+Call log:
+  - waiting for getByRole('dialog').filter({ has: getByRole('heading', { name: 'Solicitação de Compra' }) }).getByRole('combobox', { name: 'Tipo de Solicitação' })
+    - locator resolved to &lt;select class="form-control" id="tipoSolicitacao" name="tipoSolicitacao"&gt;…&lt;/select&gt;
+  - attempting select option action
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+    - waiting 20ms
+    2 × waiting for element to be visible and enabled
+      - did not find some options
+    - retrying select option action
+      - waiting 100ms
+    87 × waiting for element to be visible and enabled
+       - did not find some options
+     - retrying select option action
+       - waiting 500ms
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - generic [ref=e7]:
+              - text: 
+              - link [ref=e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=e9]
+            - generic [ref=e10]:
+              - button "Abrir notificações" [ref=e12] [cursor=pointer]:
+                - generic [ref=e13]: 9+
+                - generic [ref=e14]: 
+              - img "Usuário TBC (TOTVS)" [ref=e17] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=e18]:
+      - generic [ref=e20]:
+        - list [ref=e21]:
+          - listitem [ref=e22]:
+            - link "Home" [ref=e23] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=e24]: 
+          - listitem [ref=e26]:
+            - link "Buscar" [ref=e27] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e28]: 
+              - generic [ref=e30]: 
+          - listitem [ref=e32]:
+            - link "Favoritos" [ref=e33] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=e34]: 
+              - generic [ref=e36]: 
+        - list [ref=e38]:
+          - listitem [ref=e39]:
+            - link "Documentos" [ref=e40] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=e41]: 
+          - listitem [ref=e43]:
+            - link "Processos" [ref=e44] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=e45]: 
+              - generic [ref=e47]: 
+          - listitem [ref=e49]:
+            - link "Central de Tarefas" [ref=e50] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=e51]: 
+          - listitem [ref=e53]:
+            - link "Social" [ref=e54] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=e55]: 
+          - listitem [ref=e57]:
+            - link "Comunidades" [ref=e58] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=e59]: 
+          - listitem [ref=e61]:
+            - link "Acompanhamento de Contratos" [ref=e62] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e63]: 
+              - generic [ref=e65]: 
+        - list [ref=e67]:
+          - listitem [ref=e68]:
+            - link "Store" [ref=e69] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=e70]: 
+          - listitem [ref=e72]:
+            - link "Lixeira" [ref=e73] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=e74]: 
+        - list [ref=e76]:
+          - listitem [ref=e77]:
+            - link "Fechar menu" [ref=e78] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e80]: 
+    - generic [ref=e90]:
+      - heading "Acompanhamento de Contratos" [level=3] [ref=e91]
+      - generic [ref=e94]:
+        - generic [ref=e95]:
+          - generic [ref=e98]:
+            - text: Exibir
+            - combobox "Exibir resultados por página" [ref=e99]:
+              - option "Todos" [selected]
+              - option "10"
+              - option "25"
+              - option "50"
+              - option "75"
+              - option "100"
+            - text: resultados por página
+          - generic [ref=e101]:
+            - generic [ref=e102]: Pesquisar
+            - searchbox "Pesquisar" [ref=e103]: "000000000000002"
+        - generic [ref=e106]:
+          - table [ref=e109]:
+            - rowgroup [ref=e110]:
+              - row [ref=e111]:
+                - 'columnheader "Filial: Activate to sort" [ref=e112] [cursor=pointer]':
+                  - button "Filial" [ref=e113]
+                - 'columnheader "Tipo Contrato: Activate to sort" [ref=e115] [cursor=pointer]':
+                  - button "Tipo Contrato" [ref=e116]
+                - 'columnheader "Contrato: Activate to invert sorting" [ref=e118] [cursor=pointer]':
+                  - button "Contrato" [ref=e119]
+                - 'columnheader "Data Inicio: Activate to sort" [ref=e121] [cursor=pointer]':
+                  - button "Data Inicio" [ref=e122]
+                - 'columnheader "Data Fim: Activate to sort" [ref=e124] [cursor=pointer]':
+                  - button "Data Fim" [ref=e125]
+                - 'columnheader "Nº Revisão: Activate to sort" [ref=e127] [cursor=pointer]':
+                  - button "Nº Revisão" [ref=e128]
+                - 'columnheader "Status: Activate to sort" [ref=e130] [cursor=pointer]':
+                  - button "Status" [ref=e131]
+                - 'columnheader "Fornecedor: Activate to sort" [ref=e133] [cursor=pointer]':
+                  - button "Fornecedor" [ref=e134]
+                - columnheader "Ação" [ref=e136]
+          - table [ref=e148]:
+            - rowgroup:
+              - row "Fornecedor Ação":
+                - columnheader:
+                  - textbox "Filtrar" [ref=e159]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e160]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e161]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e162]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e163]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e164]
+                - columnheader:
+                  - textbox "Filtrar" [ref=e165]
+                - columnheader "Fornecedor"
+                - columnheader "Ação"
+            - rowgroup [ref=e166]:
+              - row [ref=e167]:
+                - 'columnheader "Filial: Activate to sort" [ref=e168] [cursor=pointer]':
+                  - button "Filial" [ref=e169]
+                - 'columnheader "Tipo Contrato: Activate to sort" [ref=e170] [cursor=pointer]':
+                  - button "Tipo Contrato" [ref=e171]
+                - 'columnheader "Contrato: Activate to invert sorting" [ref=e172] [cursor=pointer]':
+                  - button "Contrato" [ref=e173]
+                - 'columnheader "Data Inicio: Activate to sort" [ref=e174] [cursor=pointer]':
+                  - button "Data Inicio" [ref=e175]
+                - 'columnheader "Data Fim: Activate to sort" [ref=e176] [cursor=pointer]':
+                  - button "Data Fim" [ref=e177]
+                - 'columnheader "Nº Revisão: Activate to sort" [ref=e178] [cursor=pointer]':
+                  - button "Nº Revisão" [ref=e179]
+                - 'columnheader "Status: Activate to sort" [ref=e180] [cursor=pointer]':
+                  - button "Status" [ref=e181]
+                - 'columnheader "Fornecedor: Activate to sort" [ref=e182] [cursor=pointer]':
+                  - button "Fornecedor" [ref=e183]
+                - columnheader "Ação" [ref=e184]
+            - rowgroup [ref=e185]:
+              - row [ref=e186]:
+                - cell "4101" [ref=e187]
+                - cell "026 - HIGIENIZAÇÃO / LAVANDERIA" [ref=e188]
+                - cell "000000000000002" [ref=e189]
+                - cell "07/01/2025" [ref=e190]
+                - cell "06/01/2028" [ref=e191]
+                - cell [ref=e192]
+                - cell "Vigente" [ref=e193]
+                - cell "09247343 - 0001" [ref=e195]
+                - cell [ref=e196]:
+                  - link "" [ref=e197] [cursor=pointer]:
+                    - /url: "#"
+                  - link "" [ref=e198] [cursor=pointer]:
+                    - /url: "#"
+                  - link "" [ref=e199] [cursor=pointer]:
+                    - /url: "#"
+          - table [ref=e202]:
+            - rowgroup [ref=e203]:
+              - row [ref=e204]:
+                - columnheader [ref=e205]:
+                  - textbox "Filtrar" [ref=e206]
+                - columnheader [ref=e207]:
+                  - textbox "Filtrar" [ref=e208]
+                - columnheader [ref=e209]:
+                  - textbox "Filtrar" [ref=e210]
+                - columnheader [ref=e211]:
+                  - textbox "Filtrar" [ref=e212]
+                - columnheader [ref=e213]:
+                  - textbox "Filtrar" [ref=e214]
+                - columnheader [ref=e215]:
+                  - textbox "Filtrar" [ref=e216]
+                - columnheader [ref=e217]:
+                  - textbox "Filtrar" [ref=e218]
+                - columnheader "Fornecedor" [ref=e219]
+                - columnheader "Ação" [ref=e220]
+        - generic [ref=e231]:
+          - status [ref=e233]: Mostrando de 1 até 1 de 1 registros (Filtrados de 845 registros)
+          - navigation [ref=e236]:
+            - link "First" [disabled] [ref=e237]: Primeiro
+            - link "Previous" [disabled] [ref=e238]: Anterior
+            - link "1" [ref=e239] [cursor=pointer]
+            - link "Next" [disabled] [ref=e240]: Próximo
+            - link "Last" [disabled] [ref=e241]: Último
+  - dialog [active] [ref=e243]:
+    - generic [ref=e245]:
+      - generic [ref=e246]:
+        - button "Close " [ref=e247] [cursor=pointer]:
+          - generic [ref=e248]: × 
+        - heading "Solicitação de Compra" [level=4] [ref=e250]
+      - generic [ref=e252]:
+        - alert [ref=e254]:
+          - text: 
+          - heading [level=2]
+          - paragraph
+          - list [ref=e255]:
+            - listitem [ref=e256]:
+              - generic [ref=e257]:
+                - heading "Aditivo contratual" [level=4] [ref=e258]
+                - text: Continuidade do contrato existente (aumento de quantidade de itens ou aumento da vigência sempre envolvendo alçada de valor).
+                - strong [ref=e259]: Protheus
+                - text: = abre revisão aberta e FC irá editar o contrato.
+            - listitem [ref=e260]:
+              - generic [ref=e261]:
+                - heading "Nova Contratação" [level=4] [ref=e262]
+                - text: Geração de um novo contrato, podendo ser com o fornecedor atual ou diferente. Aqui pode usar um contrato como referência.
+                - strong [ref=e263]: Protheus
+                - text: = gera novo contrato igual quando vem de SC.
+        - generic [ref=e264]:
+          - generic [ref=e265]:
+            - generic [ref=e266]: Tipo de Solicitação
+            - combobox "Tipo de Solicitação" [ref=e267]:
+              - option "Selecione..." [disabled]
+              - option "Selecione..." [disabled] [selected]
+              - option "Aditivo Contratual"
+              - option "Nova Contratação"
+          - generic [ref=e268]:
+            - generic [ref=e269]: Contrato
+            - textbox "Contrato" [disabled] [ref=e270]:
+              - /placeholder: Número do Contrato
+              - text: "000000000000002"
+          - generic [ref=e271]:
+            - generic [ref=e272]: Data de Necessidade
+            - textbox "Data de Necessidade" [ref=e273]
+        - generic [ref=e275]:
+          - generic [ref=e276]: Motivo da Solicitação
+          - textbox "Motivo da Solicitação" [ref=e277]:
+            - /placeholder: "Justificativa para a Solicitação. Ex: Aquisição de equipamentos para expansão de Departamentos."
+      - generic [ref=e278]:
+        - button "Confirmar" [ref=e279] [cursor=pointer]
+        - button "Fechar" [ref=e280] [cursor=pointer]
+```
+
+# Test source
+
+```ts
+  1  | // @ts-check
+  2  | 
+  3  | /**
+  4  |  * Modal "Solicitação de Compra", aberto a partir de uma linha do Portal de
+  5  |  * Acompanhamento de Contratos.
+  6  |  *
+  7  |  * É componente e não página: vive sobre o portal, e o mesmo modal é acionado de qualquer
+  8  |  * linha da grade.
+  9  |  *
+  10 |  * Ao abrir, o widget encadeia sete datasets (filial, itens da planilha, produtos, rateios,
+  11 |  * centro de custo, classe de valor e preço histórico). O carregamento dos itens é o que
+  12 |  * habilita o envio — por isso `expectAberto` espera pelo campo já preenchido, e não por tempo.
+  13 |  */
+  14 | export class SolicitacaoCompraModal {
+  15 |   /** @param {import('@playwright/test').Page} page */
+  16 |   constructor(page) {
+  17 |     this.page = page;
+  18 | 
+  19 |     this.dialog = page
+  20 |       .getByRole('dialog')
+  21 |       .filter({ has: page.getByRole('heading', { name: 'Solicitação de Compra' }) });
+  22 | 
+  23 |     this.titulo = this.dialog.getByRole('heading', { name: 'Solicitação de Compra' });
+  24 |     this.campoTipo = this.dialog.getByRole('combobox', { name: 'Tipo de Solicitação' });
+  25 |     this.campoContrato = this.dialog.getByRole('textbox', { name: 'Contrato' });
+  26 |     this.campoDataNecessidade = this.dialog.getByRole('textbox', { name: 'Data de Necessidade' });
+  27 |     this.campoMotivo = this.dialog.getByRole('textbox', { name: 'Motivo da Solicitação' });
+  28 |     this.botaoConfirmar = this.dialog.getByRole('button', { name: 'Confirmar' });
+  29 |     this.botaoFechar = this.dialog.getByRole('button', { name: 'Fechar' });
+  30 | 
+  31 |     // O alerta é renderizado FORA do dialog, na raiz da página.
+  32 |     this.alertaCamposObrigatorios = page.getByRole('alert').filter({ hasText: 'Campos Obrigatórios' });
+  33 |     // Defeito D-11: quando o Protheus não responde, este alerta é renderizado DUAS vezes.
+  34 |     // O locator devolve a coleção de propósito — há teste que afirma a contagem esperada.
+  35 |     this.alertasErro = page.getByRole('alert').filter({ hasText: 'ERRO' });
+  36 |   }
+  37 | 
+  38 |   /** Pré-condição: o modal abriu e já trouxe o contrato de origem. */
+  39 |   async expectAberto() {
+  40 |     await this.titulo.waitFor({ state: 'visible' });
+  41 |     await this.campoContrato.waitFor({ state: 'visible' });
+  42 |   }
+  43 | 
+  44 |   /**
+  45 |    * Preenche apenas os campos informados — permite montar o cenário de campo faltante
+  46 |    * sem precisar de um método por combinação.
+  47 |    * @param {Partial&lt;import('../factories/solicitacao-compra.js').SolicitacaoCompra&gt;} dados
+  48 |    */
+  49 |   async preencher(dados) {
+&gt; 50 |     if (dados.tipo !== undefined) await this.campoTipo.selectOption({ label: dados.tipo });
+     |                                                        ^ TimeoutError: locator.selectOption: Timeout 45000ms exceeded.
+  51 |     if (dados.dataNecessidade !== undefined) await this.campoDataNecessidade.fill(dados.dataNecessidade);
+  52 |     if (dados.motivo !== undefined) await this.campoMotivo.fill(dados.motivo);
+  53 |   }
+  54 | 
+  55 |   /**
+  56 |    * Aciona Confirmar.
+  57 |    *
+  58 |    * ⚠️ Com os quatro campos obrigatórios válidos, isto CRIA uma solicitação real no
+  59 |    * ambiente — registro que não tem exclusão disponível. Cenários que chegam a criar são
+  60 |    * marcados `@destrutivo` e não entram na execução padrão (ver README).
+  61 |    */
+  62 |   async confirmar() {
+  63 |     await this.botaoConfirmar.click();
+  64 |   }
+  65 | 
+  66 |   /** @returns {import('@playwright/test').Locator} */
+  67 |   getAlertaCamposObrigatorios() {
+  68 |     return this.alertaCamposObrigatorios;
+  69 |   }
+  70 | 
+  71 |   /**
+  72 |    * Coleção de alertas de erro exibidos. Ver D-11: hoje o mesmo erro sai duplicado.
+  73 |    * @returns {import('@playwright/test').Locator}
+  74 |    */
+  75 |   getAlertasErro() {
+  76 |     return this.alertasErro;
+  77 |   }
+  78 | 
+  79 |   /** @returns {import('@playwright/test').Locator} */
+  80 |   getDialog() {
+  81 |     return this.dialog;
+  82 |   }
+  83 | 
+  84 |   /** @returns {import('@playwright/test').Locator} */
+  85 |   getOpcoesDeTipo() {
+  86 |     return this.campoTipo.locator('option');
+  87 |   }
+  88 | }
+  89 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=728859 npx playwright test tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js -g "CT-ACC-06-S2 — item sem quantidade no contrato deve herdar a cascata e o preço real, nunca R$ 1,00"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-feea0-e-o-preço-real-nunca-R-1-00-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-feea0-e-o-preço-real-nunca-R-1-00-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-feea0-e-o-preço-real-nunca-R-1-00-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/acomp/e2e-acompanhamento-contrat-feea0-e-o-preço-real-nunca-R-1-00-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+</main>
+<footer>
+  <p>Relatório da execução de 02/09/2026 — gerado por <code>scripts/relatorio-falhas.mjs</code> (evidências) +
+  <code>relatorios/gerar-final.mjs</code> (análise). Screenshots e aria-snapshots estão embutidos; trace e vídeo de cada
+  falha ficam em <code>test-results/&lt;fatia&gt;/</code> nos caminhos indicados em cada cartão
+  (<code>npx playwright show-trace &lt;trace.zip&gt;</code>).</p>
+</footer>
+
+</body>
+</html>

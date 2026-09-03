@@ -1,0 +1,353 @@
+{
+  "config": {
+    "argv": [
+      "/usr/bin/node",
+      "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/node_modules/.bin/playwright",
+      "test",
+      "--project=e2e",
+      "tests/e2e/fiscal",
+      "--output",
+      "test-results/fiscal",
+      "--reporter=list,json,blob"
+    ],
+    "configFile": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/playwright.config.js",
+    "rootDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/fixtures/global-setup.js",
+    "globalTeardown": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/fixtures/global-teardown.js",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 5
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/fiscal",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "autenticacao",
+        "name": "autenticacao",
+        "testDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/tests\\/e2e\\/auth\\/.*\\.spec\\.js/"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/fiscal",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "e2e",
+        "name": "e2e",
+        "testDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+        "testIgnore": [
+          "/tests\\/e2e\\/auth\\/.*\\.spec\\.js/"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ],
+      [
+        "blob"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 8,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "e2e/fiscal/rastreabilidade-rdfc.spec.js",
+      "file": "e2e/fiscal/rastreabilidade-rdfc.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "RDFC — rastreabilidade pai↔filho (contrato de dados)",
+          "file": "e2e/fiscal/rastreabilidade-rdfc.spec.js",
+          "line": 47,
+          "column": 6,
+          "specs": [
+            {
+              "title": "CT-RDF-02-H — o elo pai↔filho é bidirecional e consistente para todo par encontrado",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "592162"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 35386,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-02T18:01:48.574Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "592162"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a1d3671245aa55be11ed-eb84b7a0fd5a267872a6",
+              "file": "e2e/fiscal/rastreabilidade-rdfc.spec.js",
+              "line": 48,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "e2e/fiscal/recepcao-documentos-fiscais.spec.js",
+      "file": "e2e/fiscal/recepcao-documentos-fiscais.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Início de processo — Recepção de Documentos Fiscais (demais variantes)",
+          "file": "e2e/fiscal/recepcao-documentos-fiscais.spec.js",
+          "line": 30,
+          "column": 6,
+          "specs": [
+            {
+              "title": "deve bloquear o início de \"bpm_recepcao_documentos_fiscais_contratos\" com a mensagem de permissão",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "355020"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 4068,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-02T18:01:48.609Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "355020"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1a4b77a654033fbdfb1a-14a30e5826eb4998bc1f",
+              "file": "e2e/fiscal/recepcao-documentos-fiscais.spec.js",
+              "line": 40,
+              "column": 5
+            },
+            {
+              "title": "deve bloquear o início de \"bpm_recepcao_documentos_fiscais_comprador_compras\" com a mensagem de permissão",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "545282"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 4261,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-02T18:01:48.533Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "545282"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1a4b77a654033fbdfb1a-1497871be8a07f290fa9",
+              "file": "e2e/fiscal/recepcao-documentos-fiscais.spec.js",
+              "line": 40,
+              "column": 5
+            },
+            {
+              "title": "deve bloquear o início de \"bpm_recepcao_documentos_fiscais_demandante_compras\" com a mensagem de permissão",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "94873"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 4072,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-02T18:01:48.581Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "94873"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1a4b77a654033fbdfb1a-60b1d166361fceb33799",
+              "file": "e2e/fiscal/recepcao-documentos-fiscais.spec.js",
+              "line": 40,
+              "column": 5
+            },
+            {
+              "title": "deve bloquear o início de \"bpm_recepcao_documentos_fiscais_fiscais_contratos\" com a mensagem de permissão",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "881958"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 4055,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-02T18:01:48.676Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "881958"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1a4b77a654033fbdfb1a-94f1dbb30fd6fa45b969",
+              "file": "e2e/fiscal/recepcao-documentos-fiscais.spec.js",
+              "line": 40,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-02T18:01:46.153Z",
+    "duration": 38089.522000000004,
+    "expected": 5,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
