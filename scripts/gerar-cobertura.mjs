@@ -2,9 +2,13 @@
 /**
  * Regenera `docs/cobertura.md` a partir do catálogo e da suíte.
  *
- * A ligação entre catálogo e teste é o ID citado no título do teste. É o que torna a
- * cobertura auditável em vez de declarada — por isso este script existe: qualquer um
- * reproduz o número, e ele não depende de alguém ter contado à mão.
+ * A ligação entre catálogo e teste é o ID **declarado** pelo teste: no título de
+ * `test(...)`/`test.describe(...)` ou no cabeçalho do arquivo (antes do primeiro `test`).
+ * É o que torna a cobertura auditável em vez de declarada — por isso este script existe:
+ * qualquer um reproduz o número, e ele não depende de alguém ter contado à mão.
+ *
+ * Desde **03/09/2026**, menção em prosa (comentário, mensagem de assertion) **não conta**;
+ * ver o comentário da regra, mais abaixo.
  *
  *   node scripts/gerar-cobertura.mjs
  */
@@ -28,9 +32,25 @@ const MOTIVOS = {
   'CT-ADM-01-S2': 'reprocessar atividade de integração exige perfil de administrador',
   'CT-AUT-03-S3': 'exige token válido de redefinição, entregue por e-mail; sem caixa postal acessível',
   'CT-AUT-03-S4': 'idem CT-AUT-03-S3 — depende do token por e-mail',
-  'CT-DEP-01-S1': 'o formulário de Dependentes não monta campo sem matrícula ativa',
-  'CT-DEP-01-S2': 'idem CT-DEP-01-S1',
-  'CT-DEP-01-S3': 'idem CT-DEP-01-S1',
+  // ── Regras de negócio declaradas pelo cliente, sem teste por bloqueio duplo (03/09/2026) ──
+  // Acrescentadas ao catálogo como lacuna DECLARADA: a regra existe, o teste não. As duas
+  // causas são de ambiente/cadastro, não de escopo — provisionamento compete ao cliente.
+  'CT-CMP-05-S2':
+    'trava de alçada contra manipulação client-side: `TOTVS-FS` não está na AL/DHL do Protheus, então nenhuma tarefa de alçada chega à automação — e nenhuma SC dela chega à alçada (D-01). Declarado, não implementado; provisionamento compete ao cliente. Ler junto com CT-SEG-07-S1.',
+  'CT-CMP-06-S1':
+    'devolução na alçada (regerar documento): consequência de defeito aberto (D-01) + cadastro no ERP (SY1/AL) — declarado, não implementado; provisionamento compete ao cliente',
+  'CT-CMP-06-S2': 'idem CT-CMP-06-S1 — devolução para novo fornecedor (2º colocado)',
+  'CT-CMP-06-S3': 'idem CT-CMP-06-S1 — retorno para Cotação',
+  'CT-CMP-06-S4': 'idem CT-CMP-06-S1 — retorno para Negociação',
+  'CT-CMP-06-S5': 'idem CT-CMP-06-S1 — cancelamento a partir da alçada',
+  'CT-COT-03-H':
+    'regra de concorrência (dispensa ⇒ exatamente 1 fornecedor): nenhuma SC da automação chega à Cotação (D-01) e `TOTVS-FS` não é comprador na SY1 — declarado, não implementado; provisionamento compete ao cliente',
+  'CT-COT-03-S1': 'idem CT-COT-03-H — sem dispensa, 2 fornecedores devem ser recusados (mínimo 3)',
+  'CT-COT-03-S2': 'idem CT-COT-03-H — com dispensa, 2 fornecedores devem ser recusados',
+  'CT-DEP-01-H': 'o formulário de Dependentes não monta campo sem matrícula ativa',
+  'CT-DEP-01-S1': 'idem CT-DEP-01-H',
+  'CT-DEP-01-S2': 'idem CT-DEP-01-H',
+  'CT-DEP-01-S3': 'idem CT-DEP-01-H',
   'CT-FAT-03-S1':
     'compara medição automática × manual, e `dsSync_executeMedicaoManual` está inativo (U-09)',
   'CT-FER-01-H': 'o processo `wf_solicitacao_ferias` barra o usuário de Compras — exige grupo de RH',
@@ -53,8 +73,10 @@ const MOTIVOS = {
   'CT-PFN-05-H': 'idem CT-PFN-02-H',
   'CT-PFN-06-S1': 'injeção XSS real não se executa contra o ambiente — decisão, não limitação',
   'CT-PFN-07-S1': 'IDOR exige duas contas de fornecedor; nenhuma disponível',
-  'CT-SUB-01-S1': 'o formulário de Substituição responde "Funcionário não localizado" sem matrícula ativa',
-  'CT-SUB-01-S2': 'idem CT-SUB-01-S1',
+  'CT-SUB-01-H':
+    'o formulário de Substituição responde "Funcionário não localizado" sem matrícula ativa',
+  'CT-SUB-01-S1': 'idem CT-SUB-01-H',
+  'CT-SUB-01-S2': 'idem CT-SUB-01-H',
 };
 
 /** @param {string} dir @returns {string[]} */
@@ -78,35 +100,41 @@ for (const [, id, titulo] of catalogo.matchAll(
 }
 
 /**
- * Coleta os IDs citados nos TÍTULOS de `test(...)` e `test.describe(...)` — nunca no corpo do
- * arquivo inteiro.
- *
- * ⚠️ A versão anterior lia o arquivo todo, e por isso um ID mencionado num COMENTÁRIO contava
- * como cobertura. Descoberto em 26/08/2026 ao explicar o defeito de CT-ACC-06-S1: citar
- * `CT-ACC-06-S2` numa explicação fez a cobertura "subir" de 132 para 133 sem nenhum teste novo.
- * Cobertura que sobe porque alguém escreveu um comentário não é cobertura — é ruído.
+ * `RE_TITULO` extrai o texto do título de cada `test(...)` / `test.describe(...)`;
+ * `RE_PRIMEIRO_TESTE` marca onde termina o cabeçalho do arquivo. Juntos, delimitam os dois
+ * únicos lugares onde um ID declara cobertura — a regra está documentada logo abaixo.
  */
 const RE_TITULO = /(?:^|[\s.])(?:test|it)(?:\.\w+)*\s*\(\s*(['"`])([\s\S]*?)\1/g;
 const RE_PRIMEIRO_TESTE = /(?:^|[\s.])(?:test|it)(?:\.\w+)*\s*\(/;
 
 /**
- * Um caso conta como coberto quando seu ID aparece em algum arquivo de teste.
+ * **Regra de cobertura (desde 03/09/2026): DECLARAÇÃO, não menção.**
  *
- * ⚠️ **O que essa regra NÃO garante.** Ela é deliberadamente frouxa: a suíte declara cobertura
- * de três formas legítimas — no título do teste (preferida), no cabeçalho do arquivo
- * ("este spec cobre CT-X, CT-Y") e dentro da mensagem de uma assertion que documenta um caso
- * bloqueado. Exigir só o título derrubaria 40 casos que estão cobertos de verdade.
+ * Um caso conta como coberto quando seu ID aparece em UM dos dois lugares:
  *
- * O preço é que uma menção em PROSA também conta. Isso já mordeu: ao explicar o defeito de
- * CT-ACC-06-S1, bastou citar o ID do caso irmão num comentário para a cobertura ir de 132 para
- * 133 sem nenhum teste novo. Por isso o relatório lista abaixo, explicitamente, os IDs que
- * aparecem SÓ em prosa no meio do arquivo — são os candidatos a falso positivo, e ficam
- * auditáveis em vez de escondidos no total.
+ * 1. no **título** de um `test(...)` / `test.describe(...)` — a forma preferida;
+ * 2. no **cabeçalho do arquivo** (tudo que vem antes do primeiro `test`), onde um spec declara
+ *    "este arquivo cobre CT-X, CT-Y".
+ *
+ * Prosa no MEIO do arquivo — comentário explicativo, mensagem de assertion, referência cruzada
+ * a um caso irmão — **não conta mais**. Duas razões, ambas medidas:
+ *
+ * - o custo já tinha mordido: ao explicar o defeito de CT-ACC-06-S1, bastou citar o ID do caso
+ *   irmão num comentário para a cobertura subir sem nenhum teste novo;
+ * - e produzia incoerência: `CT-DEP-01-H` aparecia "coberto" porque uma mensagem de assertion o
+ *   citava, enquanto `CT-DEP-01-S1/S2/S3` — mesmo bloqueio, mesma frase — eram lacunas com
+ *   motivo declarado.
+ *
+ * O aviso "contados por menção em prosa" some por construção. No lugar dele, o relatório traz
+ * uma listagem apenas INFORMATIVA dos IDs mencionados só em prosa: eles não entram no total,
+ * mas ficam visíveis para auditoria (ou o ID vai para o título, ou o caso é lacuna com motivo).
+ *
+ * O mapa `onde` reflete, portanto, onde o ID é **declarado** — nunca onde é mencionado.
  */
 /** @type {Map<string, Set<string>>} */
 const onde = new Map();
-/** IDs cuja única menção é prosa fora de título e de cabeçalho. */
-const soEmProsa = new Set();
+/** Todo ID que apareceu em qualquer lugar de qualquer spec (inclusive prosa). */
+const mencionados = new Set();
 
 for (const caminho of specs('tests')) {
   const fonte = readFileSync(caminho, 'utf8');
@@ -116,15 +144,22 @@ for (const caminho of specs('tests')) {
     [cabecalho, ...[...fonte.matchAll(RE_TITULO)].map((m) => m[2])].flatMap((t) => t.match(RE) ?? []),
   );
 
-  for (const id of new Set(fonte.match(RE) ?? [])) {
+  for (const id of new Set(fonte.match(RE) ?? [])) mencionados.add(id);
+
+  for (const id of declarados) {
     if (!onde.has(id)) onde.set(id, new Set());
     onde.get(id)?.add(caminho.replace('tests/', ''));
-    if (!declarados.has(id)) soEmProsa.add(id);
-    else soEmProsa.delete(id);
   }
 }
 
-const orfaos = [...onde.keys()].filter((id) => !casos.includes(id)).sort();
+/**
+ * IDs mencionados em algum spec mas declarados em NENHUM — acumulado sobre todos os arquivos,
+ * nunca o veredito do último processado. (O defeito anterior era exatamente esse: um `delete`
+ * por arquivo fazia o resultado depender da ordem de leitura do diretório.)
+ */
+const soEmProsa = [...mencionados].filter((id) => !onde.has(id)).sort();
+
+const orfaos = [...mencionados].filter((id) => !casos.includes(id)).sort();
 if (orfaos.length > 0) {
   throw new Error(
     `IDs citados na suíte que não existem no catálogo: ${orfaos.join(', ')}. ` +
@@ -149,20 +184,23 @@ const linhas = casos.map((id) => {
     : `| \`${id}\` | ${titulo} | ⬜ | ${MOTIVOS[id]} |`;
 });
 
-const avisoProsa = soEmProsa.size
-  ? '> ⚠️ **Contados por menção em prosa**, fora de título e de cabeçalho: ' +
-    [...soEmProsa].sort().map((id) => '`' + id + '`').join(', ') +
-    '.\n> São candidatos a falso positivo — confirme que existe teste para cada um, ou leve o ' +
-    'ID para o título do teste.'
-  : '> Nenhum caso é contado por menção em prosa: todo ID coberto aparece em título de teste ou ' +
+const avisoProsa = soEmProsa.length
+  ? '> ℹ️ **Mencionados só em prosa (NÃO contam como cobertura)**: ' +
+    soEmProsa.map((id) => '`' + id + '`').join(', ') +
+    '.\n> Aparecem em comentário ou mensagem de assertion, em nenhum título de teste e em nenhum ' +
+    'cabeçalho de arquivo. A listagem é informativa, para auditoria: ou o ID sobe para o título ' +
+    'do teste que o exercita, ou o caso é lacuna com motivo declarado.'
+  : '> Nenhum ID é mencionado só em prosa: todo ID citado na suíte aparece em título de teste ou ' +
     'no cabeçalho do arquivo.';
 
 const doc = `# Cobertura por caso de teste
 
 > Gerado por \`node scripts/gerar-cobertura.mjs\`. **Não edite à mão** — regenere.
 
-Medido sobre \`docs/catalogo-casos.md\` e \`tests/**/*.spec.js\`. A ligação é o **ID citado no
-título do teste** — é o que torna esta contagem auditável em vez de declarada.
+Medido sobre \`docs/catalogo-casos.md\` e \`tests/**/*.spec.js\`. A ligação é o **ID declarado
+pelo teste** — no título de \`test(...)\`/\`test.describe(...)\` ou no cabeçalho do arquivo (antes
+do primeiro \`test\`). É o que torna esta contagem auditável em vez de declarada. Desde
+**03/09/2026**, menção em prosa (comentário, mensagem de assertion) **não conta como cobertura**.
 
 | | |
 |---|---|

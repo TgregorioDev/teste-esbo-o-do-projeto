@@ -2,21 +2,23 @@
 
 > Gerado por `node scripts/gerar-cobertura.mjs`. **Não edite à mão** — regenere.
 
-Medido sobre `docs/catalogo-casos.md` e `tests/**/*.spec.js`. A ligação é o **ID citado no
-título do teste** — é o que torna esta contagem auditável em vez de declarada.
+Medido sobre `docs/catalogo-casos.md` e `tests/**/*.spec.js`. A ligação é o **ID declarado
+pelo teste** — no título de `test(...)`/`test.describe(...)` ou no cabeçalho do arquivo (antes
+do primeiro `test`). É o que torna esta contagem auditável em vez de declarada. Desde
+**03/09/2026**, menção em prosa (comentário, mensagem de assertion) **não conta como cobertura**.
 
 | | |
 |---|---|
-| Casos no catálogo | **187** |
-| Com teste na suíte | **156** (83%) |
-| Sem teste | **31** |
+| Casos no catálogo | **196** |
+| Com teste na suíte | **154** (79%) |
+| Sem teste | **42** |
 
 O script falha se um teste citar um ID que não existe no catálogo, ou se um caso ficar sem teste
 e sem motivo declarado. As duas checagens existem para que a matriz não possa envelhecer em
 silêncio.
 
-> ⚠️ **Contados por menção em prosa**, fora de título e de cabeçalho: `CT-CMP-02-S2`, `CT-CMP-02-S4`, `CT-DEP-01-H`, `CT-DEP-02-S1`, `CT-PLT-09-S1`, `CT-PLT-10-H`, `CT-SUB-01-H`.
-> São candidatos a falso positivo — confirme que existe teste para cada um, ou leve o ID para o título do teste.
+> ℹ️ **Mencionados só em prosa (NÃO contam como cobertura)**: `CT-DEP-01-H`, `CT-SUB-01-H`.
+> Aparecem em comentário ou mensagem de assertion, em nenhum título de teste e em nenhum cabeçalho de arquivo. A listagem é informativa, para auditoria: ou o ID sobe para o título do teste que o exercita, ou o caso é lacuna com motivo declarado.
 
 **⬜ não significa "esquecido"** — cada linha vazia traz o motivo medido. E **✅ não significa
 sempre "fluxo executado"**: parte dos casos está coberta como *bloqueio documentado* — o teste
@@ -77,13 +79,19 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-CMP-02-S1` | Envio com campos obrigatórios vazios | ✅ | `e2e/compras/fail-open-formulario-sc.spec.js` · `e2e/compras/validacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-02-S2` | Rateio diferente de 100% | ✅ | `e2e/compras/validacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-02-S3` | Upload de planilha de rateio inválida | ✅ | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
-| `CT-CMP-02-S4` | Anexo obrigatório ausente | ✅ | `e2e/acompanhamento-contratos/erros-no-start.spec.js` · `e2e/compras/ciclo-solicitacao-compras.spec.js` · `e2e/compras/fail-open-formulario-sc.spec.js` · `e2e/contratos/delegacao-fiscais-ciclo.spec.js` |
+| `CT-CMP-02-S4` | Anexo obrigatório ausente | ✅ | `e2e/compras/ciclo-solicitacao-compras.spec.js` · `e2e/compras/fail-open-formulario-sc.spec.js` |
 | `CT-CMP-03-S1` | Protheus indisponível ao carregar combos  ⭐ teste-mestre | ✅ | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
 | `CT-CMP-04-H` | Aprovação — Gestor Imediato (feliz) | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-04-S1` | Reprovação do Gestor gera correção | ✅ | `e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js` · `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-05-H` | Validação Orçamentária dentro da alçada | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `CT-CMP-05-S1` | Valor acima da alçada sem aprovador | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
+| `CT-CMP-05-S2` | Alçada — payload de aprovação alterado no cliente é rejeitado pelo servidor | ⬜ | trava de alçada contra manipulação client-side: `TOTVS-FS` não está na AL/DHL do Protheus, então nenhuma tarefa de alçada chega à automação — e nenhuma SC dela chega à alçada (D-01). Declarado, não implementado; provisionamento compete ao cliente. Ler junto com CT-SEG-07-S1. |
 | `CT-CMP-06-H` | Aprovação final (Compradores/Alçadas) e conclusão | ✅ | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
+| `CT-CMP-06-S1` | Devolução na Alçada — Regerar Documento | ⬜ | devolução na alçada (regerar documento): consequência de defeito aberto (D-01) + cadastro no ERP (SY1/AL) — declarado, não implementado; provisionamento compete ao cliente |
+| `CT-CMP-06-S2` | Devolução na Alçada — Novo Fornecedor (2º colocado) | ⬜ | idem CT-CMP-06-S1 — devolução para novo fornecedor (2º colocado) |
+| `CT-CMP-06-S3` | Devolução na Alçada — Retornar para Cotação | ⬜ | idem CT-CMP-06-S1 — retorno para Cotação |
+| `CT-CMP-06-S4` | Devolução na Alçada — Retornar para Negociação | ⬜ | idem CT-CMP-06-S1 — retorno para Negociação |
+| `CT-CMP-06-S5` | Devolução na Alçada — Cancelar Solicitação | ⬜ | idem CT-CMP-06-S1 — cancelamento a partir da alçada |
 | `CT-CMP-07-S1` | Regressão do fail-open do formulário clássico de SC | ✅ | `e2e/compras/fail-open-formulario-sc.spec.js` |
 | `CT-CMP-08-H` | Fechar o ciclo de retorno: reprovação → Correção → reenvio | ✅ | `e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js` |
 | `CT-COT-01-H` | Cotação sem parecer técnico (feliz) | ✅ | `e2e/compras/abertura-cotacao.spec.js` · `e2e/compras/ciclo-cotacao.spec.js` |
@@ -91,14 +99,17 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-COT-02-S1` | Totais inconsistentes | ✅ | `e2e/compras/ciclo-cotacao.spec.js` |
 | `CT-COT-02-S2` | Cotação com validade vencida | ✅ | `e2e/compras/ciclo-cotacao.spec.js` |
 | `CT-COT-02-S3` | CNPJ/CPF do fornecedor inválido | ✅ | `e2e/compras/ciclo-cotacao.spec.js` |
+| `CT-COT-03-H` | Com dispensa de cotação, exatamente 1 fornecedor é aceito | ⬜ | regra de concorrência (dispensa ⇒ exatamente 1 fornecedor): nenhuma SC da automação chega à Cotação (D-01) e `TOTVS-FS` não é comprador na SY1 — declarado, não implementado; provisionamento compete ao cliente |
+| `CT-COT-03-S1` | Sem dispensa de cotação, 2 fornecedores são recusados (mínimo 3) | ⬜ | idem CT-COT-03-H — sem dispensa, 2 fornecedores devem ser recusados (mínimo 3) |
+| `CT-COT-03-S2` | Com dispensa de cotação, 2 fornecedores são recusados | ⬜ | idem CT-COT-03-H — com dispensa, 2 fornecedores devem ser recusados |
 | `CT-DEL-01-H` | Delegar fiscal válido (feliz) | ✅ | `e2e/contratos/delegacao-fiscais-ciclo.spec.js` · `e2e/contratos/delegacao-fiscais.spec.js` |
 | `CT-DEL-01-S1` | Substituto inválido / sem permissão | ✅ | `e2e/contratos/delegacao-fiscais-ciclo.spec.js` |
 | `CT-DEL-01-S2` | Período sobreposto | ✅ | `e2e/contratos/delegacao-fiscais-ciclo.spec.js` |
-| `CT-DEP-01-H` | Cadastrar dependente (feliz) | ✅ | `e2e/rh/dependentes.spec.js` |
-| `CT-DEP-01-S1` | Dependente duplicado | ⬜ | o formulário de Dependentes não monta campo sem matrícula ativa |
-| `CT-DEP-01-S2` | Grau de parentesco incompatível | ⬜ | idem CT-DEP-01-S1 |
-| `CT-DEP-01-S3` | CPF inválido | ⬜ | idem CT-DEP-01-S1 |
-| `CT-DEP-02-S1` | Titular sem matrícula / múltiplos vínculos | ✅ | `e2e/rh/dependentes.spec.js` · `e2e/rh/substituicao-cargos.spec.js` |
+| `CT-DEP-01-H` | Cadastrar dependente (feliz) | ⬜ | o formulário de Dependentes não monta campo sem matrícula ativa |
+| `CT-DEP-01-S1` | Dependente duplicado | ⬜ | idem CT-DEP-01-H |
+| `CT-DEP-01-S2` | Grau de parentesco incompatível | ⬜ | idem CT-DEP-01-H |
+| `CT-DEP-01-S3` | CPF inválido | ⬜ | idem CT-DEP-01-H |
+| `CT-DEP-02-S1` | Titular sem matrícula / múltiplos vínculos | ✅ | `e2e/rh/dependentes.spec.js` |
 | `CT-E2E-01-H` | Etapa 1 — SC nasce no estado correto e com o dono correto | ✅ | `e2e/acompanhamento-contratos/ciclo-gestor.spec.js` · `e2e/acompanhamento-contratos/payload-solicitacao.spec.js` |
 | `CT-E2E-02-H` | Etapa 2 — Validação do Gestor Imediato (aprovar) | ✅ | `e2e/acompanhamento-contratos/ciclo-gestor.spec.js` |
 | `CT-E2E-02-S1` | Etapa 2 — Reprovação devolve para correção **preservando os dados do contrato** | ✅ | `e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js` · `e2e/acompanhamento-contratos/ciclo-gestor.spec.js` |
@@ -182,9 +193,9 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-PLT-05-H` | Favoritar e acessar via Favoritos | ✅ | `e2e/plataforma/favoritos-contrato-api.spec.js` · `e2e/plataforma/favoritos.spec.js` |
 | `CT-PLT-06-S1` | Erro de console fora da home | ✅ | `e2e/plataforma/erros-de-console.spec.js` |
 | `CT-PLT-07-S1` | `addFavorites` duplicado responde 500 em texto puro | ✅ | `e2e/plataforma/favoritos-contrato-api.spec.js` |
-| `CT-PLT-08-S1` | Processo inativo e resíduo de desenvolvimento visível | ✅ | `e2e/plataforma/inicio-processo-bloqueado.spec.js` · `e2e/plataforma/processo-inativo-e-residuo.spec.js` |
-| `CT-PLT-09-S1` | Fechar a matriz dos 9 bloqueios duros | ✅ | `e2e/plataforma/inicio-processo-bloqueado.spec.js` · `e2e/plataforma/processo-inativo-e-residuo.spec.js` |
-| `CT-PLT-10-H` | Invariante do catálogo de processos | ✅ | `e2e/financeiro/rejeicoes-pagamentos.spec.js` · `e2e/plataforma/catalogo-invariante.spec.js` · `e2e/plataforma/processo-inativo-e-residuo.spec.js` · `e2e/rh/delegacao-tarefas.spec.js` |
+| `CT-PLT-08-S1` | Processo inativo e resíduo de desenvolvimento visível | ✅ | `e2e/plataforma/processo-inativo-e-residuo.spec.js` |
+| `CT-PLT-09-S1` | Fechar a matriz dos 9 bloqueios duros | ✅ | `e2e/plataforma/inicio-processo-bloqueado.spec.js` |
+| `CT-PLT-10-H` | Invariante do catálogo de processos | ✅ | `e2e/plataforma/catalogo-invariante.spec.js` · `e2e/plataforma/processo-inativo-e-residuo.spec.js` |
 | `CT-RDF-01-H` | Recepção de NF condizente (feliz) | ✅ | `e2e/fiscal/recepcao-documentos-fiscais.spec.js` |
 | `CT-RDF-01-S1` | NF com inconsistência | ✅ | `e2e/fiscal/recepcao-documentos-fiscais.spec.js` |
 | `CT-RDF-01-S2` | Violação de segregação fiscal | ✅ | `e2e/fiscal/recepcao-documentos-fiscais.spec.js` |
@@ -194,14 +205,14 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-SEG-02-S1` | Least-privilege dos administradores  🔒 (U-13) | ✅ | `e2e/seguranca/auditoria-datasets.spec.js` |
 | `CT-SEG-03-S1` | Credencial de integração exposta  🔒 (U-03) | ✅ | `e2e/seguranca/auditoria-datasets.spec.js` |
 | `CT-SEG-04-S1` | Execução de SQL / injeção  🔒 (U-04) | ✅ | `e2e/seguranca/auditoria-datasets.spec.js` |
-| `CT-SEG-05-S1` | Acesso admin negado a não-admin  (observado, U-15) | ✅ | `api/webdesk-acesso-admin.spec.js` · `e2e/seguranca/auditoria-datasets.spec.js` · `e2e/seguranca/isolamento-horizontal-api-processos.spec.js` · `e2e/seguranca/processos-administrativos-usuario-comum.spec.js` |
+| `CT-SEG-05-S1` | Acesso admin negado a não-admin  (observado, U-15) | ✅ | `api/webdesk-acesso-admin.spec.js` · `e2e/seguranca/isolamento-horizontal-api-processos.spec.js` · `e2e/seguranca/processos-administrativos-usuario-comum.spec.js` |
 | `CT-SEG-06-S1` | Vazamento de dados a serviço externo (LGPD)  (U-11) | ✅ | `e2e/plataforma/erros-de-console.spec.js` · `e2e/seguranca/lgpd-envio-google-analytics.spec.js` |
 | `CT-SEG-07-S1` | Isolamento horizontal na API v2 de processos (BOLA/IDOR interno) | ✅ | `e2e/fiscal/rastreabilidade-rdfc.spec.js` · `e2e/seguranca/isolamento-horizontal-api-processos.spec.js` |
 | `CT-SEG-08-S1` | Processos administrativos abertos a usuário comum | ✅ | `e2e/seguranca/processos-administrativos-usuario-comum.spec.js` |
 | `CT-SEG-10-S1` | ACL dos documentos que a SC cria sozinha no GED | ⬜ | bloqueado: o critério de ACL correta dos documentos/pastas que o workflow gera não foi definido pela Cassi — pergunta em aberto. Assertion frouxa aqui seria pior que ausência de teste. |
-| `CT-SUB-01-H` | Definir substituto válido (feliz) | ✅ | `e2e/rh/substituicao-cargos.spec.js` |
-| `CT-SUB-01-S1` | Substituto sem vínculo ativo | ⬜ | o formulário de Substituição responde "Funcionário não localizado" sem matrícula ativa |
-| `CT-SUB-01-S2` | Período retroativo/ inválido | ⬜ | idem CT-SUB-01-S1 |
+| `CT-SUB-01-H` | Definir substituto válido (feliz) | ⬜ | o formulário de Substituição responde "Funcionário não localizado" sem matrícula ativa |
+| `CT-SUB-01-S1` | Substituto sem vínculo ativo | ⬜ | idem CT-SUB-01-H |
+| `CT-SUB-01-S2` | Período retroativo/ inválido | ⬜ | idem CT-SUB-01-H |
 | `CT-SUB-02-H` | Delegação de Tarefas (`wf_SubstituiçãoCargosFluig`) | ✅ | `e2e/rh/delegacao-tarefas.spec.js` |
 | `CT-TSK-01-H` | Resumo reflete a carga real | ✅ | `e2e/tarefas/resumo-tarefas.spec.js` |
 | `CT-TSK-02-H` | Assumir tarefa do pool | ✅ | `e2e/tarefas/assumir-tarefa-pool.spec.js` · `e2e/tarefas/minhas-solicitacoes.spec.js` |

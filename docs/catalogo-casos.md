@@ -338,10 +338,70 @@ Vários processos são **segregados por grupo**: o usuário `TOTVS-FS` **não in
 - **Passos:** avançar a solicitação até a etapa de alçada.
 - **Resultado esperado:** exige nível de aprovação superior; se não houver aprovador definido, o processo sinaliza claramente (não fica "preso" silenciosamente).
 
+### CT-CMP-05-S2 · Alçada — payload de aprovação alterado no cliente é rejeitado pelo servidor
+- **Prioridade:** P1 · **Tipo:** Segurança/Negativo
+- **Fonte da regra:** *Manual de Competências e Alçadas* — a aprovação de alçada é feita **via API**, com **trava rígida contra alteração por "inspecionar elemento"**, por exigência da **Auditoria Interna** da Cassi. A alçada exige ainda **consenso de 100%**: uma reprovação derruba a compra.
+- **Pré-condições:** solicitação parada numa etapa de alçada; usuário aprovador cadastrado na tabela **AL/DHL** do Protheus.
+- **Massa de dados:** a própria tarefa de alçada do usuário; um valor e/ou um nível de alçada diferentes dos que o servidor conhece.
+- **Passos:**
+  1. Abrir a tarefa de alçada na **Central de Tarefas**.
+  2. Interceptar a requisição de aprovação e adulterar o corpo antes do envio: trocar o **valor final**, o **nível de alçada** e o **aprovador** (aprovar em nome de outro, ou marcar como aprovadas alçadas de outros níveis).
+  3. Enviar a requisição adulterada.
+  4. Repetir removendo do payload a exigência de consenso (marcar o processo como aprovado com apenas uma das aprovações).
+- **Resultado esperado:** o servidor **recusa** cada tentativa e responde com erro de validação; o estado da solicitação **não muda**; nenhuma alçada é registrada como aprovada; o histórico não recebe aprovação em nome de terceiro. A decisão de alçada é reconstruída no servidor a partir do valor e da tabela sincronizada do Protheus — nunca a partir do que o navegador enviou.
+- **Relação com a divergência já medida:** este é o caso positivo da mesma regra que **`CT-SEG-07-S1`** já mediu quebrada por outro ângulo — lá, uma conta não-admin lê o formulário inteiro de uma instância alheia por `id` sequencial na API v2 (CNPJ, valor, chave de NF). Isolamento horizontal furado e trava contra manipulação client-side são a mesma exigência de Auditoria Interna vista de dois lados; um resultado aqui só é conclusivo lido junto com `CT-SEG-07-S1`.
+- **Bloqueio hoje (03/09/2026):** não implementado. `TOTVS-FS` **não** está na **AL/DHL** do Protheus (ver a restrição estrutural da run na seção 24), então nenhuma tarefa de alçada chega à conta da automação; e nenhuma SC criada pela automação chega até a alçada por causa do **D-01**. Lacuna **declarada**, não esquecida.
+
 ### CT-CMP-06-H · Aprovação final (Compradores/Alçadas) e conclusão
 - **Prioridade:** P1 · **Tipo:** Funcional
 - **Passos:** aprovar nas etapas `Validacao_Compradores` e `Validacao_Alcadas`.
 - **Resultado esperado:** processo encerra "aprovado"; solicitação some das pendências e consta no histórico como concluída.
+
+> **Devolução na Alçada — os 5 caminhos de saída.** Além de aprovar, a etapa de alçada oferece
+> **cinco** destinos de devolução, todos acionados pela **Central de Tarefas** (*Manual do
+> Comprador*). São cinco saídas da MESMA etapa e, por isso, regressivo óbvio: `CT-CMP-06-S1` a
+> `CT-CMP-06-S5`, um por caminho. Em todos, a **justificativa da devolução é obrigatória** e
+> precisa chegar a quem recebe a solicitação de volta.
+
+### CT-CMP-06-S1 · Devolução na Alçada — Regerar Documento
+- **Prioridade:** P1 · **Tipo:** Funcional
+- **Fonte da regra:** *Manual do Comprador*, "Devolução na Alçada", cenário 1. O documento de alçada é **gerado no Protheus** quando o comprador define os vencedores.
+- **Pré-condições:** solicitação na etapa de alçada; usuário aprovador cadastrado na **AL/DHL**; documento de alçada já gerado no Protheus.
+- **Passos:** Central de Tarefas → abrir a tarefa de alçada → escolher **Retorno para Alçada – Regerar Documento** → justificar → **Enviar**.
+- **Resultado esperado:** a solicitação volta ao comprador para **regerar o documento de alçada** no Protheus, mantendo fornecedores e propostas; o documento anterior deixa de valer; as aprovações já colhidas são **descartadas** (o consenso de 100% recomeça sobre o documento novo); o histórico registra a devolução, o autor e a justificativa.
+- **Bloqueio hoje (03/09/2026):** não implementado — mesmas duas causas dos irmãos: **D-01** (nenhuma SC da automação chega à Cotação, quanto mais à alçada) e conta `TOTVS-FS` fora da **SY1/AL** do Protheus.
+
+### CT-CMP-06-S2 · Devolução na Alçada — Novo Fornecedor (2º colocado)
+- **Prioridade:** P1 · **Tipo:** Funcional
+- **Fonte da regra:** *Manual do Comprador*, "Devolução na Alçada", cenário 2 — chamar o **2º colocado**, **entre os que já participaram** da cotação.
+- **Pré-condições:** idem `CT-CMP-06-S1`; a cotação de origem precisa ter **mais de um** fornecedor participante.
+- **Passos:** abrir a tarefa de alçada → **Retorno para Alçada – Novo Fornecedor** → justificar → **Enviar** → o comprador seleciona o novo vencedor.
+- **Resultado esperado:** volta ao comprador para eleger outro vencedor **restrito aos fornecedores que já participaram** da cotação — não abre cadastro de fornecedor novo nem nova concorrência; o documento de alçada é regerado com o novo vencedor; o fornecedor antes vencedor é notificado do encerramento; histórico com justificativa.
+- **Bloqueio hoje (03/09/2026):** idem `CT-CMP-06-S1` (D-01 + cadastro na SY1/AL).
+
+### CT-CMP-06-S3 · Devolução na Alçada — Retornar para Cotação
+- **Prioridade:** P1 · **Tipo:** Funcional
+- **Fonte da regra:** *Manual do Comprador*, "Devolução na Alçada", cenário 3.
+- **Pré-condições:** idem `CT-CMP-06-S1`.
+- **Passos:** abrir a tarefa de alçada → **Retornar para Cotação** → justificar → **Enviar**.
+- **Resultado esperado:** a solicitação volta à etapa de **Cotação**, e não à Validação Inicial; a regra de concorrência volta a valer na nova rodada (ver `CT-COT-03-H/S1/S2`); as aprovações de alçada colhidas são descartadas; os fornecedores são notificados da reabertura; histórico com justificativa.
+- **Bloqueio hoje (03/09/2026):** idem `CT-CMP-06-S1` (D-01 + cadastro na SY1/AL).
+
+### CT-CMP-06-S4 · Devolução na Alçada — Retornar para Negociação
+- **Prioridade:** P1 · **Tipo:** Funcional
+- **Fonte da regra:** *Manual do Comprador*, "Devolução na Alçada", cenário 4.
+- **Pré-condições:** idem `CT-CMP-06-S1`; ter havido etapa de negociação na solicitação.
+- **Passos:** abrir a tarefa de alçada → **Retornar para Negociação** → justificar → **Enviar**.
+- **Resultado esperado:** volta à etapa de **Negociação** com o mesmo fornecedor vencedor, preservando itens e propostas; ao fechar a negociação o valor final é recalculado e a alçada correspondente ao **novo valor** é disparada de novo (pode mudar de nível); histórico com justificativa.
+- **Bloqueio hoje (03/09/2026):** idem `CT-CMP-06-S1` (D-01 + cadastro na SY1/AL).
+
+### CT-CMP-06-S5 · Devolução na Alçada — Cancelar Solicitação
+- **Prioridade:** P1 · **Tipo:** Funcional
+- **Fonte da regra:** *Manual do Comprador*, "Devolução na Alçada", cenário 5.
+- **Pré-condições:** idem `CT-CMP-06-S1`.
+- **Passos:** abrir a tarefa de alçada → **Cancelar Solicitação** → justificar → **Enviar**.
+- **Resultado esperado:** a solicitação é **encerrada** sem gerar Pedido de Compra nem Contrato no Protheus; nenhuma proposta vencedora é liberada pela API de integração; os fornecedores participantes recebem a notificação de encerramento; a solicitação sai das pendências de todos os aprovadores e consta no histórico como cancelada, com autor e justificativa. Para reabrir, é preciso **nova** solicitação.
+- **Bloqueio hoje (03/09/2026):** idem `CT-CMP-06-S1` (D-01 + cadastro na SY1/AL).
 
 ---
 
@@ -379,6 +439,43 @@ Vários processos são **segregados por grupo**: o usuário `TOTVS-FS` **não in
 - **Prioridade:** P2 · **Tipo:** Negativo
 - **Passos:** informar CNPJ/CPF com dígito inválido.
 - **Resultado esperado:** validação de documento barra o envio.
+
+> **Regra dura de concorrência (fonte dos três casos abaixo).** O número de fornecedores da
+> cotação não é preferência do comprador: vem do **normativo de Alçada Decisória** da Cassi.
+> **Sem** *Dispensa de Cotação* → **mínimo 3** fornecedores (concorrência e compliance).
+> **Com** *Dispensa de Cotação* → **exatamente 1**. A seleção acontece na **Validação Inicial do
+> Comprador** (aba 1 do Portal do Comprador), no campo *Selecionar Fornecedores*, e é ela que
+> define quem recebe o e-mail e pode cotar. É a regra mais testável do ciclo — um número, duas
+> faixas — e por isso os negativos abaixo valem tanto quanto o feliz.
+
+### CT-COT-03-H · Com dispensa de cotação, exatamente 1 fornecedor é aceito
+- **Prioridade:** P1 · **Tipo:** Funcional/Negócio
+- **Pré-condições:** SC aprovada pelo gestor e **distribuída a um comprador**; usuário cadastrado como comprador na **SY1/Y1** do Protheus; ao menos 1 fornecedor ativo no grupo de compras dos produtos da SC.
+- **Massa de dados:** 1 fornecedor; *Tipo de compra* `Pedido`; validade da cotação futura; resumo e justificativa preenchidos; texto padrão de dispensa (editável) mantido.
+- **Passos:**
+  1. Central de Tarefas → abrir a solicitação na **Validação Inicial do Comprador**.
+  2. Marcar **Dispensa Cotação**, conforme o normativo de Alçada Decisória.
+  3. Em **Selecionar Fornecedores**, marcar **exatamente 1**.
+  4. Preencher *Tipo de compra*, *Validade da cotação*, *Resumo* e *Justificativa para aprovação*.
+  5. **Aprovar**.
+- **Resultado esperado:** o envio é **aceito**; nenhuma mensagem de mínimo de concorrência; a solicitação avança para a geração da cotação no Protheus com o **único** fornecedor selecionado, e só ele recebe o e-mail de convite.
+- **Bloqueio hoje (03/09/2026):** não implementado. Nenhuma SC criada pela automação chega à etapa de Cotação por causa do **D-01** (a SC nasce presa em "Início" com `consumerkeycompras`), e a conta `TOTVS-FS` **não está na SY1** — não é um dos 28 compradores cadastrados (ver a restrição estrutural da run na seção 24). Lacuna **declarada**, não esquecida.
+
+### CT-COT-03-S1 · Sem dispensa de cotação, 2 fornecedores são recusados (mínimo 3)
+- **Prioridade:** P1 · **Tipo:** Negativo/Negócio
+- **Pré-condições:** idem `CT-COT-03-H`, com ao menos 3 fornecedores disponíveis no grupo de compras.
+- **Massa de dados:** **2** fornecedores selecionados; *Dispensa Cotação* **desmarcada**.
+- **Passos:** repetir `CT-COT-03-H` **sem** marcar *Dispensa Cotação* e selecionando **2** fornecedores → **Aprovar**.
+- **Resultado esperado:** o envio é **recusado**, com mensagem clara de que sem dispensa são necessários **no mínimo 3** fornecedores; a solicitação **permanece** na Validação Inicial; nenhuma cotação é gerada no Protheus e **nenhum e-mail** é disparado aos 2 selecionados. A recusa precisa valer **no servidor**, não só como validação de tela. Repetir com **0** e com **1** fornecedor: mesma recusa.
+- **Bloqueio hoje (03/09/2026):** idem `CT-COT-03-H` — D-01 + `TOTVS-FS` fora da SY1.
+
+### CT-COT-03-S2 · Com dispensa de cotação, 2 fornecedores são recusados
+- **Prioridade:** P1 · **Tipo:** Negativo/Negócio
+- **Pré-condições:** idem `CT-COT-03-H`.
+- **Massa de dados:** *Dispensa Cotação* **marcada**; **2** fornecedores selecionados.
+- **Passos:** repetir `CT-COT-03-H` marcando *Dispensa Cotação* e selecionando **2** fornecedores → **Aprovar**.
+- **Resultado esperado:** o envio é **recusado**, com mensagem de que a dispensa admite **exatamente 1** fornecedor; a solicitação permanece na Validação Inicial; nenhuma cotação é gerada e nenhum e-mail é disparado. Vale o mesmo para **0** fornecedores com a dispensa marcada. Conferir também o caso combinado: desmarcar a dispensa **depois** de já ter selecionado 1 fornecedor deve reabrir a exigência do mínimo de 3 — a regra é avaliada no envio, sobre o estado final do formulário.
+- **Bloqueio hoje (03/09/2026):** idem `CT-COT-03-H` — D-01 + `TOTVS-FS` fora da SY1.
 
 ---
 
@@ -972,6 +1069,21 @@ O que o dev pediu é **outro ponto de entrada, com outro código por trás**: a 
 
 > ⚠️ **Restrição estrutural da run:** `TOTVS-FS` não está na SY1 (compradores) nem na AL (alçadas). O ciclo é executável de ponta a ponta **até a Validação do Gestor Imediato**; das alçadas em diante exige credencial de pessoa designada. Isso não é defeito do sistema — é pré-condição de massa/cadastro no ERP.
 
+### Decisão de escopo (03/09/2026): arredondamento fiscal e *saving* NÃO viram caso aqui
+
+Ao levantar as regras de negócio de Compras faltantes no catálogo, dois candidatos foram
+**recusados de propósito**: conferir o **arredondamento fiscal** dos valores da SC e conferir o
+**cálculo do *saving*** da negociação. O motivo é o fato 1 das regras declaradas pelo cliente —
+**o Fluig não é dono de regra financeira**: validação orçamentária, cálculo, rateio e
+arredondamento são do **Protheus, por decisão de projeto**. Um caso que afirmasse o valor
+"correto" na tela do Fluig estaria testando o ERP por um oráculo que a suíte não tem, e
+divergência ali é **sintoma de integração**, não defeito do portal.
+
+O que o Fluig **é** dono, e por isso está coberto, é a **coerência interna do payload**: a
+máscara monetária não pode corromper o valor digitado (`CT-ACC-08-S1`) e o rateio recebido do
+contrato tem de chegar íntegro à SC (`CT-ACC-08-S2`). Itens com quantidades diferentes não podem
+compartilhar o mesmo total — isso se afirma sobre **qualquer** contrato, sem número fixo.
+
 ### CT-ACC-01-H · Acesso ao portal por usuário autorizado
 - **Prioridade:** P1 · **Tipo:** Funcional/Segurança
 - **Pré-condições:** usuário em `G.P.Acompanhamento_Renovacao_Contratos` (ou `_admin`).
@@ -1380,6 +1492,10 @@ qualquer lugar deste arquivo, e citá-los criaria três casos fantasma sem teste
 > ⚠️ Estes casos mudam o denominador da cobertura: de 163 para 187. As medições anteriores a
 > 27/08/2026 usaram a régua de 163 — `docs/cobertura.md` reporta as duas origens em separado
 > para a comparação continuar honesta.
+>
+> Em **03/09/2026** o catálogo cresceu de novo — 9 casos de regra de negócio declarada como
+> lacuna bloqueada (`CT-COT-03-*`, `CT-CMP-05-S2`, `CT-CMP-06-S1..S5`), nas seções 5 e 6. O
+> denominador corrente é sempre o que `npm run cobertura` imprime; não copie número de prosa.
 
 
 ## Plataforma
