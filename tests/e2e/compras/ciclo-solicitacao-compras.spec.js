@@ -486,7 +486,7 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
    * guarda**, que aborta a requisição — não é comportamento do produto. Por isso o oráculo
    * aqui é a tentativa de escrita, nunca o que a tela mostra depois.
    */
-  test('CT-CMP-02-S4 — deve bloquear o envio quando nenhum anexo é informado', async ({
+  test('CT-CMP-02-S4 @bug — deve bloquear o envio quando nenhum anexo é informado', async ({
     page,
   }) => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);
@@ -564,7 +564,7 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
    * continua vermelho e mantém visível que a regra não está no servidor — que é onde ela
    * precisa estar (o cliente é contornável).
    */
-  test('CT-CMP-02-S4 @destrutivo — o servidor não deve criar a SC quando falta o anexo obrigatório', async ({
+  test('CT-CMP-02-S4 @destrutivo @bug — o servidor não deve criar a SC quando falta o anexo obrigatório', async ({
     page,
   }) => {
     /** @type {{ status: number, instanceId: unknown, url: string }[]} */

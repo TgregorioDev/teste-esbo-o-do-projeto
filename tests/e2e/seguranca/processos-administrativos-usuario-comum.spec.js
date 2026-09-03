@@ -36,7 +36,7 @@ const PROCESSOS_ADMINISTRATIVOS = [
 
 test.describe('Segurança — processos administrativos não devem abrir para usuário comum', () => {
   for (const { processId, nome } of PROCESSOS_ADMINISTRATIVOS) {
-    test(`CT-SEG-08-S1 — "${processId}" (${nome}) não deve constar do catálogo nem abrir para conta não-admin`, async ({
+    test(`CT-SEG-08-S1 @bug — "${processId}" (${nome}) não deve constar do catálogo nem abrir para conta não-admin`, async ({
       page,
     }, testInfo) => {
       // Trava de escrita: nenhuma requisição de criação/movimentação pode sair da navegação.

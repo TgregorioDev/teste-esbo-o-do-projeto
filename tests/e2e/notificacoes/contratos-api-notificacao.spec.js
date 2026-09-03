@@ -95,7 +95,7 @@ async function sondar(page, metodo, url) {
 }
 
 test.describe('Notificações — contratos da API (CT-NOT-03-S1)', () => {
-  test('CT-NOT-03-S1: `GET /notification/api/v1/notifications` deve respeitar `limit` e `offset`', async ({
+  test('CT-NOT-03-S1 @bug: `GET /notification/api/v1/notifications` deve respeitar `limit` e `offset`', async ({
     page,
   }) => {
     await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
@@ -168,7 +168,7 @@ test.describe('Notificações — contratos da API (CT-NOT-03-S1)', () => {
     ).not.toBe(leituras.limite3.primeiroId);
   });
 
-  test('CT-NOT-03-S1: notificação declara `canRemove: true`, então o verbo REST de remoção deveria existir', async ({
+  test('CT-NOT-03-S1 @bug: notificação declara `canRemove: true`, então o verbo REST de remoção deveria existir', async ({
     page,
   }) => {
     await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });

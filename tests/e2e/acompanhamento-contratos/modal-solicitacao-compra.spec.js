@@ -66,21 +66,43 @@ test.describe('Abertura da Solicitação de Compra a partir do contrato', () => 
     contratosPage,
     solicitacaoModal,
   }) => {
-    // Ver README > Divergências abertas: o roteiro de 20/08 registrava também
-    // "Nova Solicitação", que não é mais oferecida pelo ambiente. Enquanto o time não
-    // confirmar se a remoção foi intencional, a assertion cobre o que é regra estável —
-    // o placeholder e os dois tipos contratuais — em vez de fixar a lista inteira.
+    // GUARDIÃO DO CATÁLOGO. O dono do ambiente confirmou em 31/08/2026 que a composição
+    // atual ("Aditivo Contratual" + "Nova Contratação") é mudança INTENCIONAL da Cassi —
+    // por isso a assertion volta a fixar a lista EXATA, e não um "contém".
+    //
+    // Fixar a lista é deliberado: o catálogo mudou três vezes em 11 dias sem aviso, e foi
+    // essa mudança silenciosa que derrubou 8 casos destrutivos em 31/08. Este teste é o
+    // único da suíte cujo propósito é reprovar quando o catálogo muda. Se ele ficar
+    // vermelho, a resposta NÃO é atualizar a lista e seguir — é confirmar com a Cassi se a
+    // mudança foi intencional, e só então atualizar aqui e em `TIPO_SOLICITACAO`.
+    //
+    // A assertion cobre apenas as opções HABILITADAS, de propósito: o widget renderiza o
+    // placeholder "Selecione..." DUPLICADO (defeito D-13, no HTML estático do bundle).
+    // Afirmar a lista crua congelaria esse defeito e faria este teste reprovar no dia em
+    // que ele for corrigido — o placeholder é verificado à parte, pela presença.
     await contratosPage.goto();
     await contratosPage.expectCarregada();
     await contratosPage.filtrarPorContrato((await descobrirContratoVigente(contratosPage)).contrato);
     await contratosPage.abrirSolicitacaoCompra();
     await solicitacaoModal.expectAberto();
 
-    const opcoes = (await solicitacaoModal.getOpcoesDeTipo().allInnerTexts()).map((t) => t.trim());
+    const todas = (await solicitacaoModal.getOpcoesDeTipo().allInnerTexts()).map((t) =>
+      t.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim(),
+    );
+    expect(
+      todas,
+      'o combo deveria oferecer o placeholder "Selecione..." como opção não-selecionável',
+    ).toContain(TIPO_SOLICITACAO.PLACEHOLDER);
 
-    expect(opcoes).toContain(TIPO_SOLICITACAO.PLACEHOLDER);
-    expect(opcoes).toContain(TIPO_SOLICITACAO.RENOVACAO);
-    expect(opcoes).toContain(TIPO_SOLICITACAO.ADITIVO);
+    const selecionaveis = (await solicitacaoModal.listarTiposDisponiveis()).map((o) => o.rotulo);
+
+    expect(
+      selecionaveis,
+      'CATÁLOGO DIVERGENTE: os tipos selecionáveis do combo mudaram em relação ao que a Cassi ' +
+        'confirmou em 31/08/2026. NÃO atualize esta lista para o teste passar — confirme antes ' +
+        'com o dono do ambiente se a mudança foi intencional e, se for, atualize também ' +
+        '`TIPO_SOLICITACAO` em factories/solicitacao-compra.js.',
+    ).toEqual([TIPO_SOLICITACAO.ADITIVO, TIPO_SOLICITACAO.NOVA_CONTRATACAO]);
   });
 
   test('deve fechar o modal sem criar solicitação', async ({

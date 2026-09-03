@@ -263,7 +263,50 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     // investigação). Reproduz aqui a navegação real antes de reusar `listarGrupos()`.
     await tarefas.abaResumo.click();
     await page.getByRole('link', { name: 'Mais opções' }).click();
-    await page.getByRole('link', { name: /^Tarefas em pool/ }).click();
+
+    // O menu abre de forma assíncrona: espera por uma entrada que existe sempre antes de
+    // concluir qualquer coisa sobre as que podem faltar.
+    await page.getByRole('link', { name: /^Tarefas a concluir/ }).waitFor({ state: 'visible' });
+
+    // "Tarefas em pool" só é renderizada quando o usuário TEM ao menos uma tarefa em pool.
+    // Sem essa entrada o teste não consegue LER o pool — e "não consegui ler" é diferente de
+    // "não existe grupo de Fiscal/CSE", que é o que ele afirma. Clicar às cegas aqui estoura
+    // 45s num timeout que não explica nada; a pré-condição legível separa ambiente de defeito.
+    const linkPool = page.getByRole('link', { name: /^Tarefas em pool/ });
+    if ((await linkPool.count()) === 0) {
+      // Lê os rótulos realmente visíveis do menu: sem isso a mensagem promete uma lista e
+      // entrega vazio, que é pior do que não prometer nada.
+      const oferecidas = await page
+        .getByRole('link')
+        .evaluateAll((els) =>
+          els
+            .filter((el) => /** @type {HTMLElement} */ (el).offsetParent !== null)
+            .map((el) => (el.textContent ?? '').replace(/\s+/g, ' ').trim())
+            .filter(Boolean)
+            .slice(-8),
+        );
+      throw new Error(
+        'PRÉ-CONDIÇÃO AUSENTE: o menu "Mais opções" não ofereceu "Tarefas em pool" — o ' +
+          'usuário está sem nenhuma tarefa em pool neste momento, e o painel só é renderizado ' +
+          'quando há ao menos uma. Sem ler o pool não é possível afirmar que não existe grupo ' +
+          'de Fiscal/CSE/Medição. Isto NÃO é defeito do produto nem falha da automação. ' +
+          `Entradas oferecidas agora: ${oferecidas.map((t) => t.replace(/\s+/g, ' ').trim()).join(' | ')}. ` +
+          '\n\nInvestigação de viabilidade de MASSA (medida ao vivo em 01/09/2026, mesma ' +
+          'rodada de `tests/e2e/tarefas/assumir-tarefa-pool.spec.js` — ver lá o detalhe ' +
+          'completo): esta automação não consegue criar seu próprio item de pool para popular ' +
+          'este menu. A base tem atividade orgânica intensa hoje (20+ SCs reais abertas), mas ' +
+          'nenhuma cai em pool de TOTVS-FS — Gestor Imediato/Comprador de cada uma resolve ' +
+          'para pessoa nominal real (RH do Protheus). O único caminho conhecido para a ' +
+          'automação colocar algo em pool é contornar D-01 com um `targetState` diferente de ' +
+          '6 direto na API de `/start` — funcionou uma vez no passado (SC 112679) mas nunca ' +
+          'foi confirmado como reprodutível, e replicá-lo às cegas arriscaria fabricar massa ' +
+          'corrompida numa base compartilhada só para contornar um defeito do produto. A ' +
+          'pré-condição desta fila (qualquer grupo de pool, não só Fiscal/CSE/Medição) é de ' +
+          'leitura de atividade orgânica, mesma natureza da exceção já formalizada para ' +
+          'Contrato em `docs/criacao-de-contrato-inviavel.md`.',
+      );
+    }
+    await linkPool.click();
     // Não usa `.first()` sobre `getByRole('link').filter(...)` para esperar: a página tem
     // outros links que batem com o mesmo padrão de texto em pontos fora deste dropdown, e
     // `.first()` segue a ordem do DOM, não a de visibilidade — esperar por ele trava. A

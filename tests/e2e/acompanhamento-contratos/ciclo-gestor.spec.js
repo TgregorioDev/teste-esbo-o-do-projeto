@@ -33,7 +33,7 @@ import { esperarStartDaSolicitacao } from '../../../utils/espera-start.js';
 const ESPERA_CHEGADA_NO_GESTOR_MS = 45_000;
 
 test.describe('A SC criada nasce no estado e no dono corretos (CT-E2E-01-H)', () => {
-  test('@destrutivo estado inicial e responsável deveriam refletir uma etapa de trabalho do solicitante', async ({
+  test('@destrutivo @bug estado inicial e responsável deveriam refletir uma etapa de trabalho do solicitante', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -106,7 +106,7 @@ test.describe('A SC criada nasce no estado e no dono corretos (CT-E2E-01-H)', ()
 });
 
 test.describe('Gestor Imediato assume do pool e aprova (CT-E2E-02-H)', () => {
-  test('@destrutivo aprovada pelo Gestor Imediato, a SC deveria avançar para Validação Orçamentária', async ({
+  test('@destrutivo @bug aprovada pelo Gestor Imediato, a SC deveria avançar para Validação Orçamentária', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -152,7 +152,7 @@ test.describe('Gestor Imediato assume do pool e aprova (CT-E2E-02-H)', () => {
 });
 
 test.describe('Gestor Imediato reprova com justificativa (CT-E2E-02-S1)', () => {
-  test('@destrutivo reprovada, a SC deveria voltar para Ajustar Informações com o solicitante, itens e contrato íntegros', async ({
+  test('@destrutivo @bug reprovada, a SC deveria voltar para Ajustar Informações com o solicitante, itens e contrato íntegros', async ({
     page,
     contratosPage,
     solicitacaoModal,

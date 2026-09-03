@@ -26,9 +26,12 @@
  * @property {() => string[]} urls URLs capturadas (com método), para diagnóstico na falha
  * @property {() => Record<string, any> | null} payload corpo JSON da PRIMEIRA requisição capturada
  * @property {() => Record<string, any>[]} payloads corpo JSON de TODAS as requisições, na ordem de chegada
- * @property {(indice?: number) => Promise<Record<string, any>>} aguardarPayload
+ * @property {(indice?: number, timeoutMs?: number) => Promise<Record<string, any>>} aguardarPayload
  *   espera deterministicamente pelo corpo JSON da requisição de índice `indice` (default 0).
- *   Nunca usa tempo arbitrário: resolve assim que a requisição correspondente é interceptada.
+ *   Resolve assim que a requisição correspondente é interceptada — nunca por tempo. O
+ *   `timeoutMs` (default 30s) NÃO é espera arbitrária: é o limite a partir do qual se conclui
+ *   que o start não vai sair, para reprovar com PRÉ-CONDIÇÃO AUSENTE legível em vez de pendurar
+ *   o teste até o timeout global e morrer sem explicar nada.
  */
 
 /**
@@ -102,9 +105,44 @@ async function interceptarEnvioSolicitacao(page, finalizar) {
     urls: () => [...urls],
     payload: () => corpos[0] ?? null,
     payloads: () => [...corpos],
-    aguardarPayload: (indice = 0) => {
+    aguardarPayload: (indice = 0, timeoutMs = 30_000) => {
       if (corpos[indice]) return Promise.resolve(corpos[indice]);
-      return new Promise((resolve) => aguardando.push({ indice, resolve }));
+
+      // Espera LIMITADA, de propósito. Antes de 01/09/2026 esta Promise nunca rejeitava: se o
+      // Confirmar não disparasse o start, o teste ficava pendurado até o timeout de 120s do
+      // Playwright e morria com "Test timeout exceeded" — mensagem que não diz nada sobre a
+      // causa. Medido em campo: o contrato 00044-2023-5303 traz 1 item de planilha mas ZERO
+      // produtos e ZERO rateios, o modal renderiza nenhum item, e o widget CORRETAMENTE não
+      // envia (é o mesmo comportamento que `indisponibilidade-protheus.spec.js` documenta como
+      // esperado). Ou seja: a causa quase sempre é massa, não defeito — e o relatório precisa
+      // dizer isso em vez de exibir um timeout mudo.
+      return new Promise((resolve, reject) => {
+        /** @type {{ indice: number, resolve: (valor: Record<string, any>) => void }} */
+        const entrada = { indice, resolve };
+        aguardando.push(entrada);
+
+        const temporizador = setTimeout(() => {
+          const posicao = aguardando.indexOf(entrada);
+          if (posicao !== -1) aguardando.splice(posicao, 1);
+          reject(
+            new Error(
+              `PRÉ-CONDIÇÃO AUSENTE: passaram-se ${timeoutMs}ms desde o Confirmar e a requisição ` +
+                `de start de índice ${indice} nunca foi disparada (${corpos.length} capturada(s) ` +
+                'até aqui). O widget só envia quando o contrato traz ITENS: se a planilha do ' +
+                'contrato escolhido vier sem produtos ou sem rateios, o modal abre, aceita o ' +
+                'preenchimento e o Confirmar não faz nada — comportamento correto, já documentado ' +
+                'em indisponibilidade-protheus.spec.js. Isto NÃO é defeito do produto nem falha da ' +
+                'automação: é massa inadequada para este caso. Confira os itens do contrato antes ' +
+                'de interpretar o resultado.',
+            ),
+          );
+        }, timeoutMs);
+
+        entrada.resolve = (valor) => {
+          clearTimeout(temporizador);
+          resolve(valor);
+        };
+      });
     },
   };
 }

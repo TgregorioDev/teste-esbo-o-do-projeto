@@ -4,7 +4,7 @@ import { HomePage } from '../../../pages/HomePage.js';
 
 /** Home da plataforma — caso CT-PLT-01-H. */
 test.describe('Home da plataforma', () => {
-  test('deve carregar os apps e contadores sem erro de console', async ({ page }) => {
+  test('deve carregar os apps e contadores sem erro de console @bug', async ({ page }) => {
     const homePage = new HomePage(page);
     // Precisa ser instalado ANTES do goto() para capturar erros do carregamento inicial.
     const console_ = homePage.escutarErrosDeConsole();

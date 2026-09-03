@@ -199,6 +199,48 @@ o produto não entrega. Cada um cita o defeito em comentário. A tabela dos defe
 **Não "conserte" um teste vermelho para ficar verde** — isso documenta o bug como se fosse regra.
 Se o defeito for corrigido no produto, o teste fica verde sozinho.
 
+**Todo teste nessa situação leva a tag `@bug` no título** (mesma convenção de `@destrutivo`; um
+teste pode ter as duas — `@destrutivo @bug`). Ela separa "o que deveria estar verde" de "defeito
+já conhecido" na regressão:
+
+```bash
+npx playwright test --grep-invert @bug        # só o que DEVERIA estar verde
+npx playwright test --grep @bug               # só os defeitos conhecidos
+PULAR_DESTRUTIVOS=1 npx playwright test --grep-invert @bug   # regressão rápida e limpa
+```
+
+Critério completo (quem recebe, quem não recebe, limite conhecido da tag e a alternativa
+`test.fail()` ainda pendente de decisão) está no README, seção "A tag `@bug`".
+
+### A tag `@achado` — polaridade INVERTIDA
+
+Há uma segunda família, com semântica **oposta** à do `@bug`, e confundir as duas leva a
+conclusão errada. Um teste `@achado` afirma o comportamento **REAL medido**, não o esperado:
+
+| | `@bug` | `@achado` |
+|---|---|---|
+| Hoje está | vermelho | **verde** |
+| Fica verde quando | o defeito for corrigido | — |
+| Fica **vermelho** quando | — | o comportamento **mudar** (inclusive para melhor) |
+| Um vermelho significa | o defeito persiste | **reabra o assunto**, não "regressão" |
+
+São 8 testes em 4 arquivos: os 5 processos de RH que abrem sem bloqueio de grupo, o resíduo
+`teste` servindo o formulário da SC, o formulário de Rejeições com ids repetidos herdados do
+RDFC, e a identificação do solicitante bloqueada em Substituição de Cargos.
+
+Existem para que o achado **não dependa de alguém lembrar**. O dia em que um deles ficar
+vermelho é o dia em que aquele comportamento mudou — e alguém precisa decidir se a mudança foi
+intencional. Nunca "conserte" um `@achado` para ficar verde: isso apaga o registro de que o
+comportamento mudou.
+
+```bash
+npx playwright test --grep @achado          # os achados versionados
+npx playwright test --grep-invert "@bug|@achado"   # nem defeito conhecido, nem achado
+```
+
+**Não confunda com `catalogo-invariante.spec.js`**, que é invariante de catálogo: ele reprova a
+qualquer mudança de composição, boa ou ruim, e hoje já está vermelho — o catálogo mudou.
+
 ---
 
 ## Armadilhas já pagas (não repita)
@@ -225,10 +267,24 @@ Quando houver sobreposição de CSS, use clique de mouse na coordenada (`page.mo
 
 ## Estado do quality gate
 
-`docs/estado-do-gate.md` guarda as medições de determinismo. Critério para a medição final: a
-grade de contratos sustentar os ~840 registros em cinco amostras seguidas — a integração com o
-Protheus oscilou entre 855 contratos, zero registros e indisponibilidade nos últimos dois dias, e
-medir instabilidade de ambiente como flakiness de teste seria conclusão errada.
+**Premissa declarada, não observação de rodapé: o ambiente da Cassi não é controlado.** A skill
+`playwright-test-creator` define determinismo como "mesmo código + ambiente controlado + dados
+equivalentes = mesmo resultado" — aqui a integração com o Protheus oscila por conta própria, sem
+qualquer mudança de código, e isso precisa ser assumido **antes** de interpretar qualquer
+execução, não descoberto depois de um relatório confuso.
+
+`docs/estabilidade-do-ambiente.md` é a fonte da verdade sobre essa premissa: o que a suíte
+pressupõe de cada integração externa, o histórico medido de quedas (com data, duração e
+evidência — duas ocorrências observadas em 31/08–01/09/2026, não uma série histórica), e acima de
+tudo **como distinguir, lendo a mensagem de um vermelho, instabilidade de ambiente (`PRÉ-CONDIÇÃO
+AUSENTE`) de defeito de produto e de flakiness real da suíte**. Leia antes de classificar qualquer
+falha relacionada a contrato ou a SIGAJURI.
+
+`docs/estado-do-gate.md` guarda as medições de determinismo do lado do teste. Critério para a
+medição final continua sendo o mesmo: a grade de contratos sustentar os ~840 registros em cinco
+amostras seguidas — verifique isso (protocolo em `docs/estabilidade-do-ambiente.md`) antes de
+medir ou reportar cobertura/determinismo, porque uma medição feita durante uma janela de queda
+mede o Protheus, não a suíte.
 
 ## Cobertura
 

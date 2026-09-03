@@ -61,7 +61,7 @@ async function abrirPreencherEConfirmar(page, contratosPage, solicitacaoModal, c
 }
 
 test.describe('Payload de start — targetState e targetAssignee (D-01 / CT-E2E-01-H)', () => {
-  test('a SC deve nascer numa etapa de trabalho atribuída ao solicitante, não presa no marco de Início da conta de integração', async ({
+  test('@bug a SC deve nascer numa etapa de trabalho atribuída ao solicitante, não presa no marco de Início da conta de integração', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -120,6 +120,20 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
       `contrato ${contrato.contrato} deveria trazer itens no payload`,
     ).toBeGreaterThan(0);
 
+    // A assinatura de D-02 aqui é um PAR de itens com quantidades diferentes e mesmo total.
+    // Com menos de duas quantidades distintas não existe par possível, e o teste passaria
+    // sem exercitar o defeito — verde vazio, que é pior que vermelho. Desde que a escolha de
+    // contrato passou a ser distribuída (utils/massa-contratos.js), a amostra varia por
+    // teste, então a pré-condição precisa ser afirmada, não presumida.
+    const quantidades = new Set(itens.map((i) => Number(i.tbprod_quantidade)));
+    expect(
+      quantidades.size,
+      `PRÉ-CONDIÇÃO AUSENTE: o contrato ${contrato.contrato} trouxe ${itens.length} item(ns) com ` +
+        `quantidade(s) ${[...quantidades].join(', ')} — sem ao menos DUAS quantidades diferentes ` +
+        'não há par que possa colidir. Um verde aqui não significaria que D-02 deixou de ocorrer, ' +
+        'e sim que esta amostra não pôde exercitá-lo. NÃO é defeito do produto nem falha da automação.',
+    ).toBeGreaterThan(1);
+
     /** @type {string[]} */
     const colisoes = [];
     for (let i = 0; i < itens.length; i += 1) {
@@ -157,6 +171,19 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
     expect(captura.tentativas()).toBe(1);
 
     const itens = extrairItens(payload.formFields);
+
+    // Este caso procura um item de quantidade 1 replicando o total de OUTRO item. Sem um item
+    // de quantidade 1, ou com um único item no payload, o cenário é inalcançável e o verde
+    // seria vazio — ver a nota do caso anterior sobre amostra distribuída.
+    const quantidadesLidas = itens.map((i) => Number(i.tbprod_quantidade));
+    expect(
+      itens.length > 1 && quantidadesLidas.includes(1),
+      `PRÉ-CONDIÇÃO AUSENTE: o contrato ${contrato.contrato} trouxe ${itens.length} item(ns) com ` +
+        `quantidade(s) ${quantidadesLidas.join(', ')} — este caso exige ao menos DOIS itens, sendo ` +
+        'um deles de quantidade 1, para que o item-fantasma possa existir. NÃO é defeito do ' +
+        'produto nem falha da automação.',
+    ).toBe(true);
+
     const totaisDeOutros = new Map(
       itens.map((item) => [item.indice, paraNumero(item.tbprod_valorTotal)]),
     );
@@ -195,6 +222,19 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
     const itens = extrairItens(payload.formFields);
     expect(itens.length, 'o contrato deveria trazer múltiplos itens no payload').toBeGreaterThan(1);
 
+    // A suspeita só nasce de itens com quantidade/preço GENUINAMENTE diferentes compartilhando
+    // o total. Se todos os itens tiverem a mesma assinatura, não há o que comparar e o verde
+    // seria vazio — ver a nota do primeiro caso sobre amostra distribuída.
+    const assinaturasDaMassa = new Set(
+      itens.map((i) => `${i.tbprod_quantidade}|${i.tbprod_precoUnitario}`),
+    );
+    expect(
+      assinaturasDaMassa.size,
+      `PRÉ-CONDIÇÃO AUSENTE: os ${itens.length} itens do payload têm assinatura quantidade|preço ` +
+        `única (${[...assinaturasDaMassa].join(' , ')}) — sem ao menos DUAS assinaturas distintas ` +
+        'não há como um total repetido indicar o defeito. NÃO é defeito do produto nem falha da automação.',
+    ).toBeGreaterThan(1);
+
     /** @type {Map<number, typeof itens>} */
     const porValorTotal = new Map();
     for (const item of itens) {
@@ -221,7 +261,7 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
 });
 
 test.describe('Payload de start — campos chumbados (D-04 / CT-ACC-07-S1)', () => {
-  test('classeOrca, classificação e o descritor deveriam refletir o contrato de origem, não vir fixos para todos', async ({
+  test('@bug classeOrca, classificação e o descritor deveriam refletir o contrato de origem, não vir fixos para todos', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -341,7 +381,7 @@ test.describe('Payload de start — integridade dos valores e do rateio (CT-ACC-
     }
   });
 
-  test('classeValor do item deveria vir preenchido junto com classeOrca e classificação', async ({
+  test('@bug classeValor do item deveria vir preenchido junto com classeOrca e classificação', async ({
     page,
     contratosPage,
     solicitacaoModal,
@@ -436,7 +476,7 @@ test.describe('Payload de start — duplo clique (CT-ACC-04-S3)', () => {
 });
 
 test.describe('Payload de start — número de contrato incoerente (CT-ACC-04-S5)', () => {
-  test('não deve permitir que nrContrato divirja do contrato real da revisão/filial/itens enviados', async ({
+  test('@bug não deve permitir que nrContrato divirja do contrato real da revisão/filial/itens enviados', async ({
     page,
     contratosPage,
     solicitacaoModal,

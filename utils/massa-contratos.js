@@ -93,10 +93,35 @@ const reservasEmPosse = new Set();
  */
 
 /**
+ * Remove os marcadores `@tag` do título antes de ele virar semente da distribuição.
+ *
+ * MEDIDO em 01/09/2026, e o motivo de esta função existir: `titlePath` foi descrito aqui como
+ * "imutável", mas ele muda toda vez que alguém põe ou tira uma tag do título — e a suíte usa
+ * tags de propósito (`@destrutivo`, `@bug`). O caso D-02 de quantidade/preço em
+ * `payload-solicitacao.spec.js` PASSAVA com `@bug` no título e TRAVAVA em 180s sem a tag:
+ * mesmo código, mesma assertion, contrato sorteado diferente. Marcar um teste não pode trocar
+ * a massa dele — se trocar, dois resultados deixam de ser comparáveis e a tag vira variável
+ * escondida do experimento.
+ *
+ * Normalizar aqui preserva o que a distribuição precisa (identidade única e estável por teste)
+ * e remove o que ela nunca deveria ter capturado (metadado de execução).
+ *
+ * @param {string} titulo
+ * @returns {string}
+ */
+function semMarcadores(titulo) {
+  return titulo
+    .replace(/@[\p{L}\d_-]+/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Identidade estável do teste corrente — a semente da distribuição.
  *
- * `titlePath` é o caminho completo (arquivo → describes → título), único na suíte e imutável
- * entre execuções. `repeatEachIndex` entra para que `--repeat-each` exercite contratos
+ * `titlePath` é o caminho completo (arquivo → describes → título), único na suíte. As tags são
+ * removidas (ver `semMarcadores`) para que a identidade dependa só do que o teste É, nunca de
+ * como ele está marcado. `repeatEachIndex` entra para que `--repeat-each` exercite contratos
  * diferentes em vez de repetir a mesma escolha N vezes. `retry` de propósito **não** entra: a
  * retentativa precisa cair no mesmo contrato, senão ela não reproduz a falha que investiga.
  *
@@ -105,7 +130,7 @@ const reservasEmPosse = new Set();
 function idDoTesteCorrente() {
   try {
     const info = test.info();
-    return `${info.titlePath.join(' › ')}#${info.repeatEachIndex}`;
+    return `${info.titlePath.map(semMarcadores).join(' › ')}#${info.repeatEachIndex}`;
   } catch {
     // `test.info()` só existe dentro de um teste em execução. Fora dele (um script de
     // manutenção chamando este módulo) não há identidade para distribuir, e uma constante

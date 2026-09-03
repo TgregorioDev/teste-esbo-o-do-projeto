@@ -98,7 +98,7 @@ test.describe('Financeiro — Rejeições de Pagamentos (CT-FIN-01-H)', () => {
     ).toBe(0);
   });
 
-  test('CT-FIN-01-H (ACHADO): o formulário repete ids no DOM e carrega campos e seção herdados do RDFC', async ({
+  test('CT-FIN-01-H (ACHADO) @achado: o formulário repete ids no DOM e carrega campos e seção herdados do RDFC', async ({
     page,
   }, testInfo) => {
     // Achado medido em 27/08/2026, afirmado sobre o comportamento REAL (mesmo padrão dos

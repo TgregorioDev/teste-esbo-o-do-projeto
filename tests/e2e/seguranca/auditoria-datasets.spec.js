@@ -15,7 +15,7 @@ import { test, expect } from '../../../fixtures/fixtures.js';
  */
 
 test.describe('Segurança — auditoria de datasets sem acesso admin', () => {
-  test('CT-SEG-02-S1: contas de integração/serviço não devem ter privilégio de administrador', async ({
+  test('CT-SEG-02-S1 @bug: contas de integração/serviço não devem ter privilégio de administrador', async ({
     request,
   }) => {
     // O dataset `colleague` (já usado em CT-SEG-01-S1 para o vazamento de constraint) também
@@ -68,7 +68,7 @@ test.describe('Segurança — auditoria de datasets sem acesso admin', () => {
     ).toBe(0);
   });
 
-  test('CT-SEG-03-S1: dataset de credencial de integração não deve ser legível por sessão sem privilégio admin', async ({
+  test('CT-SEG-03-S1 @bug: dataset de credencial de integração não deve ser legível por sessão sem privilégio admin', async ({
     request,
   }) => {
     // ⚠️ Este teste NUNCA lê nem registra o conteúdo do dataset — só existência e metadados
@@ -100,7 +100,7 @@ test.describe('Segurança — auditoria de datasets sem acesso admin', () => {
     ).toBe(403);
   });
 
-  test('CT-SEG-04-S1: datasets de execução de SQL não devem ser alcançáveis por sessão sem privilégio admin', async ({
+  test('CT-SEG-04-S1 @bug: datasets de execução de SQL não devem ser alcançáveis por sessão sem privilégio admin', async ({
     request,
   }) => {
     // ⚠️ Escopo deliberadamente restrito: este teste NÃO envia payload de injeção (nenhum

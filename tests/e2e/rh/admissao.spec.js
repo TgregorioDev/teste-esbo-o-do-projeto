@@ -33,7 +33,7 @@ import { criarAdmitido } from '../../../factories/pessoa.js';
  * servir o formulário correto.
  */
 test.describe('Automação Admissão', () => {
-  test('CT-ADM-01-H — deveria abrir um formulário de admissão de novo funcionário', async ({
+  test('CT-ADM-01-H @bug — deveria abrir um formulário de admissão de novo funcionário', async ({
     page,
   }, testInfo) => {
     const admitido = criarAdmitido();

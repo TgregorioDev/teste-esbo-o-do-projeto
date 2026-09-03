@@ -64,7 +64,7 @@ test.describe('Erro no start — HTTP 500 (CT-ACC-05-S2)', () => {
 });
 
 test.describe('Sucesso simulado com falha na transferência da tarefa (D-01 / CT-ACC-05-S1)', () => {
-  test('deve avisar quando a SC é criada mas não pôde ser atribuída ao solicitante, em vez de anunciar sucesso pleno', async ({
+  test('@bug deve avisar quando a SC é criada mas não pôde ser atribuída ao solicitante, em vez de anunciar sucesso pleno', async ({
     page,
     contratosPage,
     solicitacaoModal,

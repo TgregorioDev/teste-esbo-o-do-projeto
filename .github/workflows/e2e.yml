@@ -5,10 +5,27 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  schedule:
+    # Execução completa, com os destrutivos, de madrugada — fora do horário em que
+    # alguém possa estar usando a base de homologação.
+    - cron: '0 6 * * 1-5'
 
 jobs:
-  e2e:
-    timeout-minutes: 45
+  # ---------------------------------------------------------------------------
+  # GATE — a única pergunta que um PR precisa responder: há regressão NOVA?
+  #
+  # Rodar `npx playwright test` cru NUNCA pode passar nesta suíte, e isso não é
+  # defeito: 62 testes levam `@bug` porque reprovam DE PROPÓSITO, documentando
+  # defeito de produto catalogado no README, e 8 levam `@achado` porque afirmam
+  # o comportamento REAL medido. Um gate que nunca fica verde deixa de informar
+  # qualquer coisa — e o time passa a mergear por cima dele, que foi o que
+  # aconteceu no PR #2 (mergeado com o check vermelho).
+  #
+  # Aqui o gate cobre só o que DEVERIA estar verde.
+  # ---------------------------------------------------------------------------
+  regressao:
+    name: Regressão (sem defeitos conhecidos)
+    timeout-minutes: 30
     runs-on: ubuntu-latest
 
     steps:
@@ -28,23 +45,121 @@ jobs:
       - name: Verificação estática
         run: npm run typecheck
 
-      - name: Executar a suíte
-        run: npx playwright test
+      - name: Suíte de regressão
+        # PULAR_DESTRUTIVOS: um PR não pode escrever na base do cliente a cada
+        # push. Os cenários que criam registro rodam no job agendado.
+        run: PULAR_DESTRUTIVOS=1 npx playwright test --grep-invert "@bug|@achado"
         env:
-          # Segredos e identificadores do cliente vêm de repository secrets.
           BASE_URL: ${{ secrets.BASE_URL }}
           QA_USERNAME: ${{ secrets.QA_USERNAME }}
           QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
-          CONTRATO_LIMPO: ${{ secrets.CONTRATO_LIMPO }}
-          CONTRATO_MEDIO: ${{ secrets.CONTRATO_MEDIO }}
-          CONTRATO_SERVICO: ${{ secrets.CONTRATO_SERVICO }}
-          CONTRATO_VOLUMOSO: ${{ secrets.CONTRATO_VOLUMOSO }}
 
       - name: Publicar relatório
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: relatorio-regressao
+          path: |
+            playwright-report/
+            test-results/junit.xml
+          retention-days: 30
+
+  # ---------------------------------------------------------------------------
+  # INFORMATIVO — não bloqueia. Existe para responder à pergunta que a tag
+  # `@bug` sozinha não responde: e quando a TOTVS CORRIGIR o defeito?
+  #
+  # Um teste `@bug` que fica verde passa despercebido, e a tag apodrece marcando
+  # algo que já não existe. Aqui, se algum passar, o passo seguinte avisa.
+  # É a alternativa recomendada em docs/decisao-test-fail.md, escolhida em vez
+  # de migrar os 62 testes para `test.fail()` — que reportaria PASS mesmo quando
+  # a falha fosse por outro motivo, escondendo a causa real.
+  # ---------------------------------------------------------------------------
+  defeitos-conhecidos:
+    name: Defeitos conhecidos (informativo)
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Instalar navegador
+        run: npx playwright install --with-deps chromium
+
+      - name: Executar os testes marcados como defeito conhecido
+        id: conhecidos
+        continue-on-error: true
+        run: PULAR_DESTRUTIVOS=1 npx playwright test --grep @bug
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          QA_USERNAME: ${{ secrets.QA_USERNAME }}
+          QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
+
+      - name: Avisar se algum defeito conhecido passou
+        if: ${{ !cancelled() }}
+        run: node scripts/alerta-bug-corrigido.mjs test-results/junit.xml
+
+      - name: Publicar relatório
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-defeitos-conhecidos
+          path: |
+            playwright-report/
+            test-results/junit.xml
+          retention-days: 30
+
+  # ---------------------------------------------------------------------------
+  # DESTRUTIVOS — fora do PR, de propósito.
+  #
+  # Estes cenários CRIAM registro real na base de homologação do cliente. Rodá-los
+  # a cada push transformaria o CI numa fábrica de massa: com `retries: 2`, cada
+  # falha vira três solicitações. Aqui rodam só no agendamento noturno e sob
+  # acionamento manual.
+  #
+  # `--workers=1`: o dono do ambiente exige execução serializada; o Fluig tem
+  # proteção contra volume e execução em rajada contamina o resultado.
+  # ---------------------------------------------------------------------------
+  destrutivos:
+    name: Cenários destrutivos (agendado)
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    timeout-minutes: 180
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Instalar navegador
+        run: npx playwright install --with-deps chromium
+
+      - name: Executar os cenários que escrevem
+        run: npx playwright test --grep @destrutivo --workers=1
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          QA_USERNAME: ${{ secrets.QA_USERNAME }}
+          QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
+
+      - name: Publicar relatório
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-destrutivos
           path: |
             playwright-report/
             test-results/junit.xml

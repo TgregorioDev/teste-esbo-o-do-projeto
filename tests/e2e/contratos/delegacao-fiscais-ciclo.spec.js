@@ -39,7 +39,7 @@ import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
  * solicitação (`dataSolicitacao`), nenhum deles editável pelo solicitante.
  */
 test.describe('Delegação de Fiscais de Contrato/Serviço — ciclo completo', () => {
-  test('CT-DEL-01-H @destrutivo: delegar um fiscal substituto para um contrato deve criar a delegação', async ({
+  test('CT-DEL-01-H @destrutivo @bug: delegar um fiscal substituto para um contrato deve criar a delegação', async ({
     page,
   }) => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);
@@ -79,7 +79,7 @@ test.describe('Delegação de Fiscais de Contrato/Serviço — ciclo completo', 
     expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);
   });
 
-  test('CT-DEL-01-S1 @destrutivo: substituto inválido/sem permissão deve ser bloqueado — não há nenhum controle para selecionar um fiscal substituto', async ({
+  test('CT-DEL-01-S1 @destrutivo @bug: substituto inválido/sem permissão deve ser bloqueado — não há nenhum controle para selecionar um fiscal substituto', async ({
     page,
   }) => {
     // ⚠️ NÃO instale aqui a guarda de escrita (`bloquearCriacaoDeSolicitacao`). Medido em

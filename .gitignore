@@ -1,4 +1,8 @@
-node_modules/
+# Sem a barra final DE PROPÓSITO: `node_modules/` casa apenas diretórios, e um symlink
+# chamado `node_modules` (comum ao trabalhar com git worktree, para não reinstalar) escapa
+# da regra e acaba versionado — aconteceu em 03/09/2026 e o link, apontando para um caminho
+# local, quebraria o checkout de qualquer outra máquina.
+node_modules
 test-results/
 playwright-report/
 playwright/.cache/

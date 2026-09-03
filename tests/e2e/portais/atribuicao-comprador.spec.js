@@ -33,7 +33,7 @@ import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
  * por essa causa, documentada, não por suposição.
  */
 test.describe('Gerência de Compras — Atribuir comprador (CT-E2E-05-H)', () => {
-  test('a aba Atribuir não lista SCs para a conta autenticada, embora o mesmo mecanismo renderize dados reais na aba Transferir', async ({
+  test('a aba Atribuir não lista SCs para a conta autenticada, embora o mesmo mecanismo renderize dados reais na aba Transferir @bug', async ({
     page,
   }) => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);

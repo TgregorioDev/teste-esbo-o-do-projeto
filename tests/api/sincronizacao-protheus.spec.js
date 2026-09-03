@@ -28,7 +28,7 @@ import { test, expect } from '../../fixtures/fixtures.js';
  */
 
 test.describe('Integração Protheus — sincronização e cache', () => {
-  test('CT-INT-02-S1: variantes de cache (_Sync) dos dados de RH e vigência de compra não devem estar em erro', async ({
+  test('CT-INT-02-S1 @bug: variantes de cache (_Sync) dos dados de RH e vigência de compra não devem estar em erro', async ({
     request,
   }) => {
     const datasetsDeSincronizacao = [

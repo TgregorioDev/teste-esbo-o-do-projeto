@@ -85,7 +85,7 @@ test.describe('ACHADO — processos de RH que abrem o formulário sem bloqueio d
   ];
 
   for (const { processId, nome } of processosQueAbriram) {
-    test(`ACHADO — ${processId} (${nome}) inicia sem bloqueio para usuário fora do grupo de RH`, async ({
+    test(`ACHADO @achado — ${processId} (${nome}) inicia sem bloqueio para usuário fora do grupo de RH`, async ({
       page,
     }, testInfo) => {
       // Rastreabilidade do achado no relatório da execução, inclusive quando o teste

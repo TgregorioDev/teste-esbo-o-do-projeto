@@ -28,7 +28,7 @@ test.describe('Gerência de Compras', () => {
     expect(guarda.tentativas()).toBe(0);
   });
 
-  test('deve listar as solicitações pendentes de atribuição ao abrir a aba Atribuir', async ({
+  test('deve listar as solicitações pendentes de atribuição ao abrir a aba Atribuir @bug', async ({
     page,
   }) => {
     // Defeito confirmado em campo: ver docstring de GerenciaComprasPage. A tabela da aba

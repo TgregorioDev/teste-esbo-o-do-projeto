@@ -63,7 +63,7 @@ test.describe('Documentos — upload (CT-GED-02)', () => {
     ).toHaveText('1000');
   });
 
-  test('CT-GED-02-S1 upload de extensão bloqueada é rejeitado e nada é gravado @destrutivo', async ({
+  test('CT-GED-02-S1 upload de extensão bloqueada é rejeitado e nada é gravado @destrutivo @bug', async ({
     page,
   }) => {
     const documentosPage = new DocumentosGedPage(page);

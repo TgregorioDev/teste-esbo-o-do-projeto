@@ -29,7 +29,7 @@ import { criarSubstituto } from '../../../factories/pessoa.js';
  * pré-condição for resolvida.
  */
 test.describe('Substituição de Cargos', () => {
-  test('CT-SUB — bloqueia a identificação do solicitante antes de expor campos de substituto', async ({
+  test('CT-SUB @achado — bloqueia a identificação do solicitante antes de expor campos de substituto', async ({
     page,
   }, testInfo) => {
     const substituto = criarSubstituto();

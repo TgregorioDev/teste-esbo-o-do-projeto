@@ -56,7 +56,7 @@ const PROCESSOS_RDFC = [
 ];
 
 test.describe('Segurança — isolamento horizontal na API v2 de processos (BOLA)', () => {
-  test('CT-SEG-07-S1 — não deve entregar o objeto de um processo em que o usuário não participa', async ({
+  test('CT-SEG-07-S1 @bug — não deve entregar o objeto de um processo em que o usuário não participa', async ({
     page,
   }) => {
     const login = envObrigatoria('QA_USERNAME');

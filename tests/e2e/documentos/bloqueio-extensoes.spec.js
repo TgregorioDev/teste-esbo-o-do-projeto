@@ -130,7 +130,7 @@ async function expectPublicacaoBloqueada(page, { caminhoArquivo, nomeDoArquivo, 
 }
 
 test.describe('GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)', () => {
-  test('CT-GED-02-S2 @destrutivo — script de lote (.bat) deveria ser rejeitado', async ({ page }) => {
+  test('CT-GED-02-S2 @destrutivo @bug — script de lote (.bat) deveria ser rejeitado', async ({ page }) => {
     const nomeDoArquivo = 'qa-script-lote.bat';
     const caminhoArquivo = await arquivoTemporario(
       nomeDoArquivo,
@@ -146,7 +146,7 @@ test.describe('GED — allowlist de extensão, não lista negra do .exe (CT-GED-
     });
   });
 
-  test('CT-GED-02-S2 @destrutivo — shell script (.sh) deveria ser rejeitado', async ({ page }) => {
+  test('CT-GED-02-S2 @destrutivo @bug — shell script (.sh) deveria ser rejeitado', async ({ page }) => {
     const nomeDoArquivo = 'qa-script-shell.sh';
     const caminhoArquivo = await arquivoTemporario(
       nomeDoArquivo,
@@ -160,7 +160,7 @@ test.describe('GED — allowlist de extensão, não lista negra do .exe (CT-GED-
     });
   });
 
-  test('CT-GED-02-S2 @destrutivo — dupla extensão (.pdf.exe) deveria ser rejeitada', async ({ page }) => {
+  test('CT-GED-02-S2 @destrutivo @bug — dupla extensão (.pdf.exe) deveria ser rejeitada', async ({ page }) => {
     const nomeDoArquivo = 'qa-relatorio.pdf.exe';
     const caminhoArquivo = await arquivoTemporario(nomeDoArquivo, MAGIC_BYTES_EXECUTAVEL);
 
@@ -173,7 +173,7 @@ test.describe('GED — allowlist de extensão, não lista negra do .exe (CT-GED-
     });
   });
 
-  test('CT-GED-02-S2 @destrutivo — executável renomeado para .pdf deveria ser rejeitado pelo conteúdo', async ({
+  test('CT-GED-02-S2 @destrutivo @bug — executável renomeado para .pdf deveria ser rejeitado pelo conteúdo', async ({
     page,
   }) => {
     const nomeDoArquivo = 'qa-executavel-disfarcado.pdf';

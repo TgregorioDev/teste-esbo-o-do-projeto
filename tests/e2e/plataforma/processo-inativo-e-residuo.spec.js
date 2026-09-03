@@ -59,7 +59,7 @@ test.describe('Plataforma — processo inativo e resíduo de desenvolvimento (CT
     ).toBe(0);
   });
 
-  test('CT-PLT-08-S1: o processo `teste` (categoria ADMIN) não deveria constar do catálogo de início de um usuário de Compras', async ({
+  test('CT-PLT-08-S1 @bug: o processo `teste` (categoria ADMIN) não deveria constar do catálogo de início de um usuário de Compras', async ({
     page,
   }) => {
     // VERMELHO INTENCIONAL — achado de governança de publicação, não de execução.
@@ -116,7 +116,7 @@ test.describe('Plataforma — processo inativo e resíduo de desenvolvimento (CT
     ).not.toContain('teste');
   });
 
-  test('CT-PLT-08-S1 (ACHADO): abrir o processo `teste` serve o formulário da Solicitação de Compras a um usuário comum', async ({
+  test('CT-PLT-08-S1 (ACHADO) @achado: abrir o processo `teste` serve o formulário da Solicitação de Compras a um usuário comum', async ({
     page,
   }, testInfo) => {
     // Este teste afirma sobre o comportamento REAL medido, não sobre o esperado — mesmo padrão

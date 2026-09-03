@@ -12,7 +12,7 @@ import { BancoHorasPage } from '../../../pages/BancoHorasPage.js';
  */
 test.describe('Portal de Autorização de Horas Extras', () => {
   test(
-    'CT-BH-01-S1 — não deve alertar o usuário final com erro de configuração de servidor ao abrir o Banco de Horas',
+    'CT-BH-01-S1 @bug — não deve alertar o usuário final com erro de configuração de servidor ao abrir o Banco de Horas',
     async ({ page }) => {
       // Defeito U-02, em aberto. Este teste está escrito contra o comportamento ESPERADO:
       // uma falha de configuração de servidor (parâmetro não informado) é um problema de

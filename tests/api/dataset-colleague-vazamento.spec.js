@@ -19,7 +19,7 @@ import { envObrigatoria } from '../../config/ambiente.js';
  * pessoal algum no diff do erro.
  */
 test.describe('Vazamento de dados — dataset colleague sem aplicar constraint', () => {
-  test('deve retornar somente o registro do login filtrado, não a base inteira', async ({
+  test('deve retornar somente o registro do login filtrado, não a base inteira @bug', async ({
     request,
   }) => {
     const login = envObrigatoria('QA_USERNAME');

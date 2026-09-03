@@ -81,7 +81,7 @@ test.describe('Parecer Técnico — formulário avulso', () => {
     expect(guarda.tentativas(), 'abrir e ler o formulário não deveria escrever nada').toBe(0);
   });
 
-  test('CT-PAR-01-S1 — parecer sem responsável definido não pode completar uma requisição de escrita ao Enviar', async ({
+  test('CT-PAR-01-S1 @bug — parecer sem responsável definido não pode completar uma requisição de escrita ao Enviar', async ({
     page,
   }) => {
     const parecer = new ParecerTecnicoPage(page);
@@ -109,7 +109,7 @@ test.describe('Parecer Técnico — formulário avulso', () => {
     ).toBe(0);
   });
 
-  test('CT-PAR-01-S2 — parecer desfavorável (Reprovado/Ajustes) com justificativa também é barrado pela ausência de responsável', async ({
+  test('CT-PAR-01-S2 @bug — parecer desfavorável (Reprovado/Ajustes) com justificativa também é barrado pela ausência de responsável', async ({
     page,
   }) => {
     const parecer = new ParecerTecnicoPage(page);
