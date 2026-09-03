@@ -80,6 +80,8 @@
   .analise { border-left:3px solid #0ea5e9; padding-left:14px; }
   .analise p { margin:0 0 8px; }
   .analise .g, .g { color:var(--suave); font-size:13px; }
+  .evid-prova { background:rgba(34,197,94,.10); border-left:3px solid #22c55e; border-radius:8px; padding:8px 12px; margin:10px 0 0; font-size:13px; }
+  .evid-ctx { background:rgba(245,158,11,.10); border-left:3px solid #f59e0b; border-radius:8px; padding:8px 12px; margin:10px 0 0; font-size:13px; }
   .caso { background:var(--codigo); border:1px solid var(--borda); border-left:3px solid #0ea5e9; border-radius:8px; padding:8px 12px; margin:0 0 10px; font-size:13.5px; }
 </style>
 </head>
@@ -114,6 +116,7 @@
     <p><b>Por que falha:</b> O dataset <code>colleague</code> ignora a constraint; qualquer sessão autenticada lê a base inteira de colaboradores.</p>
     <p><b>Onde falha:</b> <code>expect(comFiltro).toBe(1)</code> em <code>dataset-colleague-vazamento.spec.js</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/api/dataset-colleague-vazamento.spec.js:60</code>)</span></p>
     
+    <p class="evid-ctx"><b>Atenção — a screenshot abaixo é CONTEXTO, não a prova:</b> o defeito descrito acima não é visualmente observável. A prova é a resposta do dataset com e sem constraint. Este teste <b>não dirige interface</b> — a página nunca saiu de <code>about:blank</code>, por isso não há screenshot.</p>
   </section>
 
   <section class="bloco">
@@ -140,7 +143,7 @@ Received: 3493</pre>
   </section>
 
   <section class="bloco">
-    <h3>Tela no momento da falha</h3>
+    <h3>Tela no momento da falha — contexto, não prova</h3>
     <p class="dica">Este teste não dirige interface — é uma verificação de API, e a página nunca
     saiu de <code>about:blank</code>. Não há captura porque não haveria o que capturar: a
     evidência aqui é a resposta do endpoint, que está na mensagem da falha acima.</p>
@@ -294,6 +297,7 @@ Received: 3493
     <p><b>Por que falha:</b> As variantes de cache/sincronização dos dados de RH estão quebradas; dado de RH e vigência de compra ficam defasados sem aviso.</p>
     <p><b>Onde falha:</b> <code>expect(ok).toBe(true)</code> em <code>sincronizacao-protheus.spec.js</code>, iterando as variantes <code>_Sync</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/api/sincronizacao-protheus.spec.js:60</code>)</span></p>
     
+    <p class="evid-ctx"><b>Atenção — a screenshot abaixo é CONTEXTO, não a prova:</b> o defeito descrito acima não é visualmente observável. A prova é a resposta HTTP 500 de cada variante <code>_Sync</code>, transcrita na mensagem. Teste de API, sem tela.</p>
   </section>
 
   <section class="bloco">
@@ -321,7 +325,7 @@ Received: false</pre>
   </section>
 
   <section class="bloco">
-    <h3>Tela no momento da falha</h3>
+    <h3>Tela no momento da falha — contexto, não prova</h3>
     <p class="dica">Este teste não dirige interface — é uma verificação de API, e a página nunca
     saiu de <code>about:blank</code>. Não há captura porque não haveria o que capturar: a
     evidência aqui é a resposta do endpoint, que está na mensagem da falha acima.</p>

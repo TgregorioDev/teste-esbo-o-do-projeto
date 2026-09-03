@@ -3,6 +3,7 @@
 // também a versão Markdown. Mesma estrutura do relatório de 02/09/2026 (relatorios/gerar-final.mjs).
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { NATUREZAS, GRUPOS, ANALISES, META, LEITURA, SUPLEMENTARES, MASSA, REEXEC, nomeDoCaso } from './analise.mjs';
+import { EVIDENCIAS } from './evidencias.mjs';
 
 const DATA = '2026-09-03';
 const DIR = `relatorios-${DATA}`;
@@ -53,7 +54,16 @@ function analiseDe(f) {
   }
   throw new Error(`sem análise para ${chave} › ${f.titulo}`);
 }
-for (const f of falhas) f.analise = analiseDe(f);
+function evidenciaDe(f) {
+  const chave = `${f.arquivo}:${f.linha}`;
+  if (EVIDENCIAS[chave]) return EVIDENCIAS[chave];
+  for (const [k, v] of Object.entries(EVIDENCIAS)) {
+    const [b, frag] = k.split('|');
+    if (b === chave && frag && f.titulo.includes(frag)) return v;
+  }
+  throw new Error(`sem classificação de evidência para ${chave} › ${f.titulo}`);
+}
+for (const f of falhas) { f.analise = analiseDe(f); f.evidencia = evidenciaDe(f); }
 
 const porNatureza = {}; const porGrupo = {};
 for (const f of falhas) { porNatureza[f.analise.natureza] = (porNatureza[f.analise.natureza] ?? 0) + 1; porGrupo[f.analise.grupo] = (porGrupo[f.analise.grupo] ?? 0) + 1; }
@@ -144,6 +154,8 @@ html = html.replace('</style>', `  .badge.divergencia { background:#0ea5e9; colo
   .analise { border-left:3px solid #0ea5e9; padding-left:14px; }
   .analise p { margin:0 0 8px; }
   .analise .g, .g { color:var(--suave); font-size:13px; }
+  .evid-prova { background:rgba(34,197,94,.10); border-left:3px solid #22c55e; border-radius:8px; padding:8px 12px; margin:10px 0 0; font-size:13px; }
+  .evid-ctx { background:rgba(245,158,11,.10); border-left:3px solid #f59e0b; border-radius:8px; padding:8px 12px; margin:10px 0 0; font-size:13px; }
   .caso { background:var(--codigo); border:1px solid var(--borda); border-left:3px solid #0ea5e9; border-radius:8px; padding:8px 12px; margin:0 0 10px; font-size:13.5px; }
 </style>`);
 html = html.replace('<main>\n', `<main>\n${sumarioHtml}\n`);
@@ -173,8 +185,12 @@ for (let i = 1; i < partes.length; i++) {
     <p><b>Por que falha:</b> ${semP(md2html(a.porQue))}</p>
     <p><b>Onde falha:</b> ${semP(md2html(a.onde))}${f.erroLocal ? ` <span class="g">(local exato registrado pelo Playwright: <code>${escapar(f.erroLocal.file.replace(process.cwd() + '/', ''))}:${f.erroLocal.line}</code>)</span>` : ''}</p>
     ${a.rerun ? `<p><b>${escapar(REEXEC)}:</b> ${semP(md2html(a.rerun))}</p>` : ''}
+    <p class="${f.evidencia.tipo === 'tela' ? 'evid-prova' : 'evid-ctx'}"><b>${f.evidencia.tipo === 'tela' ? 'A screenshot abaixo É a evidência' : 'Atenção — a screenshot abaixo é CONTEXTO, não a prova'}:</b> ${f.evidencia.tipo === 'tela' ? 'o defeito descrito acima é visível na captura.' : `o defeito descrito acima não é visualmente observável. A prova é ${semP(md2html(f.evidencia.prova))}`}</p>
   </section>`;
   p = p.replace('</header>', `</header>${bloco}`);
+  p = p.replace(/<h3>Tela no momento da falha<\/h3>/g, f.evidencia.tipo === 'tela'
+    ? '<h3>Tela no momento da falha — esta é a evidência do defeito</h3>'
+    : '<h3>Tela no momento da falha — contexto, não prova</h3>');
   const trace = anexo(f, 'trace'), video = anexo(f, 'video'), shot = anexo(f, 'screenshot'), ctx = anexo(f, 'error-context');
   const evid = `<p class="dica"><b>Artefatos desta falha:</b>${shot ? ` screenshot <code>${escapar(shot)}</code> ·` : ''}${trace ? ` trace <code>${escapar(trace)}</code> ·` : ''}${video ? ` vídeo <code>${escapar(video)}</code> ·` : ''}${ctx ? ` aria-snapshot <code>${escapar(ctx)}</code>` : ''}</p>`;
   p = p.replace(/<p class="dica">\s*(Trace|Vídeo|vídeo|sem trace)[\s\S]*?<\/p>/, evid);
@@ -255,7 +271,8 @@ ${a.id ? `- **Caso de teste:** ${nomeDoCaso(a.id)}\n` : ''}- **Causa raiz:** ${a
 - **O que acontece:** ${a.oQueAcontece}
 - **Por que falha:** ${a.porQue}
 - **Onde falha:** ${a.onde}${f.erroLocal ? ` (local exato: \`${f.erroLocal.file.replace(process.cwd() + '/', '')}:${f.erroLocal.line}\`)` : ''}
-${a.rerun ? `- **${REEXEC}:** ${a.rerun}\n` : ''}
+${a.rerun ? `- **${REEXEC}:** ${a.rerun}\n` : ''}- **Valor da screenshot:** ${f.evidencia.tipo === 'tela' ? '**é a evidência** — o defeito é visível na captura.' : `**contexto, não prova** — o defeito não é visualmente observável. A prova é ${f.evidencia.prova}`}
+
 **Mensagem da falha:**
 
 \`\`\`

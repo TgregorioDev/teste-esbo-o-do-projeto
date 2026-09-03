@@ -105,6 +105,17 @@ export const SUPLEMENTARES = [
     '`ciclo-solicitacao-compras.spec.js:815` (CT-ACC-09-H) haviam parado em sintoma de ambiente (grade vazia, ' +
     'widget de Zoom). Reexecutados, **os dois alcançaram a assertion de domínio e confirmaram defeito real** — ' +
     'o beco sem saída do reenvio e a pasta do GED que nunca é criada.',
+  '**Validação das evidências contra o que cada cartão afirma** — a leitura do relatório apontou que vários prints ' +
+    'não sustentavam o texto do defeito. A checagem confirmou e mediu: a screenshot do Playwright é sempre "a página ' +
+    'no instante da falha", e isso só PROVA o defeito quando ele é visual. Dos 71 cartões, em **23 a screenshot é a ' +
+    'evidência** (combo vazio, status truncado, 404, formulário errado, documento publicado sem bloqueio) e em ' +
+    '**48 ela é apenas contexto**, porque o oráculo do caso é a resposta de uma API, o corpo do payload ' +
+    'interceptado, uma linha de console, uma requisição de rede ou uma tentativa bloqueada pela guarda de escrita — ' +
+    'nada disso aparece numa imagem. Cada cartão agora declara em qual dos dois grupos está e, quando é contexto, ' +
+    'aponta onde está a prova de verdade. A classificação não foi assumida: cada caso marcado como visual foi conferido contra o aria-snapshot daquela falha, e dois que eu havia marcado como prova (upload de `.exe` no GED e campo "Clínica") caíram na conferência e foram reclassificados. Classificação em `relatorios-2026-09-03/evidencias.mjs`. ' +
+    'Dois efeitos colaterais que enganavam quem lia: em `payload-solicitacao` o "Erro ao iniciar processo" ao fundo ' +
+    'é o aborto proposital da captura, não o defeito; e no Banco de Horas o `alert()` nativo nunca sai na imagem ' +
+    'porque o Playwright o dispensa sozinho.',
   '**Intervalo de 60 s entre destrutivos** — os 47 cenários `@destrutivo` rodaram **um por invocação**, com espera ' +
     'de 60 s entre eles (`relatorios-2026-09-03/rodar-destrutivos.mjs`; cronologia completa em `destrutivos.log`). ' +
     'Isso remove a disputa pelo pool de tarefas entre testes concorrentes, que em 02/09 era uma das explicações ' +

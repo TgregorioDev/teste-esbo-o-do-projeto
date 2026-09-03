@@ -82,6 +82,7 @@ Das **71** falhas, **38** são defeitos já catalogados no README (vermelhos int
 - **Janela de rede degradada entre 09h12 e 09h30** — durante a primeira passagem, as fatias `rh`, `plataforma`, `portais` e `compras` acumularam 20 falhas com sintoma de infraestrutura (`page.goto: Timeout 60000ms` e `net::ERR_NETWORK_CHANGED`), e as fatias `acompanhamento-contratos` e `contratos` pegaram a grade do Protheus devolvendo *"Mostrando 0 até 0 de 0 registros"*. `docs/estabilidade-do-ambiente.md` proíbe reportar medição nessa condição. Os JSONs dessa passagem estão preservados em `relatorios-2026-09-03/janela-degradada/` como evidência, e as seis fatias foram **reexecutadas** depois da confirmação de saúde. Efeito: `portais` 18 → 2 vermelhos, `rh` 10 → 3, `plataforma` 12 → 7, `compras` 13 → 7, `acomp` 11 → 10, `contratos` 3 → 2.
 - **Confirmação de saúde do ambiente antes da medição final** — `node scripts/sonda-grade.mjs` devolveu **845 contratos em cinco amostras consecutivas**, que é o critério exigido por `CLAUDE.md` e por `docs/estabilidade-do-ambiente.md` antes de interpretar qualquer execução.
 - **Dois destrutivos reexecutados na janela saudável** — `ciclo-correcao-reenvio.spec.js:242` (CT-CMP-08-H) e `ciclo-solicitacao-compras.spec.js:815` (CT-ACC-09-H) haviam parado em sintoma de ambiente (grade vazia, widget de Zoom). Reexecutados, **os dois alcançaram a assertion de domínio e confirmaram defeito real** — o beco sem saída do reenvio e a pasta do GED que nunca é criada.
+- **Validação das evidências contra o que cada cartão afirma** — a leitura do relatório apontou que vários prints não sustentavam o texto do defeito. A checagem confirmou e mediu: a screenshot do Playwright é sempre "a página no instante da falha", e isso só PROVA o defeito quando ele é visual. Dos 71 cartões, em **23 a screenshot é a evidência** (combo vazio, status truncado, 404, formulário errado, documento publicado sem bloqueio) e em **48 ela é apenas contexto**, porque o oráculo do caso é a resposta de uma API, o corpo do payload interceptado, uma linha de console, uma requisição de rede ou uma tentativa bloqueada pela guarda de escrita — nada disso aparece numa imagem. Cada cartão agora declara em qual dos dois grupos está e, quando é contexto, aponta onde está a prova de verdade. A classificação não foi assumida: cada caso marcado como visual foi conferido contra o aria-snapshot daquela falha, e dois que eu havia marcado como prova (upload de `.exe` no GED e campo "Clínica") caíram na conferência e foram reclassificados. Classificação em `relatorios-2026-09-03/evidencias.mjs`. Dois efeitos colaterais que enganavam quem lia: em `payload-solicitacao` o "Erro ao iniciar processo" ao fundo é o aborto proposital da captura, não o defeito; e no Banco de Horas o `alert()` nativo nunca sai na imagem porque o Playwright o dispensa sozinho.
 - **Intervalo de 60 s entre destrutivos** — os 47 cenários `@destrutivo` rodaram **um por invocação**, com espera de 60 s entre eles (`relatorios-2026-09-03/rodar-destrutivos.mjs`; cronologia completa em `destrutivos.log`). Isso remove a disputa pelo pool de tarefas entre testes concorrentes, que em 02/09 era uma das explicações possíveis para as SCs não ficarem assumíveis. Com a disputa eliminada, as 5 falhas de latência do BPMN (G13) **persistiram** — logo a causa é a latência da etapa "Grava SC e Anexos", não a concorrência.
 
 ## Massa criada e limpeza
@@ -368,6 +369,7 @@ Testes:
 - **O que acontece:** `POST /api/public/ecm/dataset/datasets` com constraint `colleagueId = <login>` devolve 3.493 registros — o mesmo total obtido sem nenhuma constraint.
 - **Por que falha:** O dataset `colleague` ignora a constraint; qualquer sessão autenticada lê a base inteira de colaboradores.
 - **Onde falha:** `expect(comFiltro).toBe(1)` em `dataset-colleague-vazamento.spec.js`. (local exato: `tests/api/dataset-colleague-vazamento.spec.js:60`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a resposta do dataset com e sem constraint. Este teste **não dirige interface** — a página nunca saiu de `about:blank`, por isso não há screenshot.
 
 **Mensagem da falha:**
 
@@ -399,6 +401,7 @@ Received: 3493
 - **O que acontece:** `ds_protheus_getFuncionarios_restGetAll_Sync` e `ds_protheus_getFuncoes_restGetAll_Sync` respondem HTTP 500 `java.lang.NullPointerException` (ECMException).
 - **Por que falha:** As variantes de cache/sincronização dos dados de RH estão quebradas; dado de RH e vigência de compra ficam defasados sem aviso.
 - **Onde falha:** `expect(ok).toBe(true)` em `sincronizacao-protheus.spec.js`, iterando as variantes `_Sync`. (local exato: `tests/api/sincronizacao-protheus.spec.js:60`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a resposta HTTP 500 de cada variante `_Sync`, transcrita na mensagem. Teste de API, sem tela.
 
 **Mensagem da falha:**
 
@@ -431,6 +434,7 @@ Received: false
 - **Por que falha:** O rateio veio do próprio contrato de origem e não foi editado por ninguém — mesmo assim a validação de movimentação o considera incompleto. A SC fica presa em "Ajustar Informações" com o solicitante, sem caminho de volta ao fluxo. Histórico completo de movimentações no cartão.
 - **Onde falha:** `expect` do estado após o reenvio em `ciclo-correcao-reenvio.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js:406`)
 - **Reexecução em janela saudável:** Na primeira passagem (09h35) este teste parou em `AcompanhamentoContratosPage.expectCarregada()` porque a grade do Protheus estava devolvendo zero contratos. Reexecutado às 11h51, com a grade sustentando 845 registros, **alcançou a assertion de domínio e confirmou o defeito** — é o veredito que em 02/09 só existia como medição suplementar.
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -457,6 +461,7 @@ Error: DEFEITO (CT-CMP-08-H): a SC 113225 não pode ser reenviada depois de corr
 - **O que acontece:** A SC criada nasce com estado "Início" — o marco de início do BPMN — em vez de uma etapa de trabalho do solicitante.
 - **Por que falha:** Consequência direta de D-01: o widget envia `targetState: 6` e a transferência para o solicitante falha, deixando a SC no marco de início sob a conta de integração.
 - **Onde falha:** `expect` do estado inicial em `ciclo-gestor.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/ciclo-gestor.spec.js:98`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a etapa em que a solicitação realmente parou, lida no detalhe do processo e citada na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -487,6 +492,7 @@ Expected: not "Início"
 - **O que acontece:** A SC 113195 ficou em estado "Início" e nunca chegou à "Validação do Gestor", então não há tarefa para o Gestor Imediato assumir e aprovar.
 - **Por que falha:** D-01 mantém a solicitação presa no marco de início; ela não entra em pool algum, e a etapa seguinte do ciclo fica inalcançável.
 - **Onde falha:** Poll por "Validação do Gestor" em `ciclo-gestor.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/ciclo-gestor.spec.js:139`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a etapa em que a solicitação realmente parou, lida no detalhe do processo e citada na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -521,6 +527,7 @@ Call Log:
 - **O que acontece:** A SC 113197 ficou em "Início" — o cenário de reprovar com justificativa e devolver a SC para "Ajustar Informações" não é alcançável.
 - **Por que falha:** Mesma causa de D-01. O cabeçalho do arquivo já registra a dependência.
 - **Onde falha:** Poll por "Validação do Gestor" em `ciclo-gestor.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/ciclo-gestor.spec.js:192`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a etapa em que a solicitação realmente parou, lida no detalhe do processo e citada na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -555,6 +562,7 @@ Call Log:
 - **O que acontece:** A SC 113198 nasceu com responsável "Usuário Integrador Fluig" em vez do solicitante logado.
 - **Por que falha:** A transferência (`dsFluig_postProcessesTransfer`) falha e a SC permanece na conta de integração — a evidência mais direta de D-01, medida na solicitação já criada.
 - **Onde falha:** `expect` do responsável da SC criada em `criacao-solicitacao.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:181`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o responsável da SC criada, consultado no servidor e citado na mensagem ("Usuário Integrador Fluig").
 
 **Mensagem da falha:**
 
@@ -585,6 +593,7 @@ Expected: not "Usuário Integrador Fluig"
 - **O que acontece:** No contrato 00002-2026-3201 o Protheus tem 3 itens (1 com quantidade e valor, 2 sem nenhum dos dois) e a SC nasceu com os 3. Quantidades enviadas: `[1,48,1]`.
 - **Por que falha:** O serviço FABRICA quantidade para os itens vazios (cascata `resolveQuant` → fallback 1 em contrato de serviços) e com isso eles passam pelo filtro `quant > 0` que deveria descartá-los.
 - **Onde falha:** `expect` da contagem de itens da SC criada em `criacao-solicitacao.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:287`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o corpo do `POST /wf_solicitacao_compras/start` interceptado por `utils/captura-payload.js` — anexado a este cartão e citado na mensagem da falha. Nenhum campo de payload é visível numa screenshot.
 
 **Mensagem da falha:**
 
@@ -616,6 +625,7 @@ Received: 3
 - **O que acontece:** Um start direto com `tipoSolicitacao` vazio respondeu **HTTP 200** e criou a solicitação. O mesmo servidor recusa `motivoSolCompra` vazio.
 - **Por que falha:** A obrigatoriedade do tipo existe apenas na validação de tela; quem chamar a API direto contorna a regra. Assimetria com o motivo, que é validado no servidor.
 - **Onde falha:** `expect(status)` da resposta do start em `criacao-solicitacao.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:411`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o **HTTP 200** devolvido ao start com `tipoSolicitacao` vazio, com o corpo da resposta na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -661,6 +671,7 @@ Expected: not 200
 - **O que acontece:** Com a solicitação 113202 já em andamento para o contrato 00007-2023-2301, reabrir o modal do mesmo contrato/revisão não exibe aviso algum de duplicidade.
 - **Por que falha:** Não há verificação de solicitação em andamento para o par contrato/revisão — nada impede duas SCs concorrentes para o mesmo objeto.
 - **Onde falha:** Busca pelo aviso de duplicidade em `criacao-solicitacao.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:457`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a AUSÊNCIA de aviso de duplicidade — o print mostra o modal reaberto e sem alerta, mas quem sustenta a afirmação é a solicitação 113202 já em andamento, citada na mensagem.
 
 **Mensagem da falha:**
 
@@ -694,6 +705,7 @@ Error: element(s) not found
 - **O que acontece:** Nenhum contrato vigente pequeno com item de `CNB_QUANT` vazio e `CNB_QTDORI` preenchido foi encontrado em 15 tentativas da grade.
 - **Por que falha:** Sem essa massa não há como exercitar a cascata de quantidade. O teste reprova com `PRÉ-CONDIÇÃO AUSENTE` de propósito, para não ser lido como defeito.
 - **Onde falha:** `utils/massa-contratos.js` após 15 tentativas, em `criacao-solicitacao.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:527`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a varredura de 15 contratos da grade sem encontrar a massa exigida, relatada na mensagem. Não há o que mostrar em tela.
 
 **Mensagem da falha:**
 
@@ -724,6 +736,7 @@ Received: null
 - **O que acontece:** Com a transferência (`dsFluig_postProcessesTransfer`) forçada a HTTP 500, a única mensagem exibida foi o toast de sucesso — nenhum aviso de que a SC não pôde ser atribuída ao solicitante.
 - **Por que falha:** O erro da transferência é engolido pelo widget: a tarefa fica na conta de integração e o usuário sai da tela achando que está tudo certo. É o sintoma de D-01 do ponto de vista de quem usa.
 - **Onde falha:** Predicado que procura um aviso de falha entre todos os avisos exibidos, em `erros-no-start.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/erros-no-start.spec.js:141`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a lista de TODOS os avisos que a aplicação exibiu depois do erro forçado — está na mensagem da falha. O print pega um instante; a lista cobre a janela inteira.
 
 **Mensagem da falha:**
 
@@ -760,6 +773,7 @@ Call Log:
 - **O que acontece:** A coluna "Situação" da grade exibe `Finali`, `Paralisa`, `Sol.Finali`, `Cancel.` — textos truncados em vez de "Finalizado", "Paralisado", "Solicitação de Finalização", "Cancelado".
 - **Por que falha:** O widget renderiza o valor bruto do Protheus (ou corta por largura) sem mapear para o rótulo por extenso.
 - **Onde falha:** `expect(truncadas).toEqual([])` em `grade-contratos.spec.js`, após ler todas as células da coluna. (local exato: `tests/e2e/acompanhamento-contratos/grade-contratos.spec.js:62`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -799,6 +813,7 @@ expect(received).toEqual(expected) // deep equality
 - **O que acontece:** Com o dataset `dsProtheus_getItensPlanilha_restGetAll` derrubado (simulação via `derrubarDataset`), o alerta exibido é "Erro ao buscar dados da filial" — o rótulo de outro dataset.
 - **Por que falha:** O handler de erro dos itens da planilha reutiliza a mensagem da filial. Com o Protheus fora, os dois avisos ficam idênticos — é a origem da leitura de que o "mesmo alerta aparece duas vezes".
 - **Onde falha:** `expect(texto).toMatch(/iten|planilha/i)` em `indisponibilidade-protheus.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/indisponibilidade-protheus.spec.js:141`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -830,6 +845,7 @@ Received string:  "ERRO: Erro ao buscar dados da filial: "
 - **O que acontece:** O modal da Solicitação de Compra não terminou de montar: a espera pelo estado carregado estourou 45 s.
 - **Por que falha:** A montagem do modal encadeia sete datasets no Protheus; quando um deles demora além do orçamento, o teste aborta antes de qualquer assertion sobre os campos do solicitante. Não é veredito sobre o produto.
 - **Onde falha:** `AcompanhamentoContratosPage.expectCarregada()` — `pages/AcompanhamentoContratosPage.js:51`. (local exato: `pages/AcompanhamentoContratosPage.js:51`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -856,6 +872,7 @@ TimeoutError: locator.waitFor: Timeout 45000ms exceeded.
 - **O que acontece:** O payload capturado no `/wf_solicitacao_compras/start` traz `targetState: 6` — a SC nasce presa no marco de Início do BPMN.
 - **Por que falha:** É a causa de D-01 isolada no próprio payload, sem depender do que acontece depois. Interceptar e ler o corpo prova o defeito sem gravar nada.
 - **Onde falha:** `expect` sobre `targetState` do payload capturado, em `payload-solicitacao.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/payload-solicitacao.spec.js:79`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o corpo do `POST /wf_solicitacao_compras/start` interceptado por `utils/captura-payload.js` — anexado a este cartão e citado na mensagem da falha. Nenhum campo de payload é visível numa screenshot. O "Erro ao iniciar processo" visível ao fundo é efeito do próprio aborto da requisição pela técnica de captura — **não é o defeito**.
 
 **Mensagem da falha:**
 
@@ -886,6 +903,7 @@ Expected: not 6
 - **O que acontece:** Passaram-se 30 s desde o Confirmar e a requisição de start nunca foi disparada (0 capturadas).
 - **Por que falha:** O widget só envia quando o contrato traz ITENS. A planilha do contrato sorteado veio sem produtos ou sem rateios, então o Confirmar corretamente não faz nada — é massa inadequada para este caso, não defeito.
 - **Onde falha:** `utils/captura-payload.js:128`, chamado de `payload-solicitacao.spec.js`. (local exato: `utils/captura-payload.js:128`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a ausência de qualquer requisição de start em 30 s, contada por `utils/captura-payload.js`.
 
 **Mensagem da falha:**
 
@@ -912,6 +930,7 @@ Error: PRÉ-CONDIÇÃO AUSENTE: passaram-se 30000ms desde o Confirmar e a requis
 - **O que acontece:** `campoDescritor` vem "Sol. Compras - CASSI SEDE" tanto para a filial UNIDADE - CLINICASSI FORTALEZA - CE quanto para UNIDADE - CLINICASSI FLORIANOPOLIS - SC.
 - **Por que falha:** O campo é chumbado no montador do payload e não acompanha a filial do contrato de origem — dois contratos de filiais diferentes produzem o mesmo descritor.
 - **Onde falha:** `expect` comparando o descritor de dois contratos de filiais distintas, em `payload-solicitacao.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/payload-solicitacao.spec.js:301`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o corpo do `POST /wf_solicitacao_compras/start` interceptado por `utils/captura-payload.js` — anexado a este cartão e citado na mensagem da falha. Nenhum campo de payload é visível numa screenshot.
 
 **Mensagem da falha:**
 
@@ -942,6 +961,7 @@ Expected: not "Sol. Compras - CASSI SEDE"
 - **O que acontece:** `tbprod_classeValor` vem vazio nos itens, enquanto `classeOrca` e `classificacao` vêm preenchidos no mesmo item.
 - **Por que falha:** O montador do payload não resolve a classe de valor do item, embora resolva os dois campos vizinhos — o dado chega incompleto ao Protheus.
 - **Onde falha:** `expect` sobre `tbprod_classeValor` do item, em `payload-solicitacao.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/payload-solicitacao.spec.js:405`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o corpo do `POST /wf_solicitacao_compras/start` interceptado por `utils/captura-payload.js` — anexado a este cartão e citado na mensagem da falha. Nenhum campo de payload é visível numa screenshot.
 
 **Mensagem da falha:**
 
@@ -974,6 +994,7 @@ Received array:  ["#1", "#2", "#3", "#4"]
 - **O que acontece:** `nrContrato` aponta para um contrato cuja revisão real é vazia, mas `revisaContrato` enviado foi "001".
 - **Por que falha:** O servidor não revalida a coerência entre número de contrato, revisão, filial e itens enviados — o payload pode apontar para um objeto que não corresponde ao que foi realmente escolhido.
 - **Onde falha:** `expect` de coerência entre `nrContrato` e `revisaContrato`, em `payload-solicitacao.spec.js`. (local exato: `tests/e2e/acompanhamento-contratos/payload-solicitacao.spec.js:532`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o corpo do `POST /wf_solicitacao_compras/start` interceptado por `utils/captura-payload.js` — anexado a este cartão e citado na mensagem da falha. Nenhum campo de payload é visível numa screenshot.
 
 **Mensagem da falha:**
 
@@ -1005,6 +1026,7 @@ Received: "001"
 - **O que acontece:** A SC #113203, criada pelo próprio teste, não ficou assumível ("Assumir tarefa") na Validação do Gestor dentro de 180 s. A atividade observada na tela de detalhe ainda era "Grava SC e Anexos".
 - **Por que falha:** Latência do BPMN acima do orçamento (referência de campo ~76 s). Com 60 s de isolamento entre destrutivos, a hipótese de disputa concorrente pelo pool está descartada.
 - **Onde falha:** Poll `toPass({ timeout: 180_000 })` por `botaoAssumirTarefaAtual()` — `aprovacoes-solicitacao-compras.spec.js:291`. (local exato: `tests/e2e/compras/aprovacoes-solicitacao-compras.spec.js:290`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a etapa em que a solicitação realmente parou, lida no detalhe do processo e citada na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -1036,6 +1058,7 @@ Error: element(s) not found
 - **O que acontece:** A SC #113204 não ficou assumível na Validação do Gestor dentro de 180 s; atividade atual "Grava SC e Anexos". O cenário de reprovar com justificativa não chega a ser exercitado.
 - **Por que falha:** Mesma latência de BPMN do caso anterior, medida em invocação isolada.
 - **Onde falha:** Poll `toPass({ timeout: 180_000 })` em `aprovacoes-solicitacao-compras.spec.js:291`. (local exato: `tests/e2e/compras/aprovacoes-solicitacao-compras.spec.js:290`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a etapa em que a solicitação realmente parou, lida no detalhe do processo e citada na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -1067,6 +1090,7 @@ Error: element(s) not found
 - **O que acontece:** A SC #113205 não ficou assumível na Validação do Gestor dentro de 180 s; atividade atual "Grava SC e Anexos".
 - **Por que falha:** Mesma latência de BPMN. O cenário "não há aprovador habilitado para a próxima etapa" fica inalcançável.
 - **Onde falha:** Poll `toPass({ timeout: 180_000 })` em `aprovacoes-solicitacao-compras.spec.js:291`. (local exato: `tests/e2e/compras/aprovacoes-solicitacao-compras.spec.js:290`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a etapa em que a solicitação realmente parou, lida no detalhe do processo e citada na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -1098,6 +1122,7 @@ Error: element(s) not found
 - **O que acontece:** No shell do formulário de Cotação, clicar em Enviar sem fornecedor e sem vínculos não abre diálogo de erro e dispara a criação do processo.
 - **Por que falha:** O formulário de Cotação não tem validação de obrigatórios no cliente (a SC clássica tem). A escrita só não chegou ao servidor porque a `guarda-criacao` bloqueou.
 - **Onde falha:** `expect(dialogoErro).toBeVisible()` em `ciclo-cotacao.spec.js`. (local exato: `tests/e2e/compras/ciclo-cotacao.spec.js:157`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a tentativa de escrita registrada por `utils/guarda-criacao.js` e citada na mensagem da falha (`expect(guarda.tentativas()).toBe(0)`). A requisição foi bloqueada antes de chegar ao servidor, então a tela não muda — é justamente esse o desenho do caso.
 
 **Mensagem da falha:**
 
@@ -1131,6 +1156,7 @@ Error: element(s) not found
 - **O que acontece:** A fila "Controle De Cotações" do Portal do Comprador não tem nenhuma Cotação para operar.
 - **Por que falha:** Nenhuma SC da suíte chega ao Protheus (consequência de fundo de D-01) e não há massa pré-existente. O teste falha com `PRÉ-CONDIÇÃO AUSENTE` de propósito.
 - **Onde falha:** Verificação da fila em `ciclo-cotacao.spec.js`. (local exato: `tests/e2e/compras/ciclo-cotacao.spec.js:188`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1160,6 +1186,7 @@ Investigação de viabilidade de MASSA (reconfirmada ao vivo em 01/09/2026, cons
 - **O que acontece:** Enviar a SC clássica sem anexo dispara `POST /ecm/api/rest/ecm/workflowView/send` — a tentativa de escrita foi capturada pela guarda.
 - **Por que falha:** O cliente não valida o anexo obrigatório antes de submeter.
 - **Onde falha:** `expect(guarda.tentativas()).toBe(0)` em `ciclo-solicitacao-compras.spec.js`. (local exato: `tests/e2e/compras/ciclo-solicitacao-compras.spec.js:530`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a tentativa de escrita registrada por `utils/guarda-criacao.js` e citada na mensagem da falha (`expect(guarda.tentativas()).toBe(0)`). A requisição foi bloqueada antes de chegar ao servidor, então a tela não muda — é justamente esse o desenho do caso.
 
 **Mensagem da falha:**
 
@@ -1191,6 +1218,7 @@ Received: 1
 - **O que acontece:** Sem a guarda, o servidor aceitou o envio sem anexo e **criou a SC** (registrada no livro-razão e cancelada no teardown).
 - **Por que falha:** A regra do anexo obrigatório não existe nem no cliente nem no servidor — o cliente é contornável e o servidor não cobre a lacuna.
 - **Onde falha:** `expect(criadas).toEqual([])` em `ciclo-solicitacao-compras.spec.js`. (local exato: `tests/e2e/compras/ciclo-solicitacao-compras.spec.js:646`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a SC efetivamente criada no servidor sem anexo — o número dela está no livro-razão `test-results/criados.jsonl` e na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -1228,6 +1256,7 @@ expect(received).toEqual(expected) // deep equality
 - **Por que falha:** O produto cria essa cadeia sozinho na etapa "Grava SC e Anexos"; sem ela o anexo não tem onde ser navegado e o aprovador não o alcança.
 - **Onde falha:** `expect(pasta).not.toBeNull()` em `ciclo-solicitacao-compras.spec.js` (poll de 120 s). (local exato: `tests/e2e/compras/ciclo-solicitacao-compras.spec.js:886`)
 - **Reexecução em janela saudável:** Na primeira passagem o teste parou antes, no widget de Zoom do formulário ("Zoom no índice 0 não abriu/confirmou uma opção após 5 tentativas") — sintoma de ambiente, sem veredito. Reexecutado na janela saudável, **alcançou a assertion de domínio e confirmou o defeito**.
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1261,6 +1290,7 @@ Call Log:
 - **O que acontece:** Com `ds_protheus_getMatriculaTitular_rest` forçado a 500, o formulário nunca termina de montar e o clique em Enviar dispara `workflowView/send` sem validação alguma.
 - **Por que falha:** Fail-open no cliente: o botão Enviar não espera a montagem terminar. O servidor recusou esta submissão (HTTP 500, "Nome da Filial é obrigatório") apenas porque o formulário estava vazio — quando os campos já têm valor, a mesma janela cria SC de verdade.
 - **Onde falha:** `expect` de zero requisições de criação em `fail-open-formulario-sc.spec.js`. (local exato: `tests/e2e/compras/fail-open-formulario-sc.spec.js:266`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a tentativa de escrita registrada por `utils/guarda-criacao.js` e citada na mensagem da falha (`expect(guarda.tentativas()).toBe(0)`). A requisição foi bloqueada antes de chegar ao servidor, então a tela não muda — é justamente esse o desenho do caso. A resposta 500 do servidor citada na mensagem é acidental (o formulário estava vazio) e não prova proteção.
 
 **Mensagem da falha:**
 
@@ -1292,6 +1322,7 @@ Received: 1
 - **O que acontece:** Enviar no shell de Negociação de Cotação, sem proposta vinculada, disparou `POST /ecm/api/rest/ecm/workflowView/send`.
 - **Por que falha:** Sem validação de cliente; a guarda bloqueou a escrita antes de chegar ao servidor.
 - **Onde falha:** `expect(guarda.tentativas()).toBe(0)` em `negociacao-proposta.spec.js`. (local exato: `tests/e2e/compras/negociacao-proposta.spec.js:126`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a tentativa de escrita registrada por `utils/guarda-criacao.js` e citada na mensagem da falha (`expect(guarda.tentativas()).toBe(0)`). A requisição foi bloqueada antes de chegar ao servidor, então a tela não muda — é justamente esse o desenho do caso.
 
 **Mensagem da falha:**
 
@@ -1323,6 +1354,7 @@ Received: 1
 - **O que acontece:** A fila "Avaliação de Propostas" do Portal do Comprador não tem nenhuma cotação, com ou sem proposta de fornecedor.
 - **Por que falha:** Mesmo bloqueio de fundo de CT-COT: D-01 impede qualquer Cotação real de existir, então não há proposta para validar ou reprovar.
 - **Onde falha:** Verificação da fila em `negociacao-proposta.spec.js:150`. (local exato: `tests/e2e/compras/negociacao-proposta.spec.js:150`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1351,6 +1383,7 @@ Investigação de viabilidade de MASSA (reconfirmada ao vivo em 01/09/2026, mesm
 - **O que acontece:** Parecer Técnico sem responsável definido: o clique em Enviar disparou `workflowView/send`.
 - **Por que falha:** O formulário nasce sem Responsável e não impede o envio.
 - **Onde falha:** `expect(guarda.tentativas()).toBe(0)` em `parecer-tecnico.spec.js`. (local exato: `tests/e2e/compras/parecer-tecnico.spec.js:109`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a tentativa de escrita registrada por `utils/guarda-criacao.js` e citada na mensagem da falha (`expect(guarda.tentativas()).toBe(0)`). A requisição foi bloqueada antes de chegar ao servidor, então a tela não muda — é justamente esse o desenho do caso.
 
 **Mensagem da falha:**
 
@@ -1382,6 +1415,7 @@ Received: 1
 - **O que acontece:** Parecer desfavorável (Reprovado/Ajustes) com justificativa, mas sem responsável: Enviar também disparou `workflowView/send`.
 - **Por que falha:** Mesma ausência de validação do cenário S1 — a justificativa preenchida não muda o comportamento.
 - **Onde falha:** `expect(guarda.tentativas()).toBe(0)` em `parecer-tecnico.spec.js`. (local exato: `tests/e2e/compras/parecer-tecnico.spec.js:134`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a tentativa de escrita registrada por `utils/guarda-criacao.js` e citada na mensagem da falha (`expect(guarda.tentativas()).toBe(0)`). A requisição foi bloqueada antes de chegar ao servidor, então a tela não muda — é justamente esse o desenho do caso.
 
 **Mensagem da falha:**
 
@@ -1413,6 +1447,7 @@ Received: 1
 - **O que acontece:** O processo `wf_delegacaoFiscalContratoServico` consta do catálogo como iniciável e abre o formulário, mas ao Enviar o servidor responde 500: "Solicitação só pode ser aberta através do portal de delegação de fiscais!".
 - **Por que falha:** O evento do processo exige um portal de origem que não existe em nenhum menu, atalho ou rota alcançável por esta conta. Catálogo e regra do processo se contradizem.
 - **Onde falha:** `expect` da mensagem de sucesso em `delegacao-fiscais-ciclo.spec.js`. (local exato: `tests/e2e/contratos/delegacao-fiscais-ciclo.spec.js:77`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1446,6 +1481,7 @@ Error: element(s) not found
 - **O que acontece:** O formulário não oferece nenhum controle (searchbox/combobox) para informar o fiscal substituto.
 - **Por que falha:** Inexequível pela interface atual: não há entrada de dado para exercitar "substituto inválido". Mesma causa de CT-DEL-01-H.
 - **Onde falha:** `expect(controles).toBeGreaterThan(0)` em `delegacao-fiscais-ciclo.spec.js`. (local exato: `tests/e2e/contratos/delegacao-fiscais-ciclo.spec.js:180`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1478,6 +1514,7 @@ Received:   0
 - **Por que falha:** No momento da execução todas as competências amostradas estavam liberadas para medir. Sem uma recusa real não há como verificar se a tela avisa o usuário. Não é veredito sobre o produto.
 - **Onde falha:** Busca por competência recusada em `validacoes-faturamento.spec.js:123`. (local exato: `tests/e2e/contratos/validacoes-faturamento.spec.js:123`)
 - **Reexecução em janela saudável:** Na primeira passagem este teste estourou o timeout de 120 s do teste (janela degradada). Reexecutado, chegou a percorrer os contratos e reprovou com a pré-condição legível.
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a varredura das competências dos quatro contratos amostrados, listada na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -1504,6 +1541,7 @@ Error: PRÉ-CONDIÇÃO AUSENTE: nenhuma competência recusada pelo Protheus foi 
 - **O que acontece:** O menu "Mais opções" não ofereceu "Tarefas em pool" — o usuário estava sem nenhuma tarefa em pool, e o painel só é renderizado quando há ao menos uma.
 - **Por que falha:** Sem ler o pool não é possível afirmar que o usuário não pertence a nenhum grupo de Fiscal/CSE/Medição, que é o que o caso quer demonstrar.
 - **Onde falha:** Verificação das entradas do menu em `validacoes-faturamento.spec.js:288`. (local exato: `tests/e2e/contratos/validacoes-faturamento.spec.js:288`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1533,6 +1571,7 @@ Investigação de viabilidade de MASSA (medida ao vivo em 01/09/2026, mesma roda
 - **Por que falha:** Não há allowlist de extensão: um `.bat` é executável no Windows e não pertence a nenhuma allowlist razoável de um GED documental.
 - **Onde falha:** `expect(mensagemDeBloqueio).toBeVisible()` em `bloqueio-extensoes.spec.js`. (local exato: `tests/e2e/documentos/bloqueio-extensoes.spec.js:119`)
 - **Reexecução em janela saudável:** Diferente de 02/09, este caso deu veredito na primeira tentativa. Naquele dia ele caiu por `net::ERR_NETWORK_CHANGED` e depois esbarrou em linhas residuais do publicador; rodando isolado, o problema não se repetiu.
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1566,6 +1605,7 @@ Error: element(s) not found
 - **O que acontece:** `qa-script-shell.sh` foi publicado no GED sem nenhuma mensagem de bloqueio.
 - **Por que falha:** Mesma ausência de allowlist. Uma correção que apenas coloque ".exe" numa lista negra deixa este caso vermelho — que é exatamente o ponto dele.
 - **Onde falha:** `expect(mensagemDeBloqueio).toBeVisible()` em `bloqueio-extensoes.spec.js`. (local exato: `tests/e2e/documentos/bloqueio-extensoes.spec.js:119`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1599,6 +1639,7 @@ Error: element(s) not found
 - **O que acontece:** `qa-relatorio.pdf.exe` foi publicado no GED sem nenhuma mensagem de bloqueio.
 - **Por que falha:** É o disfarce clássico: o nome sugere um PDF e a extensão real é `.exe`. Uma validação que olhe só o começo do nome, ou que procure ".pdf" em qualquer posição, deixa passar.
 - **Onde falha:** `expect(mensagemDeBloqueio).toBeVisible()` em `bloqueio-extensoes.spec.js`. (local exato: `tests/e2e/documentos/bloqueio-extensoes.spec.js:119`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1632,6 +1673,7 @@ Error: element(s) not found
 - **O que acontece:** `qa-executavel-disfarcado.pdf` — nome `.pdf`, conteúdo começando com os magic bytes `MZ` de um executável PE/DOS — foi publicado sem mensagem.
 - **Por que falha:** Nem o nome nem o conteúdo são inspecionados. Este caso continuará vermelho mesmo se uma allowlist por extensão for implementada, e é assim que se distingue "valida o nome" de "valida o arquivo".
 - **Onde falha:** `expect(mensagemDeBloqueio).toBeVisible()` em `bloqueio-extensoes.spec.js`. (local exato: `tests/e2e/documentos/bloqueio-extensoes.spec.js:209`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1665,6 +1707,7 @@ Error: element(s) not found
 - **O que acontece:** Upload de `.exe` aceito e publicado sem nenhuma mensagem de bloqueio.
 - **Por que falha:** Ausência de validação de extensão no GED — o caso-base do qual os quatro cenários de CT-GED-02-S2 derivam.
 - **Onde falha:** `expect(mensagemDeBloqueio).toBeVisible()` em `gestao-documentos.spec.js`. (local exato: `tests/e2e/documentos/gestao-documentos.spec.js:93`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a ausência da mensagem de bloqueio, verificada pelo locator do teste, somada ao documento efetivamente publicado. Este cartão não tem sequer snapshot de tela gravado — a captura saiu vazia —, então a imagem não sustenta nada por si.
 
 **Mensagem da falha:**
 
@@ -1698,6 +1741,7 @@ Error: element(s) not found
 - **O que acontece:** O combo "Tipo Consulta" do `SIGAJURI_Consultivo` oferece uma única opção (só o placeholder).
 - **Por que falha:** O dataset que alimenta os tipos de consulta não devolve registros — não dá para criar uma consulta vinculada a uma área.
 - **Onde falha:** `expect(opcoes).toBeGreaterThan(1)` em `sigajuri-consultivo.spec.js`. (local exato: `tests/e2e/juridico/sigajuri-consultivo.spec.js:66`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1729,6 +1773,7 @@ Received:   1
 - **O que acontece:** O caso precisa de "MA" no combo "UF" e o ambiente não ofereceu **nenhuma** opção.
 - **Por que falha:** O cadastro do SIGAJURI não devolveu as UFs. A mensagem instrui explicitamente a não contornar trocando o valor pedido no teste: é sinal de que o cadastro mudou, e deve ser confirmado com o dono do ambiente.
 - **Onde falha:** Seleção da UF em `sigajuri-contencioso.spec.js`. (local exato: `pages/SigajuriPage.js:162`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1760,6 +1805,7 @@ Received: false
 - **O que acontece:** Numa consulta do tipo "Liminar", o botão "Novo Envolvido" fica oculto (classe `sem-processo-hide`) tanto no estado padrão quanto com "Não possui processo." marcado.
 - **Por que falha:** A regra de exibição esconde o único caminho para registrar a parte contrária — testado nos dois estados possíveis do formulário.
 - **Onde falha:** `expect(visivel).toBe(true)` em `sigajuri-contencioso.spec.js`. (local exato: `tests/e2e/juridico/sigajuri-contencioso.spec.js:230`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1791,6 +1837,7 @@ Received: false
 - **O que acontece:** O combo "Filial" do `SIGAJURI_Contrato` oferece uma única opção.
 - **Por que falha:** Dataset de filiais vazio para esta conta/processo; não é possível montar a minuta.
 - **Onde falha:** `expect(opcoes).toBeGreaterThan(1)` em `sigajuri-contrato.spec.js`. (local exato: `tests/e2e/juridico/sigajuri-contrato.spec.js:48`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -1822,6 +1869,7 @@ Received:   1
 - **O que acontece:** `GET /notification/api/v1/notifications?limit=3` devolveu 1000 itens; `offset` também não altera o resultado.
 - **Por que falha:** O servidor ignora `limit` e `offset`. Todo cliente recebe a lista inteira hoje; no dia em que a paginação passar a valer, esses clientes mudam de comportamento sem nenhum aviso.
 - **Onde falha:** `expect(quantidade).toBe(3)` em `contratos-api-notificacao.spec.js`. (local exato: `tests/e2e/notificacoes/contratos-api-notificacao.spec.js:162`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o par requisição/resposta do endpoint, transcrito na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -1876,6 +1924,7 @@ Received: 1000
 - **O que acontece:** Cada notificação declara `canRemove: true`, mas `DELETE /notification/api/v1/notifications/{id}` responde 500 `NotFoundException` — ou seja, a rota não existe (a coleção responde `NotAllowedException`).
 - **Por que falha:** A remoção real vive em `POST /globalalertapi/api/rest/alert/removeAlerts`, em outro módulo e sem nenhuma referência no recurso que promete ser removível.
 - **Onde falha:** Sondagem das rotas de remoção em `contratos-api-notificacao.spec.js`. (local exato: `tests/e2e/notificacoes/contratos-api-notificacao.spec.js:259`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o par requisição/resposta do endpoint, transcrito na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -1936,6 +1985,7 @@ Expected: not "NotFoundException"
 - **O que acontece:** O catálogo "Iniciar Solicitações" (`onlyCanStart=true`) desta conta divergiu do inventário versionado.
 - **Por que falha:** Mudança de permissão de início no ambiente. O invariante existe para acusar exatamente isso; cabe à Cassi dizer se cada linha foi intencional. Não é ajuste de dados — é acesso.
 - **Onde falha:** `expect(diff).toEqual({entraram:[], sairam:[]})` em `catalogo-invariante.spec.js`. (local exato: `tests/e2e/plataforma/catalogo-invariante.spec.js:221`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a lista de processos devolvida pelo catálogo (`onlyCanStart`), transcrita na íntegra na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -2025,6 +2075,7 @@ expect(received).toEqual(expected) // deep equality
 - **O que acontece:** `SIGAJURI_Contencioso` **passou** a constar do catálogo `onlyCanStart` — o achado anterior ("cria solicitação mas fica fora do catálogo") mudou de estado.
 - **Por que falha:** A permissão de início parece ter sido alinhada ao filtro da tela. O teste, por desenho, acusa a mudança e pede reescrita para a nova regra — nunca silenciamento.
 - **Onde falha:** `expect(catalogo).not.toContain("SIGAJURI_Contencioso")` em `catalogo-invariante.spec.js`. (local exato: `tests/e2e/plataforma/catalogo-invariante.spec.js:265`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a lista de processos devolvida pelo catálogo (`onlyCanStart`), transcrita na íntegra na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -2056,6 +2107,7 @@ Received array:     ["bpm_addUserGroup", "bpm_addUserFluig", "teste", "wf_cadast
 - **O que acontece:** Abrir `/portal/p/1/principalprocess` direto pela URL termina em `/portal/p/1/errorPage/404`.
 - **Por que falha:** A rota existe e funciona pela navegação interna da SPA; o deep-link quebra — link salvo, favorito e compartilhamento de endereço não funcionam.
 - **Onde falha:** `expect(page).not.toHaveURL(/errorPage\/404/)` em `deep-link-spa.spec.js`. (local exato: `tests/e2e/plataforma/deep-link-spa.spec.js:32`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -2088,6 +2140,7 @@ Timeout: 30000ms
 - **O que acontece:** Abrir `/portal/p/1/gestao_ferias` direto pela URL termina em `/portal/p/1/errorPage/404`.
 - **Por que falha:** Mesma quebra de deep-link da rota irmã: a SPA resolve a rota internamente, mas não a partir de uma URL digitada ou salva.
 - **Onde falha:** `expect(page).not.toHaveURL(/errorPage\/404/)` em `deep-link-spa.spec.js`. (local exato: `tests/e2e/plataforma/deep-link-spa.spec.js:32`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -2120,6 +2173,7 @@ Timeout: 30000ms
 - **O que acontece:** O Portal do Comprador carrega com 2 erros de console não catalogados: 404 em `/style-guide/css/fluig-style-guide.min.css` e `console.error` "Erro ao buscar as informações do colaborador… Comprador não encontrado".
 - **Por que falha:** CSS ausente no deploy e a busca do comprador no Protheus não encontra a conta `TOTVS-FS` (que não está na SY1). Erro de JS/rede na carga degrada o widget em silêncio.
 - **Onde falha:** `expect(naoCatalogados).toEqual([])` em `erros-de-console.spec.js`. (local exato: `tests/e2e/plataforma/erros-de-console.spec.js:210`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é as mensagens de console capturadas durante a carga, transcritas na mensagem da falha — console não aparece em screenshot.
 
 **Mensagem da falha:**
 
@@ -2192,6 +2246,7 @@ expect(received).toEqual(expected) // deep equality
 - **O que acontece:** Favoritar `SIGAJURI_Contencioso` duas vezes: a 2ª chamada responde **500** em `text/plain` com "Processo SIGAJURI_Contencioso já está nos seus favoritos.".
 - **Por que falha:** Condição de negócio trivial (duplo clique, duas abas, retentativa de rede) tratada como erro de servidor, em texto puro — quebra qualquer cliente que faça parse do corpo.
 - **Onde falha:** Verificação do par requisição/resposta em `favoritos-contrato-api.spec.js`. (local exato: `tests/e2e/plataforma/favoritos-contrato-api.spec.js:180`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o par requisição/resposta do endpoint, transcrito na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -2258,6 +2313,7 @@ expect(received).toEqual(expected) // deep equality
 - **O que acontece:** A Home carrega com "Failed to load resource: 403 (Forbidden)" no console.
 - **Por que falha:** `GET /nps/api/v1/surveys` responde 403 em toda carga da Home.
 - **Onde falha:** `expect(erros).toEqual([])` em `home.spec.js`. (local exato: `tests/e2e/plataforma/home.spec.js:39`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é as mensagens de console capturadas durante a carga, transcritas na mensagem da falha — console não aparece em screenshot.
 
 **Mensagem da falha:**
 
@@ -2294,6 +2350,7 @@ expect(received).toEqual(expected) // deep equality
 - **O que acontece:** O processo `teste` (categoria ADMIN, resíduo de desenvolvimento, nunca iniciado) continua ofertado em "Iniciar Solicitações" para um usuário de Compras.
 - **Por que falha:** Falta de governança de publicação; abri-lo serve o formulário completo da SC — o teste-irmão marcado `@achado` passa, confirmando o comportamento.
 - **Onde falha:** Leitura do catálogo em `processo-inativo-e-residuo.spec.js`. (local exato: `tests/e2e/plataforma/processo-inativo-e-residuo.spec.js:116`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a lista de processos devolvida pelo catálogo (`onlyCanStart`), transcrita na íntegra na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -2321,6 +2378,7 @@ Error: o processo `teste` (categoria ADMIN, resíduo de desenvolvimento, nunca i
 - **O que acontece:** Enviar um token de redefinição de senha adulterado/expirado ao endpoint do Portal do Fornecedor responde **HTTP 500**.
 - **Por que falha:** O endpoint não trata token inválido como erro controlado (4xx) — crasha. A troca não se efetiva, mas o comportamento é de exceção não tratada.
 - **Onde falha:** `expect(status).toBeLessThan(500)` em `acesso-fornecedor.spec.js`. (local exato: `tests/e2e/portais/acesso-fornecedor.spec.js:134`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o par requisição/resposta do endpoint, transcrito na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -2352,6 +2410,7 @@ Received:   500
 - **O que acontece:** A aba "Atribuir" da Gerência de Compras nunca lista SCs (só o cabeçalho) em 30 s de poll; a aba "Transferir", com o mesmo mecanismo, lista dados reais.
 - **Por que falha:** A grade de Atribuir não renderiza dados para esta conta; reclicar não resolve. O contraste com Transferir é o que separa "sem massa" de "grade quebrada".
 - **Onde falha:** `expect(linhas).toBeGreaterThan(1)` em `gerencia-compras.spec.js`. (local exato: `tests/e2e/portais/gerencia-compras.spec.js:58`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -2388,6 +2447,7 @@ Call Log:
 - **O que acontece:** Iniciar `wf_automacao_admissao` abre o formulário "Gestão de Benefícios - Plano de Saúde" (template de `rh_gbeneficios_planosaude`).
 - **Por que falha:** Associação processo↔formulário incorreta na publicação do processo. CT-ADM-01-S1 e S2 ficam inexequíveis por consequência.
 - **Onde falha:** `expect(titulo).not.toBe("Gestão de Benefícios - Plano de Saúde")` em `admissao.spec.js`. (local exato: `tests/e2e/rh/admissao.spec.js:81`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -2418,6 +2478,7 @@ Expected: not "Gestão de Benefícios - Plano de Saúde"
 - **O que acontece:** A aba Autorização do Banco de Horas fica em "Aguarde, processando" por 30 s ou mais e nenhum campo aparece.
 - **Por que falha:** Integração com o Protheus não configurada para o widget (mesma causa de U-02); o cenário "acima do limite" não é alcançável por esta rota.
 - **Onde falha:** `expect(getByText("Aguarde, processando")).toBeHidden()` em `banco-horas-limite.spec.js`. (local exato: `tests/e2e/rh/banco-horas-limite.spec.js:71`)
+- **Valor da screenshot:** **é a evidência** — o defeito é visível na captura.
 
 **Mensagem da falha:**
 
@@ -2451,6 +2512,7 @@ Timeout:  30000ms
 - **O que acontece:** Ao abrir o Banco de Horas, um `alert()` nativo diz "Existem parâmetros não informado para esse servidor, informe o administrador".
 - **Por que falha:** Erro de configuração de servidor exposto ao usuário final. Capturado com `page.on("dialog")` registrado ANTES da navegação — sem isso o Playwright dispensa o diálogo e a falha some.
 - **Onde falha:** `expect(dialogos).toEqual([])` em `banco-horas.spec.js`. (local exato: `tests/e2e/rh/banco-horas.spec.js:33`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o `alert()` nativo capturado por `page.on("dialog")` ANTES da navegação. O Playwright dispensa o diálogo sozinho, então ele **nunca** aparece na screenshot — o texto está na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -2490,6 +2552,7 @@ expect(received).toEqual(expected) // deep equality
 - **O que acontece:** O campo "Clínica" do Questionário CliniCASSI nasce vazio em vez de identificar a clínica do diagnóstico.
 - **Por que falha:** Sintoma compatível com o job `dsQDC000` parado (U-14); sem acesso admin a suíte só confirma o sintoma, não a causa.
 - **Onde falha:** `expect(clinica).not.toBe("")` em `questionario-clinicassi.spec.js`. (local exato: `tests/e2e/saude/questionario-clinicassi.spec.js:232`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o valor lido do campo "Clínica" pelo teste, citado na mensagem da falha. Na captura o campo não está enquadrado: o texto "CliniCASSI" que aparece é o título do questionário, não o campo vazio.
 
 **Mensagem da falha:**
 
@@ -2520,6 +2583,7 @@ Expected: not ""
 - **O que acontece:** 6 de 23 administradores da plataforma têm login/nome de conta de integração/serviço (`consumerkey`, `fluig_consumer`, `integr`…).
 - **Por que falha:** Contas técnicas com privilégio de administrador — menor privilégio violado.
 - **Onde falha:** `expect(tecnicasAdmin).toBe(0)` em `auditoria-datasets.spec.js`. (local exato: `tests/e2e/seguranca/auditoria-datasets.spec.js:68`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a resposta HTTP do dataset, transcrita na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -2551,6 +2615,7 @@ Received: 6
 - **O que acontece:** O dataset `ds_Fluig` ("Usuário e Senha usuario de integração") responde 200 (1 registro, 3 colunas) para a sessão não-admin.
 - **Por que falha:** Dataset de credencial sem restrição de acesso; `/webdesk` nega (403) mas o dataset não. A evidência é estrutural — o conteúdo nunca é lido pelo teste.
 - **Onde falha:** `expect(status).toBe(403)` em `auditoria-datasets.spec.js`. (local exato: `tests/e2e/seguranca/auditoria-datasets.spec.js:100`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a resposta HTTP do dataset, transcrita na mensagem da falha. Só a forma da resposta é lida (1 registro, 3 colunas) — o conteúdo da credencial nunca é aberto.
 
 **Mensagem da falha:**
 
@@ -2582,6 +2647,7 @@ Received: 200
 - **O que acontece:** `dsFluig_executeSql` e `dsFluig_getDocumentSql` (executores de SQL) respondem 200 para a sessão não-admin.
 - **Por que falha:** Executor de SQL alcançável sem privilégio elevado. A auditoria de injeção real está fora de escopo; esta assertion cobre só a alcançabilidade, que já basta.
 - **Onde falha:** `expect(status).toBe(403)` em `auditoria-datasets.spec.js`. (local exato: `tests/e2e/seguranca/auditoria-datasets.spec.js:130`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a resposta HTTP do dataset, transcrita na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -2613,6 +2679,7 @@ Received: 200
 - **O que acontece:** `TOTVS-FS` — que não é requisitante, responsável nem participante da instância 112009 de `bpm_recepcao_documentos_fiscais_compras` (8 tarefas inspecionadas, nenhuma sua), processo que a conta nem pode iniciar — recebe HTTP 200 com 44 `formFields`, incluindo razão social e CNPJ.
 - **Por que falha:** Isolamento horizontal quebrado na API v2 de processos; o `processInstanceId` é sequencial, então qualquer sessão autenticada enumera a base inteira de documentos fiscais.
 - **Onde falha:** Verificação do status e dos `formFields` em `isolamento-horizontal-api-processos.spec.js`. (local exato: `tests/e2e/seguranca/isolamento-horizontal-api-processos.spec.js:177`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é o HTTP 200 com 44 `formFields` da instância 112009, resumido na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -2644,6 +2711,7 @@ Received: false
 - **O que acontece:** 2 requisições de navegação para `google-analytics.com` (medição `G-F0FT6D1NQG`) numa única carga.
 - **Por que falha:** Telemetria externa ativa. A pergunta aberta nº 3 do README pede posição da área de Privacidade/LGPD sobre isso.
 - **Onde falha:** `expect(envios).toBe(0)` em `lgpd-envio-google-analytics.spec.js`. (local exato: `tests/e2e/seguranca/lgpd-envio-google-analytics.spec.js:45`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é as 2 requisições de rede para `google-analytics.com` capturadas na carga — tráfego de rede não aparece em screenshot.
 
 **Mensagem da falha:**
 
@@ -2675,6 +2743,7 @@ Received: 2
 - **O que acontece:** `bpm_addUserFluig` (Adicionar Usuário) consta do catálogo `onlyCanStart` da conta não-admin, e abri-lo não exibe o diálogo de erro de permissão.
 - **Por que falha:** Processo de criação de usuário iniciável por perfil de Compras — segregação de função violada.
 - **Onde falha:** Leitura do catálogo e abertura do processo em `processos-administrativos-usuario-comum.spec.js`. (local exato: `tests/e2e/seguranca/processos-administrativos-usuario-comum.spec.js:88`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a lista de processos devolvida pelo catálogo (`onlyCanStart`), transcrita na íntegra na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -2706,6 +2775,7 @@ Received array:     ["bpm_addUserGroup", "bpm_addUserFluig", "teste", "wf_cadast
 - **O que acontece:** `bpm_addUserGroup` (Adicionar Grupo) consta do catálogo da conta não-admin **e o formulário de início carregou com o botão "Enviar" visível** — o processo administrativo abriu de fato.
 - **Por que falha:** É a superfície da escalada de privilégio: não só o processo é ofertado, como a tela de criação de grupo fica operável para um perfil de negócio.
 - **Onde falha:** Verificação do botão Enviar em `processos-administrativos-usuario-comum.spec.js`. (local exato: `tests/e2e/seguranca/processos-administrativos-usuario-comum.spec.js:88`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a lista de processos devolvida pelo catálogo (`onlyCanStart`), transcrita na íntegra na mensagem da falha. Neste caso o print ajuda: mostra o formulário de Adicionar Grupo aberto, com o botão Enviar visível.
 
 **Mensagem da falha:**
 
@@ -2737,6 +2807,7 @@ Received array:     ["bpm_addUserGroup", "bpm_addUserFluig", "teste", "wf_cadast
 - **O que acontece:** A SC #113221, criada pelo próprio teste, não ficou assumível em Validação do Gestor Imediato dentro de 180 s; atividade observada: "Grava SC e Anexos".
 - **Por que falha:** Latência do BPMN acima do orçamento. O teste aborta antes de exercitar "Somente salvar", que é a ação sob teste.
 - **Onde falha:** Poll `toPass({ timeout: 180_000 })` em `acoes-da-tarefa.spec.js:87`. (local exato: `tests/e2e/tarefas/acoes-da-tarefa.spec.js:86`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a etapa em que a solicitação realmente parou, lida no detalhe do processo e citada na mensagem da falha.
 
 **Mensagem da falha:**
 
@@ -2768,6 +2839,7 @@ Error: element(s) not found
 - **O que acontece:** A SC #113222 não ficou assumível em Validação do Gestor Imediato dentro de 180 s; atividade observada: "Grava SC e Anexos".
 - **Por que falha:** Mesma latência de BPMN. O teste aborta antes de exercitar Transferir.
 - **Onde falha:** Poll `toPass({ timeout: 180_000 })` em `acoes-da-tarefa.spec.js:87`. (local exato: `tests/e2e/tarefas/acoes-da-tarefa.spec.js:86`)
+- **Valor da screenshot:** **contexto, não prova** — o defeito não é visualmente observável. A prova é a etapa em que a solicitação realmente parou, lida no detalhe do processo e citada na mensagem da falha.
 
 **Mensagem da falha:**
 
