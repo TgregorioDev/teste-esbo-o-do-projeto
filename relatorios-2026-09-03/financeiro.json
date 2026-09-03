@@ -1,0 +1,215 @@
+{
+  "config": {
+    "argv": [
+      "/usr/bin/node",
+      "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/node_modules/.bin/playwright",
+      "test",
+      "tests/e2e/financeiro",
+      "--reporter=line,json",
+      "--output=test-results-0903/financeiro"
+    ],
+    "configFile": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/playwright.config.js",
+    "rootDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/fixtures/global-setup.js",
+    "globalTeardown": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/fixtures/global-teardown.js",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": {},
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 2
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results-0903/financeiro",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "autenticacao",
+        "name": "autenticacao",
+        "testDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/tests\\/e2e\\/auth\\/.*\\.spec\\.js/"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results-0903/financeiro",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "e2e",
+        "name": "e2e",
+        "testDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+        "testIgnore": [
+          "/tests\\/e2e\\/auth\\/.*\\.spec\\.js/"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 8,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "e2e/financeiro/rejeicoes-pagamentos.spec.js",
+      "file": "e2e/financeiro/rejeicoes-pagamentos.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Financeiro — Rejeições de Pagamentos (CT-FIN-01-H)",
+          "file": "e2e/financeiro/rejeicoes-pagamentos.spec.js",
+          "line": 25,
+          "column": 6,
+          "specs": [
+            {
+              "title": "CT-FIN-01-H: deve abrir o formulário de início e espelhar os campos do domínio de rejeição",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "175087"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5882,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-03T12:04:17.302Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "175087"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2ae380d20116894bc967-19fe23c57f5b21b73f32",
+              "file": "e2e/financeiro/rejeicoes-pagamentos.spec.js",
+              "line": 26,
+              "column": 3
+            },
+            {
+              "title": "CT-FIN-01-H (ACHADO) @achado: o formulário repete ids no DOM e carrega campos e seção herdados do RDFC",
+              "ok": true,
+              "tags": [
+                "achado:"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "710408"
+                    },
+                    {
+                      "type": "achado-template-do-formulario",
+                      "description": "bpm_financeiro_rejeicoes_bancarias repete 8 ids no DOM (wrapper e input com o mesmo id) e carrega a seção oculta \"Identificação do Processo / Solicitante - Recepção de Documentos Fiscais\" com campos de nota fiscal herdados do template do RDFC."
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5626,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-03T12:04:17.283Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "710408"
+                        },
+                        {
+                          "type": "achado-template-do-formulario",
+                          "description": "bpm_financeiro_rejeicoes_bancarias repete 8 ids no DOM (wrapper e input com o mesmo id) e carrega a seção oculta \"Identificação do Processo / Solicitante - Recepção de Documentos Fiscais\" com campos de nota fiscal herdados do template do RDFC."
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "ids-repetidos-no-formulario",
+                          "contentType": "application/json",
+                          "body": "WwogICJjcGZDbnBqUGFpIMOXMiIsCiAgImVtYWlsU29saWNpdGFudGUgw5czIiwKICAiZW1haWxTb2xpY2l0YW50ZVBhaSDDlzIiLAogICJlbWlzc2FvTkYgw5cyIiwKICAibm9tZVNvbGljaXRhbnRlIMOXMiIsCiAgIm5vbWVTb2xpY2l0YW50ZVBhaSDDlzIiLAogICJub21lU29saWNpdGFudGVSZXNwIMOXMiIsCiAgIm5yU29saWNpdGFjYW8gw5cyIgpd"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2ae380d20116894bc967-3f47c96ecff5f629805f",
+              "file": "e2e/financeiro/rejeicoes-pagamentos.spec.js",
+              "line": 101,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-03T12:04:14.678Z",
+    "duration": 8757.418,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

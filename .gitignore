@@ -4,6 +4,10 @@
 # local, quebraria o checkout de qualquer outra máquina.
 node_modules
 test-results/
+# A execução de 03/09/2026 gravou os artefatos por teste em test-results-0903/ (561 MB de trace,
+# vídeo e screenshot). Mesma natureza de test-results/ — evidência reproduzível, não fonte.
+# O que precisa ser lido está embutido no relatório HTML e no pacote .zip da execução.
+test-results-0903/
 playwright-report/
 playwright/.cache/
 playwright/.auth/

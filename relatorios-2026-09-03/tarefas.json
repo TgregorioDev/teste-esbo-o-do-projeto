@@ -1,0 +1,444 @@
+{
+  "config": {
+    "argv": [
+      "/usr/bin/node",
+      "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/node_modules/.bin/playwright",
+      "test",
+      "tests/e2e/tarefas",
+      "--reporter=line,json",
+      "--output=test-results-0903/tarefas"
+    ],
+    "configFile": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/playwright.config.js",
+    "rootDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/fixtures/global-setup.js",
+    "globalTeardown": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/fixtures/global-teardown.js",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": {},
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 7
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results-0903/tarefas",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "autenticacao",
+        "name": "autenticacao",
+        "testDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/tests\\/e2e\\/auth\\/.*\\.spec\\.js/"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results-0903/tarefas",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "e2e",
+        "name": "e2e",
+        "testDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+        "testIgnore": [
+          "/tests\\/e2e\\/auth\\/.*\\.spec\\.js/"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 8,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "e2e/tarefas/minhas-solicitacoes.spec.js",
+      "file": "e2e/tarefas/minhas-solicitacoes.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Minhas Solicitações — sinalização de atraso (CT-TSK-03-H)",
+          "file": "e2e/tarefas/minhas-solicitacoes.spec.js",
+          "line": 12,
+          "column": 6,
+          "specs": [
+            {
+              "title": "deve sinalizar visualmente a solicitação atrasada",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "145919"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10130,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-03T12:18:18.941Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "145919"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "86a335b439158fd341e2-c57458bd0dfc1ecbfcc1",
+              "file": "e2e/tarefas/minhas-solicitacoes.spec.js",
+              "line": 13,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Minhas Solicitações — filtro por status (CT-TSK-04-H)",
+          "file": "e2e/tarefas/minhas-solicitacoes.spec.js",
+          "line": 27,
+          "column": 6,
+          "specs": [
+            {
+              "title": "a lista deve responder à troca do filtro de Status",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "488803"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 12174,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-03T12:18:18.944Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "488803"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "86a335b439158fd341e2-ce89f60e852dd2eb013f",
+              "file": "e2e/tarefas/minhas-solicitacoes.spec.js",
+              "line": 28,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "e2e/tarefas/resumo-tarefas.spec.js",
+      "file": "e2e/tarefas/resumo-tarefas.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Resumo de Tarefas — coerência dos contadores (CT-TSK-01-H)",
+          "file": "e2e/tarefas/resumo-tarefas.spec.js",
+          "line": 13,
+          "column": 6,
+          "specs": [
+            {
+              "title": "\"Tarefas a concluir\": total do painel deve bater com a soma de No prazo + Próx. a vencer + Atrasadas",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "140368"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 7986,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-03T12:18:19.057Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "140368"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4dd117e47f69c48a611f-8bf8617ff4407a437b0e",
+              "file": "e2e/tarefas/resumo-tarefas.spec.js",
+              "line": 14,
+              "column": 3
+            },
+            {
+              "title": "\"Tarefas em pool\": total do painel deve bater com a soma de No prazo + Próximas a vencer + Atrasadas",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "100222"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 7521,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-03T12:18:19.107Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "100222"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4dd117e47f69c48a611f-e955609846e945064016",
+              "file": "e2e/tarefas/resumo-tarefas.spec.js",
+              "line": 28,
+              "column": 3
+            },
+            {
+              "title": "\"Documentos\": total do painel deve bater com a soma dos quatro contadores",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "188235"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 8630,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-03T12:18:18.975Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "188235"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4dd117e47f69c48a611f-e5b7aae295d737042a2b",
+              "file": "e2e/tarefas/resumo-tarefas.spec.js",
+              "line": 42,
+              "column": 3
+            },
+            {
+              "title": "\"Solicitações\": total do painel deve bater com a soma de Solicitadas por mim + Sob minha gerência",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "387002"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 8399,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-03T12:18:18.978Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "387002"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4dd117e47f69c48a611f-97ac4c2818f3f6deb319",
+              "file": "e2e/tarefas/resumo-tarefas.spec.js",
+              "line": 56,
+              "column": 3
+            },
+            {
+              "title": "\"Tarefas em consenso\": a mensagem de lista vazia aparece exatamente quando o total é zero",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "863669"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 8371,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-03T12:18:18.922Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "863669"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4dd117e47f69c48a611f-394ecd4dae2a8c394f1f",
+              "file": "e2e/tarefas/resumo-tarefas.spec.js",
+              "line": 70,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-03T12:18:16.293Z",
+    "duration": 15198.616,
+    "expected": 7,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
