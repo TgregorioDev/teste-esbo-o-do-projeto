@@ -143,13 +143,16 @@ e como a oscilação recente do Protheus e do SIGAJURI foi medida — ver
 | Casos sem nenhum teste | **42** — cada um com motivo medido |
 | Testes que **criam ou editam** registro (`@destrutivo`) | **47** (`npx playwright test --grep @destrutivo --list`) — rodam na execução padrão |
 
-**Última execução completa medida (03/09/2026, 09h03–11h55 — suíte inteira, destrutivos
-incluídos): 233 testes, 162 verdes, 71 vermelhos.** Os 47 `@destrutivo` rodaram **um por vez,
-com 60s entre cada** — o Fluig tem proteção contra volume de requisições, e bloqueio de taxa
-apareceria como vermelho que parece defeito. A pausa é decisão de quem roda, não código da
-suíte. Dos 71 vermelhos, 38 são defeito já catalogado nesta tabela, 18 defeito de produto achado
-naquela execução, 13 pré-condição ausente e 2 divergência do catálogo de processos com o
-inventário versionado — **nenhum atribuído a erro da suíte**. A análise cartão a cartão está em
+**Última execução completa medida (03/09/2026, 15h50–18h05 — suíte inteira, destrutivos
+incluídos, commit `97ea079`): 233 testes, 161 verdes, 72 vermelhos.** Os 47 `@destrutivo` rodaram
+**um por vez, com 60s entre cada e `--retries=0`** — o Fluig tem proteção contra volume de
+requisições, e bloqueio de taxa apareceria como vermelho que parece defeito. A pausa é decisão de
+quem roda, não código da suíte. Dos 72 vermelhos, 54 são `@bug` (defeito catalogado), 1 `@achado`
+(não-determinismo do produto), 13 pré-condição ausente (anotada pelo próprio teste) e 4 pendem de
+decisão do dono do ambiente (2 do invariante de catálogo, 2 destrutivos ainda sem classe) —
+**nenhum atribuído a erro da suíte, nenhum flaky**. Registro em
+[`docs/execucoes/relatorio-execucao-2026-09-03-final.md`](docs/execucoes/relatorio-execucao-2026-09-03-final.md);
+a análise cartão a cartão da execução da manhã (162/71) está em
 [`docs/execucoes/relatorio-falhas-2026-09-03.md`](docs/execucoes/relatorio-falhas-2026-09-03.md).
 ⚠️ **O total de vermelhos não é comparável entre execuções sem olhar quais testes são**: dois
 testes variam por não-determinismo do próprio produto, e a integração com o Protheus oscila.

@@ -285,7 +285,7 @@ execução, não descoberto depois de um relatório confuso.
 
 `docs/estabilidade-do-ambiente.md` é a fonte da verdade sobre essa premissa: o que a suíte
 pressupõe de cada integração externa, o histórico medido de quedas (com data, duração e
-evidência — duas ocorrências observadas em 31/08–01/09/2026, não uma série histórica), e acima de
+evidência — três ocorrências observadas em 31/08, 01/09 e 03/09/2026, não uma série histórica), e acima de
 tudo **como distinguir, lendo a mensagem de um vermelho, instabilidade de ambiente (`PRÉ-CONDIÇÃO
 AUSENTE`) de defeito de produto e de flakiness real da suíte**. Leia antes de classificar qualquer
 falha relacionada a contrato ou a SIGAJURI.

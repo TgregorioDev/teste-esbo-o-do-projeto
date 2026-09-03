@@ -44,9 +44,9 @@ exercitar o cenário.
 
 ## O histórico medido
 
-**Importante: são duas ocorrências observadas em dois dias consecutivos, não uma série
-histórica.** Não há base para estimar frequência, periodicidade ou causa a partir de duas
-amostras — o que segue é o que foi medido, com data, e nada além disso.
+**Importante: são três ocorrências observadas em quatro dias (31/08, 01/09 e 03/09/2026), não
+uma série histórica.** Não há base para estimar frequência, periodicidade ou causa a partir de
+três amostras — o que segue é o que foi medido, com data, e nada além disso.
 
 ### 31/08/2026 ~14h20 até 01/09/2026 ~11h38 — contratos zerados, ~21h
 
@@ -72,6 +72,22 @@ as combinações. A falha era pontual daquela consulta, não do serviço.
 Mesmo sintoma (`dsProtheus_getContratosxFornecedores_restGet` respondendo `values: []` com HTTP
 200), mesma ausência de erro nos dois datasets vizinhos. Recuperação sozinha, sem intervenção —
 ~16 minutos depois a grade voltou a mostrar contratos.
+
+### 03/09/2026 ~16h05–16h09 — terceira queda do mesmo endpoint, ~4 min
+
+Medida durante a execução final do plano de melhoria, com a sonda (`node scripts/sonda-grade.mjs`)
+a cada ~1 min: **845 · 845 · 845 · 845 · 845** entre 15h50 e 16h03 (janela saudável, em que as
+seis fatias não destrutivas rodaram), depois **0 · 0 · 0 · 0** às 16h05–16h08, e **845** de novo
+às 16h09, sustentado por 7 amostras seguidas até 16h15. Os dois primeiros destrutivos da
+execução (`ciclo-correcao-reenvio`, `ciclo-gestor`) caíram exatamente na janela e reprovaram com
+`PRÉ-CONDIÇÃO AUSENTE: a grade de contratos não retornou nenhuma linha` — foram **descartados e
+reexecutados** às 16h15, quando passaram a reprovar pelo motivo real (CT-CMP-08-H e D-01).
+
+O que esta ocorrência acrescenta ao histórico: a queda pode ser **curta** (4 min, contra 21 h e
+16 min das anteriores) e cair no meio de uma execução que começou saudável. A sonda antes da
+execução não basta; é a anotação `pre-condicao-ausente` de cada teste que diz se um vermelho
+específico caiu na janela — e o veredito do gate (`scripts/veredito-do-gate.mjs`) já separa
+esses vermelhos das regressões sem que alguém precise cruzar horários à mão.
 
 ### SIGAJURI — indisponibilidade independente, contínua
 
@@ -101,7 +117,7 @@ abaixo.
 
 **O que NÃO fazer:** não reportar como bug do produto, não reportar como teste flaky, não abrir
 investigação de código. O sintoma correto é abrir (ou apontar para) o registro de indisponibilidade
-do lado do ambiente — este documento é esse registro para as duas ocorrências já medidas.
+do lado do ambiente — este documento é esse registro para as três ocorrências já medidas.
 
 ### 2. Defeito de produto
 

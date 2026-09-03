@@ -47,6 +47,36 @@ de catálogo — **nenhuma regressão**, mas o gate estava vermelho porque o run
 "falhou". Foi isso que a Etapa 1 do plano corrigiu: `utils/pre-condicao.js` anota a classe e
 `scripts/veredito-do-gate.mjs` a lê. A medição pós-plano está na seção "Carimbo" abaixo.
 
+## Carimbo — 03/09/2026, 15h50–18h05 (commit `97ea079`, plano aplicado)
+
+Registro completo: `docs/execucoes/relatorio-execucao-2026-09-03-final.md`; classe e motivo dos
+233 testes em `docs/execucoes/2026-09-03-final/veredito.json`.
+
+| Medição | Valor | Comando |
+|---|---|---|
+| Janela saudável | 5 × 845 antes, 7 × 845 depois de uma queda de 4 min (16h05–16h09), 2 × 845 ao fim | `node scripts/sonda-grade.mjs` |
+| Execução | 233 testes · **161 verdes · 72 vermelhos** | 6 fatias `--workers=4` + 47 destrutivos um por invocação, `--retries=0`, 60 s |
+| Veredito (suíte inteira) | 153 ok · 63 conhecido · 13 pré-condição · **4 sem classe** · 0 flaky · 0 pulado | `node scripts/veredito-do-gate.mjs relatorios/merged-final.json` |
+| Veredito (escopo do gate, 141) | 133 ok · 6 pré-condição · **2 sem classe** (`catalogo-invariante`, D1) · 0 flaky | idem, filtrando `@destrutivo` |
+| `@bug` que passou | **0** de 54 | `node scripts/alerta-bug-corrigido.mjs relatorios/junit-final.xml` |
+| Massa criada / resíduo | 26 solicitações / **0** (todas encerradas pelo teardown) | `npm run limpar:simular` |
+| Cobertura | 196 casos · 154 cobertos · 42 sem teste | `npm run cobertura` |
+| Estático | limpo | `npm run typecheck` |
+
+**Frase que faltava, agora com a ressalva medida:** o gate de regressão **não tem regressão** — os
+72 vermelhos são defeito catalogado (`@bug`, 54), achado versionado (`@achado`, 1), pré-condição
+registrada em `docs/excecoes-de-pre-condicao.md` ou anotada pelo próprio teste (13), **mais 4 que
+pendem de decisão do dono do ambiente, não de código**: os 2 do invariante de catálogo (D1) e 2
+destrutivos que reprovam pela mesma mensagem desde a execução da manhã e ainda não receberam
+classe — `CT-ACC-09-H` (pasta do GED nunca criada) e `CT-JUR-01-H` (combo do SIGAJURI vazio),
+decisão D6. Quando D1 e D6 forem respondidas, o veredito fecha em 0 sem nenhuma mudança de
+assertion.
+
+**Determinismo, seed e CI — as três ressalvas da revisão de QA:** a seed é por teste e provada
+reproduzível sob `--workers=4` com ordem invertida (Etapa 6); o CI lê classe em vez de exit
+(Etapa 1) e não multiplica massa (Etapa 5); a medição foi feita em janela saudável, com a queda de
+4 min identificada e os dois testes atingidos reexecutados — não interpretados.
+
 ## Determinismo — CERTIFICADO do lado do teste
 
 Estudo dedicado, **735 execuções** em `--repeat-each=3 --workers=4`, fatiado por bloco e sempre em

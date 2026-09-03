@@ -1,0 +1,1881 @@
+{
+ "geradoEm": "2026-09-03T21:04:02.932Z",
+ "relatorio": "relatorios/merged-final.json",
+ "veredito": "REGRESSAO",
+ "errosDeExecucao": [],
+ "totais": {
+  "ok": 153,
+  "conhecido": 63,
+  "pre-condicao": 13,
+  "flaky": 0,
+  "regressao": 4,
+  "pulado": 0,
+  "total": 233
+ },
+ "testes": [
+  {
+   "arquivo": "e2e/compras/ciclo-solicitacao-compras.spec.js",
+   "linha": 816,
+   "titulo": "e2e/compras/ciclo-solicitacao-compras.spec.js › Anexo da Solicitação de Compras chega íntegro ao GED (CT-ACC-09-H) › CT-ACC-09-H @destrutivo — o anexo enviado deveria gerar os dois registros no GED, sob a pasta da solicitação, e ser listado na solicitação",
+   "status": "unexpected",
+   "classe": "regressao",
+   "motivo": "Error: nenhuma pasta \"Processo 113242 - ...\" existe no GED. O produto cria essa cadeia sozinho na etapa \"Grava SC e Anexos\"; sem ela o anexo não tem onde ser navegado e o aprovador não o alcança"
+  },
+  {
+   "arquivo": "e2e/juridico/sigajuri-consultivo.spec.js",
+   "linha": 48,
+   "titulo": "e2e/juridico/sigajuri-consultivo.spec.js › SIGAJURI_Consultivo — solicitação, D-JUR-01 › CT-JUR-01-H deveria criar a solicitação de Consultivo e vinculá-la à área informada @destrutivo",
+   "status": "unexpected",
+   "classe": "regressao",
+   "motivo": "Error: Tipo Consulta deveria oferecer mais de uma opção (tipos reais de consulta)"
+  },
+  {
+   "arquivo": "e2e/plataforma/catalogo-invariante.spec.js",
+   "linha": 150,
+   "titulo": "e2e/plataforma/catalogo-invariante.spec.js › Plataforma — invariante do catálogo de processos › CT-PLT-10-H: o conjunto de processos publicados e o de iniciáveis devem bater exatamente com o inventário versionado",
+   "status": "unexpected",
+   "classe": "regressao",
+   "motivo": "Error: o catálogo \"Iniciar Solicitações\" (`onlyCanStart=true`) mudou para esta conta. Processo que ENTRA passou a ser iniciável por um usuário de Compras; processo que SAI deixou de ser oferecido. Este é o ponto de controle de permissão de "
+  },
+  {
+   "arquivo": "e2e/plataforma/catalogo-invariante.spec.js",
+   "linha": 227,
+   "titulo": "e2e/plataforma/catalogo-invariante.spec.js › Plataforma — invariante do catálogo de processos › CT-PLT-10-H: `SIGAJURI_Contencioso` continua fora do catálogo `onlyCanStart` embora crie solicitação — a permissão real diverge do filtro da tela",
+   "status": "unexpected",
+   "classe": "regressao",
+   "motivo": "Error: a divergência mudou: `SIGAJURI_Contencioso` PASSOU a constar do catálogo `onlyCanStart`. Se a permissão de início foi alinhada ao filtro da tela, o achado foi resolvido e este teste deve ser reescrito para a nova regra — não silencia"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js",
+   "linha": 515,
+   "titulo": "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js › Quantidade e valor em contrato de serviço sem CNB_QUANT (CT-ACC-06-S2) › CT-ACC-06-S2 — item sem quantidade no contrato deve herdar a cascata e o preço real, nunca R$ 1,00",
+   "status": "unexpected",
+   "classe": "pre-condicao",
+   "motivo": "nenhum contrato vigente pequeno com item de `CNB_QUANT` vazio e `CNB_QTDORI` preenchido foi encontrado em 15 tentativas — sem essa massa não há como exercitar a cascata de quantidade. Não é defeito do produto."
+  },
+  {
+   "arquivo": "e2e/compras/aprovacoes-solicitacao-compras.spec.js",
+   "linha": 318,
+   "titulo": "e2e/compras/aprovacoes-solicitacao-compras.spec.js › Validação do Gestor Imediato (Tarefas em pool) › @destrutivo deve assumir e aprovar uma tarefa do pool do Gestor Imediato",
+   "status": "unexpected",
+   "classe": "pre-condicao",
+   "motivo": "a SC #113238, criada por este teste, não ficou assumível (\"Assumir tarefa\") na Validação do Gestor dentro de 180s. Isto NÃO é defeito do produto confirmado — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada na tela de detalhe: \"Grava SC e Anexos\". Causa do polling: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: 'Assumir tarefa' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: 'Assumir tarefa' })\u001b[22m\n\n\nCall Log:\n- Timeout 180000ms exceeded while waiting on the predicate"
+  },
+  {
+   "arquivo": "e2e/compras/aprovacoes-solicitacao-compras.spec.js",
+   "linha": 359,
+   "titulo": "e2e/compras/aprovacoes-solicitacao-compras.spec.js › Validação do Gestor Imediato (Tarefas em pool) › @destrutivo deve assumir e reprovar uma tarefa do pool do Gestor Imediato com justificativa",
+   "status": "unexpected",
+   "classe": "pre-condicao",
+   "motivo": "a SC #113239, criada por este teste, não ficou assumível (\"Assumir tarefa\") na Validação do Gestor dentro de 180s. Isto NÃO é defeito do produto confirmado — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada na tela de detalhe: \"Grava SC e Anexos\". Causa do polling: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: 'Assumir tarefa' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: 'Assumir tarefa' })\u001b[22m\n\n\nCall Log:\n- Timeout 180000ms exceeded while waiting on the predicate"
+  },
+  {
+   "arquivo": "e2e/compras/aprovacoes-solicitacao-compras.spec.js",
+   "linha": 402,
+   "titulo": "e2e/compras/aprovacoes-solicitacao-compras.spec.js › Validação do Gestor Imediato (Tarefas em pool) › @destrutivo deve sinalizar explicitamente quando não há aprovador habilitado para a próxima etapa",
+   "status": "unexpected",
+   "classe": "pre-condicao",
+   "motivo": "a SC #113240, criada por este teste, não ficou assumível (\"Assumir tarefa\") na Validação do Gestor dentro de 180s. Isto NÃO é defeito do produto confirmado — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada na tela de detalhe: \"Grava SC e Anexos\". Causa do polling: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: 'Assumir tarefa' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: 'Assumir tarefa' })\u001b[22m\n\n\nCall Log:\n- Timeout 180000ms exceeded while waiting on the predicate"
+  },
+  {
+   "arquivo": "e2e/juridico/sigajuri-contencioso.spec.js",
+   "linha": 113,
+   "titulo": "e2e/juridico/sigajuri-contencioso.spec.js › SIGAJURI_Contencioso — roteamento por área e parte contrária › CT-JUR-04-H / CT-JUR-06-H deveria criar e rotear a solicitação pela UF e Responsável pela Demanda escolhidos, parando no pool certo @destrutivo",
+   "status": "unexpected",
+   "classe": "pre-condicao",
+   "motivo": "o caso precisa de \"MA\" no combo \"UF\", mas o ambiente hoje só oferece: (nenhuma opção). Não é para ser contornado trocando o valor pedido no teste — é sinal de que o cadastro do SIGAJURI mudou; confirme com o dono do ambiente antes de ajustar o teste."
+  },
+  {
+   "arquivo": "e2e/tarefas/acoes-da-tarefa.spec.js",
+   "linha": 185,
+   "titulo": "e2e/tarefas/acoes-da-tarefa.spec.js › Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08) › CT-TSK-07-H @destrutivo — \"Somente salvar\" deve persistir o rascunho sem movimentar a atividade",
+   "status": "unexpected",
+   "classe": "pre-condicao",
+   "motivo": "a SC #113259, criada por este teste, não ficou assumível (\"Assumir tarefa\") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada: \"Grava SC e Anexos\". Causa do polling: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: 'Assumir tarefa' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: 'Assumir tarefa' })\u001b[22m\n\n\nCall Log:\n- Timeout 180000ms exceeded while waiting on the predicate"
+  },
+  {
+   "arquivo": "e2e/tarefas/acoes-da-tarefa.spec.js",
+   "linha": 298,
+   "titulo": "e2e/tarefas/acoes-da-tarefa.spec.js › Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08) › CT-TSK-08-H @destrutivo — transferir deve trocar o responsável mantendo a mesma atividade",
+   "status": "unexpected",
+   "classe": "pre-condicao",
+   "motivo": "a SC #113260, criada por este teste, não ficou assumível (\"Assumir tarefa\") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada: \"Grava SC e Anexos\". Causa do polling: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: 'Assumir tarefa' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: 'Assumir tarefa' })\u001b[22m\n\n\nCall Log:\n- Timeout 180000ms exceeded while waiting on the predicate"
+  },
+  {
+   "arquivo": "e2e/tarefas/assumir-tarefa-pool.spec.js",
+   "linha": 35,
+   "titulo": "e2e/tarefas/assumir-tarefa-pool.spec.js › Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H) @destrutivo › assumir a primeira tarefa disponível de um grupo do pool deve movê-la para \"Tarefas a concluir\"",
+   "status": "unexpected",
+   "classe": "pre-condicao",
+   "motivo": "o Resumo de Tarefas anuncia \"Tarefas em pool (0)\" no momento da execução. Não há tarefa de pool disponível para assumir agora — isto NÃO é defeito do produto sob teste. Reexecute quando houver massa (o usuário TOTVS-FS pertence aos pools \"Validação do Gestor Imediato\" e \"Validação dos Compradores\"). \n\nInvestigação de viabilidade de MASSA (medida ao vivo em 01/09/2026, não presumida — ver `docs/criacao-de-contrato-inviavel.md` para o padrão desta investigação): esta automação NÃO consegue montar seu próprio pré-requisito aqui, por dois motivos independentes, ambos confirmados por consulta direta à API v2: (1) A base tem MUITA atividade orgânica de usuários reais no momento (amostra de 20+ Solicitações de Compra abertas hoje, requesters reais como geise.matias.cassi.com.br.1, paulocalixto.totvs.com.br.1, karolina.novais.cassi.com.br.1) — mas nenhuma delas cai em pool de TOTVS-FS: o Gestor Imediato/Comprador de cada uma resolve para uma pessoa nominal real (ex. erlon.dengo, danyelle.oliveira, fernanda.smartins — RH do Protheus encontra o superior/comprador certo para quem realmente pediu). TOTVS-FS recebe, sim, tarefa DIRETA vinda dessa atividade real (2 confirmadas agora: processInstanceId 112830 \"Validação do Gestor\" e 112829 \"Correção\", ambas assignee=TOTVS-FS) — mas tarefa direta não é tarefa de POOL, e não conta para este contador. (2) A automação só consegue produzir uma SC própria que caia em pool contornando D-01 (enviando `targetState` diferente de 6 direto na API de `/start`, sem passar pelo widget defeituoso) — técnica que funcionou UMA vez no passado (SC 112679, documentada em `cassi-fluig-master/references/catalogo-de-processos.md`) mas nunca foi confirmada como reprodutível: o valor exato do campo e os ~101 campos de `formFields` que a integração com o Protheus exige não são conhecidos com confiança fora do que o formulário clássico (`pages/FormularioSolicitacaoCompraPage.js`, de outra suíte) já monta pela UI. Fabricar esse payload às cegas, por fetch direto, arriscaria produzir massa corrompida numa base de homologação compartilhada só para contornar um defeito confirmado do produto — o oposto do que a automação deveria fazer. Concluído: a pré-condição desta fila é de LEITURA de atividade orgânica, não de escrita da automação — mesma natureza da exceção já formalizada para Contrato."
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js",
+   "linha": 209,
+   "titulo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js › Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1) › itens com quantidade e preço diferentes não deveriam compartilhar o mesmo valor total",
+   "status": "unexpected",
+   "classe": "pre-condicao",
+   "motivo": "passaram-se 30000ms desde o Confirmar e a requisição de start de índice 0 nunca foi disparada (0 capturada(s) até aqui). O widget só envia quando o contrato traz ITENS: se a planilha do contrato escolhido vier sem produtos ou sem rateios, o modal abre, aceita o preenchimento e o Confirmar não faz nada — comportamento correto, já documentado em indisponibilidade-protheus.spec.js. Isto NÃO é defeito do produto nem falha da automação: é massa inadequada para este caso. Confira os itens do contrato antes de interpretar o resultado."
+  },
+  {
+   "arquivo": "e2e/compras/ciclo-cotacao.spec.js",
+   "linha": 169,
+   "titulo": "e2e/compras/ciclo-cotacao.spec.js › Cotação de Produtos e Serviços — ponto de entrada real (Portal do Comprador) › CT-COT — a fila real de \"Controle De Cotações\" está vazia (pré-condição ausente para qualquer cenário com cotação real)",
+   "status": "unexpected",
+   "classe": "pre-condicao",
+   "motivo": "a fila de \"Controle De Cotações\" do Portal do Comprador não tem nenhuma Cotação para operar. Isto NÃO é defeito do produto sob teste isolado — é consequência de D-01 (toda Solicitação de Compra criada por esta suíte fica presa no marco de Início do BPMN e nunca chega ao Protheus, então nunca gera uma Cotação real) somada à ausência de massa pré-existente na base. CT-COT-01-H, CT-COT-01-S1, CT-COT-02-S1, CT-COT-02-S2 e CT-COT-02-S3 continuam bloqueados até D-01 ser corrigido e/ou existir uma Cotação real nesta fila. \n\nInvestigação de viabilidade de MASSA (reconfirmada ao vivo em 01/09/2026, consulta direta à API v2 + navegação real, sem presumir): a base TEM cotações reais em aberto agora mesmo (ex.: processInstanceId 113002, 112860, 112839 — todas `wf_cotacao_produtos_servicos`, `status:OPEN`), então a fila do PRODUTO não está vazia — o que está vazio é o que ESTA CONTA enxerga. Essas cotações nascem vinculadas a um comprador nominal do Protheus (SY1) e só aparecem no Portal do Comprador de quem é esse comprador ou tem \"Atuar como\" delegado a ele; `TOTVS-FS` não é um dos ~28 compradores cadastrados. Confirmado agora mesmo: `comboAtuarComo` tem contagem 0 tanto em \"Controle De Cotações\" quanto em \"Avaliação de Propostas\" — não há delegação disponível para operar em nome de um comprador real hoje (nota: `pages/PortalCompradorPage.js`, arquivo de outra suíte, documenta delegação a \"Arthur de Almeida Santos\" numa medição anterior — a medição de agora, repetida duas vezes, não encontrou nenhum `<select>` nessas duas telas; o ambiente pode ter mudado desde então, e esta contradição deveria ser re-verificada por quem mantém aquele Page Object). A automação NÃO consegue criar seu próprio pré-requisito aqui: mesmo que D-01 fosse corrigido e uma SC da automação chegasse a virar Cotação, ela ainda cairia sob um comprador nominal diferente de TOTVS-FS — o bloqueio é de CADASTRO NO ERP (comprador na SY1), o mesmo limite real que `CLAUDE.md` já reconhece, e não de ausência de massa. Tratar como exceção formal, no mesmo padrão de `docs/criacao-de-contrato-inviavel.md`."
+  },
+  {
+   "arquivo": "e2e/compras/negociacao-proposta.spec.js",
+   "linha": 132,
+   "titulo": "e2e/compras/negociacao-proposta.spec.js › Negociação de Cotação — ponto de entrada real (Portal do Comprador) › CT-NEG — a fila real de \"Avaliação de Propostas\" está vazia (pré-condição ausente para validar/reprovar uma proposta real)",
+   "status": "unexpected",
+   "classe": "pre-condicao",
+   "motivo": "a fila de \"Avaliação de Propostas\" do Portal do Comprador não tem nenhuma cotação, com ou sem proposta de fornecedor. Isto NÃO é defeito isolado do produto — é o mesmo bloqueio de fundo que impede CT-COT: D-01 mantém toda Solicitação de Compra presa na conta de integração, então nenhuma Cotação real chega a existir para negociar. CT-NEG-01-H, CT-NEG-01-S1 e CT-NEG-01-S2 continuam bloqueados até D-01 ser corrigido e/ou existir uma proposta real nesta fila. \n\nInvestigação de viabilidade de MASSA (reconfirmada ao vivo em 01/09/2026, mesma rodada de `ciclo-cotacao.spec.js`): não é falta de massa no PRODUTO — a base tem cotações reais em aberto agora (ex. processInstanceId 113025 em \"Validação do Comprador\", assignee `fernanda.smartins.cassi.com.br.1`; 112994 em \"Aguarda Finalizar Cotação\", requester `geise.matias.cassi.com.br.1`). O bloqueio é que essas cadeias pertencem a compradores nominais reais da SY1, não a TOTVS-FS, e o \"Atuar como\" que permitiria operar em nome deles está com `comboAtuarComo` em contagem 0 nesta tela agora — sem delegação, sem visibilidade. Mesmo que a automação corrigisse D-01 e levasse sua PRÓPRIA SC até virar Cotação, o comprador designado ainda seria um nominal diferente de TOTVS-FS: o teto é cadastro no ERP (comprador na SY1), o mesmo limite que `CLAUDE.md` já reconhece como fora do alcance da automação — não presunção, medição repetida hoje. Candidato a exceção formal, mesmo padrão de `docs/criacao-de-contrato-inviavel.md`."
+  },
+  {
+   "arquivo": "e2e/contratos/validacoes-faturamento.spec.js",
+   "linha": 80,
+   "titulo": "e2e/contratos/validacoes-faturamento.spec.js › Faturamento de Contratos — validações e bloqueios › CT-FAT-02-S2: competência recusada pelo Protheus deve bloquear a medição E avisar o usuário",
+   "status": "unexpected",
+   "classe": "pre-condicao",
+   "motivo": "nenhuma competência recusada pelo Protheus foi encontrada nos contratos vigentes consultados (25-2022-5303, E002-2023, 00121-2023-4306, 00141-2022-5303). Isto NÃO é defeito do produto sob teste: significa que, no momento desta execução, todas as competências amostradas estavam liberadas para medir."
+  },
+  {
+   "arquivo": "e2e/contratos/validacoes-faturamento.spec.js",
+   "linha": 255,
+   "titulo": "e2e/contratos/validacoes-faturamento.spec.js › Faturamento de Contratos — validações e bloqueios › CT-FAT-02-S3: reprovar uma validação (Validação CSE / Validação da Medição CSE / Validação do Fiscal de Contrato) não é alcançável — o usuário desta automação não pertence a nenhum grupo dessas etapas",
+   "status": "unexpected",
+   "classe": "pre-condicao",
+   "motivo": "o menu \"Mais opções\" não ofereceu \"Tarefas em pool\" — o usuário está sem nenhuma tarefa em pool neste momento, e o painel só é renderizado quando há ao menos uma. Sem ler o pool não é possível afirmar que não existe grupo de Fiscal/CSE/Medição. Isto NÃO é defeito do produto nem falha da automação. Entradas oferecidas agora: Lixeira | Fechar menu | Resumo de Tarefas | Mais opções | Tarefas a concluir 12 | Solicitações 122 | Documentos 29 | Nova solicitação. \n\nInvestigação de viabilidade de MASSA (medida ao vivo em 01/09/2026, mesma rodada de `tests/e2e/tarefas/assumir-tarefa-pool.spec.js` — ver lá o detalhe completo): esta automação não consegue criar seu próprio item de pool para popular este menu. A base tem atividade orgânica intensa hoje (20+ SCs reais abertas), mas nenhuma cai em pool de TOTVS-FS — Gestor Imediato/Comprador de cada uma resolve para pessoa nominal real (RH do Protheus). O único caminho conhecido para a automação colocar algo em pool é contornar D-01 com um `targetState` diferente de 6 direto na API de `/start` — funcionou uma vez no passado (SC 112679) mas nunca foi confirmado como reprodutível, e replicá-lo às cegas arriscaria fabricar massa corrompida numa base compartilhada só para contornar um defeito do produto. A pré-condição desta fila (qualquer grupo de pool, não só Fiscal/CSE/Medição) é de leitura de atividade orgânica, mesma natureza da exceção já formalizada para Contrato em `docs/criacao-de-contrato-inviavel.md`."
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js",
+   "linha": 243,
+   "titulo": "e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js › Ciclo de retorno da SC: reprovação → Correção → reenvio (CT-CMP-08-H) › CT-CMP-08-H @destrutivo @bug — reprovada e corrigida, a SC deveria voltar para a Validação do Gestor com o contrato de origem íntegro",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/ciclo-gestor.spec.js",
+   "linha": 109,
+   "titulo": "e2e/acompanhamento-contratos/ciclo-gestor.spec.js › Gestor Imediato assume do pool e aprova (CT-E2E-02-H) › @destrutivo @bug aprovada pelo Gestor Imediato, a SC deveria avançar para Validação Orçamentária",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/ciclo-gestor.spec.js",
+   "linha": 155,
+   "titulo": "e2e/acompanhamento-contratos/ciclo-gestor.spec.js › Gestor Imediato reprova com justificativa (CT-E2E-02-S1) › @destrutivo @bug reprovada, a SC deveria voltar para Ajustar Informações com o solicitante, itens e contrato íntegros",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/ciclo-gestor.spec.js",
+   "linha": 36,
+   "titulo": "e2e/acompanhamento-contratos/ciclo-gestor.spec.js › A SC criada nasce no estado e no dono corretos (CT-E2E-01-H) › @destrutivo @bug estado inicial e responsável deveriam refletir uma etapa de trabalho do solicitante",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js",
+   "linha": 113,
+   "titulo": "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js › Confirmar cria a SC e ela deveria chegar ao solicitante (CT-ACC-05-H / D-01) › @destrutivo @bug a SC deveria nascer atribuída ao solicitante logado, não à conta de integração",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js",
+   "linha": 225,
+   "titulo": "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js › Item sem quantidade e sem valor no contrato não pode virar item da SC (CT-ACC-06-S1) › @destrutivo @bug item de quantidade/valor zerado no contrato não deveria virar item extra na SC criada",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js",
+   "linha": 294,
+   "titulo": "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js › Bypass da validação de cliente no start direto (CT-ACC-04-S6 / D-10) › @destrutivo @bug o servidor deveria recusar tipoSolicitacao vazio tanto quanto recusa motivoSolCompra vazio",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js",
+   "linha": 424,
+   "titulo": "e2e/acompanhamento-contratos/criacao-solicitacao.spec.js › Segunda SC para o mesmo contrato/revisão sem alerta de duplicidade (CT-E2E-12-S1) › @destrutivo @bug o portal deveria alertar sobre a SC já em andamento para o mesmo contrato/revisão",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/compras/ciclo-solicitacao-compras.spec.js",
+   "linha": 568,
+   "titulo": "e2e/compras/ciclo-solicitacao-compras.spec.js › Ciclo de criação da Solicitação de Compras (formulário clássico) › CT-CMP-02-S4 @destrutivo @bug — o servidor não deve criar a SC quando falta o anexo obrigatório",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/compras/ciclo-solicitacao-compras.spec.js",
+   "linha": 490,
+   "titulo": "e2e/compras/ciclo-solicitacao-compras.spec.js › Ciclo de criação da Solicitação de Compras (formulário clássico) › CT-CMP-02-S4 @bug — deve bloquear o envio quando nenhum anexo é informado",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/compras/fail-open-formulario-sc.spec.js",
+   "linha": 128,
+   "titulo": "e2e/compras/fail-open-formulario-sc.spec.js › Fail-open do formulário clássico de Solicitação de Compras (CT-CMP-07-S1) › CT-CMP-07-S1 @destrutivo @bug — Enviar não deveria criar solicitação antes de o formulário terminar de montar",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/contratos/delegacao-fiscais-ciclo.spec.js",
+   "linha": 42,
+   "titulo": "e2e/contratos/delegacao-fiscais-ciclo.spec.js › Delegação de Fiscais de Contrato/Serviço — ciclo completo › CT-DEL-01-H @destrutivo @bug: delegar um fiscal substituto para um contrato deve criar a delegação",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/contratos/delegacao-fiscais-ciclo.spec.js",
+   "linha": 82,
+   "titulo": "e2e/contratos/delegacao-fiscais-ciclo.spec.js › Delegação de Fiscais de Contrato/Serviço — ciclo completo › CT-DEL-01-S1 @destrutivo @bug: substituto inválido/sem permissão deve ser bloqueado — não há nenhum controle para selecionar um fiscal substituto",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/documentos/bloqueio-extensoes.spec.js",
+   "linha": 133,
+   "titulo": "e2e/documentos/bloqueio-extensoes.spec.js › GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2) › CT-GED-02-S2 @destrutivo @bug — script de lote (.bat) deveria ser rejeitado",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/documentos/bloqueio-extensoes.spec.js",
+   "linha": 149,
+   "titulo": "e2e/documentos/bloqueio-extensoes.spec.js › GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2) › CT-GED-02-S2 @destrutivo @bug — shell script (.sh) deveria ser rejeitado",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/documentos/bloqueio-extensoes.spec.js",
+   "linha": 163,
+   "titulo": "e2e/documentos/bloqueio-extensoes.spec.js › GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2) › CT-GED-02-S2 @destrutivo @bug — dupla extensão (.pdf.exe) deveria ser rejeitada",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/documentos/bloqueio-extensoes.spec.js",
+   "linha": 176,
+   "titulo": "e2e/documentos/bloqueio-extensoes.spec.js › GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2) › CT-GED-02-S2 @destrutivo @bug — executável renomeado para .pdf deveria ser rejeitado pelo conteúdo",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/documentos/gestao-documentos.spec.js",
+   "linha": 66,
+   "titulo": "e2e/documentos/gestao-documentos.spec.js › Documentos — upload (CT-GED-02) › CT-GED-02-S1 upload de extensão bloqueada é rejeitado e nada é gravado @destrutivo @bug",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/juridico/sigajuri-contencioso.spec.js",
+   "linha": 196,
+   "titulo": "e2e/juridico/sigajuri-contencioso.spec.js › SIGAJURI_Contencioso — roteamento por área e parte contrária › CT-JUR-04-S1 deveria oferecer campo para registrar a parte contrária em consultas contenciosas @bug",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/plataforma/favoritos-contrato-api.spec.js",
+   "linha": 127,
+   "titulo": "e2e/plataforma/favoritos-contrato-api.spec.js › Plataforma — contrato de `addFavorites` (CT-PLT-07-S1) @destrutivo › CT-PLT-07-S1: favoritar o mesmo processo duas vezes deve responder erro de negócio em JSON (ou 200 idempotente), não 500 em texto puro @destrutivo @bug",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/portais/atribuicao-comprador.spec.js",
+   "linha": 49,
+   "titulo": "e2e/portais/atribuicao-comprador.spec.js › Gerência de Compras — Atribuir comprador (CT-E2E-05-H) › a aba Atribuir não lista SCs para a conta autenticada, embora o mesmo mecanismo renderize dados reais na aba Transferir @achado",
+   "status": "expected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/saude/questionario-clinicassi.spec.js",
+   "linha": 217,
+   "titulo": "e2e/saude/questionario-clinicassi.spec.js › Questionário CliniCASSI — contexto da clínica (CT-CLI-02-S1, achado U-14) › Clínica/Unidade deveriam identificar a clínica do diagnóstico e não nascer vazias @bug",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/erros-no-start.spec.js",
+   "linha": 67,
+   "titulo": "e2e/acompanhamento-contratos/erros-no-start.spec.js › Sucesso simulado com falha na transferência da tarefa (D-01 / CT-ACC-05-S1) › @bug deve avisar quando a SC é criada mas não pôde ser atribuída ao solicitante, em vez de anunciar sucesso pleno",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/grade-contratos.spec.js",
+   "linha": 45,
+   "titulo": "e2e/acompanhamento-contratos/grade-contratos.spec.js › Grade de contratos › CT-ACC-02-S1 @bug — deve exibir a situação do contrato por extenso, sem truncar",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/indisponibilidade-protheus.spec.js",
+   "linha": 54,
+   "titulo": "e2e/acompanhamento-contratos/indisponibilidade-protheus.spec.js › Indisponibilidade do Protheus ao abrir a Solicitação de Compra › @bug deve exibir um alerta por dado indisponível, nomeando o dado que faltou",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js",
+   "linha": 65,
+   "titulo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js › Payload de start — targetState e targetAssignee (D-01 / CT-E2E-01-H) › @bug a SC deve nascer numa etapa de trabalho atribuída ao solicitante, não presa no marco de Início da conta de integração",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js",
+   "linha": 268,
+   "titulo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js › Payload de start — campos chumbados (D-04 / CT-ACC-07-S1) › @bug classeOrca, classificação e o descritor deveriam refletir o contrato de origem, não vir fixos para todos",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js",
+   "linha": 388,
+   "titulo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js › Payload de start — integridade dos valores e do rateio (CT-ACC-08-S1 / CT-ACC-08-S2) › @bug classeValor do item deveria vir preenchido junto com classeOrca e classificação",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js",
+   "linha": 483,
+   "titulo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js › Payload de start — número de contrato incoerente (CT-ACC-04-S5) › @bug não deve permitir que nrContrato divirja do contrato real da revisão/filial/itens enviados",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "api/dataset-colleague-vazamento.spec.js",
+   "linha": 22,
+   "titulo": "api/dataset-colleague-vazamento.spec.js › Vazamento de dados — dataset colleague sem aplicar constraint › deve retornar somente o registro do login filtrado, não a base inteira @bug",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "api/sincronizacao-protheus.spec.js",
+   "linha": 31,
+   "titulo": "api/sincronizacao-protheus.spec.js › Integração Protheus — sincronização e cache › CT-INT-02-S1 @bug: variantes de cache (_Sync) dos dados de RH e vigência de compra não devem estar em erro",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 19,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link de rota SPA (defeito U-01) › acessar /portal/p/1/principalprocess diretamente deve abrir a página, não redirecionar para 404 @bug",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 19,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link de rota SPA (defeito U-01) › acessar /portal/p/1/gestao_ferias diretamente deve abrir a página, não redirecionar para 404 @bug",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/plataforma/erros-de-console.spec.js",
+   "linha": 176,
+   "titulo": "e2e/plataforma/erros-de-console.spec.js › Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1) › CT-PLT-06-S1 @bug: Portal do Comprador (/portal/p/1/portal-do-comprador) deve carregar sem erro de console não catalogado",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/plataforma/home.spec.js",
+   "linha": 7,
+   "titulo": "e2e/plataforma/home.spec.js › Home da plataforma › deve carregar os apps e contadores sem erro de console @bug",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/plataforma/processo-inativo-e-residuo.spec.js",
+   "linha": 63,
+   "titulo": "e2e/plataforma/processo-inativo-e-residuo.spec.js › Plataforma — processo inativo e resíduo de desenvolvimento (CT-PLT-08-S1) › CT-PLT-08-S1 @bug: o processo `teste` (categoria ADMIN) não deveria constar do catálogo de início de um usuário de Compras",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/plataforma/processo-inativo-e-residuo.spec.js",
+   "linha": 121,
+   "titulo": "e2e/plataforma/processo-inativo-e-residuo.spec.js › Plataforma — processo inativo e resíduo de desenvolvimento (CT-PLT-08-S1) › CT-PLT-08-S1 (ACHADO) @achado: abrir o processo `teste` serve o formulário da Solicitação de Compras a um usuário comum",
+   "status": "expected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/compras/ciclo-cotacao.spec.js",
+   "linha": 126,
+   "titulo": "e2e/compras/ciclo-cotacao.spec.js › Cotação de Produtos e Serviços — formulário avulso (shell fora de contexto) › CT-COT (defeito) — o shell aceita Enviar sem nenhuma validação de fornecedor/vínculos obrigatórios @bug",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/compras/negociacao-proposta.spec.js",
+   "linha": 98,
+   "titulo": "e2e/compras/negociacao-proposta.spec.js › Negociação de Cotação — formulário avulso (shell fora de contexto) › CT-NEG @bug — o Enviar do shell sem proposta real vinculada nunca deveria completar uma requisição de escrita",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/compras/parecer-tecnico.spec.js",
+   "linha": 84,
+   "titulo": "e2e/compras/parecer-tecnico.spec.js › Parecer Técnico — formulário avulso › CT-PAR-01-S1 @bug — parecer sem responsável definido não pode completar uma requisição de escrita ao Enviar",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/compras/parecer-tecnico.spec.js",
+   "linha": 112,
+   "titulo": "e2e/compras/parecer-tecnico.spec.js › Parecer Técnico — formulário avulso › CT-PAR-01-S2 @bug — parecer desfavorável (Reprovado/Ajustes) com justificativa também é barrado pela ausência de responsável",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/financeiro/rejeicoes-pagamentos.spec.js",
+   "linha": 101,
+   "titulo": "e2e/financeiro/rejeicoes-pagamentos.spec.js › Financeiro — Rejeições de Pagamentos (CT-FIN-01-H) › CT-FIN-01-H (ACHADO) @achado: o formulário repete ids no DOM e carrega campos e seção herdados do RDFC",
+   "status": "expected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/juridico/sigajuri-contrato.spec.js",
+   "linha": 32,
+   "titulo": "e2e/juridico/sigajuri-contrato.spec.js › SIGAJURI_Contrato — geração de minuta, D-JUR-01 › CT-JUR-03-H deveria permitir montar uma minuta preenchendo Filial e Tipo Contrato @bug",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/notificacoes/contratos-api-notificacao.spec.js",
+   "linha": 99,
+   "titulo": "e2e/notificacoes/contratos-api-notificacao.spec.js › Notificações — contratos da API (CT-NOT-03-S1) › CT-NOT-03-S1 @bug: `GET /notification/api/v1/notifications` deve respeitar `limit` e `offset`",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/notificacoes/contratos-api-notificacao.spec.js",
+   "linha": 174,
+   "titulo": "e2e/notificacoes/contratos-api-notificacao.spec.js › Notificações — contratos da API (CT-NOT-03-S1) › CT-NOT-03-S1 @bug: notificação declara `canRemove: true`, então o verbo REST de remoção deveria existir",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/portais/acesso-fornecedor.spec.js",
+   "linha": 107,
+   "titulo": "e2e/portais/acesso-fornecedor.spec.js › Redefinição de senha do fornecedor — link de reset › CT-PFN-02-S2 @bug deve recusar um token de redefinição expirado/adulterado sem efetivar a troca",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/portais/gerencia-compras.spec.js",
+   "linha": 31,
+   "titulo": "e2e/portais/gerencia-compras.spec.js › Gerência de Compras › deve listar as solicitações pendentes de atribuição ao abrir a aba Atribuir @bug",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/rh/admissao.spec.js",
+   "linha": 37,
+   "titulo": "e2e/rh/admissao.spec.js › Automação Admissão › CT-ADM-01-H @bug — deveria abrir um formulário de admissão de novo funcionário",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/rh/banco-horas-limite.spec.js",
+   "linha": 38,
+   "titulo": "e2e/rh/banco-horas-limite.spec.js › Portal de Autorização de Horas Extras — limite de autorização › CT-BH-01-S2 @bug — autorizar horas acima do limite deve bloquear",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/rh/banco-horas.spec.js",
+   "linha": 14,
+   "titulo": "e2e/rh/banco-horas.spec.js › Portal de Autorização de Horas Extras › CT-BH-01-S1 @bug — não deve alertar o usuário final com erro de configuração de servidor ao abrir o Banco de Horas",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/rh/bloqueio-processos-rh.spec.js",
+   "linha": 88,
+   "titulo": "e2e/rh/bloqueio-processos-rh.spec.js › ACHADO — processos de RH que abrem o formulário sem bloqueio de grupo › ACHADO @achado — wf_pagamento_horas_extras (Solicitação de Pagamento de Horas Extras) inicia sem bloqueio para usuário fora do grupo de RH",
+   "status": "expected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/rh/bloqueio-processos-rh.spec.js",
+   "linha": 88,
+   "titulo": "e2e/rh/bloqueio-processos-rh.spec.js › ACHADO — processos de RH que abrem o formulário sem bloqueio de grupo › ACHADO @achado — wf_automacao_admissao (Automação Admissão) inicia sem bloqueio para usuário fora do grupo de RH",
+   "status": "expected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/rh/bloqueio-processos-rh.spec.js",
+   "linha": 88,
+   "titulo": "e2e/rh/bloqueio-processos-rh.spec.js › ACHADO — processos de RH que abrem o formulário sem bloqueio de grupo › ACHADO @achado — wf_substituicaocargos (Substituição de Cargos) inicia sem bloqueio para usuário fora do grupo de RH",
+   "status": "expected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/rh/bloqueio-processos-rh.spec.js",
+   "linha": 88,
+   "titulo": "e2e/rh/bloqueio-processos-rh.spec.js › ACHADO — processos de RH que abrem o formulário sem bloqueio de grupo › ACHADO @achado — GestaoDependentes (Gestão de Dependentes) inicia sem bloqueio para usuário fora do grupo de RH",
+   "status": "expected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/rh/bloqueio-processos-rh.spec.js",
+   "linha": 88,
+   "titulo": "e2e/rh/bloqueio-processos-rh.spec.js › ACHADO — processos de RH que abrem o formulário sem bloqueio de grupo › ACHADO @achado — rh_gbeneficios_planosaude (Plano de Saúde) inicia sem bloqueio para usuário fora do grupo de RH",
+   "status": "expected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/rh/substituicao-cargos.spec.js",
+   "linha": 33,
+   "titulo": "e2e/rh/substituicao-cargos.spec.js › Substituição de Cargos › CT-SUB @achado — bloqueia a identificação do solicitante antes de expor campos de substituto",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/seguranca/auditoria-datasets.spec.js",
+   "linha": 18,
+   "titulo": "e2e/seguranca/auditoria-datasets.spec.js › Segurança — auditoria de datasets sem acesso admin › CT-SEG-02-S1 @bug: contas de integração/serviço não devem ter privilégio de administrador",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/seguranca/auditoria-datasets.spec.js",
+   "linha": 71,
+   "titulo": "e2e/seguranca/auditoria-datasets.spec.js › Segurança — auditoria de datasets sem acesso admin › CT-SEG-03-S1 @bug: dataset de credencial de integração não deve ser legível por sessão sem privilégio admin",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/seguranca/auditoria-datasets.spec.js",
+   "linha": 103,
+   "titulo": "e2e/seguranca/auditoria-datasets.spec.js › Segurança — auditoria de datasets sem acesso admin › CT-SEG-04-S1 @bug: datasets de execução de SQL não devem ser alcançáveis por sessão sem privilégio admin",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/seguranca/isolamento-horizontal-api-processos.spec.js",
+   "linha": 60,
+   "titulo": "e2e/seguranca/isolamento-horizontal-api-processos.spec.js › Segurança — isolamento horizontal na API v2 de processos (BOLA) › CT-SEG-07-S1 @bug — não deve entregar o objeto de um processo em que o usuário não participa",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/seguranca/lgpd-envio-google-analytics.spec.js",
+   "linha": 22,
+   "titulo": "e2e/seguranca/lgpd-envio-google-analytics.spec.js › LGPD — telemetria enviada a serviço externo › não deve enviar dados de navegação para o Google Analytics @bug",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/seguranca/processos-administrativos-usuario-comum.spec.js",
+   "linha": 39,
+   "titulo": "e2e/seguranca/processos-administrativos-usuario-comum.spec.js › Segurança — processos administrativos não devem abrir para usuário comum › CT-SEG-08-S1 @bug — \"bpm_addUserFluig\" (Adicionar Usuário) não deve constar do catálogo nem abrir para conta não-admin",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/seguranca/processos-administrativos-usuario-comum.spec.js",
+   "linha": 39,
+   "titulo": "e2e/seguranca/processos-administrativos-usuario-comum.spec.js › Segurança — processos administrativos não devem abrir para usuário comum › CT-SEG-08-S1 @bug — \"bpm_addUserGroup\" (Adicionar Grupo) não deve constar do catálogo nem abrir para conta não-admin",
+   "status": "unexpected",
+   "classe": "conhecido",
+   "motivo": "tag @bug/@achado — não deveria estar no escopo do gate"
+  },
+  {
+   "arquivo": "e2e/compras/aprovacoes-solicitacao-compras.spec.js",
+   "linha": 499,
+   "titulo": "e2e/compras/aprovacoes-solicitacao-compras.spec.js › Etapas designadas nominalmente (verificação de alcançabilidade) › @destrutivo deve assumir e movimentar uma tarefa do pool de Validação dos Compradores quando disponível",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/compras/aprovacoes-solicitacao-compras.spec.js",
+   "linha": 468,
+   "titulo": "e2e/compras/aprovacoes-solicitacao-compras.spec.js › Etapas designadas nominalmente (verificação de alcançabilidade) › deve verificar se a Validação Orçamentária está alcançável por pool para o usuário de automação",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/compras/ciclo-solicitacao-compras.spec.js",
+   "linha": 347,
+   "titulo": "e2e/compras/ciclo-solicitacao-compras.spec.js › Ciclo de criação da Solicitação de Compras (formulário clássico) › @destrutivo deve criar e enviar a Solicitação de Compras com todos os campos válidos",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/compras/ciclo-solicitacao-compras.spec.js",
+   "linha": 417,
+   "titulo": "e2e/compras/ciclo-solicitacao-compras.spec.js › Ciclo de criação da Solicitação de Compras (formulário clássico) › deve rejeitar o upload de planilha de rateio com formato inválido",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/compras/ciclo-solicitacao-compras.spec.js",
+   "linha": 661,
+   "titulo": "e2e/compras/ciclo-solicitacao-compras.spec.js › Indisponibilidade do Protheus ao carregar os combos (formulário clássico) › deve sinalizar indisponibilidade em vez de combo vazio silencioso quando a filial falha ao carregar",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/contratos/ciclo-faturamento.spec.js",
+   "linha": 42,
+   "titulo": "e2e/contratos/ciclo-faturamento.spec.js › Faturamento de Contratos — ciclo de medição › CT-FAT-01-H @destrutivo: deve criar uma medição válida a partir de um contrato vigente e roteá-la para a próxima atividade do workflow",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/contratos/delegacao-fiscais-ciclo.spec.js",
+   "linha": 183,
+   "titulo": "e2e/contratos/delegacao-fiscais-ciclo.spec.js › Delegação de Fiscais de Contrato/Serviço — ciclo completo › CT-DEL-01-S2: período sobreposto a outra delegação vigente não é verificável — não há campo de período (início/fim) em nenhuma parte do formulário",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/documentos/gestao-documentos.spec.js",
+   "linha": 108,
+   "titulo": "e2e/documentos/gestao-documentos.spec.js › Documentos — aprovação (CT-GED-04) › CT-GED-04-H submeter documento com aprovação e aprovar como responsável @destrutivo",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/documentos/gestao-documentos.spec.js",
+   "linha": 39,
+   "titulo": "e2e/documentos/gestao-documentos.spec.js › Documentos — upload (CT-GED-02) › CT-GED-02-H upload de documento cria, versiona (v1000) e lista o documento @destrutivo",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/documentos/lixeira-documentos.spec.js",
+   "linha": 43,
+   "titulo": "e2e/documentos/lixeira-documentos.spec.js › Documentos — lixeira (CT-GED-05) › CT-GED-05-H excluir documento próprio e restaurar à pasta de origem pela Lixeira @destrutivo",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/documentos/rejeicao-documento.spec.js",
+   "linha": 140,
+   "titulo": "e2e/documentos/rejeicao-documento.spec.js › GED — rejeitar documento pendente de aprovação (CT-GED-04-S1) › CT-GED-04-S1 @destrutivo — o documento rejeitado deveria deixar de existir, e não ir para a Lixeira",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/juridico/sigajuri-consultivo.spec.js",
+   "linha": 80,
+   "titulo": "e2e/juridico/sigajuri-consultivo.spec.js › SIGAJURI_Consultivo — solicitação, D-JUR-01 › CT-JUR-01-S1 falha de mesma forma em uma área diferente — não é \"área sem aprovador\", é universal @destrutivo",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/juridico/sigajuri-consultivo.spec.js",
+   "linha": 127,
+   "titulo": "e2e/juridico/sigajuri-consultivo.spec.js › SIGAJURI_Consultivo — acesso sem sessão (CT-JUR-02-S1, public:true) › deve exigir autenticação e não expor dado do processo sem sessão",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/favoritos.spec.js",
+   "linha": 32,
+   "titulo": "e2e/plataforma/favoritos.spec.js › Plataforma — favoritar processo e acessar por Favoritos (CT-PLT-05-H) @destrutivo › favoritar um processo deve torná-lo acessível pelo widget \"Processos favoritos\" da Home",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/alcadas-orcamentaria.spec.js",
+   "linha": 39,
+   "titulo": "e2e/portais/alcadas-orcamentaria.spec.js › Validação Orçamentária e Alçadas › @destrutivo CT-E2E-03-H — SC própria aprovada na Validação do Gestor para em Validação Orçamentária, sem controle de ação para a conta autenticada",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/alcadas-orcamentaria.spec.js",
+   "linha": 60,
+   "titulo": "e2e/portais/alcadas-orcamentaria.spec.js › Validação Orçamentária e Alçadas › @destrutivo CT-E2E-03-S1 — a Validação Orçamentária se anuncia como consenso de aprovadores nominais, não como tarefa individual ou de pool",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/alcadas-orcamentaria.spec.js",
+   "linha": 90,
+   "titulo": "e2e/portais/alcadas-orcamentaria.spec.js › Validação Orçamentária e Alçadas › @destrutivo CT-E2E-04-H — o histórico da SC permanece integralmente rastreável até o ponto em que a alçada bloqueia a conta autenticada",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/atribuicao-comprador.spec.js",
+   "linha": 96,
+   "titulo": "e2e/portais/atribuicao-comprador.spec.js › Gerência de Compras — Atribuir comprador (CT-E2E-05-H) › @destrutivo uma SC própria aprovada na Validação do Gestor para em Validação Orçamentária, sem nunca chegar à fila de Atribuir",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/ciclo-comprador.spec.js",
+   "linha": 200,
+   "titulo": "e2e/portais/ciclo-comprador.spec.js › Ciclo do Comprador — retorno ao ERP e Tracker (CT-E2E-10-H, CT-E2E-11-H) › @destrutivo CT-E2E-10-H — a SC própria não gera pedido no Protheus antes de vencer a alçada, e isso fica visível no próprio Histórico",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/ciclo-comprador.spec.js",
+   "linha": 219,
+   "titulo": "e2e/portais/ciclo-comprador.spec.js › Ciclo do Comprador — retorno ao ERP e Tracker (CT-E2E-10-H, CT-E2E-11-H) › @destrutivo CT-E2E-11-H — o Tracker localiza a SC própria pelo Nº do Processo Fluig e exibe a posição atual e o caminho percorrido",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/ciclo-comprador.spec.js",
+   "linha": 60,
+   "titulo": "e2e/portais/ciclo-comprador.spec.js › Ciclo do Comprador — Validação Inicial (CT-E2E-06-H) › @destrutivo uma SC própria aparece em Validação Inicial e sua Etapa avança de verdade após a aprovação do Gestor",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/ciclo-comprador.spec.js",
+   "linha": 28,
+   "titulo": "e2e/portais/ciclo-comprador.spec.js › Ciclo do Comprador — Validação Inicial (CT-E2E-06-H) › deve listar SCs reais em Validação Inicial, com dados do item visíveis ao expandir a linha, sem exigir delegação",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/ciclo-comprador.spec.js",
+   "linha": 96,
+   "titulo": "e2e/portais/ciclo-comprador.spec.js › Ciclo do Comprador — filas delegadas (CT-E2E-07-H, CT-E2E-08-H, CT-E2E-09-H) › CT-E2E-07-H — a delegação \"Atuar como\" troca de sessão com sucesso, e o Controle de Cotações expõe o filtro por Nº do Processo/Cotação/Filial/Datas",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/ciclo-comprador.spec.js",
+   "linha": 131,
+   "titulo": "e2e/portais/ciclo-comprador.spec.js › Ciclo do Comprador — filas delegadas (CT-E2E-07-H, CT-E2E-08-H, CT-E2E-09-H) › CT-E2E-08-H — Avaliação de Propostas traz exatamente as colunas Status, Nº Cotação, Filial, Nº SC, Proc. Fluig, Tipo de Documento, Parecer Técnico, Em Alçada, Dt. Validade e Valor Final",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/ciclo-comprador.spec.js",
+   "linha": 166,
+   "titulo": "e2e/portais/ciclo-comprador.spec.js › Ciclo do Comprador — filas delegadas (CT-E2E-07-H, CT-E2E-08-H, CT-E2E-09-H) › CT-E2E-09-H — Definir Vencedor Cotação traz a mesma grade de acompanhamento de Avaliação de Propostas, hoje sem cotação vencedora disponível para definir",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/saude/questionario-clinicassi.spec.js",
+   "linha": 106,
+   "titulo": "e2e/saude/questionario-clinicassi.spec.js › Questionário CliniCASSI — envio, D-CLI-01 › CT-CLI-01-H / CT-CLI-03-H questionário completo deveria ser aceito, criar o processo e pará-lo em Acompanhamento Status com o solicitante @destrutivo",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/saude/questionario-clinicassi.spec.js",
+   "linha": 168,
+   "titulo": "e2e/saude/questionario-clinicassi.spec.js › Questionário CliniCASSI — envio, D-CLI-01 › CT-CLI-01-S2 questionário incompleto não deveria finalizar/criar o processo @destrutivo",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/tarefas/cancelamento-solicitacao.spec.js",
+   "linha": 132,
+   "titulo": "e2e/tarefas/cancelamento-solicitacao.spec.js › Cancelamento de solicitação (CT-TSK-05) › CT-TSK-05-H @destrutivo — cancelar pela Central de Tarefas deve levar a solicitação a CANCELED no servidor",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/tarefas/cancelamento-solicitacao.spec.js",
+   "linha": 247,
+   "titulo": "e2e/tarefas/cancelamento-solicitacao.spec.js › Cancelamento de solicitação (CT-TSK-05) › CT-TSK-05-S1 @destrutivo — cancelInstances sem motivo deve recusar com erro de negócio, e não alterar a solicitação",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/acesso-portal.spec.js",
+   "linha": 16,
+   "titulo": "e2e/acompanhamento-contratos/acesso-portal.spec.js › Acesso ao Portal de Acompanhamento de Contratos › CT-ACC-01-H — deve listar os contratos para usuário com o grupo de acesso",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/acesso-portal.spec.js",
+   "linha": 32,
+   "titulo": "e2e/acompanhamento-contratos/acesso-portal.spec.js › Acesso ao Portal de Acompanhamento de Contratos › CT-ACC-01-H — deve apresentar as colunas do contrato na ordem definida pelo negócio",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/acesso-portal.spec.js",
+   "linha": 58,
+   "titulo": "e2e/acompanhamento-contratos/acesso-portal.spec.js › Acesso ao Portal de Acompanhamento de Contratos › CT-ACC-01-S1 — deve negar o acesso ao painel para usuário fora dos grupos autorizados",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/acesso-portal.spec.js",
+   "linha": 77,
+   "titulo": "e2e/acompanhamento-contratos/acesso-portal.spec.js › Acesso ao Portal de Acompanhamento de Contratos › CT-ACC-01-S2 — deve distinguir falha na validação de permissão de ausência de permissão",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/acesso-portal.spec.js",
+   "linha": 99,
+   "titulo": "e2e/acompanhamento-contratos/acesso-portal.spec.js › Acesso não autenticado ao portal › deve exigir autenticação ao abrir o portal sem sessão",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/erros-no-start.spec.js",
+   "linha": 34,
+   "titulo": "e2e/acompanhamento-contratos/erros-no-start.spec.js › Erro no start — HTTP 500 (CT-ACC-05-S2) › deve avisar o usuário e permitir nova tentativa quando o start falha",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/grade-contratos.spec.js",
+   "linha": 21,
+   "titulo": "e2e/acompanhamento-contratos/grade-contratos.spec.js › Grade de contratos › CT-ACC-02-H — deve oferecer Planilha, Solicitação de Compra e Informações na linha do contrato",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/grade-contratos.spec.js",
+   "linha": 35,
+   "titulo": "e2e/acompanhamento-contratos/grade-contratos.spec.js › Grade de contratos › deve filtrar a grade pelo número do contrato",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/indisponibilidade-protheus.spec.js",
+   "linha": 41,
+   "titulo": "e2e/acompanhamento-contratos/indisponibilidade-protheus.spec.js › Indisponibilidade do Protheus ao abrir a Solicitação de Compra › deve avisar o usuário quando os dados do contrato não podem ser obtidos",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/indisponibilidade-protheus.spec.js",
+   "linha": 144,
+   "titulo": "e2e/acompanhamento-contratos/indisponibilidade-protheus.spec.js › Indisponibilidade do Protheus ao abrir a Solicitação de Compra › não deve enviar solicitação alguma quando o contrato não trouxe itens",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js",
+   "linha": 19,
+   "titulo": "e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js › Abertura da Solicitação de Compra a partir do contrato › deve abrir o modal já vinculado ao contrato de origem",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js",
+   "linha": 36,
+   "titulo": "e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js › Abertura da Solicitação de Compra a partir do contrato › deve impedir a digitação do número do contrato no modal",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js",
+   "linha": 50,
+   "titulo": "e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js › Abertura da Solicitação de Compra a partir do contrato › deve abrir o modal com os campos do solicitante em branco",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js",
+   "linha": 65,
+   "titulo": "e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js › Abertura da Solicitação de Compra a partir do contrato › deve oferecer os tipos contratuais de solicitação",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js",
+   "linha": 108,
+   "titulo": "e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js › Abertura da Solicitação de Compra a partir do contrato › deve fechar o modal sem criar solicitação",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js",
+   "linha": 106,
+   "titulo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js › Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1) › itens com quantidades diferentes não devem trazer o mesmo valor total",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js",
+   "linha": 163,
+   "titulo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js › Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1) › não deve existir item de quantidade 1 repetindo o valor total de outro item",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js",
+   "linha": 324,
+   "titulo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js › Payload de start — integridade dos valores e do rateio (CT-ACC-08-S1 / CT-ACC-08-S2) › os valores monetários devem ser numericamente coerentes, sem NaN, sem casa perdida e sem inflação",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js",
+   "linha": 358,
+   "titulo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js › Payload de start — integridade dos valores e do rateio (CT-ACC-08-S1 / CT-ACC-08-S2) › as linhas de rateio devem trazer percentual, centro de custo e classe de valor preenchidos, somando 100%",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js",
+   "linha": 414,
+   "titulo": "e2e/acompanhamento-contratos/payload-solicitacao.spec.js › Payload de start — duplo clique (CT-ACC-04-S3) › duplo clique em Confirmar não deve disparar duas requisições de start",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/validacoes-solicitacao.spec.js",
+   "linha": 32,
+   "titulo": "e2e/acompanhamento-contratos/validacoes-solicitacao.spec.js › Campos obrigatórios da Solicitação de Compra › deve listar os três campos pendentes quando nada é preenchido",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/validacoes-solicitacao.spec.js",
+   "linha": 48,
+   "titulo": "e2e/acompanhamento-contratos/validacoes-solicitacao.spec.js › Campos obrigatórios da Solicitação de Compra › deve cobrar apenas os campos restantes quando o tipo já foi informado",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/validacoes-solicitacao.spec.js",
+   "linha": 65,
+   "titulo": "e2e/acompanhamento-contratos/validacoes-solicitacao.spec.js › Campos obrigatórios da Solicitação de Compra › deve cobrar somente o motivo quando tipo e data já foram informados",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/acompanhamento-contratos/validacoes-solicitacao.spec.js",
+   "linha": 85,
+   "titulo": "e2e/acompanhamento-contratos/validacoes-solicitacao.spec.js › Campos obrigatórios da Solicitação de Compra › deve cobrar o tipo de solicitação quando somente ele fica sem preencher",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/auth/login.spec.js",
+   "linha": 15,
+   "titulo": "e2e/auth/login.spec.js › Autenticação no Fluig › CT-AUT-01-H — deve autenticar o usuário e abrir a home quando as credenciais são válidas",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/auth/login.spec.js",
+   "linha": 28,
+   "titulo": "e2e/auth/login.spec.js › Autenticação no Fluig › CT-AUT-02-S1 — deve recusar o acesso e permanecer no login quando a senha está incorreta",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/auth/login.spec.js",
+   "linha": 43,
+   "titulo": "e2e/auth/login.spec.js › Autenticação no Fluig › CT-AUT-02-S2 — deve devolver a mesma mensagem genérica quando o usuário não existe",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/auth/login.spec.js",
+   "linha": 56,
+   "titulo": "e2e/auth/login.spec.js › Autenticação no Fluig › CT-AUT-02-S3 — deve manter o usuário no login quando as credenciais são enviadas em branco",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/auth/recuperacao-senha.spec.js",
+   "linha": 18,
+   "titulo": "e2e/auth/recuperacao-senha.spec.js › Recuperação de senha › CT-AUT-03-H deve emitir o token de redefinição e avisar para verificar o e-mail",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/auth/recuperacao-senha.spec.js",
+   "linha": 31,
+   "titulo": "e2e/auth/recuperacao-senha.spec.js › Recuperação de senha › CT-AUT-03-S1 não deve emitir token quando o campo login/e-mail está vazio",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/auth/recuperacao-senha.spec.js",
+   "linha": 55,
+   "titulo": "e2e/auth/recuperacao-senha.spec.js › Recuperação de senha › CT-AUT-03-S2 deve recusar um token de redefinição inválido/adulterado sem permitir trocar a senha",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/auth/sessao.spec.js",
+   "linha": 71,
+   "titulo": "e2e/auth/sessao.spec.js › Idioma da tela de login › CT-AUT-04-H deve trocar os rótulos da tela de login ao selecionar outro idioma no seletor",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/auth/sessao.spec.js",
+   "linha": 96,
+   "titulo": "e2e/auth/sessao.spec.js › Sessão › CT-AUT-05-S1 deve redirecionar para o login e não expor conteúdo protegido quando a sessão é inválida",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/auth/sessao.spec.js",
+   "linha": 129,
+   "titulo": "e2e/auth/sessao.spec.js › Sessão › CT-AUT-06-S1 deve invalidar a sessão no logout e exigir novo login ao voltar para uma página protegida",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "api/sincronizacao-protheus.spec.js",
+   "linha": 64,
+   "titulo": "api/sincronizacao-protheus.spec.js › Integração Protheus — sincronização e cache › CT-INT-03-S1: dataset de cache expõe a janela de sincronização (lastSyncDate) por registro",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "api/webdesk-acesso-admin.spec.js",
+   "linha": 13,
+   "titulo": "api/webdesk-acesso-admin.spec.js › Controle de acesso administrativo › deve negar acesso a /webdesk para usuário sem perfil admin",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/catalogo-processos.spec.js",
+   "linha": 8,
+   "titulo": "e2e/plataforma/catalogo-processos.spec.js › Menu Processos e catálogo de início de solicitações › deve abrir o painel do menu Processos e navegar até o catálogo",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/catalogo-processos.spec.js",
+   "linha": 23,
+   "titulo": "e2e/plataforma/catalogo-processos.spec.js › Menu Processos e catálogo de início de solicitações › deve listar os processos e responder à busca",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/home diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/principalfavorites diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/ecmnavigation diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/pagecentraltask diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/pageprocessstart diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/social diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/communities diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/mysolutions diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/pagerecyclebin diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/globalalertconfig diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/globalalertview diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/gestao_equipes diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/declaracao-de-multiplos-vinculos diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/deep-link-spa.spec.js",
+   "linha": 100,
+   "titulo": "e2e/plataforma/deep-link-spa.spec.js › Deep-link das demais rotas SPA navegáveis (CT-PLT-04-S2) › CT-PLT-04-S2: acessar /portal/p/1/PORTAL_AUTORIZACAO_HORAS_EXTRAS diretamente pela URL deve abrir a página, não cair em 404",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/erros-de-console.spec.js",
+   "linha": 176,
+   "titulo": "e2e/plataforma/erros-de-console.spec.js › Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1) › CT-PLT-06-S1: Home (/portal/p/1/home) deve carregar sem erro de console não catalogado",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/erros-de-console.spec.js",
+   "linha": 176,
+   "titulo": "e2e/plataforma/erros-de-console.spec.js › Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1) › CT-PLT-06-S1: catálogo \"Iniciar Solicitações\" (/portal/p/1/pageprocessstart) deve carregar sem erro de console não catalogado",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/erros-de-console.spec.js",
+   "linha": 176,
+   "titulo": "e2e/plataforma/erros-de-console.spec.js › Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1) › CT-PLT-06-S1: Central de Tarefas (/portal/p/1/pagecentraltask) deve carregar sem erro de console não catalogado",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/erros-de-console.spec.js",
+   "linha": 176,
+   "titulo": "e2e/plataforma/erros-de-console.spec.js › Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1) › CT-PLT-06-S1: Portal de Acompanhamento de Contratos (/portal/p/1/acompanhamentoContrato) deve carregar sem erro de console não catalogado",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/erros-de-console.spec.js",
+   "linha": 176,
+   "titulo": "e2e/plataforma/erros-de-console.spec.js › Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1) › CT-PLT-06-S1: Gerência de Compras (/portal/p/1/gerenciaCompras) deve carregar sem erro de console não catalogado",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/erros-de-console.spec.js",
+   "linha": 176,
+   "titulo": "e2e/plataforma/erros-de-console.spec.js › Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1) › CT-PLT-06-S1: Tracker de Compras/Contratos (/portal/p/1/PORTAL_TRACKER_COMPRAS_CONTRATOS) deve carregar sem erro de console não catalogado",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/erros-de-console.spec.js",
+   "linha": 176,
+   "titulo": "e2e/plataforma/erros-de-console.spec.js › Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1) › CT-PLT-06-S1: GED — Documentos (/portal/p/1/ecmnavigation) deve carregar sem erro de console não catalogado",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/inicio-processo-bloqueado.spec.js",
+   "linha": 19,
+   "titulo": "e2e/plataforma/inicio-processo-bloqueado.spec.js › Início de processo — usuário sem permissão › deve bloquear o início de \"bpm_recepcao_documentos_fiscais_compras\" com a mensagem de permissão",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/inicio-processo-bloqueado.spec.js",
+   "linha": 19,
+   "titulo": "e2e/plataforma/inicio-processo-bloqueado.spec.js › Início de processo — usuário sem permissão › deve bloquear o início de \"wf_solicitacao_ferias\" com a mensagem de permissão",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/inicio-processo-bloqueado.spec.js",
+   "linha": 47,
+   "titulo": "e2e/plataforma/inicio-processo-bloqueado.spec.js › Início de processo — usuário sem permissão › Caminho A — processo bloqueado não aparece no catálogo (filtrado por permissão)",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/inicio-processo-bloqueado.spec.js",
+   "linha": 107,
+   "titulo": "e2e/plataforma/inicio-processo-bloqueado.spec.js › Início de processo — matriz dos bloqueios duros de permissão (CT-PLT-09-S1) › CT-PLT-09-S1: \"bpm_recepcao_documentos_fiscais_contratos\" deve recusar o início com a mensagem de permissão, sem montar formulário",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/inicio-processo-bloqueado.spec.js",
+   "linha": 107,
+   "titulo": "e2e/plataforma/inicio-processo-bloqueado.spec.js › Início de processo — matriz dos bloqueios duros de permissão (CT-PLT-09-S1) › CT-PLT-09-S1: \"bpm_recepcao_documentos_fiscais_demandante_compras\" deve recusar o início com a mensagem de permissão, sem montar formulário",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/inicio-processo-bloqueado.spec.js",
+   "linha": 107,
+   "titulo": "e2e/plataforma/inicio-processo-bloqueado.spec.js › Início de processo — matriz dos bloqueios duros de permissão (CT-PLT-09-S1) › CT-PLT-09-S1: \"bpm_recepcao_documentos_fiscais_comprador_compras\" deve recusar o início com a mensagem de permissão, sem montar formulário",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/inicio-processo-bloqueado.spec.js",
+   "linha": 107,
+   "titulo": "e2e/plataforma/inicio-processo-bloqueado.spec.js › Início de processo — matriz dos bloqueios duros de permissão (CT-PLT-09-S1) › CT-PLT-09-S1: \"bpm_recepcao_documentos_fiscais_fiscais_contratos\" deve recusar o início com a mensagem de permissão, sem montar formulário",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/inicio-processo-bloqueado.spec.js",
+   "linha": 107,
+   "titulo": "e2e/plataforma/inicio-processo-bloqueado.spec.js › Início de processo — matriz dos bloqueios duros de permissão (CT-PLT-09-S1) › CT-PLT-09-S1: \"sumula\" deve recusar o início com a mensagem de permissão, sem montar formulário",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/inicio-processo-bloqueado.spec.js",
+   "linha": 107,
+   "titulo": "e2e/plataforma/inicio-processo-bloqueado.spec.js › Início de processo — matriz dos bloqueios duros de permissão (CT-PLT-09-S1) › CT-PLT-09-S1: \"sumulas_analise_intervenientes\" deve recusar o início com a mensagem de permissão, sem montar formulário",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/inicio-processo-permitido.spec.js",
+   "linha": 8,
+   "titulo": "e2e/plataforma/inicio-processo-permitido.spec.js › Início de processo — usuário com permissão › deve abrir o formulário de \"Solicitação de Compras\" sem bloqueio",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/plataforma/processo-inativo-e-residuo.spec.js",
+   "linha": 28,
+   "titulo": "e2e/plataforma/processo-inativo-e-residuo.spec.js › Plataforma — processo inativo e resíduo de desenvolvimento (CT-PLT-08-S1) › CT-PLT-08-S1: `testePRODUTO` está inativo e deve recusar o início com a mensagem de processo inativo",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/compras/abertura-cotacao.spec.js",
+   "linha": 27,
+   "titulo": "e2e/compras/abertura-cotacao.spec.js › Abertura do formulário clássico de Cotação de Produtos e Serviços › deve abrir completo, com Fornecedor, itens e totais",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/compras/abertura-solicitacao-compras.spec.js",
+   "linha": 36,
+   "titulo": "e2e/compras/abertura-solicitacao-compras.spec.js › Abertura do formulário clássico de Solicitação de Compras › deve abrir completo, com Identificação pré-preenchida, Entidade/Filial e Produtos/Serviços",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/compras/ciclo-cotacao.spec.js",
+   "linha": 87,
+   "titulo": "e2e/compras/ciclo-cotacao.spec.js › Cotação de Produtos e Serviços — formulário avulso (shell fora de contexto) › CT-COT-01-H/S1/CT-COT-02-S1/S2/S3 (bloqueado) — fornecedor, vínculos, itens e totais são readonly; só o radio de parecer técnico é editável",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/compras/negociacao-proposta.spec.js",
+   "linha": 60,
+   "titulo": "e2e/compras/negociacao-proposta.spec.js › Negociação de Cotação — formulário avulso (shell fora de contexto) › CT-NEG-01-H/S1/S2 (bloqueado) — proposta, fornecedor e validade são readonly; a aprovação real é declarada como responsabilidade do Protheus",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/compras/parecer-tecnico.spec.js",
+   "linha": 59,
+   "titulo": "e2e/compras/parecer-tecnico.spec.js › Parecer Técnico — formulário avulso › CT-PAR-01-H (bloqueado) — nasce sem Responsável atribuído; não há quem \"seja o responsável\" para emitir o parecer",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/compras/validacoes-solicitacao-compras.spec.js",
+   "linha": 19,
+   "titulo": "e2e/compras/validacoes-solicitacao-compras.spec.js › Validações do formulário clássico de Solicitação de Compras › deve bloquear o envio e reportar o obrigatório pendente quando o formulário está vazio",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/compras/validacoes-solicitacao-compras.spec.js",
+   "linha": 66,
+   "titulo": "e2e/compras/validacoes-solicitacao-compras.spec.js › Validações do formulário clássico de Solicitação de Compras › CT-CMP-02-S2 — deve bloquear o envio quando o rateio do item soma menos de 100%",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/tarefas/minhas-solicitacoes.spec.js",
+   "linha": 13,
+   "titulo": "e2e/tarefas/minhas-solicitacoes.spec.js › Minhas Solicitações — sinalização de atraso (CT-TSK-03-H) › deve sinalizar visualmente a solicitação atrasada",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/tarefas/minhas-solicitacoes.spec.js",
+   "linha": 28,
+   "titulo": "e2e/tarefas/minhas-solicitacoes.spec.js › Minhas Solicitações — filtro por status (CT-TSK-04-H) › a lista deve responder à troca do filtro de Status",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/tarefas/resumo-tarefas.spec.js",
+   "linha": 14,
+   "titulo": "e2e/tarefas/resumo-tarefas.spec.js › Resumo de Tarefas — coerência dos contadores (CT-TSK-01-H) › \"Tarefas a concluir\": total do painel deve bater com a soma de No prazo + Próx. a vencer + Atrasadas",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/tarefas/resumo-tarefas.spec.js",
+   "linha": 28,
+   "titulo": "e2e/tarefas/resumo-tarefas.spec.js › Resumo de Tarefas — coerência dos contadores (CT-TSK-01-H) › \"Tarefas em pool\": total do painel deve bater com a soma de No prazo + Próximas a vencer + Atrasadas",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/tarefas/resumo-tarefas.spec.js",
+   "linha": 42,
+   "titulo": "e2e/tarefas/resumo-tarefas.spec.js › Resumo de Tarefas — coerência dos contadores (CT-TSK-01-H) › \"Documentos\": total do painel deve bater com a soma dos quatro contadores",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/tarefas/resumo-tarefas.spec.js",
+   "linha": 56,
+   "titulo": "e2e/tarefas/resumo-tarefas.spec.js › Resumo de Tarefas — coerência dos contadores (CT-TSK-01-H) › \"Solicitações\": total do painel deve bater com a soma de Solicitadas por mim + Sob minha gerência",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/tarefas/resumo-tarefas.spec.js",
+   "linha": 70,
+   "titulo": "e2e/tarefas/resumo-tarefas.spec.js › Resumo de Tarefas — coerência dos contadores (CT-TSK-01-H) › \"Tarefas em consenso\": a mensagem de lista vazia aparece exatamente quando o total é zero",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/contratos/cadastro-fornecedor.spec.js",
+   "linha": 18,
+   "titulo": "e2e/contratos/cadastro-fornecedor.spec.js › Cadastro de Fornecedor — abertura do formulário › CT-FOR-01-H: deve abrir e espelhar os campos de documento, razão social, endereço e contato",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/contratos/delegacao-fiscais.spec.js",
+   "linha": 27,
+   "titulo": "e2e/contratos/delegacao-fiscais.spec.js › Delegação de Fiscais de Contrato/Serviço — abertura do formulário › CT-DEL-01-H: deve abrir sem bloqueio de permissão e apresentar a identificação do contrato/serviço e do fiscal",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/contratos/faturamento-contratos.spec.js",
+   "linha": 21,
+   "titulo": "e2e/contratos/faturamento-contratos.spec.js › Faturamento de Contratos — abertura do formulário › CT-FAT-01-H: deve abrir com os campos de seleção do Protheus e nunca acionar Enviar",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/contratos/validacoes-faturamento.spec.js",
+   "linha": 182,
+   "titulo": "e2e/contratos/validacoes-faturamento.spec.js › Faturamento de Contratos — validações e bloqueios › CT-FAT-02-S1: lançar quantidade acima do Saldo a Medir não é alcançável pelo usuário desta automação — o campo de quantidade fica bloqueado até a etapa \"Realizar Medição do Contrato\"",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/contratos/validacoes-faturamento.spec.js",
+   "linha": 227,
+   "titulo": "e2e/contratos/validacoes-faturamento.spec.js › Faturamento de Contratos — validações e bloqueios › CT-FAT-02-S4: fechar rateio contábil diferente de 100% não é alcançável pelo usuário desta automação — a aba \"Rateio Contábil\" fica bloqueada até a etapa \"Realizar Medição do Contrato\"",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/documentos/navegacao-documentos.spec.js",
+   "linha": 14,
+   "titulo": "e2e/documentos/navegacao-documentos.spec.js › Documentos — árvore de pastas (CT-GED-01-H) › deve carregar a listagem com as colunas Descrição, Atualização e Código",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/documentos/navegacao-documentos.spec.js",
+   "linha": 28,
+   "titulo": "e2e/documentos/navegacao-documentos.spec.js › Documentos — árvore de pastas (CT-GED-01-H) › deve alterar a quantidade de resultados por página sem quebrar a listagem",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/documentos/navegacao-documentos.spec.js",
+   "linha": 48,
+   "titulo": "e2e/documentos/navegacao-documentos.spec.js › Documentos — barra de ações (presença, sem interação) › deve oferecer Novo, Copiar, Colar, Recortar, Remover e Filtrar na barra de ações",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/documentos/navegacao-documentos.spec.js",
+   "linha": 65,
+   "titulo": "e2e/documentos/navegacao-documentos.spec.js › Documentos — navegação de pasta › deve navegar para \"Meus Documentos\" e retornar para a Raiz preservando a listagem",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/financeiro/rejeicoes-pagamentos.spec.js",
+   "linha": 26,
+   "titulo": "e2e/financeiro/rejeicoes-pagamentos.spec.js › Financeiro — Rejeições de Pagamentos (CT-FIN-01-H) › CT-FIN-01-H: deve abrir o formulário de início e espelhar os campos do domínio de rejeição",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/fiscal/rastreabilidade-rdfc.spec.js",
+   "linha": 49,
+   "titulo": "e2e/fiscal/rastreabilidade-rdfc.spec.js › RDFC — rastreabilidade pai↔filho (contrato de dados) › CT-RDF-02-H — o elo pai↔filho é bidirecional e consistente para todo par encontrado",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/fiscal/recepcao-documentos-fiscais.spec.js",
+   "linha": 40,
+   "titulo": "e2e/fiscal/recepcao-documentos-fiscais.spec.js › Início de processo — Recepção de Documentos Fiscais (demais variantes) › deve bloquear o início de \"bpm_recepcao_documentos_fiscais_contratos\" com a mensagem de permissão",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/fiscal/recepcao-documentos-fiscais.spec.js",
+   "linha": 40,
+   "titulo": "e2e/fiscal/recepcao-documentos-fiscais.spec.js › Início de processo — Recepção de Documentos Fiscais (demais variantes) › deve bloquear o início de \"bpm_recepcao_documentos_fiscais_comprador_compras\" com a mensagem de permissão",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/fiscal/recepcao-documentos-fiscais.spec.js",
+   "linha": 40,
+   "titulo": "e2e/fiscal/recepcao-documentos-fiscais.spec.js › Início de processo — Recepção de Documentos Fiscais (demais variantes) › deve bloquear o início de \"bpm_recepcao_documentos_fiscais_demandante_compras\" com a mensagem de permissão",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/fiscal/recepcao-documentos-fiscais.spec.js",
+   "linha": 40,
+   "titulo": "e2e/fiscal/recepcao-documentos-fiscais.spec.js › Início de processo — Recepção de Documentos Fiscais (demais variantes) › deve bloquear o início de \"bpm_recepcao_documentos_fiscais_fiscais_contratos\" com a mensagem de permissão",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/juridico/sigajuri-contrato.spec.js",
+   "linha": 69,
+   "titulo": "e2e/juridico/sigajuri-contrato.spec.js › SIGAJURI_Contrato — geração de minuta, D-JUR-01 › CT-JUR-03-S1 Enviar nasce desabilitado quando faltam dados obrigatórios",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/notificacoes/alertas-automaticos.spec.js",
+   "linha": 33,
+   "titulo": "e2e/notificacoes/alertas-automaticos.spec.js › Notificações — alertas automáticos › CT-NOT-02-S1: nenhum alerta automático é duplicado para o mesmo evento, destinatário e alvo",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/notificacoes/disparo-multicanal.spec.js",
+   "linha": 44,
+   "titulo": "e2e/notificacoes/disparo-multicanal.spec.js › Notificações — disparo multicanal › CT-NOT-01-H: evento de negócio real gera alerta de notificação observável na plataforma (SMS/Teams/e-mail não são verificáveis nesta suíte)",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/acesso-fornecedor.spec.js",
+   "linha": 35,
+   "titulo": "e2e/portais/acesso-fornecedor.spec.js › Acesso Normal — credencial de fornecedor inválida › CT-PFN-01-S1 deve recusar credencial inválida com mensagem genérica, sem vazar detalhe técnico",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/acesso-fornecedor.spec.js",
+   "linha": 76,
+   "titulo": "e2e/portais/acesso-fornecedor.spec.js › Redefinição de senha do fornecedor — link de reset › CT-PFN-02-S1 não deve efetivar a redefinição com um token que não corresponde a nenhum pedido pendente (equivalente a link reutilizado)",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/gerencia-compras.spec.js",
+   "linha": 16,
+   "titulo": "e2e/portais/gerencia-compras.spec.js › Gerência de Compras › deve oferecer as abas Atribuir e Transferir ao carregar",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/gerencia-compras.spec.js",
+   "linha": 63,
+   "titulo": "e2e/portais/gerencia-compras.spec.js › Gerência de Compras › deve listar as solicitações pendentes de transferência ao abrir a aba Transferir",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/portal-comprador.spec.js",
+   "linha": 15,
+   "titulo": "e2e/portais/portal-comprador.spec.js › Portal do Comprador › deve oferecer as quatro etapas do ciclo de compras no Acesso Rápido",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/portal-comprador.spec.js",
+   "linha": 39,
+   "titulo": "e2e/portais/portal-comprador.spec.js › Portal do Comprador › deve listar as solicitações reais em Validação Inicial, sem exigir delegação",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/portal-comprador.spec.js",
+   "linha": 61,
+   "titulo": "e2e/portais/portal-comprador.spec.js › Portal do Comprador › deve exigir delegação em \"Atuar como\" para listar Controle de Cotações",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/portal-fornecedor.spec.js",
+   "linha": 22,
+   "titulo": "e2e/portais/portal-fornecedor.spec.js › Acesso ao Portal do Fornecedor (autenticado na plataforma) › deve oferecer os três níveis de acesso ao fornecedor",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/portal-fornecedor.spec.js",
+   "linha": 41,
+   "titulo": "e2e/portais/portal-fornecedor.spec.js › Acesso ao Portal do Fornecedor (autenticado na plataforma) › deve abrir o formulário de Acesso Normal com CNPJ, CPF e senha",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/portal-fornecedor.spec.js",
+   "linha": 59,
+   "titulo": "e2e/portais/portal-fornecedor.spec.js › Acesso ao Portal do Fornecedor (autenticado na plataforma) › deve abrir o formulário de Acesso Administrador com cadastro e recuperação de senha",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/portal-fornecedor.spec.js",
+   "linha": 79,
+   "titulo": "e2e/portais/portal-fornecedor.spec.js › Acesso ao Portal do Fornecedor (autenticado na plataforma) › deve abrir o diálogo de Acesso via Representatividade",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/portal-fornecedor.spec.js",
+   "linha": 106,
+   "titulo": "e2e/portais/portal-fornecedor.spec.js › Acesso não autenticado ao Portal do Fornecedor › deve exigir autenticação da plataforma e não expor o portal do fornecedor",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/tracker-compras.spec.js",
+   "linha": 15,
+   "titulo": "e2e/portais/tracker-compras.spec.js › Tracker de Processos Compras/Contratos › deve exibir o painel de filtros ao carregar",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/tracker-compras.spec.js",
+   "linha": 32,
+   "titulo": "e2e/portais/tracker-compras.spec.js › Tracker de Processos Compras/Contratos › deve exigir ao menos um filtro antes de pesquisar",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/portais/tracker-compras.spec.js",
+   "linha": 48,
+   "titulo": "e2e/portais/tracker-compras.spec.js › Tracker de Processos Compras/Contratos › deve listar processos reais ao filtrar por status",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/rh/banco-horas.spec.js",
+   "linha": 37,
+   "titulo": "e2e/rh/banco-horas.spec.js › Portal de Autorização de Horas Extras › CT-BH-01-S2 — informa a indisponibilidade de integração com o Protheus ao usuário",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/rh/banco-horas.spec.js",
+   "linha": 56,
+   "titulo": "e2e/rh/banco-horas.spec.js › Portal de Autorização de Horas Extras › CT-BH-01-H — carrega a estrutura do portal com as abas Dashboard, Organograma, Saldo e Autorização",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/rh/bloqueio-processos-rh.spec.js",
+   "linha": 53,
+   "titulo": "e2e/rh/bloqueio-processos-rh.spec.js › Bloqueio de início de processos de RH — segregação por grupo › deve bloquear o início de wf_aprovacao_ocorrencia (Aprovação de Ocorrência) para usuário fora do grupo de RH",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/rh/delegacao-tarefas.spec.js",
+   "linha": 26,
+   "titulo": "e2e/rh/delegacao-tarefas.spec.js › Delegação de Tarefas (CT-SUB-02-H) › CT-SUB-02-H: deve abrir o formulário de início com os campos de delegante, delegado e período",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/rh/dependentes.spec.js",
+   "linha": 34,
+   "titulo": "e2e/rh/dependentes.spec.js › Gestão de Dependentes › CT-DEP-02-S1 — bloqueia a gestão de dependentes quando o titular não tem matrícula localizada",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/seguranca/integracao-protheus-grade-contratos.spec.js",
+   "linha": 19,
+   "titulo": "e2e/seguranca/integracao-protheus-grade-contratos.spec.js › Integração Protheus — carga da grade de contratos › CT-INT-01-H: deve carregar contratos e tipos de contrato consultados no Protheus",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  },
+  {
+   "arquivo": "e2e/seguranca/integracao-protheus-grade-contratos.spec.js",
+   "linha": 65,
+   "titulo": "e2e/seguranca/integracao-protheus-grade-contratos.spec.js › Integração Protheus — carga da grade de contratos › CT-INT-01-S1: deve comunicar indisponibilidade quando o Protheus não responde na carga da grade",
+   "status": "expected",
+   "classe": "ok",
+   "motivo": ""
+  }
+ ]
+}
