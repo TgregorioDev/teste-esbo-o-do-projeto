@@ -100,16 +100,20 @@ function renderizar(md) {
       continue;
     }
 
-    // Lista (itens de checklist viram caixa desmarcada, legível impressa)
-    if (/^\s*[-*]\s+/.test(linha)) {
+    // Lista, com ou sem numeração (itens de checklist viram caixa desmarcada, legível impressa)
+    const MARCADOR = /^\s*(?:[-*]|\d+\.)\s+/;
+    if (MARCADOR.test(linha)) {
+      const ordenada = /^\s*\d+\./.test(linha);
       const itens = [];
-      while (i < linhas.length && (/^\s*[-*]\s+/.test(linhas[i]) || /^\s{4,}\S/.test(linhas[i]))) {
-        if (/^\s*[-*]\s+/.test(linhas[i])) itens.push(linhas[i].replace(/^\s*[-*]\s+/, ''));
+      // Continuação de item: linha indentada (2+ espaços) sem marcador próprio.
+      while (i < linhas.length && (MARCADOR.test(linhas[i]) || /^\s{2,}\S/.test(linhas[i]))) {
+        if (MARCADOR.test(linhas[i])) itens.push(linhas[i].replace(MARCADOR, ''));
         else itens[itens.length - 1] += ' ' + linhas[i].trim();
         i += 1;
       }
+      const tag = ordenada ? 'ol' : 'ul';
       out.push(
-        '<ul>' +
+        `<${tag}>` +
           itens
             .map((t) => {
               const check = /^\[( |x)\]\s*/.exec(t);
@@ -118,7 +122,7 @@ function renderizar(md) {
               return `<li class="${check ? 'todo' : ''}">${marca}${inline(texto)}</li>`;
             })
             .join('') +
-          '</ul>',
+          `</${tag}>`,
       );
       continue;
     }
@@ -146,7 +150,7 @@ function renderizar(md) {
     while (
       i < linhas.length &&
       linhas[i].trim() !== '' &&
-      !/^(#{1,6}\s|```|\||>|---+$|\s*[-*]\s)/.test(linhas[i])
+      !/^(#{1,6}\s|```|\||>|---+$|\s*(?:[-*]|\d+\.)\s)/.test(linhas[i])
     ) {
       par.push(linhas[i++]);
     }
@@ -187,7 +191,7 @@ const ESTILO = `
                page-break-inside: avoid; }
   blockquote > :first-child { margin-top: 0; }
   blockquote > :last-child { margin-bottom: 0; }
-  ul { margin: .5em 0; padding-left: 1.4em; }
+  ul, ol { margin: .5em 0; padding-left: 1.4em; }
   li { margin: .28em 0; }
   li.todo { list-style: none; margin-left: -1.15em; }
   .cx { display: inline-block; width: 1.05em; height: 1.05em; margin-right: .5em;
