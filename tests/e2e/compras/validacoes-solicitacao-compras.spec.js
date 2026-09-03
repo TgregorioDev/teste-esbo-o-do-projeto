@@ -63,7 +63,9 @@ test.describe('Validações do formulário clássico de Solicitação de Compras
    * do primeiro, não uma duplicação. Os dois precisam ser fechados para o formulário voltar
    * a ficar interativo.
    */
-  test('deve bloquear o envio quando o rateio do item soma menos de 100%', async ({ page }) => {
+  test('CT-CMP-02-S2 — deve bloquear o envio quando o rateio do item soma menos de 100%', async ({
+    page,
+  }) => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);
     const formulario = new FormularioSolicitacaoCompraPage(page);
 

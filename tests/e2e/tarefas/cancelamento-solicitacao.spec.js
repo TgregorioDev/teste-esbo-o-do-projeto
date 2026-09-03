@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { CancelamentoCentralTarefasPage } from '../../../pages/CancelamentoCentralTarefasPage.js';
 import { MinhasSolicitacoesPage } from '../../../pages/MinhasSolicitacoesPage.js';
 import { QuestionarioClinicassiPage } from '../../../pages/QuestionarioClinicassiPage.js';
@@ -38,7 +39,8 @@ import { criarJustificativaDecisao } from '../../../factories/produto-compra.js'
  * `tests/e2e/saude/questionario-clinicassi.spec.js` registram 500 ("A pergunta >>001<< não tem
  * nenhuma ação cadastrada!!") — o defeito D-CLI-01 parece corrigido ou intermitente. Estes
  * testes não dependem da interpretação: se o envio não criar a solicitação, eles falham com
- * `PRÉ-CONDIÇÃO AUSENTE`, separando ambiente de defeito, em vez de morrer num timeout opaco.
+ * `faltaPreCondicao` (pré-condição ausente anotada), separando ambiente de defeito, em vez de
+ * morrer num timeout opaco.
  *
  * A limpeza é automática: `fixtures/fixtures.js` escuta as respostas de `/workflowView/send` e
  * registra o `processInstanceId` no livro-razão sozinho; `fixtures/global-teardown.js` cancela
@@ -53,7 +55,7 @@ const ROTA_CANCEL_INSTANCES = '/api/public/2.0/workflows/cancelInstances';
 /**
  * Cria a massa própria do teste: uma solicitação real, aberta, do próprio usuário.
  *
- * Falha com `PRÉ-CONDIÇÃO AUSENTE` quando o ambiente não entrega a solicitação — o teste sob
+ * Falha via `faltaPreCondicao` quando o ambiente não entrega a solicitação — o teste sob
  * medição aqui é o CANCELAMENTO, e confundir "não consegui criar massa" com "o cancelamento
  * está quebrado" é o erro que essa mensagem existe para evitar.
  *
@@ -69,8 +71,8 @@ async function criarSolicitacaoPropria(page) {
 
   const totalQuestoes = await questionario.contarQuestoes();
   if (totalQuestoes === 0) {
-    throw new Error(
-      'PRÉ-CONDIÇÃO AUSENTE: o formulário de `prc_questionario_v2` abriu sem nenhuma questão ' +
+    faltaPreCondicao(
+      'o formulário de `prc_questionario_v2` abriu sem nenhuma questão ' +
         'montada, então não há o que enviar. Isto NÃO é defeito do cancelamento sob teste — é ' +
         'a massa do questionário (base de perguntas) que não veio do servidor.',
     );
@@ -82,8 +84,8 @@ async function criarSolicitacaoPropria(page) {
   const id = corpo?.content?.processInstanceId;
 
   if (resposta.status() !== 200 || typeof id !== 'number' || id <= 0) {
-    throw new Error(
-      'PRÉ-CONDIÇÃO AUSENTE: não foi possível criar a solicitação que serve de massa para este ' +
+    faltaPreCondicao(
+      'não foi possível criar a solicitação que serve de massa para este ' +
         `teste. \`POST /ecm/api/rest/ecm/workflowView/send\` respondeu HTTP ${resposta.status()} ` +
         `e o corpo não trouxe \`processInstanceId\` (recebido: ${JSON.stringify(id)}). ` +
         'Isto NÃO é defeito do cancelamento sob teste — em 27/08/2026 este envio respondia 200 ' +

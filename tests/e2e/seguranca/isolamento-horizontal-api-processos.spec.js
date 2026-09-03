@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { envObrigatoria } from '../../../config/ambiente.js';
 
 /**
@@ -147,13 +148,14 @@ test.describe('Segurança — isolamento horizontal na API v2 de processos (BOLA
     // Pré-condição de massa: sem uma instância alheia legível, o teste não pode concluir nada —
     // falha explícita (separa ambiente de defeito no relatório), nunca timeout opaco nem verde
     // vazio.
-    expect(
-      resultado.encontrada,
-      `PRÉ-CONDIÇÃO AUSENTE: ${resultado.motivo}. O caso exige ao menos uma instância de ` +
-        `processo RDFC (classes: ${PROCESSOS_RDFC.join(', ')}) conduzida por outra conta, para ` +
-        'medir o isolamento horizontal. Confirme que a base tem documentos fiscais e que a ' +
-        'integração com o Protheus estava de pé.',
-    ).toBe(true);
+    if (!resultado.encontrada) {
+      faltaPreCondicao(
+        `${resultado.motivo}. O caso exige ao menos uma instância de ` +
+          `processo RDFC (classes: ${PROCESSOS_RDFC.join(', ')}) conduzida por outra conta, para ` +
+          'medir o isolamento horizontal. Confirme que a base tem documentos fiscais e que a ' +
+          'integração com o Protheus estava de pé.',
+      );
+    }
 
     const instancia = /** @type {NonNullable<typeof resultado.instancia>} */ (resultado.instancia);
     const { status, formFieldsAusente, qtdFormFields } = instancia.acesso;

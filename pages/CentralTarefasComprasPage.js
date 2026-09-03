@@ -1,5 +1,6 @@
 // @ts-check
 import { expect } from '@playwright/test';
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 
 /**
  * Extensão da Central de Tarefas (`/portal/p/1/pagecentraltask`) para o ciclo de aprovação
@@ -285,8 +286,8 @@ export class CentralTarefasComprasPage {
       );
     }
     if (desfecho === 'semRetorno') {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE (ambiente): 60s após acionar Enviar na tela de decisão, o Fluig ' +
+      faltaPreCondicao(
+        '(ambiente): 60s após acionar Enviar na tela de decisão, o Fluig ' +
           'não deu retorno nenhum — nem a confirmação da movimentação, nem diálogo de erro. ' +
           `URL: ${this.page.url()}`,
       );

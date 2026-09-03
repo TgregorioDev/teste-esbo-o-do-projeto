@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { CentralTarefasPage } from '../../../pages/CentralTarefasPage.js';
 import { PoolTarefasPage, descobrirGrupoComTarefas } from '../../../pages/PoolTarefasPage.js';
 
@@ -12,7 +13,7 @@ import { PoolTarefasPage, descobrirGrupoComTarefas } from '../../../pages/PoolTa
  * (base de homologação). Fica fora da execução padrão via `@destrutivo` + `grepInvert`.
  *
  * Pré-condição é de LEITURA (precisa existir tarefa no pool no momento da execução) — o
- * teste não pode inventar massa. Se não houver, falha com "PRÉ-CONDIÇÃO AUSENTE" em vez de
+ * teste não pode inventar massa. Se não houver, falha via `faltaPreCondicao` em vez de
  * timeout opaco, mesmo padrão de `utils/massa-contratos.js`.
  *
  * ## CT-TSK-02-S1 (concorrência) — não implementado
@@ -43,8 +44,8 @@ test.describe('Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H) @dest
     const poolAntes = await tarefasPage.resumoTarefasEmPool();
 
     if (poolAntes.total === 0) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: o Resumo de Tarefas anuncia "Tarefas em pool (0)" no momento ' +
+      faltaPreCondicao(
+        'o Resumo de Tarefas anuncia "Tarefas em pool (0)" no momento ' +
           'da execução. Não há tarefa de pool disponível para assumir agora — isto NÃO é ' +
           'defeito do produto sob teste. Reexecute quando houver massa (o usuário TOTVS-FS ' +
           'pertence aos pools "Validação do Gestor Imediato" e "Validação dos Compradores"). ' +

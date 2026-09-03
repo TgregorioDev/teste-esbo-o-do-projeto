@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { ANOTACAO_PRE_CONDICAO } from '../../../utils/pre-condicao.js';
 import { DependentesPage } from '../../../pages/DependentesPage.js';
 import { criarDependente } from '../../../factories/pessoa.js';
 
@@ -42,7 +43,7 @@ test.describe('Gestão de Dependentes', () => {
         description: `criarDependente() geraria ${JSON.stringify(dependente)} — não preenchido em tela porque o formulário nunca monta campos para esta conta.`,
       },
       {
-        type: 'pre-condicao-ausente',
+        type: ANOTACAO_PRE_CONDICAO,
         description:
           'CT-DEP-01-H (cadastrar dependente), 01-S1 (duplicado), 01-S2 (parentesco incompatível) e ' +
           '01-S3 (CPF inválido) exigem que o formulário monte os campos nome/CPF/nascimento/sexo/' +

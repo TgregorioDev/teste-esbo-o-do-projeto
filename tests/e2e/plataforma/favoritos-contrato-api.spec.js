@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { comExclusividade } from '../../../utils/exclusividade.js';
 
 /**
@@ -113,8 +114,8 @@ async function listarFavoritos(page) {
   });
 
   if (lista.status !== 200 || !lista.corpo) {
-    throw new Error(
-      `PRÉ-CONDIÇÃO AUSENTE (ambiente): getProcessFavotiresList respondeu ${lista.status} ` +
+    faltaPreCondicao(
+      `(ambiente): getProcessFavotiresList respondeu ${lista.status} ` +
         `(${lista.texto}) — sem a lista de favoritos não há como confirmar o estado da conta.`,
     );
   }

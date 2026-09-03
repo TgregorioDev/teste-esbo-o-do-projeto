@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { FormularioProcessoPage } from '../../../pages/FormularioProcessoPage.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
 
@@ -93,11 +94,12 @@ test.describe('Plataforma — processo inativo e resíduo de desenvolvimento (CT
       return { status: resposta.status, corpo, texto: corpo ? '' : texto.slice(0, 300) };
     });
 
-    expect(
-      catalogo.status,
-      `PRÉ-CONDIÇÃO AUSENTE (ambiente): o catálogo de início respondeu ${catalogo.status}: ` +
-        `${catalogo.texto}. Sem a lista não há como afirmar o que é oferecido ao usuário.`,
-    ).toBe(200);
+    if (catalogo.status !== 200) {
+      faltaPreCondicao(
+        `(ambiente): o catálogo de início respondeu ${catalogo.status}: ` +
+          `${catalogo.texto}. Sem a lista não há como afirmar o que é oferecido ao usuário.`,
+      );
+    }
 
     /** @type {Array<{ processId: string, categoria: string }>} */
     const oferecidos = [];

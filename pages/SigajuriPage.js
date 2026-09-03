@@ -1,5 +1,6 @@
 // @ts-check
 import { expect } from '@playwright/test';
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 
 /** Rota de abertura/movimentação de processo por URL — igual a `FormularioProcessoPage`. */
 const ROTA_WORKFLOW_VIEW = '/portal/p/1/pageworkflowview';
@@ -153,13 +154,14 @@ export class SigajuriPage {
 
     const existe = disponiveis.some((op) => op.valor === valorOuRotulo || op.rotulo === alvo);
 
-    expect(
-      existe,
-      `PRÉ-CONDIÇÃO AUSENTE: o caso precisa de "${valorOuRotulo}" no combo "${nomeCampo}", mas ` +
-        `o ambiente hoje só oferece: ${disponiveis.map((o) => o.rotulo).join(', ') || '(nenhuma opção)'}. ` +
-        'Não é para ser contornado trocando o valor pedido no teste — é sinal de que o cadastro ' +
-        'do SIGAJURI mudou; confirme com o dono do ambiente antes de ajustar o teste.',
-    ).toBe(true);
+    if (!existe) {
+      faltaPreCondicao(
+        `o caso precisa de "${valorOuRotulo}" no combo "${nomeCampo}", mas ` +
+          `o ambiente hoje só oferece: ${disponiveis.map((o) => o.rotulo).join(', ') || '(nenhuma opção)'}. ` +
+          'Não é para ser contornado trocando o valor pedido no teste — é sinal de que o cadastro ' +
+          'do SIGAJURI mudou; confirme com o dono do ambiente antes de ajustar o teste.',
+      );
+    }
 
     await combo.selectOption(valorOuRotulo);
   }

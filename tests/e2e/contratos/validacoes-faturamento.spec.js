@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { AcompanhamentoContratosPage } from '../../../pages/AcompanhamentoContratosPage.js';
 import { MedicaoContratoPage } from '../../../pages/MedicaoContratoPage.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
@@ -61,7 +62,7 @@ async function encontrarMedicaoComSaldo(contratosPage, medicao, maxContratos = 3
     } catch (erro) {
       // Contrato descartado antes de chegar a tentar competências (ex.: fornecedor sem
       // contrato navegável pelo zoom). O MOTIVO é guardado e devolvido a quem chamou, para
-      // entrar na mensagem de PRÉ-CONDIÇÃO AUSENTE: engolido, o relatório dizia apenas
+      // entrar na mensagem de `faltaPreCondicao`: engolido, o relatório dizia apenas
       // "nenhum contrato serviu", sem dizer por quê.
       descartes.push(`${contrato.contrato}: ${erro instanceof Error ? erro.message : String(erro)}`);
       continue;
@@ -96,7 +97,7 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     // amostrava sempre os mesmos quatro primeiros contratos da grade, o que reintroduzia pela
     // porta dos fundos a dependência de registro fixo que `utils/massa-contratos.js` existe
     // para eliminar. `descobrirContratosVigentes` devolve quatro contratos reservados e
-    // distribuídos, e falha com `PRÉ-CONDIÇÃO AUSENTE` quando a grade não tem massa.
+    // distribuídos, e falha via `faltaPreCondicao` quando a grade não tem massa.
     const MAX_CONTRATOS = 4;
     const amostra = await descobrirContratosVigentes(contratosPage, MAX_CONTRATOS);
 
@@ -120,8 +121,8 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     }
 
     if (!bloqueada || !contratoAlvo) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: nenhuma competência recusada pelo Protheus foi encontrada nos ' +
+      faltaPreCondicao(
+        'nenhuma competência recusada pelo Protheus foi encontrada nos ' +
           `contratos vigentes consultados (${tentados.join(', ')}). Isto NÃO é defeito do ` +
           'produto sob teste: significa que, no momento desta execução, todas as competências ' +
           'amostradas estavam liberadas para medir.',
@@ -192,8 +193,8 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     const { resultado, contratosTentados } = await encontrarMedicaoComSaldo(contratosPage, medicao);
 
     if (!resultado?.sucesso) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: nenhum contrato vigente tentado teve competência com saldo em ' +
+      faltaPreCondicao(
+        'nenhum contrato vigente tentado teve competência com saldo em ' +
           `aberto — impossível chegar ao estado onde o campo de quantidade existiria. Tentados: ${contratosTentados.join(', ')}.`,
       );
     }
@@ -237,8 +238,8 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     const { resultado, contratosTentados } = await encontrarMedicaoComSaldo(contratosPage, medicao);
 
     if (!resultado?.sucesso) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: nenhum contrato vigente tentado teve competência com saldo em ' +
+      faltaPreCondicao(
+        'nenhum contrato vigente tentado teve competência com saldo em ' +
           `aberto — impossível chegar ao estado onde a aba de rateio existiria. Tentados: ${contratosTentados.join(', ')}.`,
       );
     }
@@ -285,8 +286,8 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
             .filter(Boolean)
             .slice(-8),
         );
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: o menu "Mais opções" não ofereceu "Tarefas em pool" — o ' +
+      faltaPreCondicao(
+        'o menu "Mais opções" não ofereceu "Tarefas em pool" — o ' +
           'usuário está sem nenhuma tarefa em pool neste momento, e o painel só é renderizado ' +
           'quando há ao menos uma. Sem ler o pool não é possível afirmar que não existe grupo ' +
           'de Fiscal/CSE/Medição. Isto NÃO é defeito do produto nem falha da automação. ' +

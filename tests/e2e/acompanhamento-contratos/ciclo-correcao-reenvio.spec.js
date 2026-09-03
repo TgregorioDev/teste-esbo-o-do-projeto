@@ -1,6 +1,7 @@
 // @ts-check
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
 import { criarSolicitacaoCompra, QUALQUER_TIPO_VALIDO } from '../../../factories/solicitacao-compra.js';
 import { capturarEnvioSolicitacao } from '../../../utils/captura-payload.js';
@@ -276,17 +277,17 @@ test.describe('Ciclo de retorno da SC: reprovação → Correção → reenvio (
     payload.targetState = TARGET_STATE_GATEWAY;
 
     const criacao = await dispararStartCorrigido(page, payload);
-    expect(
-      criacao.status,
-      'PRÉ-CONDIÇÃO AUSENTE: o start corrigido não foi aceito, então o ciclo de retorno não ' +
-        `chega a existir nesta execução. Resposta: ${criacao.corpo}`,
-    ).toBe(200);
+    if (criacao.status !== 200) {
+      faltaPreCondicao(
+        'o start corrigido não foi aceito, então o ciclo de retorno não ' +
+          `chega a existir nesta execução. Resposta: ${criacao.corpo}`,
+      );
+    }
 
     const processInstanceId = Number(JSON.parse(criacao.corpo)?.processInstanceId);
-    expect(
-      Number.isFinite(processInstanceId) && processInstanceId > 0,
-      `PRÉ-CONDIÇÃO AUSENTE: o start corrigido respondeu 200 sem processInstanceId. Corpo: ${criacao.corpo}`,
-    ).toBe(true);
+    if (!(Number.isFinite(processInstanceId) && processInstanceId > 0)) {
+      faltaPreCondicao(`o start corrigido respondeu 200 sem processInstanceId. Corpo: ${criacao.corpo}`);
+    }
     testInfo.annotations.push({ type: 'sc-criada', description: String(processInstanceId) });
 
     // ── 3. A SC chega ao pool do Gestor Imediato ────────────────────────────────────────
@@ -310,11 +311,13 @@ test.describe('Ciclo de retorno da SC: reprovação → Correção → reenvio (
       codFilial: noGestor.campos.codFilial,
       itens: Object.keys(noGestor.campos).filter((campo) => /^tbprod_codigo___\d+$/.test(campo)).length,
     };
-    expect(
-      contratoNoStart.nrContrato,
-      `PRÉ-CONDIÇÃO AUSENTE: a SC ${processInstanceId} nasceu sem número de contrato, então não ` +
-        'há integridade de origem para verificar no fim do ciclo',
-    ).toBe(contrato.contrato);
+    if (contratoNoStart.nrContrato !== contrato.contrato) {
+      faltaPreCondicao(
+        `a SC ${processInstanceId} nasceu sem número de contrato, então não ` +
+          `há integridade de origem para verificar no fim do ciclo (esperado ${contrato.contrato}, ` +
+          `no start: ${JSON.stringify(contratoNoStart.nrContrato)})`,
+      );
+    }
 
     // ── 4. Assumir do pool e REPROVAR ───────────────────────────────────────────────────
     const assumida = await assumirTarefaDoPool(page, {
@@ -322,11 +325,12 @@ test.describe('Ciclo de retorno da SC: reprovação → Correção → reenvio (
       movimento: /** @type {number} */ (noGestor.tarefaCorrente?.movimento),
       login,
     });
-    expect(
-      assumida.sucesso,
-      `PRÉ-CONDIÇÃO AUSENTE: não foi possível assumir a tarefa do pool ${POOL_GESTOR} ` +
-        `(HTTP ${assumida.status}). Sem assumir, não há como reprovar. Resposta: ${assumida.corpo}`,
-    ).toBe(1);
+    if (assumida.sucesso !== 1) {
+      faltaPreCondicao(
+        `não foi possível assumir a tarefa do pool ${POOL_GESTOR} ` +
+          `(HTTP ${assumida.status}). Sem assumir, não há como reprovar. Resposta: ${assumida.corpo}`,
+      );
+    }
 
     const comOGestor = await esperarEtapa(page, processInstanceId, {
       etapas: [ETAPA_GESTOR],

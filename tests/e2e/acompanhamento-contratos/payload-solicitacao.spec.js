@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { envObrigatoria } from '../../../config/ambiente.js';
 import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
 import { criarSolicitacaoCompra, QUALQUER_TIPO_VALIDO } from '../../../factories/solicitacao-compra.js';
@@ -126,13 +127,14 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
     // contrato passou a ser distribuída (utils/massa-contratos.js), a amostra varia por
     // teste, então a pré-condição precisa ser afirmada, não presumida.
     const quantidades = new Set(itens.map((i) => Number(i.tbprod_quantidade)));
-    expect(
-      quantidades.size,
-      `PRÉ-CONDIÇÃO AUSENTE: o contrato ${contrato.contrato} trouxe ${itens.length} item(ns) com ` +
-        `quantidade(s) ${[...quantidades].join(', ')} — sem ao menos DUAS quantidades diferentes ` +
-        'não há par que possa colidir. Um verde aqui não significaria que D-02 deixou de ocorrer, ' +
-        'e sim que esta amostra não pôde exercitá-lo. NÃO é defeito do produto nem falha da automação.',
-    ).toBeGreaterThan(1);
+    if (quantidades.size <= 1) {
+      faltaPreCondicao(
+        `o contrato ${contrato.contrato} trouxe ${itens.length} item(ns) com ` +
+          `quantidade(s) ${[...quantidades].join(', ')} — sem ao menos DUAS quantidades diferentes ` +
+          'não há par que possa colidir. Um verde aqui não significaria que D-02 deixou de ocorrer, ' +
+          'e sim que esta amostra não pôde exercitá-lo. NÃO é defeito do produto nem falha da automação.',
+      );
+    }
 
     /** @type {string[]} */
     const colisoes = [];
@@ -176,13 +178,14 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
     // de quantidade 1, ou com um único item no payload, o cenário é inalcançável e o verde
     // seria vazio — ver a nota do caso anterior sobre amostra distribuída.
     const quantidadesLidas = itens.map((i) => Number(i.tbprod_quantidade));
-    expect(
-      itens.length > 1 && quantidadesLidas.includes(1),
-      `PRÉ-CONDIÇÃO AUSENTE: o contrato ${contrato.contrato} trouxe ${itens.length} item(ns) com ` +
-        `quantidade(s) ${quantidadesLidas.join(', ')} — este caso exige ao menos DOIS itens, sendo ` +
-        'um deles de quantidade 1, para que o item-fantasma possa existir. NÃO é defeito do ' +
-        'produto nem falha da automação.',
-    ).toBe(true);
+    if (!(itens.length > 1 && quantidadesLidas.includes(1))) {
+      faltaPreCondicao(
+        `o contrato ${contrato.contrato} trouxe ${itens.length} item(ns) com ` +
+          `quantidade(s) ${quantidadesLidas.join(', ')} — este caso exige ao menos DOIS itens, sendo ` +
+          'um deles de quantidade 1, para que o item-fantasma possa existir. NÃO é defeito do ' +
+          'produto nem falha da automação.',
+      );
+    }
 
     const totaisDeOutros = new Map(
       itens.map((item) => [item.indice, paraNumero(item.tbprod_valorTotal)]),
@@ -228,12 +231,13 @@ test.describe('Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1)', (
     const assinaturasDaMassa = new Set(
       itens.map((i) => `${i.tbprod_quantidade}|${i.tbprod_precoUnitario}`),
     );
-    expect(
-      assinaturasDaMassa.size,
-      `PRÉ-CONDIÇÃO AUSENTE: os ${itens.length} itens do payload têm assinatura quantidade|preço ` +
-        `única (${[...assinaturasDaMassa].join(' , ')}) — sem ao menos DUAS assinaturas distintas ` +
-        'não há como um total repetido indicar o defeito. NÃO é defeito do produto nem falha da automação.',
-    ).toBeGreaterThan(1);
+    if (assinaturasDaMassa.size <= 1) {
+      faltaPreCondicao(
+        `os ${itens.length} itens do payload têm assinatura quantidade|preço ` +
+          `única (${[...assinaturasDaMassa].join(' , ')}) — sem ao menos DUAS assinaturas distintas ` +
+          'não há como um total repetido indicar o defeito. NÃO é defeito do produto nem falha da automação.',
+      );
+    }
 
     /** @type {Map<number, typeof itens>} */
     const porValorTotal = new Map();

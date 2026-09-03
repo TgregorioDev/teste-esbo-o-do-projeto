@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { FormularioSolicitacaoCompraPage } from '../../../pages/FormularioSolicitacaoCompraPage.js';
 import { CentralTarefasPage } from '../../../pages/CentralTarefasPage.js';
 import { bloquearCriacaoDeSolicitacao, bloquearCriacaoDeProcesso } from '../../../utils/guarda-criacao.js';
@@ -627,8 +628,8 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
     // servidor ou depois de ele já ter gravado. Reprovar aqui como se fosse o defeito
     // documentaria uma conclusão que a execução não sustenta — daí o veredito explícito.
     if (criacoes.length === 0) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE (infraestrutura): a requisição de criação da Solicitação de ' +
+      faltaPreCondicao(
+        '(infraestrutura): a requisição de criação da Solicitação de ' +
           `Compras não chegou a ter resposta — ${falhasDeTransporte.join(' | ')}. ` +
           'SEM VEREDITO sobre CT-CMP-02-S4 nesta execução: não dá para afirmar se o servidor ' +
           'criou ou recusou a SC sem anexo, e a SC pode ter nascido mesmo assim (verificar na ' +

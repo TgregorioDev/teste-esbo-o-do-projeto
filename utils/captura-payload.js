@@ -1,4 +1,5 @@
 // @ts-check
+import { erroDePreCondicao } from './pre-condicao.js';
 
 /**
  * Captura do payload de start da Solicitação de Compra.
@@ -30,7 +31,7 @@
  *   espera deterministicamente pelo corpo JSON da requisição de índice `indice` (default 0).
  *   Resolve assim que a requisição correspondente é interceptada — nunca por tempo. O
  *   `timeoutMs` (default 30s) NÃO é espera arbitrária: é o limite a partir do qual se conclui
- *   que o start não vai sair, para reprovar com PRÉ-CONDIÇÃO AUSENTE legível em vez de pendurar
+ *   que o start não vai sair, para reprovar via `erroDePreCondicao` legível em vez de pendurar
  *   o teste até o timeout global e morrer sem explicar nada.
  */
 
@@ -124,9 +125,11 @@ async function interceptarEnvioSolicitacao(page, finalizar) {
         const temporizador = setTimeout(() => {
           const posicao = aguardando.indexOf(entrada);
           if (posicao !== -1) aguardando.splice(posicao, 1);
+          // `erroDePreCondicao` (e não `faltaPreCondicao`): dentro de `setTimeout` não há
+          // quem receba um throw — o erro precisa ir para o `reject`. A anotação é a mesma.
           reject(
-            new Error(
-              `PRÉ-CONDIÇÃO AUSENTE: passaram-se ${timeoutMs}ms desde o Confirmar e a requisição ` +
+            erroDePreCondicao(
+              `passaram-se ${timeoutMs}ms desde o Confirmar e a requisição ` +
                 `de start de índice ${indice} nunca foi disparada (${corpos.length} capturada(s) ` +
                 'até aqui). O widget só envia quando o contrato traz ITENS: se a planilha do ' +
                 'contrato escolhido vier sem produtos ou sem rateios, o modal abre, aceita o ' +

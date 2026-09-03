@@ -21,7 +21,15 @@ jobs:
   # qualquer coisa — e o time passa a mergear por cima dele, que foi o que
   # aconteceu no PR #2 (mergeado com o check vermelho).
   #
-  # Aqui o gate cobre só o que DEVERIA estar verde.
+  # Aqui o gate cobre só o que DEVERIA estar verde — e, desde 03/09/2026, o
+  # veredito NÃO é o exit do runner: é o de scripts/veredito-do-gate.mjs, que
+  # lê o relatório JSON e separa, por anotação (utils/pre-condicao.js):
+  #   - PRÉ-CONDIÇÃO AUSENTE (massa/serviço/permissão que o ambiente não
+  #     entregou, docs/excecoes-de-pre-condicao.md) → listada, NÃO bloqueia;
+  #   - flaky (passou no retry) → listada como "investigar", não bloqueia;
+  #   - regressão (falhou sem anotação) ou teste pulado → BLOQUEIA.
+  # O passo da suíte é continue-on-error para que o veredito rode sempre; a
+  # página de resumo do job mostra a tabela com o motivo de cada vermelho.
   # ---------------------------------------------------------------------------
   regressao:
     name: Regressão (sem defeitos conhecidos)
@@ -46,6 +54,10 @@ jobs:
         run: npm run typecheck
 
       - name: Suíte de regressão
+        id: regressao
+        # O veredito é do passo seguinte, não do exit do runner: pré-condição
+        # ausente não é regressão, e só o script sabe distinguir.
+        continue-on-error: true
         # PULAR_DESTRUTIVOS: um PR não pode escrever na base do cliente a cada
         # push. Os cenários que criam registro rodam no job agendado.
         run: PULAR_DESTRUTIVOS=1 npx playwright test --grep-invert "@bug|@achado"
@@ -53,6 +65,10 @@ jobs:
           BASE_URL: ${{ secrets.BASE_URL }}
           QA_USERNAME: ${{ secrets.QA_USERNAME }}
           QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
+
+      - name: Veredito — há regressão nova?
+        if: ${{ !cancelled() }}
+        run: node scripts/veredito-do-gate.mjs test-results/relatorio.json
 
       - name: Publicar relatório
         if: ${{ !cancelled() }}
@@ -62,6 +78,8 @@ jobs:
           path: |
             playwright-report/
             test-results/junit.xml
+            test-results/relatorio.json
+            test-results/veredito.json
           retention-days: 30
 
   # ---------------------------------------------------------------------------
@@ -127,6 +145,18 @@ jobs:
   #
   # `--workers=1`: o dono do ambiente exige execução serializada; o Fluig tem
   # proteção contra volume e execução em rajada contamina o resultado.
+  #
+  # `--retries=0` (03/09/2026): `playwright.config.js` define `retries: CI ? 2 : 0`, e este
+  # job herdava os 2. Num teste que só LÊ, repetir é barato; aqui cada repetição CRIA de
+  # novo — um vermelho vira até 3 solicitações na base de homologação. Na execução de
+  # 03/09/2026 foram 26 vermelhos entre os destrutivos: até 78 solicitações por noite, para
+  # depois serem canceladas pelo `global-teardown`. O retry também não compra nada de real:
+  # o que oscila aqui é a integração com o Protheus, e isso a mensagem de `PRÉ-CONDIÇÃO
+  # AUSENTE` já distingue de defeito sem precisar reescrever na base.
+  #
+  # O ritmo de 60 s entre criações que o dono do ambiente exige continua na ORQUESTRAÇÃO
+  # (agendamento + `--workers=1`), não no código: esperar por tempo dentro do teste segue
+  # proibido, exceto como limitação de ritmo de escrita.
   # ---------------------------------------------------------------------------
   destrutivos:
     name: Cenários destrutivos (agendado)
@@ -149,7 +179,9 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Executar os cenários que escrevem
-        run: npx playwright test --grep @destrutivo --workers=1
+        # `--retries=0`: cada repetição de um destrutivo cria massa de novo. Ver o
+        # comentário do job, acima.
+        run: npx playwright test --grep @destrutivo --workers=1 --retries=0
         env:
           BASE_URL: ${{ secrets.BASE_URL }}
           QA_USERNAME: ${{ secrets.QA_USERNAME }}

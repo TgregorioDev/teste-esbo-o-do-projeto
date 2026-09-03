@@ -1,5 +1,6 @@
 // @ts-check
 import { localizarNaListagemPaginada } from '../utils/central-tarefas-paginacao.js';
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 
 /**
  * Central de Tarefas (`/portal/p/1/pagecentraltask`) — sub-fluxo de "Tarefas em pool".
@@ -265,8 +266,8 @@ export class PoolTarefasPage {
 export function descobrirGrupoComTarefas(grupos) {
   const disponivel = grupos.find((g) => g.total > 0);
   if (!disponivel) {
-    throw new Error(
-      'PRÉ-CONDIÇÃO AUSENTE: o flyout "Mais opções → Tarefas em pool" não anunciou nenhum ' +
+    faltaPreCondicao(
+      'o flyout "Mais opções → Tarefas em pool" não anunciou nenhum ' +
         `grupo com tarefa pendente (grupos encontrados: ${JSON.stringify(grupos)}). ` +
         'Não há tarefa de pool disponível para assumir agora — isto NÃO é defeito do produto ' +
         'sob teste. Confirme que o usuário TOTVS-FS pertence a algum pool com tarefas ' +

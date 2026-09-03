@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { NegociacaoPage } from '../../../pages/NegociacaoPage.js';
 import { PortalCompradorPage } from '../../../pages/PortalCompradorPage.js';
 import { criarJustificativaDecisao } from '../../../factories/cotacao.js';
@@ -147,8 +148,8 @@ test.describe('Negociação de Cotação — ponto de entrada real (Portal do Co
 
     expect(guarda.tentativas(), 'esta investigação é só leitura').toBe(0);
 
-    throw new Error(
-      'PRÉ-CONDIÇÃO AUSENTE: a fila de "Avaliação de Propostas" do Portal do Comprador não ' +
+    faltaPreCondicao(
+      'a fila de "Avaliação de Propostas" do Portal do Comprador não ' +
         'tem nenhuma cotação, com ou sem proposta de fornecedor. Isto NÃO é defeito isolado ' +
         'do produto — é o mesmo bloqueio de fundo que impede CT-COT: D-01 mantém toda ' +
         'Solicitação de Compra presa na conta de integração, então nenhuma Cotação real ' +

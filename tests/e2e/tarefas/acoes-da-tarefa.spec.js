@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { AcoesDaTarefaPage } from '../../../pages/AcoesDaTarefaPage.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
 import { TarefaSolicitacaoCompraPage } from '../../../pages/TarefaSolicitacaoCompraPage.js';
@@ -83,8 +84,8 @@ async function criarEAssumirNoPoolGestorImediato(page) {
     }).toPass({ timeout: 180_000, intervals: [10_000, 15_000, 20_000, 30_000] });
   } catch (erroDePoll) {
     const atividadeObservada = await central.lerNomeAtividadeAtual().catch(() => '(não foi possível ler)');
-    throw new Error(
-      `PRÉ-CONDIÇÃO AUSENTE: a SC #${numeroProcesso}, criada por este teste, não ficou assumível ` +
+    faltaPreCondicao(
+      `a SC #${numeroProcesso}, criada por este teste, não ficou assumível ` +
         `("Assumir tarefa") em ${GRUPO_GESTOR_IMEDIATO.source} dentro de 180s. Isto NÃO é defeito ` +
         'da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do ' +
         'observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente ' +

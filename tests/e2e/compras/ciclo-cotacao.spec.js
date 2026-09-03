@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { CotacaoPage } from '../../../pages/CotacaoPage.js';
 import { PortalCompradorPage } from '../../../pages/PortalCompradorPage.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
@@ -185,8 +186,8 @@ test.describe('Cotação de Produtos e Serviços — ponto de entrada real (Port
 
     expect(guarda.tentativas(), 'esta investigação é só leitura').toBe(0);
 
-    throw new Error(
-      'PRÉ-CONDIÇÃO AUSENTE: a fila de "Controle De Cotações" do Portal do Comprador não ' +
+    faltaPreCondicao(
+      'a fila de "Controle De Cotações" do Portal do Comprador não ' +
         'tem nenhuma Cotação para operar. Isto NÃO é defeito do produto sob teste isolado — ' +
         'é consequência de D-01 (toda Solicitação de Compra criada por esta suíte fica presa ' +
         'no marco de Início do BPMN e nunca chega ao Protheus, então nunca gera uma Cotação ' +

@@ -13,8 +13,11 @@ import { randomUUID } from 'node:crypto';
  * Não há e-mail nem documento neste formulário — o que o usuário digita é justificativa,
  * data de necessidade e tipo. Nada aqui é dado de pessoa real.
  *
- * A seed do faker é fixada em `fixtures/fixtures.js` e anexada ao relatório.
- * Para repetir exatamente a mesma massa: FAKER_SEED=<valor> npx playwright test
+ * A seed do faker é fixada em `fixtures/fixtures.js` por execução **e** por teste
+ * (`FAKER_SEED ^ hash32(identidade do teste)`) e anexada ao relatório: a massa de um teste não
+ * depende do worker nem da ordem de despacho. Para repetir exatamente a mesma massa de um
+ * teste, em qualquer número de workers:
+ *   FAKER_SEED=<valor> npx playwright test <arquivo> -g "<título>"
  */
 
 const QA_PREFIX = process.env.QA_DATA_PREFIX ?? 'QA';

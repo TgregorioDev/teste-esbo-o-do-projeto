@@ -1,5 +1,6 @@
 // @ts-check
 import { expect } from '@playwright/test';
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 import { PortalCompradorPage } from './PortalCompradorPage.js';
 import { FormularioSolicitacaoCompraPage } from './FormularioSolicitacaoCompraPage.js';
 import { CentralTarefasComprasPage } from './CentralTarefasComprasPage.js';
@@ -124,8 +125,8 @@ export class CicloCompradorPage {
     const opcoes = await this.listarOpcoesAtuarComo();
     const substituto = opcoes.find((o) => o.valor && o.valor !== valorProprio && o.rotulo !== valorProprio);
     if (!substituto) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: o seletor "Atuar como" não oferece nenhuma delegação além da ' +
+      faltaPreCondicao(
+        'o seletor "Atuar como" não oferece nenhuma delegação além da ' +
           `própria conta autenticada (opções encontradas: ${JSON.stringify(opcoes)}). Sem um ` +
           'comprador substituído, as filas de Controle de Cotações / Avaliação de Propostas / ' +
           'Definir Vencedor Cotação não são alcançáveis por esta suíte.',
@@ -396,8 +397,8 @@ export async function aguardarAtividadeAtual(page, numeroProcesso, atividadesEsp
         // PRÉ-CONDIÇÃO AUSENTE (ambiente, não código): ver nota acima. `toPass` ainda tenta
         // de novo até o timeout (o desvio é terminal, então as tentativas seguintes repetem o
         // mesmo diagnóstico) — mas a mensagem final que chega ao relatório já diz o motivo.
-        throw new Error(
-          `PRÉ-CONDIÇÃO AUSENTE: o processo ${numeroProcesso} foi desviado pelo próprio BPMN para ` +
+        faltaPreCondicao(
+          `o processo ${numeroProcesso} foi desviado pelo próprio BPMN para ` +
             `"${ATIVIDADE_AJUSTAR_INFORMACOES}" em vez de avançar para ${atividadesEsperadas.join(' / ')}. ` +
             'Ramo intermitente confirmado em campo (~1 em 6 SCs), do lado do Protheus/BPMN — ' +
             'reexecutar o teste cria massa nova e tipicamente segue o caminho direto.',

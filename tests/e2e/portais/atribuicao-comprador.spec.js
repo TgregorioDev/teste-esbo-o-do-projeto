@@ -29,11 +29,24 @@ import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
  *
  * As duas medições juntas respondem à pergunta do relatório: a aba Atribuir não é alcançável
  * por esta conta — nem por ausência de registro que bata com o filtro de hoje, nem (com massa
- * própria) por a SC nunca ter avançado o suficiente para chegar lá. CT-E2E-05-H fica vermelho
- * por essa causa, documentada, não por suposição.
+ * própria) por a SC nunca ter avançado o suficiente para chegar lá.
+ *
+ * ## Por que `@achado` e não `@bug` (corrigido em 03/09/2026)
+ *
+ * As duas specs deste arquivo afirmam o comportamento **REAL medido** e por isso estão
+ * **VERDES** — não são vermelhos intencionais. O primeiro teste levava `@bug` por engano, o
+ * que fazia `--grep-invert @bug` esconder uma medição válida e `--grep @bug` devolver um verde
+ * que o alarme de "defeito corrigido" não sabe ler. A tag correta é `@achado`, com a polaridade
+ * invertida de sempre: no dia em que a aba Atribuir passar a listar SCs para esta conta, este
+ * teste fica **vermelho** — e isso não é regressão da suíte, é sinal de que o comportamento
+ * mudou e alguém precisa decidir se a mudança foi intencional.
+ *
+ * O vermelho de CT-E2E-05-H — o caso escrito contra o comportamento ESPERADO, "a aba deve
+ * listar as solicitações pendentes de atribuição" — vive em
+ * `tests/e2e/portais/gerencia-compras.spec.js` (`@bug`). Aqui só se documenta a causa.
  */
 test.describe('Gerência de Compras — Atribuir comprador (CT-E2E-05-H)', () => {
-  test('a aba Atribuir não lista SCs para a conta autenticada, embora o mesmo mecanismo renderize dados reais na aba Transferir @bug', async ({
+  test('a aba Atribuir não lista SCs para a conta autenticada, embora o mesmo mecanismo renderize dados reais na aba Transferir @achado', async ({
     page,
   }) => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);

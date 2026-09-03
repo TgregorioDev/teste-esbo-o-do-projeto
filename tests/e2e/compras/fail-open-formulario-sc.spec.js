@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { FormularioSolicitacaoCompraPage } from '../../../pages/FormularioSolicitacaoCompraPage.js';
 import { aguardarDataset, derrubarDataset } from '../../../utils/dataset-fluig.js';
 
@@ -155,41 +156,47 @@ test.describe('Fail-open do formulário clássico de Solicitação de Compras (C
     const formulario = new FormularioSolicitacaoCompraPage(page);
 
     // `goto()` (e não `expectAberto()`): `expectAberto` exige a montagem CONCLUÍDA e falharia
-    // com `PRÉ-CONDIÇÃO AUSENTE` — que é exatamente o estado que este teste precisa exercitar.
+    // via `faltaPreCondicao` — que é exatamente o estado que este teste precisa exercitar.
     const respostaMatricula = aguardarDataset(page, DATASET_MATRICULA);
     await formulario.goto();
 
     // Pré-condição 1: a interceptação pegou de fato. Sem esta confirmação, um teste verde
     // poderia significar apenas "o dataset não foi chamado nesta carga".
     const matricula = await respostaMatricula;
-    expect(
-      matricula.status(),
-      `PRÉ-CONDIÇÃO AUSENTE: ${DATASET_MATRICULA} deveria ter respondido 500 pela interceptação ` +
-        'deste teste — sem isso a janela do fail-open não é determinística e o resultado não ' +
-        'diz nada sobre o defeito',
-    ).toBe(500);
+    if (matricula.status() !== 500) {
+      faltaPreCondicao(
+        `${DATASET_MATRICULA} deveria ter respondido 500 pela interceptação ` +
+          `deste teste (respondeu ${matricula.status()}) — sem isso a janela do fail-open não é ` +
+          'determinística e o resultado não diz nada sobre o defeito',
+      );
+    }
 
     // Pré-condição 2: o formulário APARECEU (o usuário vê a tela e o botão Enviar).
+    // Os dois `catch` abaixo são aceitáveis SÓ porque relançam via `faltaPreCondicao` (que
+    // sempre lança): a auto-espera continua e nada é engolido — o vermelho só ganha a
+    // anotação de pré-condição que o gate lê.
     await formulario.headingFormulario.waitFor({ state: 'visible', timeout: 60_000 }).catch(() => {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE (ambiente): o iframe não renderizou o heading "Solicitação de ' +
+      faltaPreCondicao(
+        '(ambiente): o iframe não renderizou o heading "Solicitação de ' +
           `Compras" em 60s, então não houve tela onde clicar em Enviar. URL: ${page.url()}`,
       );
     });
-    await expect(
-      formulario.botaoEnviar,
-      'PRÉ-CONDIÇÃO AUSENTE: o botão "Enviar" não está visível — sem ele não há como exercitar ' +
-        'o clique prematuro que este caso investiga',
-    ).toBeVisible();
+    await formulario.botaoEnviar.waitFor({ state: 'visible' }).catch(() =>
+      faltaPreCondicao(
+        'o botão "Enviar" não está visível — sem ele não há como exercitar ' +
+          'o clique prematuro que este caso investiga',
+      ),
+    );
 
     // Pré-condição 3: e a montagem NÃO terminou. É o estado sob teste, afirmado por condição
     // observável (a resposta que fecha a inicialização não chegou), não por tempo.
-    expect(
-      montagem.concluida,
-      'PRÉ-CONDIÇÃO AUSENTE: a montagem do formulário terminou apesar de ' +
-        `${DATASET_MATRICULA} ter respondido 500 — o cenário deste caso (clicar em Enviar com o ` +
-        'formulário ainda não montado) não chegou a existir nesta execução',
-    ).toBe(false);
+    if (montagem.concluida) {
+      faltaPreCondicao(
+        'a montagem do formulário terminou apesar de ' +
+          `${DATASET_MATRICULA} ter respondido 500 — o cenário deste caso (clicar em Enviar com o ` +
+          'formulário ainda não montado) não chegou a existir nesta execução',
+      );
+    }
 
     // ── A ação: Enviar com o formulário VAZIO e ainda não montado ────────────────────────
     //

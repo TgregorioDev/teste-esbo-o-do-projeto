@@ -6,19 +6,34 @@ import { LoginPage } from '../pages/LoginPage.js';
 import { AcompanhamentoContratosPage } from '../pages/AcompanhamentoContratosPage.js';
 import { SolicitacaoCompraModal } from '../components/SolicitacaoCompraModal.js';
 import { liberarReservasDeContrato } from '../utils/massa-contratos.js';
+import { hash32, idEstavelDoTeste } from '../utils/identidade-do-teste.js';
 
 /**
  * Fixtures compartilhadas da suíte.
  *
- * A seed do faker é fixada por execução e anexada ao relatório: sem ela, massa variável
- * gera falha irreproduzível. Para repetir exatamente a massa de uma execução:
- *   FAKER_SEED=<valor> npx playwright test
+ * A seed do faker é fixada por execução **e** por teste, e as duas vão para o relatório:
+ *
+ * - `FAKER_SEED` é a seed da execução (vinda do ambiente, ou sorteada uma vez por processo);
+ * - cada teste é semeado, na fixture `evidence`, com `FAKER_SEED ^ hash32(idEstavelDoTeste)`.
+ *
+ * Por que não bastava a seed por execução: cada worker do Playwright é um processo, todos
+ * partem da MESMA `FAKER_SEED` e consomem a sequência do faker na ORDEM DE DESPACHO. Medido em
+ * 03/09/2026: com `--workers=4` dois testes diferentes recebiam a mesma massa (ambos eram o
+ * primeiro do seu worker), as três cópias de `--repeat-each=3` recebiam massa idêntica, e o
+ * mesmo teste recebia massa diferente entre `--workers=1` e `--workers=4`. O comando de
+ * reprodução só era exato com a mesma disposição de workers.
+ *
+ * Semear por teste torna a massa função de (seed da execução, identidade do teste) e de nada
+ * mais. Para repetir exatamente a massa de um teste, em qualquer número de workers:
+ *   FAKER_SEED=<valor> npx playwright test <arquivo> -g "<título>"
  */
 
 export const FAKER_SEED = process.env.FAKER_SEED
   ? Number(process.env.FAKER_SEED)
   : Math.floor(Math.random() * 1_000_000);
 
+// Seed global do processo: vale para código que gera massa FORA de um teste (globalSetup,
+// script de manutenção). Dentro de um teste ela é substituída pela seed por teste, abaixo.
 faker.seed(FAKER_SEED);
 
 /**
@@ -60,9 +75,29 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
        * @param {import('@playwright/test').TestInfo} testInfo
        */
       async ({ page }, use, testInfo) => {
+        // ── Seed do faker POR TESTE ──────────────────────────────────────────────────────────
+        //
+        // A seed da execução (`FAKER_SEED`) é combinada por XOR com o hash da identidade
+        // estável do teste (título sem `@tags` + `repeatEachIndex`, sem `retry` — a mesma de
+        // `utils/massa-contratos.js`). Resultado: a massa deixa de depender de qual worker pegou
+        // o teste e de quantos testes esse worker já rodou antes; passa a ser função só de
+        // (seed da execução, teste). Retentativa cai na mesma seed — reproduz; `--repeat-each`
+        // cai em seeds diferentes — exercita.
+        //
+        // Reatribuir a seed global aqui é seguro pelo mesmo argumento de `reservasEmPosse` em
+        // `utils/massa-contratos.js`: cada worker é um processo próprio e executa UM teste por
+        // vez, então a sequência do faker entre este `seed()` e o fim do teste pertence
+        // inteiramente a este teste. As factories continuam importando o mesmo `fakerPT_BR`.
+        const idDoTeste = idEstavelDoTeste(testInfo);
+        const seedDoTeste = (FAKER_SEED ^ hash32(idDoTeste)) >>> 0;
+        faker.seed(seedDoTeste);
+
         // Anotação em TODA execução, inclusive nas verdes: quando o teste falhar amanhã,
-        // a seed da última execução boa ainda estará no relatório.
+        // a seed da última execução boa ainda estará no relatório. `faker-seed` é o que se
+        // passa no comando de reprodução; `faker-seed-do-teste` é o valor efetivamente semeado,
+        // para conferência (deve ser igual entre uma falha e a sua retentativa).
         testInfo.annotations.push({ type: 'faker-seed', description: String(FAKER_SEED) });
+        testInfo.annotations.push({ type: 'faker-seed-do-teste', description: String(seedDoTeste) });
 
         // ── Livro-razão: escuta a REDE, não a convenção de nome ──────────────────────────────
         //
@@ -183,7 +218,17 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
               status: testInfo.status,
               url: page.url(),
               fakerSeed: FAKER_SEED,
-              reproduzirCom: `FAKER_SEED=${FAKER_SEED} npx playwright test`,
+              fakerSeedDoTeste: seedDoTeste,
+              idDoTeste,
+              // Reproduz a MESMA massa deste teste em qualquer número de workers e em qualquer
+              // ordem de despacho: a seed por teste depende só de FAKER_SEED e da identidade.
+              // `-g` é regex: parênteses e afins do título são escapados para casar literalmente.
+              // A identidade inclui o `repeatEachIndex`, então uma cópia N>0 de `--repeat-each`
+              // só se reproduz com o mesmo `--repeat-each` — o comando o repete quando é o caso.
+              reproduzirCom:
+                `FAKER_SEED=${FAKER_SEED} npx playwright test ${testInfo.file.replace(/^.*?\/tests\//, 'tests/')} ` +
+                `-g ${JSON.stringify(testInfo.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))}` +
+                (testInfo.repeatEachIndex > 0 ? ` --repeat-each=${testInfo.project.repeatEach}` : ''),
               erro: testInfo.error?.message,
             },
             null,

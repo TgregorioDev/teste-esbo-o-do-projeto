@@ -1,4 +1,5 @@
 // @ts-check
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 
 /** Rota de abertura/movimentação de processo por URL. */
 const ROTA_WORKFLOW_VIEW = '/portal/p/1/pageworkflowview';
@@ -93,8 +94,8 @@ export class TarefaSolicitacaoCompraPage {
         .locator('.container-modal')
         .allInnerTexts()
         .catch(() => []);
-      throw new Error(
-        `PRÉ-CONDIÇÃO AUSENTE: a tarefa ${processInstanceId} (movimento ${movimento}) não abriu ` +
+      faltaPreCondicao(
+        `a tarefa ${processInstanceId} (movimento ${movimento}) não abriu ` +
           'em modo de movimentação — o botão "Enviar" nunca apareceu. ' +
           (modais.length
             ? `Diálogo(s) na tela: ${JSON.stringify(modais.map((m) => m.replace(/\s+/g, ' ').slice(0, 160)))}. ` +

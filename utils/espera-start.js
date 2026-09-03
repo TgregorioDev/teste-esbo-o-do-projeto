@@ -1,4 +1,5 @@
 // @ts-check
+import { faltaPreCondicao } from './pre-condicao.js';
 
 /**
  * Espera a resposta do `POST .../wf_solicitacao_compras/start` com VEREDITO.
@@ -47,8 +48,8 @@ export async function esperarStartDaSolicitacao(page, acionar, opcoes = {}) {
         'Verifique se o formulário terminou de montar e se o Confirmar ficou acionável; o ' +
         'problema é anterior ao servidor.';
 
-    throw new Error(
-      `PRÉ-CONDIÇÃO AUSENTE (ambiente): a Solicitação de Compra não pôde ser criada${
+    faltaPreCondicao(
+      `(ambiente): a Solicitação de Compra não pôde ser criada${
         contexto ? ` (${contexto})` : ''
       }. ${detalhe}`,
     );

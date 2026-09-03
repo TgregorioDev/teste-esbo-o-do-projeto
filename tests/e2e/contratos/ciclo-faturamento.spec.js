@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { AcompanhamentoContratosPage } from '../../../pages/AcompanhamentoContratosPage.js';
 import { MedicaoContratoPage } from '../../../pages/MedicaoContratoPage.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
@@ -97,8 +98,8 @@ test.describe('Faturamento de Contratos — ciclo de medição', () => {
     }
 
     if (!resultado?.sucesso) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: nenhum dos contratos vigentes tentados ' +
+      faltaPreCondicao(
+        'nenhum dos contratos vigentes tentados ' +
           `(${contratosTentados.join(', ')}) tem competência com saldo em aberto para medir ` +
           'no momento desta execução — isto NÃO é defeito do produto sob teste. Motivo de cada ' +
           `descarte: ${JSON.stringify(descartes)}`,

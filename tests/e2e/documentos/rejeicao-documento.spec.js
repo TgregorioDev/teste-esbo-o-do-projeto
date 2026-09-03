@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { DocumentosGedPage } from '../../../pages/DocumentosGedPage.js';
 import { criarDocumento, criarNivelAprovacao } from '../../../factories/documento.js';
 import { criarJustificativaDecisao } from '../../../factories/produto-compra.js';
@@ -172,13 +173,15 @@ test.describe('GED — rejeitar documento pendente de aprovação (CT-GED-04-S1)
     // Sem esta âncora, "zero linhas" para o documento rejeitado seria indistinguível de "a
     // constraint está errada" — e o teste passaria mesmo se a rejeição não funcionasse.
     const controle = await consultarDocumentoPorId(page, PASTA_PARECER_TECNICO);
-    expect(
-      controle.map((doc) => doc.id),
-      'PRÉ-CONDIÇÃO AUSENTE: a consulta de controle ao dataset `document` não achou a pasta ' +
-        `"Parecer Técnico" (${PASTA_PARECER_TECNICO}), que existe. A consulta está quebrada ou o ` +
-        'ambiente não respondeu — sem ela, um resultado vazio para o documento rejeitado não ' +
-        'prova nada',
-    ).toEqual([Number(PASTA_PARECER_TECNICO)]);
+    const idsDeControle = controle.map((doc) => doc.id);
+    if (idsDeControle.length !== 1 || idsDeControle[0] !== Number(PASTA_PARECER_TECNICO)) {
+      faltaPreCondicao(
+        'a consulta de controle ao dataset `document` não achou a pasta ' +
+          `"Parecer Técnico" (${PASTA_PARECER_TECNICO}), que existe (devolveu ${JSON.stringify(idsDeControle)}). ` +
+          'A consulta está quebrada ou o ambiente não respondeu — sem ela, um resultado vazio ' +
+          'para o documento rejeitado não prova nada',
+      );
+    }
 
     // ── Oráculo 1: o documento não sobrevive como documento, e NÃO foi para a Lixeira ───
     //

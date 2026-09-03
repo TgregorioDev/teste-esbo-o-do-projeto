@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
 import { FormularioSolicitacaoCompraPage } from '../../../pages/FormularioSolicitacaoCompraPage.js';
 import { criarProdutoCompra, criarJustificativaDecisao } from '../../../factories/produto-compra.js';
@@ -42,7 +43,7 @@ const ANEXO_VALIDO = path.join(__dirname, '../../../fixtures/anexos/documento-va
  * criada por este formulário vira massa de pool, de forma previsível.
  *
  * Se o polling esgotar o tempo (BPMN mais lento que o normal, ou indisponibilidade), o teste
- * falha com "PRÉ-CONDIÇÃO AUSENTE" — ambiente, não defeito.
+ * falha via `faltaPreCondicao` (utils/pre-condicao.js) — ambiente, não defeito.
  */
 
 const GRUPO_GESTOR_IMEDIATO = /Validação do Gestor Imediato/;
@@ -287,8 +288,8 @@ async function criarEAssumirNoPoolGestorImediato(page, overridesMassa = {}) {
     // rodar em paralelo com este teste, pode assumir justamente esta SC, e aí "Assumir
     // tarefa" some da tela porque a tarefa já é do usuário, não porque não chegou.
     const atividadeObservada = await central.lerNomeAtividadeAtual().catch(() => '(não foi possível ler)');
-    throw new Error(
-      `PRÉ-CONDIÇÃO AUSENTE: a SC #${numeroProcesso}, criada por este teste, não ficou assumível ` +
+    faltaPreCondicao(
+      `a SC #${numeroProcesso}, criada por este teste, não ficou assumível ` +
         '("Assumir tarefa") na Validação do Gestor dentro de 180s. Isto NÃO é defeito do produto ' +
         'confirmado — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ' +
         'ter sido assumida por outra execução concorrente que pega a primeira do pool ' +

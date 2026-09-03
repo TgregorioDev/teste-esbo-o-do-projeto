@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 
 /**
  * CT-RDF-02-H — Rastreabilidade pai↔filho do RDFC (contrato de dados / integração).
@@ -20,7 +21,7 @@ import { test, expect } from '../../../fixtures/fixtures.js';
  * Hoje isso só se descobre por reclamação — este teste é o oráculo que faltava.
  *
  * COMPORTAMENTO ESPERADO: para todo par pai/filho encontrado, o elo é bidirecional e
- * consistente. Se a base não tiver nenhum par, o teste FALHA com `PRÉ-CONDIÇÃO AUSENTE` — nunca
+ * consistente. Se a base não tiver nenhum par, o teste FALHA via `faltaPreCondicao` — nunca
  * passa vazio (o falso-verde que o estudo de determinismo já pegou uma vez).
  *
  * ⚠️ DEPENDÊNCIA de `CT-SEG-07-S1`: hoje esta leitura só é possível porque o isolamento
@@ -165,13 +166,14 @@ test.describe('RDFC — rastreabilidade pai↔filho (contrato de dados)', () => 
 
     // Pré-condição de massa: sem nenhum par, não há o que afirmar — falha explícita, nunca
     // verde vazio.
-    expect(
-      medicao.filhosEncontrados,
-      'PRÉ-CONDIÇÃO AUSENTE: nenhum par pai/filho RDFC encontrado na base (nenhuma instância ' +
-        `das classes ${PROCESSOS_RDFC.join(', ')} traz o formField 'WKNumProcesPai' preenchido). ` +
-        'O caso exige ao menos um subprocesso RDFC criado. Confirme que a base tem documentos ' +
-        'fiscais com subprocessos e que a integração com o Protheus estava de pé.',
-    ).toBeGreaterThan(0);
+    if (!(medicao.filhosEncontrados > 0)) {
+      faltaPreCondicao(
+        'nenhum par pai/filho RDFC encontrado na base (nenhuma instância ' +
+          `das classes ${PROCESSOS_RDFC.join(', ')} traz o formField 'WKNumProcesPai' preenchido). ` +
+          'O caso exige ao menos um subprocesso RDFC criado. Confirme que a base tem documentos ' +
+          'fiscais com subprocessos e que a integração com o Protheus estava de pé.',
+      );
+    }
 
     for (const par of medicao.pares) {
       const contexto = `filho ${par.filho} (${par.filhoProcessId}, ${par.filhoStatus}) → pai ${par.pai}`;

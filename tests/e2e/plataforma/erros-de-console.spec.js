@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 
 /**
  * CT-PLT-06-S1 — erro de console fora da Home.
@@ -39,6 +40,16 @@ import { test, expect } from '../../../fixtures/fixtures.js';
  * Sete das oito rotas carregam sem erro não catalogado. O **Portal do Comprador** carrega com
  * dois erros ainda não catalogados em lugar nenhum — é o achado que este caso existe para
  * encontrar, e por isso o teste dessa rota fica VERMELHO de propósito.
+ *
+ * ## A tag `@bug` é POR ROTA, não do arquivo
+ *
+ * O título dos oito testes sai do mesmo template, mas só uma das rotas tem defeito catalogado
+ * (Portal do Comprador, `CT-PLT-06-S1` na tabela do README). Marcar as oito com `@bug` faria
+ * `--grep-invert @bug` esconder sete guardas que DEVERIAM estar verdes, e `--grep @bug`
+ * devolver sete verdes que o alarme de "defeito corrigido" não sabe interpretar. Daí
+ * `ROTAS_COM_DEFEITO_CATALOGADO`: a tag entra no título só da rota que tem o defeito. Quando
+ * o defeito do Portal do Comprador for corrigido, a rota sai do conjunto junto com a linha do
+ * README — e não antes.
  */
 
 /**
@@ -119,6 +130,17 @@ const ROTAS_CHAVE = [
 ];
 
 /**
+ * Rotas cujo erro de console já está na tabela de defeitos do README (`CT-PLT-06-S1`).
+ *
+ * Só estas recebem `@bug` no título. Entrada aqui é a mesma decisão consciente de
+ * `EXCECOES_CATALOGADAS`: o erro continua reprovando, o que a tag diz é que o vermelho já é
+ * conhecido. Rota que sair da tabela do README sai daqui no mesmo commit.
+ *
+ * @type {Set<string>}
+ */
+const ROTAS_COM_DEFEITO_CATALOGADO = new Set(['/portal/p/1/portal-do-comprador']);
+
+/**
  * Coletor de erros de console e de exceções não tratadas, com o recurso que falhou.
  *
  * Precisa ser instalado ANTES do `goto()` — os erros que mais interessam são os da carga
@@ -149,7 +171,9 @@ function escutarErrosDeConsole(page) {
 
 test.describe('Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1)', () => {
   for (const { nome, rota, titulo } of ROTAS_CHAVE) {
-    test(`CT-PLT-06-S1 @bug: ${nome} (${rota}) deve carregar sem erro de console não catalogado`, async ({
+    const tag = ROTAS_COM_DEFEITO_CATALOGADO.has(rota) ? ' @bug' : '';
+
+    test(`CT-PLT-06-S1${tag}: ${nome} (${rota}) deve carregar sem erro de console não catalogado`, async ({
       page,
     }) => {
       const console_ = escutarErrosDeConsole(page);
@@ -160,11 +184,17 @@ test.describe('Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1)', (
       // chamadas assíncronas da carga já tiveram chance de responder (rede estabilizada) —
       // mesmo padrão de `home.spec.js`. Avaliar o coletor antes disso mede menos do que
       // parece e produz verde por acidente.
-      await expect(
-        page,
-        `PRÉ-CONDIÇÃO AUSENTE: ${rota} não abriu a tela esperada — sem a página carregada não há ` +
-          'o que medir de console, e um coletor vazio pareceria sucesso',
-      ).toHaveTitle(titulo);
+      // try/catch aceitável SÓ porque relança: `faltaPreCondicao` sempre lança, então a falha
+      // de auto-espera do `toHaveTitle` chega ao runner — agora com a anotação de pré-condição.
+      try {
+        await expect(page).toHaveTitle(titulo);
+      } catch (erro) {
+        faltaPreCondicao(
+          `${rota} não abriu a tela esperada — sem a página carregada não há ` +
+            'o que medir de console, e um coletor vazio pareceria sucesso. ' +
+            `Causa: ${erro instanceof Error ? erro.message : String(erro)}`,
+        );
+      }
       await page.waitForLoadState('networkidle');
 
       const naoCatalogados = console_

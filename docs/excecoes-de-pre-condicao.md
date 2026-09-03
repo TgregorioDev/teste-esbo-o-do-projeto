@@ -44,10 +44,10 @@ sabendo que pode estar errada.
 | 2 | Massa de contrato rara | `tests/e2e/acompanhamento-contratos/payload-solicitacao.spec.js:161` | `CT-ACC-06-S1` | ✅ exceção confirmada |
 | 3 | Massa de contrato rara | `tests/e2e/acompanhamento-contratos/payload-solicitacao.spec.js:206` | `CT-ACC-06-S1` | ✅ exceção confirmada |
 | 4 | Massa de contrato rara | `tests/e2e/contratos/validacoes-faturamento.spec.js:79` | `CT-FAT-02-S2` | ✅ exceção confirmada (evidência parcial — ver nota) |
-| 5 | Fila vazia | `tests/e2e/compras/ciclo-cotacao.spec.js:168` | `CT-COT-01-H` | 🟡 em verificação |
-| 6 | Fila vazia | `tests/e2e/compras/negociacao-proposta.spec.js:131` | `CT-NEG-01-H` | 🟡 em verificação |
-| 7 | Fila vazia | `tests/e2e/contratos/validacoes-faturamento.spec.js:254` | `CT-FAT-02-S3` | 🟡 em verificação |
-| 8 | Fila vazia | `tests/e2e/tarefas/assumir-tarefa-pool.spec.js:34` | `CT-TSK-02-H` | 🟡 em verificação |
+| 5 | Fila vazia | `tests/e2e/compras/ciclo-cotacao.spec.js:168` | `CT-COT-01-H` | ✅ exceção confirmada (03/09/2026) |
+| 6 | Fila vazia | `tests/e2e/compras/negociacao-proposta.spec.js:131` | `CT-NEG-01-H` | ✅ exceção confirmada (03/09/2026) |
+| 7 | Fila vazia | `tests/e2e/contratos/validacoes-faturamento.spec.js:254` | `CT-FAT-02-S3` | ✅ exceção confirmada (03/09/2026) |
+| 8 | Fila vazia | `tests/e2e/tarefas/assumir-tarefa-pool.spec.js:34` | `CT-TSK-02-H` | ✅ exceção confirmada (03/09/2026 — ver nota: passou nesse dia) |
 | 9 | Serviço externo fora | `tests/e2e/juridico/sigajuri-consultivo.spec.js:48` | `CT-JUR-01-H` | ✅ exceção confirmada |
 | 10 | Serviço externo fora | `tests/e2e/juridico/sigajuri-contrato.spec.js:32` *(corrigido — ver nota)* | `CT-JUR-03-H` | ✅ exceção confirmada |
 
@@ -256,13 +256,20 @@ frequência **não verificada**.
 
 ## 5–8. Fila vazia (Portal do Comprador / Central de Tarefas)
 
-**Status coletivo: em verificação — não fechar como exceção definitiva.** No momento em que este
-documento foi escrito, outro agente está medindo, ao vivo, se a suíte consegue produzir a massa
-que faltaria a estes quatro casos (por exemplo, se rodar o ciclo completo de Compras até a etapa
-de Cotação/Negociação alimenta as filas que estes testes leem). Registrar aqui como "exceção
-confirmada" antes desse veredito repetiria o erro que este próprio documento corrige no caso 10 —
-afirmar bloqueio sem medir. As quatro entradas abaixo deixam a estrutura pronta (teste, catálogo,
-o que falta, quem destravaria em cada hipótese) para serem fechadas assim que o veredito chegar.
+**Status coletivo: ✅ exceções confirmadas em 03/09/2026.** Quando este bloco foi escrito
+(01/09), outro agente estava medindo, ao vivo, se a suíte consegue produzir a massa que faltaria a
+estes quatro casos. O veredito chegou pela via mais honesta possível: os próprios testes passaram a
+carregar a investigação na mensagem de falha, e a reexecução completa de 03/09/2026
+(consolidada e versionada em `docs/execucoes/relatorio-falhas-2026-09-03.md`; os JSON brutos da execução — `relatorios-2026-09-03/compras.json`, `contratos.json`, `falhas.json`, `destrutivo-45.json` — ficam fora do versionamento)
+registrou o que cada um viu. A conclusão comum aos quatro: **a hipótese "a automação só não rodou
+o ciclo até lá" está refutada** — a base TEM cotações, propostas e tarefas reais; o que está
+vazio é o que a conta `TOTVS-FS` alcança, porque cotação e pool resolvem para comprador/gestor
+NOMINAL cadastrado no ERP (SY1 / RH do Protheus), e `TOTVS-FS` não é um deles. É o limite de
+"cadastro no ERP" que o `CLAUDE.md` já reconhece — não ausência de massa, não defeito.
+
+Desde 03/09/2026 os quatro testes falham via `faltaPreCondicao` (`utils/pre-condicao.js`), que
+grava a anotação `pre-condicao-ausente` lida por `scripts/veredito-do-gate.mjs`: continuam
+vermelhos no relatório (a skill proíbe skip), mas **não bloqueiam o gate**.
 
 ### 5. `CT-COT-01-H` — fila de "Controle De Cotações" vazia
 
@@ -287,14 +294,31 @@ fora do alcance da automação (ex.: fornecedor real lançando proposta), destra
 (processo operacional, fora do Fluig) ou fica como limite permanente, a redigir como tal quando o
 veredito chegar.
 
-**Data de revisão proposta:** 08/09/2026 — prazo curto porque a investigação já está em curso;
-reavaliar assim que o resultado dela estiver disponível e, se não houver resposta até essa data,
-reabrir esta linha com nova data em vez de deixá-la vencer em silêncio.
+**Evidência de 03/09/2026** (`docs/execucoes/relatorio-falhas-2026-09-03.md`, JSON bruto `relatorios-2026-09-03/compras.json`; teste em `ciclo-cotacao.spec.js:168`,
+`status: failed`, mensagem literal do próprio teste): *"a fila de "Controle De Cotações" do Portal
+do Comprador não tem nenhuma Cotação para operar"* e, na investigação embutida na mensagem
+(reconfirmada ao vivo em 01/09/2026, consulta direta à API v2 + navegação real): *"a base TEM
+cotações reais em aberto agora mesmo (ex.: processInstanceId 113002, 112860, 112839 — todas
+`wf_cotacao_produtos_servicos`, `status:OPEN`), então a fila do PRODUTO não está vazia — o que
+está vazio é o que ESTA CONTA enxerga. Essas cotações nascem vinculadas a um comprador nominal do
+Protheus (SY1) e só aparecem no Portal do Comprador de quem é esse comprador ou tem "Atuar como"
+delegado a ele; `TOTVS-FS` não é um dos ~28 compradores cadastrados. Confirmado agora mesmo:
+`comboAtuarComo` tem contagem 0 tanto em "Controle De Cotações" quanto em "Avaliação de
+Propostas"* […] *"o bloqueio é de CADASTRO NO ERP (comprador na SY1)"*. A hipótese "rodar o ciclo
+completo popularia a fila" está refutada pela própria mensagem: *"mesmo que D-01 fosse corrigido e
+uma SC da automação chegasse a virar Cotação, ela ainda cairia sob um comprador nominal diferente
+de TOTVS-FS"*.
+
+**Quem destrava:** o **cliente** — cadastrar `TOTVS-FS` como comprador na SY1 ou conceder
+delegação "Atuar como" de um comprador real. Não é "nós implementando".
+
+**Data de revisão:** revisado em 03/09/2026; próxima revisão proposta em 05/10/2026, ou antes se o
+cliente responder sobre o cadastro/delegação.
 
 **O que muda quando destravar:** o teste passa a validar/reprovar uma cotação real, cobrindo o
 caminho feliz e negativo de `CT-COT-01-H`/`S1` fora do shell avulso.
 
-**Estado atual:** em verificação.
+**Estado atual:** ✅ exceção confirmada (03/09/2026).
 
 ---
 
@@ -319,12 +343,28 @@ andamento.
 homologação, `docs/politica-de-escrita.md`). Se depender só de rodar o ciclo interno até essa
 etapa, **nós implementando**.
 
-**Data de revisão proposta:** 08/09/2026 — mesma janela do caso 5, pela mesma dependência.
+**Evidência de 03/09/2026** (`docs/execucoes/relatorio-falhas-2026-09-03.md`, JSON bruto `relatorios-2026-09-03/compras.json`; teste em
+`negociacao-proposta.spec.js:131`, `status: failed`, mensagem literal): *"a fila de "Avaliação de
+Propostas" do Portal do Comprador não tem nenhuma cotação, com ou sem proposta de fornecedor"* e,
+na investigação embutida: *"não é falta de massa no PRODUTO — a base tem cotações reais em aberto
+agora (ex. processInstanceId 113025 em "Validação do Comprador", assignee
+`fernanda.smartins.cassi.com.br.1`; 112994 em "Aguarda Finalizar Cotação", requester
+`geise.matias.cassi.com.br.1`). O bloqueio é que essas cadeias pertencem a compradores nominais
+reais da SY1, não a TOTVS-FS, e o "Atuar como" que permitiria operar em nome deles está com
+`comboAtuarComo` em contagem 0 nesta tela agora — sem delegação, sem visibilidade"*. Mesma
+conclusão do caso 5: *"o teto é cadastro no ERP (comprador na SY1)"*.
+
+**Quem destrava:** o **cliente** (cadastro na SY1 ou delegação "Atuar como"), como no caso 5. A
+hipótese "credencial de fornecedor" nem chega a ser o primeiro obstáculo — antes dela, a conta não
+enxerga a fila.
+
+**Data de revisão:** revisado em 03/09/2026; próxima revisão proposta em 05/10/2026, junto com o
+caso 5.
 
 **O que muda quando destravar:** o teste passa a validar/reprovar uma proposta real de
 `CT-NEG-01-H`/`S1`/`S2`.
 
-**Estado atual:** em verificação.
+**Estado atual:** ✅ exceção confirmada (03/09/2026).
 
 ---
 
@@ -356,13 +396,34 @@ ausência genuína de vínculo do usuário a esses grupos, é o **cliente** quem
 existir tal vínculo — pergunta já registrada como aberta no README ("Perguntas em aberto para a
 Cassi", item de segregação).
 
-**Data de revisão proposta:** 08/09/2026 — mesma janela dos casos 5 e 6.
+**Evidência de 03/09/2026** (`docs/execucoes/relatorio-falhas-2026-09-03.md`, JSON bruto `relatorios-2026-09-03/contratos.json`; teste em
+`validacoes-faturamento.spec.js:254`, `status: failed`, mensagem literal): *"o menu "Mais opções"
+não ofereceu "Tarefas em pool" — o usuário está sem nenhuma tarefa em pool neste momento, e o
+painel só é renderizado quando há ao menos uma. […] Entradas oferecidas agora: Lixeira | Fechar
+menu | Resumo de Tarefas | Mais opções | Tarefas a concluir 13 | Solicitações 123 | Documentos 29 |
+Nova solicitação."* E, na investigação embutida (medida ao vivo em 01/09/2026): *"esta automação
+não consegue criar seu próprio item de pool para popular este menu. A base tem atividade orgânica
+intensa hoje (20+ SCs reais abertas), mas nenhuma cai em pool de TOTVS-FS — Gestor
+Imediato/Comprador de cada uma resolve para pessoa nominal real (RH do Protheus). O único caminho
+conhecido para a automação colocar algo em pool é contornar D-01 com um `targetState` diferente
+de 6 direto na API de `/start` — funcionou uma vez no passado (SC 112679) mas nunca foi
+confirmado como reprodutível"*. A hipótese "timing entre testes da mesma suíte" fica descartada
+como causa principal: mesmo as SCs que a suíte cria (`aprovacoes-solicitacao-compras.spec.js`,
+SCs #113203/#113204/#113205 em `docs/execucoes/relatorio-falhas-2026-09-03.md`) ficaram em *"Grava SC e
+Anexos"* e não chegaram ao pool em 180s.
+
+**Quem destrava:** o **cliente** (vínculo de `TOTVS-FS` a um grupo com tarefas de pool, ou
+correção de D-01 pela TOTVS). Fica registrada a alternativa de desenho — medir a existência do
+grupo de Fiscal/CSE por outro caminho que não a UI de "Mais opções" — como melhoria, não como
+destrave.
+
+**Data de revisão:** revisado em 03/09/2026; próxima revisão proposta em 05/10/2026.
 
 **O que muda quando destravar:** nada na assertion de negócio muda — o teste já teria seu
 resultado de qualquer forma. O que se resolve é a variabilidade artificial da mensagem
 `PRÉ-CONDIÇÃO AUSENTE`, que hoje trava a leitura e não a assertion de fato.
 
-**Estado atual:** em verificação.
+**Estado atual:** ✅ exceção confirmada (03/09/2026).
 
 ---
 
@@ -392,13 +453,27 @@ de volume de terceiros ou de timing entre execuções fora do controle de um tes
 **cliente**/operação — mantendo o pool populado como parte do uso normal do ambiente de
 homologação.
 
-**Data de revisão proposta:** 08/09/2026 — mesma janela dos casos 5-7; os quatro casos de fila
-vazia compartilham a mesma investigação em andamento e deveriam ser revisados juntos.
+**Evidência de 03/09/2026** (JSON bruto `relatorios-2026-09-03/destrutivo-45.json`, fora do versionamento — o consolidado `docs/execucoes/relatorio-falhas-2026-09-03.md` só lista falhas, e este teste passou): o teste
+`assumir-tarefa-pool.spec.js:34` **passou** (`status: expected`) — naquele instante o pool
+tinha tarefa, então a pré-condição estava satisfeita e ele assumiu uma de verdade. Isso não
+desconfirma a exceção; confirma a sua natureza: a pré-condição é de **leitura de atividade
+orgânica** e oscila de execução para execução. O que a fecha como exceção é a investigação de
+01/09/2026, registrada na mensagem do caso 7 (mesma rodada, ver acima): a automação **não tem
+caminho** para popular o pool de `TOTVS-FS` por conta própria — as SCs que ela cria resolvem
+para gestor nominal real e não caem no pool desta conta (reconfirmado em 03/09 pelas SCs
+#113203–#113205, presas em *"Grava SC e Anexos"*).
+
+**Quem destrava:** **cliente**/operação — manter o pool populado como parte do uso normal da
+homologação, ou vincular `TOTVS-FS` a um grupo que receba tarefas de forma previsível; ou a
+TOTVS corrigindo D-01, o que faria as SCs da própria suíte chegarem ao pool.
+
+**Data de revisão:** revisado em 03/09/2026; próxima revisão proposta em 05/10/2026, junto com os
+casos 5–7.
 
 **O que muda quando destravar:** o teste passa a assumir uma tarefa real de pool e mover para
 "Tarefas a concluir" — hoje ele só chega lá quando o pool não está vazio no instante da execução.
 
-**Estado atual:** em verificação.
+**Estado atual:** ✅ exceção confirmada (03/09/2026).
 
 ---
 

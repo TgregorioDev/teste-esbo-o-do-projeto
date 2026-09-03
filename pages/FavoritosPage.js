@@ -1,4 +1,5 @@
 // @ts-check
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 
 const ROTA_CATALOGO = '/portal/p/1/pageprocessstart';
 const ROTA_HOME = '/portal/p/1/home';
@@ -207,8 +208,8 @@ export class FavoritosPage {
  */
 export function escolherCandidatoParaEsteWorker(candidatos, testInfo) {
   if (candidatos.length === 0) {
-    throw new Error(
-      'PRÉ-CONDIÇÃO AUSENTE: o catálogo "Iniciar Solicitações" não listou nenhum processo ' +
+    faltaPreCondicao(
+      'o catálogo "Iniciar Solicitações" não listou nenhum processo ' +
         'com ícone de favorito em ocorrência única no DOM. Isto NÃO é defeito do produto sob ' +
         'teste — confirme que o catálogo carregou processos antes de reexecutar.',
     );

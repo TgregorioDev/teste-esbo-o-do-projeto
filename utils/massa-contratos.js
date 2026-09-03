@@ -1,5 +1,7 @@
 // @ts-check
 import { test } from '@playwright/test';
+import { hash32, idEstavelDoTeste } from './identidade-do-teste.js';
+import { faltaPreCondicao } from './pre-condicao.js';
 import { tentarAdquirir, liberar } from './exclusividade.js';
 
 /**
@@ -53,7 +55,7 @@ import { tentarAdquirir, liberar } from './exclusividade.js';
  *
  * As assertions dos testes são **relacionais** (o payload deve corresponder AO CONTRATO
  * ESCOLHIDO), nunca presas a um valor absoluto — e a ausência de massa falha como
- * `PRÉ-CONDIÇÃO AUSENTE`, distinta de defeito do produto, que é o que o relatório precisa
+ * `PRÉ-CONDIÇÃO AUSENTE` (via `faltaPreCondicao`), distinta de defeito do produto, que é o que o relatório precisa
  * deixar claro.
  */
 
@@ -93,65 +95,24 @@ const reservasEmPosse = new Set();
  */
 
 /**
- * Remove os marcadores `@tag` do título antes de ele virar semente da distribuição.
- *
- * MEDIDO em 01/09/2026, e o motivo de esta função existir: `titlePath` foi descrito aqui como
- * "imutável", mas ele muda toda vez que alguém põe ou tira uma tag do título — e a suíte usa
- * tags de propósito (`@destrutivo`, `@bug`). O caso D-02 de quantidade/preço em
- * `payload-solicitacao.spec.js` PASSAVA com `@bug` no título e TRAVAVA em 180s sem a tag:
- * mesmo código, mesma assertion, contrato sorteado diferente. Marcar um teste não pode trocar
- * a massa dele — se trocar, dois resultados deixam de ser comparáveis e a tag vira variável
- * escondida do experimento.
- *
- * Normalizar aqui preserva o que a distribuição precisa (identidade única e estável por teste)
- * e remove o que ela nunca deveria ter capturado (metadado de execução).
- *
- * @param {string} titulo
- * @returns {string}
- */
-function semMarcadores(titulo) {
-  return titulo
-    .replace(/@[\p{L}\d_-]+/gu, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/**
  * Identidade estável do teste corrente — a semente da distribuição.
  *
- * `titlePath` é o caminho completo (arquivo → describes → título), único na suíte. As tags são
- * removidas (ver `semMarcadores`) para que a identidade dependa só do que o teste É, nunca de
- * como ele está marcado. `repeatEachIndex` entra para que `--repeat-each` exercite contratos
- * diferentes em vez de repetir a mesma escolha N vezes. `retry` de propósito **não** entra: a
- * retentativa precisa cair no mesmo contrato, senão ela não reproduz a falha que investiga.
+ * A identidade em si (título sem `@tags`, com `repeatEachIndex`, sem `retry`) vive em
+ * `utils/identidade-do-teste.js`, compartilhada com a seed do faker por teste
+ * (`fixtures/fixtures.js`): o mesmo id que escolhe o contrato é o que gera a massa, e assim
+ * um único comando reproduz as duas coisas.
  *
  * @returns {string}
  */
 function idDoTesteCorrente() {
   try {
-    const info = test.info();
-    return `${info.titlePath.map(semMarcadores).join(' › ')}#${info.repeatEachIndex}`;
+    return idEstavelDoTeste(test.info());
   } catch {
     // `test.info()` só existe dentro de um teste em execução. Fora dele (um script de
     // manutenção chamando este módulo) não há identidade para distribuir, e uma constante
     // mantém o comportamento determinístico. Não é erro engolido: é o caso sem teste corrente.
     return 'fora-de-teste';
   }
-}
-
-/**
- * FNV-1a de 32 bits — hash não-criptográfico, determinístico e sem dependência externa.
- *
- * @param {string} texto
- * @returns {number}
- */
-function hash32(texto) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < texto.length; i += 1) {
-    h ^= texto.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h >>> 0;
 }
 
 /**
@@ -248,8 +209,8 @@ export async function descobrirContratoVigente(contratosPage, criterio = {}) {
   const linhas = await contratosPage.lerLinhasDaGrade();
 
   if (linhas.length === 0) {
-    throw new Error(
-      'PRÉ-CONDIÇÃO AUSENTE: a grade de contratos não retornou nenhuma linha. ' +
+    faltaPreCondicao(
+      'a grade de contratos não retornou nenhuma linha. ' +
         'A integração com o Protheus está indisponível ou sem dados — isto NÃO é defeito do ' +
         'produto sob teste nem falha da automação. Confirme que o portal lista contratos ' +
         'antes de interpretar este resultado.',
@@ -259,8 +220,8 @@ export async function descobrirContratoVigente(contratosPage, criterio = {}) {
   const vigentes = linhas.filter((l) => l.status === SITUACAO_VIGENTE);
 
   if (vigentes.length === 0) {
-    throw new Error(
-      `PRÉ-CONDIÇÃO AUSENTE: a grade trouxe ${linhas.length} contrato(s), mas nenhum vigente. ` +
+    faltaPreCondicao(
+      `a grade trouxe ${linhas.length} contrato(s), mas nenhum vigente. ` +
         `Situações presentes: ${[...new Set(linhas.map((l) => l.status))].join(', ')}. ` +
         'Solicitação de Compra só faz sentido a partir de contrato vigente.',
     );
@@ -275,8 +236,8 @@ export async function descobrirContratoVigente(contratosPage, criterio = {}) {
   );
 
   if (satisfazemOCriterio.length === 0) {
-    throw new Error(
-      `PRÉ-CONDIÇÃO AUSENTE: nenhum contrato vigente satisfaz o critério ` +
+    faltaPreCondicao(
+      `nenhum contrato vigente satisfaz o critério ` +
         `${JSON.stringify(criterio)} entre os ${vigentes.length} disponíveis. ` +
         'A base mudou de perfil — reavalie o critério do teste.',
     );
@@ -285,8 +246,8 @@ export async function descobrirContratoVigente(contratosPage, criterio = {}) {
   const candidatos = satisfazemOCriterio.filter((l) => identificaLinhaUnica(l.contrato, linhas));
 
   if (candidatos.length === 0) {
-    throw new Error(
-      `PRÉ-CONDIÇÃO AUSENTE: os ${satisfazemOCriterio.length} contrato(s) vigente(s) que ` +
+    faltaPreCondicao(
+      `os ${satisfazemOCriterio.length} contrato(s) vigente(s) que ` +
         `satisfazem ${JSON.stringify(criterio)} têm número ambíguo na busca da grade — cada um ` +
         'casa com mais de uma linha por substring, e filtrar por ele deixaria o teste agindo ' +
         'sobre a linha errada. Isto NÃO é defeito do produto sob teste.',
@@ -307,8 +268,10 @@ export async function descobrirContratoVigente(contratosPage, criterio = {}) {
   // Chegar aqui significa que TODOS os candidatos estão em uso por outros testes em execução.
   // É esgotamento de massa do ambiente, não defeito do produto nem falha de sincronização —
   // e a mensagem precisa dizer isso, senão vira "timeout misterioso" no relatório.
-  throw new Error(
-    `MASSA INSUFICIENTE: os ${candidatos.length} contrato(s) vigente(s) que satisfazem ` +
+  // `MASSA INSUFICIENTE` é a mesma classe de pré-condição ausente (ambiente, não produto):
+  // passa pelo helper para ganhar a anotação que o gate lê, mantendo o rótulo na mensagem.
+  faltaPreCondicao(
+    `MASSA INSUFICIENTE — os ${candidatos.length} contrato(s) vigente(s) que satisfazem ` +
       `${JSON.stringify(criterio)} já estão reservados por outros testes desta execução. ` +
       'Isto NÃO é defeito do produto sob teste: a base tem menos contratos utilizáveis do que ' +
       'testes concorrentes. Reduza `--workers`, ou provisione mais contratos vigentes no ' +

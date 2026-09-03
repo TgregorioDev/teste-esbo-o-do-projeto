@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 
 /**
  * CT-NOT-03-S1 — contratos da API de notificação.
@@ -135,18 +136,20 @@ test.describe('Notificações — contratos da API (CT-NOT-03-S1)', () => {
       contentType: 'application/json',
     });
 
-    expect(
-      leituras.semParametro.status,
-      `PRÉ-CONDIÇÃO AUSENTE (ambiente): a lista de notificações respondeu ` +
-        `${leituras.semParametro.status} (${leituras.semParametro.texto}) — sem lista não há ` +
-        'contrato de paginação a verificar.',
-    ).toBe(200);
-    expect(
-      leituras.semParametro.quantidade,
-      'PRÉ-CONDIÇÃO AUSENTE: a conta não tem notificação nenhuma. Com menos de 4 itens, pedir ' +
-        '`limit=3` devolveria menos que 3 por falta de massa, e o teste não provaria nada sobre ' +
-        'a paginação.',
-    ).toBeGreaterThan(3);
+    if (leituras.semParametro.status !== 200) {
+      faltaPreCondicao(
+        `(ambiente): a lista de notificações respondeu ` +
+          `${leituras.semParametro.status} (${leituras.semParametro.texto}) — sem lista não há ` +
+          'contrato de paginação a verificar.',
+      );
+    }
+    if (!(leituras.semParametro.quantidade > 3)) {
+      faltaPreCondicao(
+        `a conta tem ${leituras.semParametro.quantidade} notificação(ões). Com menos de 4 itens, pedir ` +
+          '`limit=3` devolveria menos que 3 por falta de massa, e o teste não provaria nada sobre ' +
+          'a paginação.',
+      );
+    }
 
     // ── VERMELHO INTENCIONAL ──────────────────────────────────────────────────────────────
     // Medido: `limit=3` devolve a lista inteira (654 itens em 27/08/2026). Não ajuste esta
@@ -185,10 +188,9 @@ test.describe('Notificações — contratos da API (CT-NOT-03-S1)', () => {
       return { status: resposta.status, total: itens.length, removiveis: itens.filter((/** @type {any} */ n) => n.canRemove === true).length };
     });
 
-    expect(
-      lista.total,
-      'PRÉ-CONDIÇÃO AUSENTE: a conta não tem notificação nenhuma para inspecionar o contrato.',
-    ).toBeGreaterThan(0);
+    if (!(lista.total > 0)) {
+      faltaPreCondicao('a conta não tem notificação nenhuma para inspecionar o contrato.');
+    }
     expect(
       lista.removiveis,
       'PRÉ-CONDIÇÃO: o caso parte de notificações que se declaram removíveis (`canRemove: true`). ' +

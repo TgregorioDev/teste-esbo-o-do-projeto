@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 
 /**
  * CT-PLT-10-H — invariante do catálogo de processos.
@@ -152,17 +153,19 @@ test.describe('Plataforma — invariante do catálogo de processos', () => {
     await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
     const { processos, catalogo } = await lerCatalogoDoServidor(page);
 
-    expect(
-      processos.status,
-      `GET /process-management/api/v2/processes respondeu ${processos.status}: ${processos.texto}. ` +
-        'PRÉ-CONDIÇÃO AUSENTE (ambiente): sem a lista de processos não há inventário a comparar — ' +
-        'não é defeito do catálogo.',
-    ).toBe(200);
-    expect(
-      catalogo.status,
-      `GET /ecm/api/rest/ecm/process-category/processes respondeu ${catalogo.status}: ${catalogo.texto}. ` +
-        'PRÉ-CONDIÇÃO AUSENTE (ambiente): sem a lista do catálogo não há o que comparar.',
-    ).toBe(200);
+    if (processos.status !== 200) {
+      faltaPreCondicao(
+        `(ambiente): GET /process-management/api/v2/processes respondeu ${processos.status}: ` +
+          `${processos.texto}. Sem a lista de processos não há inventário a comparar — não é ` +
+          'defeito do catálogo.',
+      );
+    }
+    if (catalogo.status !== 200) {
+      faltaPreCondicao(
+        `(ambiente): GET /ecm/api/rest/ecm/process-category/processes respondeu ${catalogo.status}: ` +
+          `${catalogo.texto}. Sem a lista do catálogo não há o que comparar.`,
+      );
+    }
 
     // Guarda contra truncamento silencioso: `pageSize=200` cobre folgadamente os 34 de hoje,
     // mas se algum dia a página encher, comparar uma lista truncada com a esperada acusaria
@@ -238,8 +241,8 @@ test.describe('Plataforma — invariante do catálogo de processos', () => {
     await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
     const { processos, catalogo } = await lerCatalogoDoServidor(page);
 
-    expect(processos.status, 'PRÉ-CONDIÇÃO AUSENTE (ambiente): a API de processos não respondeu 200').toBe(200);
-    expect(catalogo.status, 'PRÉ-CONDIÇÃO AUSENTE (ambiente): o catálogo não respondeu 200').toBe(200);
+    if (processos.status !== 200) faltaPreCondicao(`(ambiente): a API de processos respondeu ${processos.status}, não 200`);
+    if (catalogo.status !== 200) faltaPreCondicao(`(ambiente): o catálogo respondeu ${catalogo.status}, não 200`);
 
     /** @type {Array<{ processId: string, active: boolean }>} */
     const itens = processos.corpo?.items ?? [];

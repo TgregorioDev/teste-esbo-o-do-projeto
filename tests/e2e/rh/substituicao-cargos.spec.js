@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { ANOTACAO_PRE_CONDICAO } from '../../../utils/pre-condicao.js';
 import { SubstituicaoCargosPage } from '../../../pages/SubstituicaoCargosPage.js';
 import { criarSubstituto } from '../../../factories/pessoa.js';
 
@@ -39,7 +40,7 @@ test.describe('Substituição de Cargos', () => {
         description: `criarSubstituto() geraria ${JSON.stringify(substituto)} — não preenchido em tela porque o formulário bloqueia antes de expor campo de substituto.`,
       },
       {
-        type: 'pre-condicao-ausente',
+        type: ANOTACAO_PRE_CONDICAO,
         description:
           'CT-SUB-01-H (substituto válido), 01-S1 (substituto sem vínculo ativo) e 01-S2 (período ' +
           'retroativo/inválido) exigem passar da identificação do SOLICITANTE, que falha para esta ' +

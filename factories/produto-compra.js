@@ -20,7 +20,9 @@ import { randomUUID } from 'node:crypto';
  *   randomUUID    → unicidade (paralelismo sem colisão entre workers)
  *   QA_PREFIX     → rastreabilidade
  *
- * A seed do faker é fixada em `fixtures/fixtures.js` e anexada ao relatório.
+ * A seed do faker é fixada em `fixtures/fixtures.js` por execução **e** por teste
+ * (`FAKER_SEED ^ hash32(identidade do teste)`) e anexada ao relatório: a massa de um teste não
+ * depende do worker nem da ordem de despacho.
  */
 
 const QA_PREFIX = process.env.QA_DATA_PREFIX ?? 'QA';

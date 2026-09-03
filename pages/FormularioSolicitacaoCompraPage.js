@@ -1,5 +1,6 @@
 // @ts-check
 import { expect } from '@playwright/test';
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 import { readFile } from 'node:fs/promises';
 import { basename, extname } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -233,8 +234,8 @@ export class FormularioSolicitacaoCompraPage {
     }
 
     if (!(await this.inicializacaoConcluida)) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE (ambiente): o formulário de Solicitação de Compras abriu, mas a ' +
+      faltaPreCondicao(
+        '(ambiente): o formulário de Solicitação de Compras abriu, mas a ' +
           'montagem nunca terminou — a resposta que a fecha ' +
           `(${RESPOSTA_FIM_DA_INICIALIZACAO}) não chegou em 60s. Sem ela o Fluig não valida no ` +
           'cliente e o iframe segue coberto pelo overlay de carregamento, então qualquer ação ' +
@@ -266,8 +267,8 @@ export class FormularioSolicitacaoCompraPage {
       await espera();
     } catch (erro) {
       const titulo = await this.page.title().catch(() => '(indisponível)');
-      throw new Error(
-        `PRÉ-CONDIÇÃO AUSENTE (ambiente): ${oQueFaltou} dentro do prazo. ` +
+      faltaPreCondicao(
+        `(ambiente): ${oQueFaltou} dentro do prazo. ` +
           `Título="${titulo}" URL=${this.page.url()}. ` +
           'Se o título não for "Movimentar Solicitação", a sessão ou a rota é que falharam; ' +
           'se for, o ambiente não serviu a tela a tempo — nos dois casos NÃO é defeito ' +
@@ -438,8 +439,8 @@ export class FormularioSolicitacaoCompraPage {
     }
 
     if (desfecho === 'semRetorno') {
-      throw new Error(
-        `PRÉ-CONDIÇÃO AUSENTE (ambiente): ${timeout}ms após acionar Enviar o Fluig não deu ` +
+      faltaPreCondicao(
+        `(ambiente): ${timeout}ms após acionar Enviar o Fluig não deu ` +
           'retorno nenhum — nem confirmação, nem diálogo de validação. Não é possível afirmar ' +
           `que a solicitação foi ou não criada a partir desta tela. URL: ${this.page.url()}`,
       );

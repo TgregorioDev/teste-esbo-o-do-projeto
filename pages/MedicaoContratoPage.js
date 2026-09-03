@@ -1,5 +1,6 @@
 // @ts-check
 import { expect } from '@playwright/test';
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 
 /** Rota de início do processo "Faturamento de Contratos", confirmada em campo. */
 const ROTA_FATURAMENTO_CONTRATOS = '/portal/p/1/pageworkflowview?processID=wf_faturamento_contratos';
@@ -283,8 +284,8 @@ export class MedicaoContratoPage {
     await this.#clicarSemTooltip(this.campoNumContrato);
     const apareceram = await this.esperarOpcoesZoom();
     if (!apareceram) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: o fornecedor selecionado não ofereceu nenhum contrato no zoom ' +
+      faltaPreCondicao(
+        'o fornecedor selecionado não ofereceu nenhum contrato no zoom ' +
           '"Nº do Contrato" — isto NÃO é defeito do produto sob teste; escolha outro fornecedor.',
       );
     }
@@ -331,8 +332,8 @@ export class MedicaoContratoPage {
     await this.#clicarSemTooltip(this.campoCompetencia);
     const apareceram = await this.esperarOpcoesZoom();
     if (!apareceram) {
-      throw new Error(
-        `PRÉ-CONDIÇÃO AUSENTE: o zoom de Competência não ofereceu nenhuma opção ao tentar ` +
+      faltaPreCondicao(
+        `o zoom de Competência não ofereceu nenhuma opção ao tentar ` +
           `selecionar "${rotuloCompetencia}".`,
       );
     }
@@ -419,8 +420,8 @@ export class MedicaoContratoPage {
 
     const competencias = await this.listarCompetencias();
     if (competencias.length === 0) {
-      throw new Error(
-        `PRÉ-CONDIÇÃO AUSENTE: o fornecedor ${fornecedor.codigo}-${fornecedor.loja} não ofereceu ` +
+      faltaPreCondicao(
+        `o fornecedor ${fornecedor.codigo}-${fornecedor.loja} não ofereceu ` +
           'nenhuma competência para o contrato selecionado.',
       );
     }

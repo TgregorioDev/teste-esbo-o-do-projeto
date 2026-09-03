@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
 import { criarSolicitacaoCompra, QUALQUER_TIPO_VALIDO } from '../../../factories/solicitacao-compra.js';
 import { capturarEnvioSolicitacao, extrairItens } from '../../../utils/captura-payload.js';
@@ -101,8 +102,8 @@ async function descobrirContratoVigentePequeno(page, contratosPage, criterio = {
       return { contrato: candidato, itens };
     }
   }
-  throw new Error(
-    `PRÉ-CONDIÇÃO AUSENTE: não foi possível achar, em ${MAX_TENTATIVAS} tentativas, um contrato vigente com até ` +
+  faltaPreCondicao(
+    `não foi possível achar, em ${MAX_TENTATIVAS} tentativas, um contrato vigente com até ` +
       `${LIMITE_ITENS_SEGURO} itens (medido sem abrir modal). Isto NÃO é o defeito D-03 sendo ` +
       'reproduzido — é a suíte se recusando a arriscar abrir um contrato potencialmente gigante.',
   );
@@ -244,12 +245,13 @@ test.describe('Item sem quantidade e sem valor no contrato não pode virar item 
       if (temZerado) alvo = { contrato: candidato, itens: itensBrutos };
     }
 
-    expect(
-      alvo,
-      'PRÉ-CONDIÇÃO AUSENTE: nenhum contrato vigente pequeno com item de quantidade/valor ' +
-        'zerado foi encontrado em 15 tentativas — não é defeito, é ausência de massa hoje.',
-    ).toBeTruthy();
-    if (!alvo) return; // apenas para o checkJs — a linha acima já falhou o teste
+    // `faltaPreCondicao` devolve `never`: o checkJs estreita `alvo` daqui em diante.
+    if (!alvo) {
+      faltaPreCondicao(
+        'nenhum contrato vigente pequeno com item de quantidade/valor ' +
+          'zerado foi encontrado em 15 tentativas — não é defeito, é ausência de massa hoje.',
+      );
+    }
 
     const itensValidos = alvo.itens.filter((i) => Number(i.CNB_QUANT) > 0 && Number(i.CNB_VLTOT) > 0);
     const itensZerados = alvo.itens.filter((i) => !(Number(i.CNB_QUANT) > 0 && Number(i.CNB_VLTOT) > 0));
@@ -519,13 +521,13 @@ test.describe('Quantidade e valor em contrato de serviço sem CNB_QUANT (CT-ACC-
     await contratosPage.expectCarregada();
 
     const alvo = await descobrirContratoComCascataDeQuantidade(page, contratosPage);
-    expect(
-      alvo,
-      'PRÉ-CONDIÇÃO AUSENTE: nenhum contrato vigente pequeno com item de `CNB_QUANT` vazio e ' +
-        '`CNB_QTDORI` preenchido foi encontrado em 15 tentativas — sem essa massa não há como ' +
-        'exercitar a cascata de quantidade. Não é defeito do produto.',
-    ).toBeTruthy();
-    if (!alvo) return; // apenas para o checkJs
+    if (!alvo) {
+      faltaPreCondicao(
+        'nenhum contrato vigente pequeno com item de `CNB_QUANT` vazio e ' +
+          '`CNB_QTDORI` preenchido foi encontrado em 15 tentativas — sem essa massa não há como ' +
+          'exercitar a cascata de quantidade. Não é defeito do produto.',
+      );
+    }
 
     const quantidadeEsperada = String(Number(alvo.itemComCascata.CNB_QTDORI));
 

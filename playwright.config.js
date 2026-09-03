@@ -36,11 +36,18 @@ export default defineConfig({
   //   PULAR_DESTRUTIVOS=1 npx playwright test
   grepInvert: process.env.PULAR_DESTRUTIVOS ? /@destrutivo/ : undefined,
 
+  // O JSON é o que `scripts/veredito-do-gate.mjs` lê: traz as anotações
+  // (`pre-condicao-ausente`, de `utils/pre-condicao.js`) e o status agregado por teste
+  // (inclusive `flaky`), que nem o JUnit nem o HTML expõem de forma legível por máquina.
+  // Localmente fica de fora por padrão (list + html); para reproduzir o veredito:
+  //   PLAYWRIGHT_JSON_OUTPUT_NAME=test-results/relatorio.json npx playwright test --reporter=list,json
+  //   node scripts/veredito-do-gate.mjs test-results/relatorio.json
   reporter: process.env.CI
     ? [
         ['github'],
         ['html', { open: 'never' }],
         ['junit', { outputFile: 'test-results/junit.xml' }],
+        ['json', { outputFile: 'test-results/relatorio.json' }],
       ]
     : [['list'], ['html', { open: 'never' }]],
 

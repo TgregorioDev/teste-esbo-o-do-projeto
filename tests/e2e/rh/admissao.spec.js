@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { ANOTACAO_PRE_CONDICAO } from '../../../utils/pre-condicao.js';
 import { AdmissaoPage } from '../../../pages/AdmissaoPage.js';
 import { criarAdmitido } from '../../../factories/pessoa.js';
 
@@ -43,7 +44,7 @@ test.describe('Automação Admissão', () => {
         description: `criarAdmitido() geraria ${JSON.stringify(admitido)} — não preenchido em tela porque o processo não serve nenhum formulário de admissão.`,
       },
       {
-        type: 'pre-condicao-ausente',
+        type: ANOTACAO_PRE_CONDICAO,
         description:
           'CT-ADM-01-S1 (dados obrigatórios ausentes) e 01-S2 (reprocessamento após falha) exigem um ' +
           'formulário de admissão com campos próprios (nome, CPF, cargo, data de admissão), que este ' +
