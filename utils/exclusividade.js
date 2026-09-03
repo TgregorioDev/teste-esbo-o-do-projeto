@@ -38,7 +38,7 @@ import { join } from 'node:path';
  */
 export async function comExclusividade(nome, tarefa, opcoes = {}) {
   const { timeout = 180_000, idadeMaxima = 300_000 } = opcoes;
-  const lock = join(tmpdir(), `cassi-e2e-lock-${nome}`);
+  const lock = caminhoDoLock(nome);
   const limite = Date.now() + timeout;
 
   for (;;) {
@@ -73,4 +73,74 @@ export async function comExclusividade(nome, tarefa, opcoes = {}) {
   } finally {
     await rm(lock, { recursive: true, force: true });
   }
+}
+
+/**
+ * Caminho do diretório que representa o lock de `nome`.
+ *
+ * Fica isolado aqui porque três funções deste módulo precisam concordar sobre ele: um prefixo
+ * divergente entre quem adquire e quem libera produziria um lock que nunca é solto — e o sintoma
+ * seria uma suíte travando ao acaso, longe da causa.
+ *
+ * @param {string} nome
+ * @returns {string}
+ */
+export function caminhoDoLock(nome) {
+  return join(tmpdir(), `cassi-e2e-lock-${nome}`);
+}
+
+/**
+ * Tenta adquirir o lock **sem esperar**: devolve `true` quando conseguiu e `false` quando outro
+ * processo já o segura.
+ *
+ * `comExclusividade` resolve o caso "preciso deste recurso específico, espero minha vez". Este
+ * resolve o outro: "preciso de UM recurso de um conjunto grande — se este está ocupado, pego o
+ * próximo". É o que a reserva de contrato usa (`utils/massa-contratos.js`): com 554 contratos
+ * vigentes na base, esperar por um deles seria desperdício quando há 553 livres ao lado.
+ *
+ * Mesma primitiva de sempre: `mkdir` é atômico em POSIX e em Windows, então quem cria, adquire.
+ *
+ * @param {string} nome identificador do recurso
+ * @param {{ idadeMaxima?: number }} [opcoes] `idadeMaxima` em ms para considerar o lock órfão
+ * @returns {Promise<boolean>}
+ */
+export async function tentarAdquirir(nome, opcoes = {}) {
+  const { idadeMaxima = 600_000 } = opcoes;
+  const lock = caminhoDoLock(nome);
+
+  try {
+    await mkdir(lock);
+    return true;
+  } catch (erro) {
+    if (/** @type {NodeJS.ErrnoException} */ (erro).code !== 'EEXIST') throw erro;
+  }
+
+  // Lock órfão: worker morto (timeout do runner, Ctrl+C) deixaria o recurso reservado para
+  // sempre. `idadeMaxima` precisa ser maior que o maior `test.setTimeout` da suíte (180s hoje),
+  // senão um teste legitimamente lento perderia o próprio lock para o vizinho.
+  const idade = await stat(lock)
+    .then((s) => Date.now() - s.mtimeMs)
+    .catch(() => 0);
+  if (idade <= idadeMaxima) return false;
+
+  await rm(lock, { recursive: true, force: true });
+  try {
+    await mkdir(lock);
+    return true;
+  } catch (erro) {
+    // Outro worker tomou o lock órfão no mesmo instante — ele venceu, e seguir para o próximo
+    // candidato é exatamente o comportamento desejado.
+    if (/** @type {NodeJS.ErrnoException} */ (erro).code === 'EEXIST') return false;
+    throw erro;
+  }
+}
+
+/**
+ * Libera um lock adquirido por `tentarAdquirir`.
+ *
+ * @param {string} nome
+ * @returns {Promise<void>}
+ */
+export async function liberar(nome) {
+  await rm(caminhoDoLock(nome), { recursive: true, force: true });
 }

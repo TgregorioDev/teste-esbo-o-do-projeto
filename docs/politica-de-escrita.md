@@ -19,6 +19,12 @@ se depende da ordem de execução — é o que mantém o paralelismo. Registro p
 (contrato, fornecedor) continua sendo descoberto em tempo de execução, ver
 `utils/massa-contratos.js`.
 
+Contrato é a única exceção, e ela foi **medida** em 30/08/2026: não existe caminho pelo qual a
+automação o crie (`docs/criacao-de-contrato-inviavel.md`). O que a suíte garante no lugar é que
+**nenhum teste depende de um contrato específico** — a escolha é distribuída por hash entre os 554
+vigentes da base e reservada por teste, então remover qualquer contrato afeta no máximo os testes
+que o escolhiam.
+
 **3. Cenário que escreve leva a tag `@destrutivo` — e roda na execução padrão.**
 
 Isto mudou em 25/08/2026, por decisão do dono do ambiente: *"sempre rode tudo, não me importa se

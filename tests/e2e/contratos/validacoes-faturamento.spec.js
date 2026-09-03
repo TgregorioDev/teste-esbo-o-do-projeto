@@ -3,7 +3,10 @@ import { test, expect } from '../../../fixtures/fixtures.js';
 import { AcompanhamentoContratosPage } from '../../../pages/AcompanhamentoContratosPage.js';
 import { MedicaoContratoPage } from '../../../pages/MedicaoContratoPage.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
-import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
+import {
+  descobrirContratoVigente,
+  descobrirContratosVigentes,
+} from '../../../utils/massa-contratos.js';
 import { parseFornecedorDaGrade } from '../../../factories/medicao.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
 import { descobrirCompetenciaBloqueada } from '../../../utils/massa-medicao.js';
@@ -89,22 +92,21 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     await contratosPage.goto();
     await contratosPage.expectCarregada();
 
-    const vigentes = (await contratosPage.lerLinhasDaGrade()).filter((l) => l.status === 'Vigente');
-    if (vigentes.length === 0) {
-      throw new Error(
-        'PRÉ-CONDIÇÃO AUSENTE: a grade não trouxe nenhum contrato vigente. A integração com o ' +
-          'Protheus está indisponível ou sem dados — isto NÃO é defeito do produto sob teste.',
-      );
-    }
-
+    // Amostra por AFINIDADE, não por posição. `vigentes.slice(0, 4)` — a forma anterior —
+    // amostrava sempre os mesmos quatro primeiros contratos da grade, o que reintroduzia pela
+    // porta dos fundos a dependência de registro fixo que `utils/massa-contratos.js` existe
+    // para eliminar. `descobrirContratosVigentes` devolve quatro contratos reservados e
+    // distribuídos, e falha com `PRÉ-CONDIÇÃO AUSENTE` quando a grade não tem massa.
     const MAX_CONTRATOS = 4;
+    const amostra = await descobrirContratosVigentes(contratosPage, MAX_CONTRATOS);
+
     const tentados = /** @type {string[]} */ ([]);
     /** @type {{ competencia: string, mensagemDoServidor: string } | null} */
     let bloqueada = null;
-    /** @type {(typeof vigentes)[number] | undefined} */
+    /** @type {(typeof amostra)[number] | undefined} */
     let contratoAlvo;
 
-    for (const linha of vigentes.slice(0, MAX_CONTRATOS)) {
+    for (const linha of amostra) {
       tentados.push(linha.contrato);
       bloqueada = await descobrirCompetenciaBloqueada(page, {
         contrato: linha.contrato,

@@ -5,6 +5,7 @@ import { fakerPT_BR as faker } from '@faker-js/faker';
 import { LoginPage } from '../pages/LoginPage.js';
 import { AcompanhamentoContratosPage } from '../pages/AcompanhamentoContratosPage.js';
 import { SolicitacaoCompraModal } from '../components/SolicitacaoCompraModal.js';
+import { liberarReservasDeContrato } from '../utils/massa-contratos.js';
 
 /**
  * Fixtures compartilhadas da suíte.
@@ -98,6 +99,15 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
         });
 
         await use(undefined);
+
+        // ── Devolve os contratos que este teste reservou ───────────────────────────────────
+        //
+        // `utils/massa-contratos.js` reserva o contrato escolhido para que dois workers não
+        // disputem o mesmo registro sob `fullyParallel: true`. A devolução precisa acontecer
+        // aqui, e não no fim do corpo do teste: um teste que falha ou estoura o timeout nunca
+        // chega à última linha, e o contrato ficaria reservado até a reserva expirar — com a
+        // suíte estreitando o pool a cada vermelho.
+        await liberarReservasDeContrato();
 
         // ── Livro-razão do que este teste criou ────────────────────────────────────────────
         //

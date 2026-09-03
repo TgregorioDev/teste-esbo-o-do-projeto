@@ -51,8 +51,11 @@ O que se exige em troca:
   Registro criado no Fluig/Protheus em geral não tem exclusão disponível, então a rastreabilidade
   é o que permite higienizar depois.
 - **Cada teste cria a própria massa** — nada de reaproveitar registro de outro teste ou depender
-  de ordem. Registro pré-existente (contrato) é **descoberto em tempo de execução**
-  (`utils/massa-contratos.js`), nunca fixado em `.env`.
+  de ordem. Contrato é a exceção **verificada**: não há como a automação criá-lo, e a prova está
+  em `docs/criacao-de-contrato-inviavel.md`. Ele é **descoberto em tempo de execução**
+  (`utils/massa-contratos.js`), nunca fixado em `.env` — e desde 30/08/2026 a escolha é
+  **distribuída entre os 554 vigentes da base** e reservada por teste, de modo que nenhum
+  registro específico é ponto único de falha.
 - **Cenário que escreve leva a tag `@destrutivo`** — mas **roda na execução padrão**. Decisão do
   dono do ambiente (25/08/2026): *"sempre rode tudo, não me importa se serão testes destrutivos, a
   base de testes é pra isso"*. A tag serve para mirar (`--grep @destrutivo`) e para a regressão
@@ -145,7 +148,20 @@ quando falta configuração.
 **Não existe variável de contrato.** A massa é descoberta em tempo de execução pela grade
 (`utils/massa-contratos.js`): o teste declara a característica de que precisa e a suíte escolhe
 um contrato que sirva; sem massa, falha com `PRÉ-CONDIÇÃO AUSENTE`, separando ambiente de
-defeito no relatório. Contrato é pré-condição de leitura — a automação não pode criá-lo.
+defeito no relatório.
+
+A escolha é **por afinidade de hash** entre a identidade do teste (`titlePath`) e o número do
+contrato, e o contrato escolhido é **reservado** contra os outros workers (lock de diretório,
+devolvido pela fixture `evidence`). Determinística — o mesmo teste escolhe sempre o mesmo
+contrato, em qualquer worker, o que é a condição para reproduzir uma falha. Nunca ordene por
+posição (`vigentes[0]`, `vigentes.slice(0, N)`): é assim que a suíte inteira acaba dependendo do
+`000000000000001` de novo.
+
+Contrato é pré-condição de leitura, e isso foi **verificado, não assumido**: ver
+`docs/criacao-de-contrato-inviavel.md`. Em uma linha — o contrato é uma linha da CN9 do Protheus,
+todos os 19 datasets do ERP expostos ao portal são `get*`, nenhum dos 34 processos publicados cria
+contrato, e um contrato recém-incluído nasce "Em elaboração" (não serve para SC) até um gestor
+humano aprová-lo. Não há, portanto, contrato para cancelar ao fim da execução.
 
 Corolário ao escrever teste novo: **nunca fixe o valor de um contrato numa constante**. Não há
 oráculo externo para o valor total, então afirme sobre a coerência interna do payload (itens com
