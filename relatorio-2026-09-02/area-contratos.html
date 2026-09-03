@@ -1,0 +1,2329 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Falhas da suíte E2E — Fluig Cassi — 02/09/2026 (versão leve, sem screenshots embutidas)</title>
+<style>
+  :root {
+    --fundo: #0f1115; --cartao: #171a21; --borda: #262b36; --texto: #e6e9ef;
+    --suave: #9aa4b2; --codigo: #0b0d11;
+    --produto: #ef4444; --ambiente: #f59e0b; --infra: #8b5cf6; --sem-veredito: #64748b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --fundo:#f6f7f9; --cartao:#fff; --borda:#e2e5ea; --texto:#1b1f27; --suave:#5b6472; --codigo:#f1f3f6; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--fundo); color:var(--texto);
+         font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .capa { padding:32px 24px 20px; border-bottom:1px solid var(--borda); }
+  .capa h1 { margin:0 0 6px; font-size:26px; }
+  .capa p { margin:0; color:var(--suave); }
+  .numeros { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+  .numero { background:var(--cartao); border:1px solid var(--borda); border-radius:10px; padding:10px 14px; }
+  .numero b { display:block; font-size:22px; }
+  .numero span { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  main { padding:24px; max-width:1100px; margin:0 auto; }
+  .filtros { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+  .filtros button { background:var(--cartao); color:var(--texto); border:1px solid var(--borda);
+                    border-radius:999px; padding:6px 14px; cursor:pointer; font-size:13px; }
+  .filtros button[aria-pressed="true"] { border-color:var(--texto); font-weight:600; }
+  .falha { background:var(--cartao); border:1px solid var(--borda); border-radius:14px;
+           padding:20px; margin-bottom:20px; }
+  .falha[hidden] { display:none; }
+  .cabecalho { display:flex; justify-content:space-between; align-items:center; }
+  .ordem { color:var(--suave); font-size:13px; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px;
+           font-weight:600; color:#fff; }
+  .badge.produto { background:var(--produto); }
+  .badge.ambiente { background:var(--ambiente); color:#231a05; }
+  .badge.infra { background:var(--infra); }
+  .badge.sem-veredito { background:var(--sem-veredito); }
+  .falha h2 { margin:12px 0 4px; font-size:18px; line-height:1.35; }
+  .suite { margin:0 0 14px; color:var(--suave); font-size:13px; }
+  .meta { display:flex; flex-wrap:wrap; gap:18px; margin:0 0 4px; }
+  .meta div { display:flex; flex-direction:column; }
+  .meta dt { color:var(--suave); font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  .meta dd { margin:2px 0 0; font-size:13px; }
+  .bloco { margin-top:18px; }
+  .bloco h3 { margin:0 0 8px; font-size:13px; text-transform:uppercase;
+              letter-spacing:.05em; color:var(--suave); }
+  .resumo { margin:0 0 8px; font-weight:600; }
+  pre { background:var(--codigo); border:1px solid var(--borda); border-radius:10px;
+        padding:12px 14px; overflow-x:auto; font-size:12.5px; line-height:1.5; margin:0;
+        white-space:pre-wrap; word-break:break-word; }
+  pre.codigo, pre.cmd { white-space:pre; }
+  code { background:var(--codigo); padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .codigo .linha { display:block; }
+  .codigo .num { display:inline-block; width:44px; color:var(--suave); user-select:none; }
+  .codigo .alvo { background:rgba(239,68,68,.16); font-weight:600; }
+  figure { margin:0 0 12px; }
+  figure img { max-width:100%; border:1px solid var(--borda); border-radius:10px; display:block; }
+  figcaption { color:var(--suave); font-size:12px; margin-top:5px; }
+  details > summary { cursor:pointer; color:var(--suave); font-size:13px; padding:6px 0; }
+  details[open] > summary { margin-bottom:8px; }
+  .dica { color:var(--suave); font-size:13px; margin:8px 0 0; }
+  a { color:inherit; }
+  footer { padding:20px 24px 44px; color:var(--suave); font-size:13px; max-width:1100px; margin:0 auto; }
+  .badge.divergencia { background:#0ea5e9; color:#06202b; }
+  .sumario { background:var(--cartao); border:1px solid var(--borda); border-radius:14px; padding:20px 24px; margin-bottom:22px; }
+  .sumario h2 { margin:0 0 12px; font-size:20px; }
+  .sumario h3 { margin:18px 0 8px; font-size:14px; text-transform:uppercase; letter-spacing:.05em; color:var(--suave); }
+  .sumario table { border-collapse:collapse; width:100%; font-size:13.5px; }
+  .sumario th, .sumario td { border-bottom:1px solid var(--borda); padding:6px 8px; text-align:left; vertical-align:top; }
+  .sumario th { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .grupo { border-top:1px solid var(--borda); padding-top:14px; margin-top:14px; }
+  .grupo h3 { text-transform:none; letter-spacing:0; font-size:16px; color:var(--texto); margin:0 0 6px; }
+  .gid { display:inline-block; background:var(--codigo); border:1px solid var(--borda); border-radius:6px; padding:0 6px; font-size:12px; margin-right:6px; }
+  .suave { color:var(--suave); font-size:13px; margin:0 0 8px; }
+  .lista-testes { font-size:13px; color:var(--suave); }
+  .analise { border-left:3px solid #0ea5e9; padding-left:14px; }
+  .analise p { margin:0 0 8px; }
+  .analise .g, .g { color:var(--suave); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="capa">
+  <h1>Falhas da suíte E2E — TOTVS Fluig Cassi</h1>
+  <p>Execução de 02/09/2026 · 233 testes, 81 reprovados · destrutivos incluídos · com análise de causa raiz</p>
+  </div>
+<main>
+<nav class="filtros" style="margin:16px 0"><a href="index.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">Sumário</a> <a href="area-acompanhamento-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">acompanhamento-contratos (27)</a> <a href="area-api.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">api (2)</a> <a href="area-compras.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">compras (13)</a> <a href="area-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;font-weight:700;border-color:var(--texto)">contratos (4)</a> <a href="area-documentos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">documentos (5)</a> <a href="area-juridico.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">juridico (3)</a> <a href="area-notificacoes.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">notificacoes (2)</a> <a href="area-plataforma.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">plataforma (8)</a> <a href="area-portais.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">portais (2)</a> <a href="area-rh.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">rh (4)</a> <a href="area-saude.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">saude (1)</a> <a href="area-seguranca.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">seguranca (7)</a> <a href="area-tarefas.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">tarefas (3)</a></nav><h2>contratos — 4 teste(s) reprovado(s)</h2><p class="dica"><a href="index.html">← voltar ao sumário e às causas raiz</a></p><article class="falha" id="f42" data-classe="novo" data-area="contratos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — achado desta execução (não catalogado)</span>
+      <span class="ordem">#43</span>
+    </div>
+    <h2>CT-DEL-01-H @destrutivo: delegar um fiscal substituto para um contrato deve criar a delegação</h2>
+    <p class="suite">e2e/contratos/delegacao-fiscais-ciclo.spec.js › Delegação de Fiscais de Contrato/Serviço — ciclo completo</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/contratos/delegacao-fiscais-ciclo.spec.js:42</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>33.3s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo:</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>675195</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G10">G10</a> — Contratos de API — notificações, favoritos, reset de senha do fornecedor, medição e delegação de fiscais · <b>Referência:</b> CT-DEL-01-H</p>
+    <p><b>O que acontece:</b> O processo <code>wf_delegacaoFiscalContratoServico</code> consta do catálogo como iniciável, abre o formulário, mas ao Enviar o servidor responde 500: "Solicitação só pode ser aberta através do portal de delegação de fiscais!".</p>
+    <p><b>Por que falha:</b> O evento do processo exige um portal de origem que não existe em nenhum menu, atalho ou rota alcançável por esta conta. Catálogo e regra do processo se contradizem.</p>
+    <p><b>Onde falha:</b> <code>expect(getByText(/iniciada com sucesso/)).toBeVisible()</code> em <code>delegacao-fiscais-ciclo.spec.js:77</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/contratos/delegacao-fiscais-ciclo.spec.js:77</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: a Delegação de Fiscais deveria ser criável a partir do catálogo de processos (onde é anunciada como iniciável), mas o formulário recusa o envio exigindo um "portal de delegação de fiscais" inalcançável — ver comentário da suíte para a investigação completa</p>
+    <pre class="detalhe">expect(locator).toBeVisible() failed
+
+Locator: getByText(/iniciada com sucesso\./)
+Expected: visible
+Timeout: 15000ms
+Error: element(s) not found</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">71</span>    const confirmacao = page.getByText(/iniciada com sucesso\./);</span>
+<span class="linha"><span class="num">72</span>    await expect(</span>
+<span class="linha"><span class="num">73</span>      confirmacao,</span>
+<span class="linha"><span class="num">74</span>      'a Delegação de Fiscais deveria ser criável a partir do catálogo de processos (onde é ' +</span>
+<span class="linha"><span class="num">75</span>        'anunciada como iniciável), mas o formulário recusa o envio exigindo um "portal de ' +</span>
+<span class="linha"><span class="num">76</span>        'delegação de fiscais" inalcançável — ver comentário da suíte para a investigação completa',</span>
+<span class="linha alvo"><span class="num">77</span>    ).toBeVisible({ timeout: 15000 });</span>
+<span class="linha"><span class="num">78</span></span>
+<span class="linha"><span class="num">79</span>    expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);</span>
+<span class="linha"><span class="num">80</span>  });</span>
+<span class="linha"><span class="num">81</span></span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/contratos/delegacao-fiscais-ciclo.spec.js",
+    "Delegação de Fiscais de Contrato/Serviço — ciclo completo",
+    "CT-DEL-01-H @destrutivo: delegar um fiscal substituto para um contrato deve criar a delegação"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_delegacaoFiscalContratoServico",
+  "fakerSeed": 675195,
+  "reproduzirCom": "FAKER_SEED=675195 npx playwright test",
+  "erro": "Error: a Delegação de Fiscais deveria ser criável a partir do catálogo de processos (onde é anunciada como iniciável), mas o formulário recusa o envio exigindo um \"portal de delegação de fiscais\" inalcançável — ver comentário da suíte para a investigação completa\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/iniciada com sucesso\\./)\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - a Delegação de Fiscais deveria ser criável a partir do catálogo de processos (onde é anunciada como iniciável), mas o formulário recusa o envio exigindo um \"portal de delegação de fiscais\" inalcançável — ver comentário da suíte para a investigação completa with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/iniciada com sucesso\\./)\u001b[22m\n"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - a Delegação de Fiscais deveria ser criável a partir do catálogo de processos (onde é anunciada como iniciável), mas o formulário recusa o envio exigindo um "portal de delegação de fiscais" inalcançável — ver comentário da suíte para a investigação completa with timeout 15000ms
+  - waiting for getByText(/iniciada com sucesso\./)</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/contratos/delegacao-fiscais-ciclo.spec.js &gt;&gt; Delegação de Fiscais de Contrato/Serviço — ciclo completo &gt;&gt; CT-DEL-01-H @destrutivo: delegar um fiscal substituto para um contrato deve criar a delegação
+- Location: tests/e2e/contratos/delegacao-fiscais-ciclo.spec.js:42:3
+
+# Error details
+
+```
+Error: a Delegação de Fiscais deveria ser criável a partir do catálogo de processos (onde é anunciada como iniciável), mas o formulário recusa o envio exigindo um "portal de delegação de fiscais" inalcançável — ver comentário da suíte para a investigação completa
+
+expect(locator).toBeVisible() failed
+
+Locator: getByText(/iniciada com sucesso\./)
+Expected: visible
+Timeout: 15000ms
+Error: element(s) not found
+
+Call log:
+  - a Delegação de Fiscais deveria ser criável a partir do catálogo de processos (onde é anunciada como iniciável), mas o formulário recusa o envio exigindo um "portal de delegação de fiscais" inalcançável — ver comentário da suíte para a investigação completa with timeout 15000ms
+  - waiting for getByText(/iniciada com sucesso\./)
+
+```
+
+```yaml
+- navigation:
+  - link "Logo da empresa":
+    - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+    - img "Logo da empresa"
+  - button "Abrir ajuda"
+  - button "Abrir notificações": 9+
+  - img "Usuário TBC (TOTVS)"
+- navigation
+- navigation "Menu de navegação principal responsivo":
+  - list:
+    - listitem:
+      - link "Home":
+        - /url: /portal/p/1/home
+    - listitem:
+      - link "Buscar":
+        - /url: "#"
+    - listitem:
+      - link "Favoritos":
+        - /url: /portal/p/1/principalfavorites
+  - list:
+    - listitem:
+      - link "Documentos":
+        - /url: /portal/p/1/ecmnavigation
+    - listitem:
+      - link "Processos":
+        - /url: /portal/p/1/principalprocess
+    - listitem:
+      - link "Central de Tarefas":
+        - /url: /portal/p/1/pagecentraltask
+    - listitem:
+      - link "Social":
+        - /url: /portal/p/1/social
+    - listitem:
+      - link "Comunidades":
+        - /url: /portal/p/1/communities
+    - listitem:
+      - link "Páginas":
+        - /url: "#"
+  - list:
+    - listitem:
+      - link "Store":
+        - /url: /portal/p/1/mysolutions
+    - listitem:
+      - link "Lixeira":
+        - /url: /portal/p/1/pagerecyclebin
+  - list:
+    - listitem:
+      - link "Fechar menu":
+        - /url: "#"
+- list:
+  - listitem:
+    - link "Início":
+      - /url: /
+  - listitem:
+    - text: 
+    - link "Processos":
+      - /url: /portal/p/1/pageprocessstart
+  - listitem:
+    - text: 
+    - link "Iniciar Solicitações":
+      - /url: /portal/p/1/pageprocessstart
+  - listitem: Delegação de Fiscais de Contrato/Serviço
+- heading "Início" [level=2]
+- list:
+  - listitem:
+    - link " Formulário":
+      - /url: "#form-tab"
+  - listitem:
+    - link " Informações":
+      - /url: "#informations-tab"
+  - listitem:
+    - link " Histórico 0":
+      - /url: "#historic-tab"
+  - listitem:
+    - link " Anexos 0":
+      - /url: "#attachments-tab"
+- iframe
+- button "Enviar"
+- button "Opções": 
+- img
+```
+
+# Test source
+
+```ts
+  1   | // @ts-check
+  2   | import { test, expect } from '../../../fixtures/fixtures.js';
+  3   | import { FormularioDelegacaoFiscaisPage } from '../../../pages/FormularioDelegacaoFiscaisPage.js';
+  4   | import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
+  5   | 
+  6   | /**
+  7   |  * CT-DEL-01 — ciclo de Delegação de Fiscais de Contrato/Serviço (`wf_delegacaoFiscalContratoServico`).
+  8   |  *
+  9   |  * `tests/e2e/contratos/delegacao-fiscais.spec.js` (já existente, não duplicado aqui) cobre a
+  10  |  * ABERTURA: a rota não é bloqueada por permissão e os campos de Identificação do
+  11  |  * Contrato/Serviço e do Fiscal aparecem, ainda que somente leitura. Esta suíte vai além —
+  12  |  * ela de fato aciona **Enviar**, algo que a spec de abertura nunca faz — e documenta com
+  13  |  * evidência ao vivo por que o ciclo completo (delegar → substituto assume as tarefas) não é
+  14  |  * alcançável por este usuário, através de nenhum caminho de navegação encontrado.
+  15  |  *
+  16  |  * ## Investigação em campo (nova nesta rodada)
+  17  |  *
+  18  |  * Clicar em **Enviar** no formulário aberto a frio (sem processo de origem) devolve, de
+  19  |  * forma síncrona e ANTES de qualquer escrita em `process-management` (confirmado: zero
+  20  |  * tentativas mesmo sem a guarda instalada), o erro:
+  21  |  *
+  22  |  * &gt; Erro ao salvar dados de formulário: Solicitação só pode ser aberta através do portal de
+  23  |  * &gt; delegação de fiscais!
+  24  |  *
+  25  |  * Isso indica a existência de um "portal de delegação de fiscais" dedicado — no mesmo
+  26  |  * espírito do Portal de Acompanhamento de Contratos, que é o caminho correto de abrir uma
+  27  |  * Solicitação de Compra em vez do formulário `wf_solicitacao_compras` a frio. Esse portal,
+  28  |  * porém, **não foi encontrado em nenhum ponto de navegação alcançável** por este usuário:
+  29  |  * não há link em Home &gt; Contratos (que só lista "Faturamento de Contratos"), não há botão
+  30  |  * de delegação no modal "Informações do Contrato" do Portal de Acompanhamento de Contratos,
+  31  |  * e o catálogo de processos (`/portal/p/1/pageprocessstart`) lista o próprio
+  32  |  * "Delegação de Fiscais de Contrato/Serviço" com **"Último iniciado: Nunca"** — evidência de
+  33  |  * que a lacuna não é específica desta automação.
+  34  |  *
+  35  |  * Além disso, mesmo que o portal fosse encontrado, não há nenhum controle de seleção de
+  36  |  * "Fiscal Substituto" nem campo de período (início/fim da delegação) em lugar algum do
+  37  |  * formulário hoje renderizado — os únicos campos de data são carimbos de resposta de
+  38  |  * aprovação (`dataRespostaGestor`, `dataRespostaGerente`, `dataResposta`) e a data da própria
+  39  |  * solicitação (`dataSolicitacao`), nenhum deles editável pelo solicitante.
+  40  |  */
+  41  | test.describe('Delegação de Fiscais de Contrato/Serviço — ciclo completo', () =&gt; {
+  42  |   test('CT-DEL-01-H @destrutivo: delegar um fiscal substituto para um contrato deve criar a delegação', async ({
+  43  |     page,
+  44  |   }) =&gt; {
+  45  |     const guarda = await bloquearCriacaoDeSolicitacao(page);
+  46  |     const formulario = new FormularioDelegacaoFiscaisPage(page);
+  47  | 
+  48  |     await formulario.goto();
+  49  |     await formulario.expectAberto();
+  50  | 
+  51  |     // Evidência complementar, colhida nesta execução: o catálogo confirma que ninguém nunca
+  52  |     // completou este processo — não é uma lacuna exclusiva desta automação.
+  53  |     await page.goto('/portal/p/1/pageprocessstart', { waitUntil: 'domcontentloaded' });
+  54  |     const linhaCatalogo = page.getByText('Delegação de Fiscais de Contrato/Serviço', { exact: false }).first();
+  55  |     await linhaCatalogo.waitFor({ state: 'visible' });
+  56  |     const contextoCatalogo = await linhaCatalogo
+  57  |       .locator('xpath=ancestor::div[contains(@class,"card-horizontal")][1]')
+  58  |       .innerText();
+  59  |     expect(contextoCatalogo).toMatch(/Último iniciado:\s*Nunca/);
+  60  | 
+  61  |     await formulario.goto();
+  62  |     await formulario.expectAberto();
+  63  |     await formulario.botaoEnviar.click();
+  64  | 
+  65  |     // Comportamento ESPERADO (o que este caso de teste deveria comprovar): a delegação é
+  66  |     // criada e o processo é aceito. Comportamento OBSERVADO: um diálogo de erro síncrono
+  67  |     // recusa o envio exigindo um "portal de delegação de fiscais" que não existe em nenhum
+  68  |     // ponto de navegação alcançável — ver nota da suíte acima. Este teste fica VERMELHO de
+  69  |     // propósito, documentando o defeito, e fica verde sozinho se a Cassi disponibilizar esse
+  70  |     // portal (ou se o processo passar a aceitar envio direto).
+  71  |     const confirmacao = page.getByText(/iniciada com sucesso\./);
+  72  |     await expect(
+  73  |       confirmacao,
+  74  |       'a Delegação de Fiscais deveria ser criável a partir do catálogo de processos (onde é ' +
+  75  |         'anunciada como iniciável), mas o formulário recusa o envio exigindo um "portal de ' +
+  76  |         'delegação de fiscais" inalcançável — ver comentário da suíte para a investigação completa',
+&gt; 77  |     ).toBeVisible({ timeout: 15000 });
+      |       ^ Error: a Delegação de Fiscais deveria ser criável a partir do catálogo de processos (onde é anunciada como iniciável), mas o formulário recusa o envio exigindo um "portal de delegação de fiscais" inalcançável — ver comentário da suíte para a investigação completa
+  78  | 
+  79  |     expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);
+  80  |   });
+  81  | 
+  82  |   test('CT-DEL-01-S1 @destrutivo: substituto inválido/sem permissão deve ser bloqueado — não há nenhum controle para selecionar um fiscal substituto', async ({
+  83  |     page,
+  84  |   }) =&gt; {
+  85  |     // ⚠️ NÃO instale aqui a guarda de escrita (`bloquearCriacaoDeSolicitacao`). Medido em
+  86  |     // 25/08/2026, com e sem guarda, no mesmo formulário:
+  87  |     //   • COM guarda   → o clique em Enviar dispara `POST /ecm/api/rest/ecm/workflowView/send`,
+  88  |     //     a guarda ABORTA a requisição, o widget fica com o spinner girando e a tela não exibe
+  89  |     //     nada: nenhum diálogo, nenhum heading "Erro". A assertion morria em
+  90  |     //     `Locator: getByRole('heading', { name: 'Erro' })  Timeout` — vermelho que era
+  91  |     //     ARTEFATO DA INTERCEPTAÇÃO, não comportamento do produto (a armadilha "interceptar
+  92  |     //     muda o comportamento" do CLAUDE.md).
+  93  |     //   • SEM guarda   → o servidor responde HTTP 500 e o diálogo aparece com o texto
+  94  |     //     "Erro ao salvar dados de formulário: Solicitação só pode ser aberta através do portal
+  95  |     //     de delegação de fiscais!". A recusa é do SERVIDOR — só é observável deixando a
+  96  |     //     requisição chegar nele.
+  97  |     // Por isso o oráculo aqui OBSERVA a resposta do envio em vez de bloqueá-la, e a prova de
+  98  |     // que nada nasceu é a própria resposta do servidor (mesmo padrão de CT-CMP-02-S4
+  99  |     // @destrutivo). `@destrutivo` porque o envio sai de verdade.
+  100 |     /** @type {{ status: number, instanceId: unknown, mensagem: string, url: string }[]} */
+  101 |     const envios = [];
+  102 |     page.on('response', async (resposta) =&gt; {
+  103 |       const metodo = resposta.request().method();
+  104 |       if (metodo === 'GET' || metodo === 'HEAD' || metodo === 'OPTIONS') return;
+  105 |       if (!/workflowView\/send|process-management/.test(resposta.url())) return;
+  106 |       const corpo = await resposta.text().catch(() =&gt; '');
+  107 |       /** @type {unknown} */
+  108 |       let instanceId = null;
+  109 |       /** @type {string} */
+  110 |       let mensagem = corpo.slice(0, 300);
+  111 |       try {
+  112 |         const json = JSON.parse(corpo);
+  113 |         instanceId = json?.content?.processInstanceId ?? json?.processInstanceId ?? null;
+  114 |         mensagem = String(json?.message?.message ?? json?.message ?? mensagem)
+  115 |           .replace(/&lt;[^&gt;]*&gt;/g, ' ')
+  116 |           .replace(/\s+/g, ' ')
+  117 |           .trim();
+  118 |       } catch {
+  119 |         // Corpo não-JSON não carrega id de instância nem mensagem estruturada; o status da
+  120 |         // resposta continua sendo afirmado abaixo, e o trecho bruto vai para a mensagem.
+  121 |         instanceId = null;
+  122 |       }
+  123 |       envios.push({ status: resposta.status(), instanceId, mensagem, url: resposta.url() });
+  124 |     });
+  125 | 
+  126 |     const formulario = new FormularioDelegacaoFiscaisPage(page);
+  127 | 
+  128 |     await formulario.goto();
+  129 |     await formulario.expectAberto();
+  130 | 
+  131 |     // O único campo relacionado a fiscal na tela é somente leitura...
+  132 |     await expect(formulario.campoFiscal).toBeVisible();
+  133 |     expect(await formulario.campoFiscal.isEditable()).toBe(false);
+  134 | 
+  135 |     // ...e não existe, em lugar algum do formulário, um campo de BUSCA/SELEÇÃO de "Fiscal
+  136 |     // Substituto" — nem por nome de campo acessível, nem por zoom.
+  137 |     const buscaSubstituto = formulario.frame
+  138 |       .getByRole('searchbox', { name: /[Ss]ubstitut/ })
+  139 |       .or(formulario.frame.getByRole('combobox', { name: /[Ss]ubstitut/ }));
+  140 |     const controlesDeSubstituto = await buscaSubstituto.count();
+  141 | 
+  142 |     // Exercita o único caminho de escrita disponível e MEDE a recusa do servidor.
+  143 |     await formulario.botaoEnviar.click();
+  144 | 
+  145 |     await expect
+  146 |       .poll(() =&gt; envios.length, {
+  147 |         timeout: 60_000,
+  148 |         intervals: Array(120).fill(500),
+  149 |         message:
+  150 |           'o clique em Enviar não produziu nenhuma resposta do servidor em 60s ' +
+  151 |           '(`workflowView/send` / `process-management`) — sem resposta não há veredito sobre o ' +
+  152 |           'bloqueio, e a causa provável é ambiente, não produto',
+  153 |       })
+  154 |       .toBeGreaterThan(0);
+  155 | 
+  156 |     // Nada pode ter nascido deste envio.
+  157 |     expect(
+  158 |       envios.filter((e) =&gt; e.status &lt; 400 &amp;&amp; e.instanceId != null).map((e) =&gt; `#${e.instanceId}`),
+  159 |       'defeito: o envio da Delegação de Fiscais foi ACEITO e criou registro, num formulário que ' +
+  160 |         'não oferece sequer o campo de fiscal substituto — nenhuma validação de substituto foi ' +
+  161 |         'aplicada',
+  162 |     ).toEqual([]);
+  163 | 
+  164 |     const recusa = envios.map((e) =&gt; `HTTP ${e.status} em ${new URL(e.url).pathname}: ${e.mensagem}`).join(' | ');
+  165 | 
+  166 |     // A assertion que dá o veredito de CT-DEL-01-S1. Ela REPROVA de propósito, e a mensagem diz
+  167 |     // exatamente por quê: o caso é INEXEQUÍVEL pela UI de hoje. "Substituto inválido é
+  168 |     // bloqueado" pressupõe um controle onde informar o substituto; ele não existe, e o único
+  169 |     // caminho de envio é recusado pelo servidor exigindo um "portal de delegação de fiscais"
+  170 |     // que não foi encontrado em nenhum ponto de navegação alcançável (ver CT-DEL-01-H e a nota
+  171 |     // da suíte). Fica verde sozinho quando a Cassi disponibilizar o portal/campo — ou o caso é
+  172 |     // reclassificado como não-automatizável por ausência de entrada de dado.
+  173 |     expect(
+  174 |       controlesDeSubstituto,
+  175 |       'CT-DEL-01-S1 é INEXEQUÍVEL pela interface atual: o formulário de Delegação de Fiscais não ' +
+  176 |         'oferece nenhum controle (searchbox/combobox) para informar um fiscal substituto, então ' +
+  177 |         'não há entrada de dado para exercitar "substituto inválido". O único caminho de escrita ' +
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=675195 npx playwright test tests/e2e/contratos/delegacao-fiscais-ciclo.spec.js -g "CT-DEL-01-H @destrutivo: delegar um fiscal substituto para um contrato deve criar a delegação"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-delegacao-fi-3304a-rato-deve-criar-a-delegação-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-delegacao-fi-3304a-rato-deve-criar-a-delegação-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-delegacao-fi-3304a-rato-deve-criar-a-delegação-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-delegacao-fi-3304a-rato-deve-criar-a-delegação-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+<article class="falha" id="f43" data-classe="novo" data-area="contratos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — achado desta execução (não catalogado)</span>
+      <span class="ordem">#44</span>
+    </div>
+    <h2>CT-DEL-01-S1 @destrutivo: substituto inválido/sem permissão deve ser bloqueado — não há nenhum controle para selecionar um fiscal substituto</h2>
+    <p class="suite">e2e/contratos/delegacao-fiscais-ciclo.spec.js › Delegação de Fiscais de Contrato/Serviço — ciclo completo</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/contratos/delegacao-fiscais-ciclo.spec.js:82</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>11.9s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo:</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>793470</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G10">G10</a> — Contratos de API — notificações, favoritos, reset de senha do fornecedor, medição e delegação de fiscais · <b>Referência:</b> CT-DEL-01-S1</p>
+    <p><b>O que acontece:</b> O formulário não oferece nenhum controle para informar o fiscal substituto (0 searchbox/combobox).</p>
+    <p><b>Por que falha:</b> Inexequível pela interface atual: não há entrada para exercitar "substituto inválido". Mesma causa de CT-DEL-01-H.</p>
+    <p><b>Onde falha:</b> <code>expect(controles).toBeGreaterThan(0)</code> em <code>delegacao-fiscais-ciclo.spec.js:180</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/contratos/delegacao-fiscais-ciclo.spec.js:180</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: CT-DEL-01-S1 é INEXEQUÍVEL pela interface atual: o formulário de Delegação de Fiscais não oferece nenhum controle (searchbox/combobox) para informar um fiscal substituto, então não há entrada de dado para exercitar "substituto inválido". O único caminho de escrita (Enviar) é recusado pelo servidor — HTTP 500 em /ecm/api/rest/ecm/workflowView/send: Erro ao salvar dados de formulário: Solicitação só pode ser aberta através do portal de delegação de fiscais! — e esse portal não foi encontrado em nenhum ponto de navegação alcançável por este usuário (ver CT-DEL-01-H)</p>
+    <pre class="detalhe">expect(received).toBeGreaterThan(expected)
+
+Expected: &gt; 0
+Received:   0</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">174</span>      controlesDeSubstituto,</span>
+<span class="linha"><span class="num">175</span>      'CT-DEL-01-S1 é INEXEQUÍVEL pela interface atual: o formulário de Delegação de Fiscais não ' +</span>
+<span class="linha"><span class="num">176</span>        'oferece nenhum controle (searchbox/combobox) para informar um fiscal substituto, então ' +</span>
+<span class="linha"><span class="num">177</span>        'não há entrada de dado para exercitar "substituto inválido". O único caminho de escrita ' +</span>
+<span class="linha"><span class="num">178</span>        `(Enviar) é recusado pelo servidor — ${recusa} — e esse portal não foi encontrado em ` +</span>
+<span class="linha"><span class="num">179</span>        'nenhum ponto de navegação alcançável por este usuário (ver CT-DEL-01-H)',</span>
+<span class="linha alvo"><span class="num">180</span>    ).toBeGreaterThan(0);</span>
+<span class="linha"><span class="num">181</span>  });</span>
+<span class="linha"><span class="num">182</span></span>
+<span class="linha"><span class="num">183</span>  test('CT-DEL-01-S2: período sobreposto a outra delegação vigente não é verificável — não há campo de período (início/fim) em nenhuma parte do formulário', async ({</span>
+<span class="linha"><span class="num">184</span>    page,</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/contratos/delegacao-fiscais-ciclo.spec.js",
+    "Delegação de Fiscais de Contrato/Serviço — ciclo completo",
+    "CT-DEL-01-S1 @destrutivo: substituto inválido/sem permissão deve ser bloqueado — não há nenhum controle para selecionar um fiscal substituto"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_delegacaoFiscalContratoServico",
+  "fakerSeed": 793470,
+  "reproduzirCom": "FAKER_SEED=793470 npx playwright test",
+  "erro": "Error: CT-DEL-01-S1 é INEXEQUÍVEL pela interface atual: o formulário de Delegação de Fiscais não oferece nenhum controle (searchbox/combobox) para informar um fiscal substituto, então não há entrada de dado para exercitar \"substituto inválido\". O único caminho de escrita (Enviar) é recusado pelo servidor — HTTP 500 em /ecm/api/rest/ecm/workflowView/send: Erro ao salvar dados de formulário: Solicitação só pode ser aberta através do portal de delegação de fiscais! — e esse portal não foi encontrado em nenhum ponto de navegação alcançável por este usuário (ver CT-DEL-01-H)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: &gt; \u001b[32m0\u001b[39m\nReceived:   \u001b[31m0\u001b[39m"
+}</pre>
+  </section>
+
+  
+
+  
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/contratos/delegacao-fiscais-ciclo.spec.js &gt;&gt; Delegação de Fiscais de Contrato/Serviço — ciclo completo &gt;&gt; CT-DEL-01-S1 @destrutivo: substituto inválido/sem permissão deve ser bloqueado — não há nenhum controle para selecionar um fiscal substituto
+- Location: tests/e2e/contratos/delegacao-fiscais-ciclo.spec.js:82:3
+
+# Error details
+
+```
+Error: CT-DEL-01-S1 é INEXEQUÍVEL pela interface atual: o formulário de Delegação de Fiscais não oferece nenhum controle (searchbox/combobox) para informar um fiscal substituto, então não há entrada de dado para exercitar "substituto inválido". O único caminho de escrita (Enviar) é recusado pelo servidor — HTTP 500 em /ecm/api/rest/ecm/workflowView/send: Erro ao salvar dados de formulário: Solicitação só pode ser aberta através do portal de delegação de fiscais! — e esse portal não foi encontrado em nenhum ponto de navegação alcançável por este usuário (ver CT-DEL-01-H)
+
+expect(received).toBeGreaterThan(expected)
+
+Expected: &gt; 0
+Received:   0
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - generic [ref=e7]:
+              - text: 
+              - link [ref=e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=e9]
+            - generic [ref=e10]:
+              - text: 
+              - button "Abrir ajuda" [ref=e12] [cursor=pointer]:
+                - generic [ref=e13]: 
+              - button "Abrir notificações" [ref=e15] [cursor=pointer]:
+                - generic [ref=e16]: 9+
+                - generic [ref=e17]: 
+              - img "Usuário TBC (TOTVS)" [ref=e20] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=e21]:
+      - generic [ref=e23]:
+        - list [ref=e24]:
+          - listitem [ref=e25]:
+            - link "Home" [ref=e26] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=e27]: 
+          - listitem [ref=e29]:
+            - link "Buscar" [ref=e30] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e31]: 
+              - generic [ref=e33]: 
+          - listitem [ref=e35]:
+            - link "Favoritos" [ref=e36] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=e37]: 
+              - generic [ref=e39]: 
+        - list [ref=e41]:
+          - listitem [ref=e42]:
+            - link "Documentos" [ref=e43] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=e44]: 
+          - listitem [ref=e46]:
+            - link "Processos" [ref=e47] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=e48]: 
+              - generic [ref=e50]: 
+          - listitem [ref=e52]:
+            - link "Central de Tarefas" [ref=e53] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=e54]: 
+          - listitem [ref=e56]:
+            - link "Social" [ref=e57] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=e58]: 
+          - listitem [ref=e60]:
+            - link "Comunidades" [ref=e61] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=e62]: 
+          - listitem [ref=e64]:
+            - link "Páginas" [ref=e65] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e66]: 
+              - generic [ref=e68]: 
+        - list [ref=e70]:
+          - listitem [ref=e71]:
+            - link "Store" [ref=e72] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=e73]: 
+          - listitem [ref=e75]:
+            - link "Lixeira" [ref=e76] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=e77]: 
+        - list [ref=e79]:
+          - listitem [ref=e80]:
+            - link "Fechar menu" [ref=e81] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e83]: 
+    - generic [ref=e94]:
+      - generic [ref=e95]:
+        - list [ref=e97]:
+          - listitem [ref=e98]:
+            - link "Início" [ref=e99] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e100]:
+            - text: 
+            - link "Processos" [ref=e101] [cursor=pointer]:
+              - /url: /portal/p/1/pageprocessstart
+          - listitem [ref=e102]:
+            - text: 
+            - link "Iniciar Solicitações" [ref=e103] [cursor=pointer]:
+              - /url: /portal/p/1/pageprocessstart
+          - listitem [ref=e104]: Delegação de Fiscais de Contrato/Serviço
+        - generic [ref=e105]:
+          - heading "Início" [level=2] [ref=e106]
+          - list [ref=e107]:
+            - listitem [ref=e108]:
+              - link " Formulário" [ref=e109]:
+                - /url: "#form-tab"
+                - generic [ref=e110]: 
+                - generic [ref=e111]: Formulário
+            - listitem [ref=e112]:
+              - link " Informações" [ref=e113] [cursor=pointer]:
+                - /url: "#informations-tab"
+                - generic [ref=e114]: 
+                - generic [ref=e115]: Informações
+            - listitem [ref=e116]:
+              - link " Histórico 0" [ref=e117] [cursor=pointer]:
+                - /url: "#historic-tab"
+                - generic [ref=e118]: 
+                - generic [ref=e119]: Histórico
+                - generic "Quantidade de registros" [ref=e120]: "0"
+            - listitem [ref=e121]:
+              - link " Anexos 0" [ref=e122] [cursor=pointer]:
+                - /url: "#attachments-tab"
+                - generic [ref=e123]: 
+                - generic [ref=e124]: Anexos
+                - generic "Quantidade de registros" [ref=e125]: "0"
+            - text:  
+      - generic [ref=e127]:
+        - iframe [ref=e131]:
+          - generic [ref=f3e3]:
+            - generic [ref=f3e6]:
+              - img "CASSI" [ref=f3e8]
+              - heading "Delegação de Fiscais de Contratos e Serviços" [level=1] [ref=f3e10]
+            - generic [ref=f3e15]:
+              - heading [level=1] [ref=f3e16]:
+                - text: Todos os campos com
+                - strong [ref=f3e18]: "*"
+                - text: são obrigatórios já os campos com
+                - strong [ref=f3e20]: "*"
+                - text: não são obrigatórios
+              - paragraph
+            - generic [ref=f3e22]:
+              - generic [ref=f3e23]:
+                - generic [ref=f3e24]:
+                  - generic [ref=f3e25]: 
+                  - heading "Identificação do Processo / Solicitante" [level=3] [ref=f3e26]
+                - generic [ref=f3e29]:
+                  - generic "Número de Identificação." [ref=f3e31]:
+                    - generic [ref=f3e32]:
+                      - generic [ref=f3e33]:
+                        - text: Nº de Identificação
+                        - strong [ref=f3e35]: "*"
+                      - spinbutton "Nº de Identificação*" [ref=f3e36]
+                      - generic: 
+                  - generic "Solicitante." [ref=f3e38]:
+                    - generic [ref=f3e39]:
+                      - generic [ref=f3e40]:
+                        - text: Solicitante
+                        - strong [ref=f3e42]: "*"
+                      - textbox "Solicitante *" [ref=f3e43]:
+                        - /placeholder: Solicitante
+                      - generic: 
+                  - generic "Email do Solicitante ." [ref=f3e45]:
+                    - generic [ref=f3e46]:
+                      - generic [ref=f3e47]:
+                        - text: Email do Solicitante
+                        - strong [ref=f3e49]: "*"
+                      - textbox "Email do Solicitante *" [ref=f3e50]:
+                        - /placeholder: "Email do Solicitante "
+                      - generic: 
+                  - generic "Data de Solicitação." [ref=f3e52]:
+                    - generic [ref=f3e53]:
+                      - generic [ref=f3e54]:
+                        - text: Data da Solicitação
+                        - strong [ref=f3e56]: "*"
+                      - textbox "Data da Solicitação *" [ref=f3e57]:
+                        - /placeholder: Data de Solicitação
+                      - generic: 
+                  - generic "Hora da Solicitação." [ref=f3e59]:
+                    - generic [ref=f3e60]:
+                      - generic [ref=f3e61]:
+                        - text: Hora da Solicitação
+                        - strong [ref=f3e63]: "*"
+                      - textbox "Hora da Solicitação *" [ref=f3e64]:
+                        - /placeholder: Hora da Solicitação
+                      - generic: 
+              - generic [ref=f3e65]:
+                - generic [ref=f3e66]:
+                  - generic [ref=f3e67]: 
+                  - heading "Identificação do Contrato/Serviço" [level=3] [ref=f3e68]
+                - generic [ref=f3e70]:
+                  - generic [ref=f3e71]:
+                    - generic "Tipo da Solicitação." [ref=f3e73]:
+                      - generic [ref=f3e74]:
+                        - generic [ref=f3e75]:
+                          - text: Tipo da Solicitação
+                          - strong [ref=f3e77]: "*"
+                        - combobox [ref=f3e78]:
+                          - option "Contrato" [selected]
+                          - option "Serviço"
+                          - option "Medição"
+                    - generic "Filial." [ref=f3e80]:
+                      - generic [ref=f3e81]:
+                        - generic [ref=f3e82]:
+                          - text: Filial Contrato
+                          - strong [ref=f3e84]: "*"
+                        - textbox "Filial Contrato*" [ref=f3e85]:
+                          - /placeholder: Filial
+                    - generic "Número Contrato." [ref=f3e87]:
+                      - generic [ref=f3e88]:
+                        - generic [ref=f3e89]:
+                          - text: Número Contrato
+                          - strong [ref=f3e91]: "*"
+                        - textbox "Número Contrato*" [ref=f3e92]:
+                          - /placeholder: Número Contrato
+                    - generic "Filial." [ref=f3e94]:
+                      - generic [ref=f3e95]:
+                        - generic [ref=f3e96]:
+                          - text: Filial Planilha
+                          - strong [ref=f3e98]: "*"
+                        - textbox "Filial Planilha*" [ref=f3e99]:
+                          - /placeholder: Filial
+                    - generic "Número Planilha." [ref=f3e101]:
+                      - generic [ref=f3e102]:
+                        - generic [ref=f3e103]:
+                          - text: Número Planilha
+                          - strong [ref=f3e105]: "*"
+                        - textbox "Número Planilha*" [ref=f3e106]:
+                          - /placeholder: Número Planilha
+                    - generic "Filial." [ref=f3e108]:
+                      - generic [ref=f3e109]:
+                        - generic [ref=f3e110]:
+                          - text: Filial Medição
+                          - strong [ref=f3e112]: "*"
+                        - textbox "Filial Medição*" [ref=f3e113]:
+                          - /placeholder: Filial
+                  - generic "Objeto do Contrato." [ref=f3e116]:
+                    - generic [ref=f3e117]:
+                      - generic [ref=f3e118]: Objeto do Contrato
+                      - textbox "Objeto do Contrato" [ref=f3e119]
+              - generic [ref=f3e120]:
+                - generic [ref=f3e121]:
+                  - generic [ref=f3e122]: 
+                  - heading "Identificação do Gestor Imediato" [level=3] [ref=f3e123]
+                - generic [ref=f3e126]:
+                  - generic "Gestor Imediato." [ref=f3e128]:
+                    - generic [ref=f3e129]:
+                      - generic [ref=f3e130]:
+                        - text: Gestor Imediato
+                        - strong [ref=f3e132]: "*"
+                      - textbox "Gestor Imediato *" [ref=f3e133]:
+                        - /placeholder: Gestor Imediato
+                      - generic: 
+                  - generic "Email do Gestor ." [ref=f3e135]:
+                    - generic [ref=f3e136]:
+                      - generic [ref=f3e137]:
+                        - text: Email do Gestor
+                        - strong [ref=f3e139]: "*"
+                      - textbox "Email do Gestor *" [ref=f3e140]:
+                        - /placeholder: "Email do Gestor "
+                      - generic: 
+                  - generic "Data da Resposta" [ref=f3e142]:
+                    - generic [ref=f3e143]:
+                      - generic [ref=f3e144]:
+                        - text: Data da Resposta
+                        - strong [ref=f3e146]: "*"
+                      - textbox "Data da Resposta *" [ref=f3e147]:
+                        - /placeholder: Data da Resposta
+                      - generic: 
+                  - generic "Hora da Resposta." [ref=f3e149]:
+                    - generic [ref=f3e150]:
+                      - generic [ref=f3e151]:
+                        - text: Hora da Resposta
+                        - strong [ref=f3e153]: "*"
+                      - textbox "Hora da Resposta*" [ref=f3e154]:
+                        - /placeholder: Hora da Resposta
+                      - generic: 
+              - generic [ref=f3e155]:
+                - generic [ref=f3e156]:
+                  - generic [ref=f3e157]: 
+                  - heading "Aprovação do Gestor Imediato" [level=3] [ref=f3e158]
+                - generic [ref=f3e160]:
+                  - generic "Aprovar Delegação?" [ref=f3e163]:
+                    - generic [ref=f3e164]:
+                      - text: Aprovar?
+                      - strong [ref=f3e166]: "*"
+                    - generic [ref=f3e167]:
+                      - generic "Aprovar - Sim." [ref=f3e168]:
+                        - radio "Sim" [ref=f3e169]
+                        - generic [ref=f3e170] [cursor=pointer]: Sim
+                      - generic "Aprovar - Não." [ref=f3e171]:
+                        - radio "Não" [ref=f3e172]
+                        - generic [ref=f3e173] [cursor=pointer]: Não
+                  - generic "Motivo Recusa." [ref=f3e176]:
+                    - generic [ref=f3e177]:
+                      - generic [ref=f3e178]:
+                        - text: "Motivo:"
+                        - strong [ref=f3e180]: "*"
+                      - textbox [ref=f3e181]
+              - generic [ref=f3e182]:
+                - generic [ref=f3e183]:
+                  - generic [ref=f3e184]: 
+                  - heading "Identificação do Gerente da Divisão" [level=3] [ref=f3e185]
+                - generic [ref=f3e188]:
+                  - generic "Gerente da Divisão." [ref=f3e190]:
+                    - generic [ref=f3e191]:
+                      - generic [ref=f3e192]:
+                        - text: Gerente da Divisão
+                        - strong [ref=f3e194]: "*"
+                      - textbox "Gerente da Divisão *" [ref=f3e195]:
+                        - /placeholder: Gerente da Divisão
+                      - generic: 
+                  - generic "Email do Gerente ." [ref=f3e197]:
+                    - generic [ref=f3e198]:
+                      - generic [ref=f3e199]:
+                        - text: Email do Gerente
+                        - strong [ref=f3e201]: "*"
+                      - textbox "Email do Gerente *" [ref=f3e202]:
+                        - /placeholder: "Email do Gerente "
+                      - generic: 
+                  - generic "Data da Resposta" [ref=f3e204]:
+                    - generic [ref=f3e205]:
+                      - generic [ref=f3e206]:
+                        - text: Data da Resposta
+                        - strong [ref=f3e208]: "*"
+                      - textbox "Data da Resposta *" [ref=f3e209]:
+                        - /placeholder: Data da Resposta
+                      - generic: 
+                  - generic "Hora da Resposta." [ref=f3e211]:
+                    - generic [ref=f3e212]:
+                      - generic [ref=f3e213]:
+                        - text: Hora da Resposta
+                        - strong [ref=f3e215]: "*"
+                      - textbox "Hora da Resposta*" [ref=f3e216]:
+                        - /placeholder: Hora da Resposta
+                      - generic: 
+              - generic [ref=f3e217]:
+                - generic [ref=f3e218]:
+                  - generic [ref=f3e219]: 
+                  - heading "Aprovação do Gerente da Divisão" [level=3] [ref=f3e220]
+                - generic [ref=f3e222]:
+                  - generic "Aprovar Delegação?" [ref=f3e225]:
+                    - generic [ref=f3e226]:
+                      - text: Aprovar?
+                      - strong [ref=f3e228]: "*"
+                    - generic [ref=f3e229]:
+                      - generic "Aprovar - Sim." [ref=f3e230]:
+                        - radio "Sim" [ref=f3e231]
+                        - generic [ref=f3e232] [cursor=pointer]: Sim
+                      - generic "Aprovar - Não." [ref=f3e233]:
+                        - radio "Não" [ref=f3e234]
+                        - generic [ref=f3e235] [cursor=pointer]: Não
+                  - generic "Motivo Recusa." [ref=f3e238]:
+                    - generic [ref=f3e239]:
+                      - generic [ref=f3e240]:
+                        - text: "Motivo:"
+                        - strong [ref=f3e242]: "*"
+                      - textbox [ref=f3e243]
+              - generic [ref=f3e244]:
+                - generic [ref=f3e245]:
+                  - generic [ref=f3e246]: 
+                  - heading "Identificação do Fiscal" [level=3] [ref=f3e247]
+                - generic [ref=f3e250]:
+                  - generic "Fiscal." [ref=f3e252]:
+                    - generic [ref=f3e253]:
+                      - generic [ref=f3e254]:
+                        - text: Fiscal
+                        - strong [ref=f3e256]: "*"
+                      - textbox "Fiscal *" [ref=f3e257]:
+                        - /placeholder: Fiscal
+                      - generic: 
+                  - generic "Email do Fiscal ." [ref=f3e259]:
+                    - generic [ref=f3e260]:
+                      - generic [ref=f3e261]:
+                        - text: Email do Fiscal
+                        - strong [ref=f3e263]: "*"
+                      - textbox "Email do Fiscal *" [ref=f3e264]:
+                        - /placeholder: "Email do Fiscal "
+                      - generic: 
+                  - generic "Data da Resposta" [ref=f3e266]:
+                    - generic [ref=f3e267]:
+                      - generic [ref=f3e268]:
+                        - text: Data da Resposta
+                        - strong [ref=f3e270]: "*"
+                      - textbox "Data da Resposta *" [ref=f3e271]:
+                        - /placeholder: Data de Solicitaçã
+                      - generic: 
+                  - generic "Hora da Resposta." [ref=f3e273]:
+                    - generic [ref=f3e274]:
+                      - generic [ref=f3e275]:
+                        - text: Hora da Resposta
+                        - strong [ref=f3e277]: "*"
+                      - textbox "Hora da Resposta*" [ref=f3e278]:
+                        - /placeholder: Hora da Resposta
+                      - generic: 
+              - generic [ref=f3e279]:
+                - generic [ref=f3e280]:
+                  - generic [ref=f3e281]: 
+                  - heading "Decisão da Delegação" [level=3] [ref=f3e282]
+                - generic [ref=f3e284]:
+                  - generic "Layout Aceite." [ref=f3e287]:
+                    - generic [ref=f3e288]:
+                      - generic [ref=f3e289]:
+                        - text: "Termo de aceite:"
+                        - strong [ref=f3e291]: "*"
+                      - textbox [ref=f3e292]
+                  - generic "Aceitar Delegação?" [ref=f3e295]:
+                    - generic [ref=f3e296]:
+                      - text: Aceitar?
+                      - strong [ref=f3e298]: "*"
+                    - generic [ref=f3e299]:
+                      - generic "Aceitar - Sim." [ref=f3e300]:
+                        - radio "Sim" [ref=f3e301]
+                        - generic [ref=f3e302] [cursor=pointer]: Sim
+                      - generic "Aceitar - Não." [ref=f3e303]:
+                        - radio "Não" [ref=f3e304]
+                        - generic [ref=f3e305] [cursor=pointer]: Não
+                  - generic "Motivo Recusa." [ref=f3e308]:
+                    - generic [ref=f3e309]:
+                      - generic [ref=f3e310]:
+                        - text: "Motivo:"
+                        - strong [ref=f3e312]: "*"
+                      - textbox [ref=f3e313]
+        - text:                  
+      - generic [ref=e136]:
+        - button "Enviar" [ref=e137] [cursor=pointer]
+        - button "Opções" [ref=e138] [cursor=pointer]:
+          - generic [ref=e139]: 
+  - text:  
+  - dialog [active] [ref=e141]:
+    - generic [ref=e143]:
+      - generic [ref=e144]:
+        - button "Close " [ref=e145] [cursor=pointer]:
+          - generic [ref=e146]: × 
+        - heading "Erro" [level=4] [ref=e148]
+      - generic [ref=e149]:
+        - generic [ref=e150]: "Erro ao salvar dados de formulário: Solicitação só pode ser aberta através do portal de delegação de fiscais!"
+        - link " Ver detalhes técnicos" [ref=e151] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e152]: 
+          - text: Ver detalhes técnicos
+      - button "Ok, entendi" [ref=e154] [cursor=pointer]
+```
+
+# Test source
+
+```ts
+  80  |   });
+  81  | 
+  82  |   test('CT-DEL-01-S1 @destrutivo: substituto inválido/sem permissão deve ser bloqueado — não há nenhum controle para selecionar um fiscal substituto', async ({
+  83  |     page,
+  84  |   }) =&gt; {
+  85  |     // ⚠️ NÃO instale aqui a guarda de escrita (`bloquearCriacaoDeSolicitacao`). Medido em
+  86  |     // 25/08/2026, com e sem guarda, no mesmo formulário:
+  87  |     //   • COM guarda   → o clique em Enviar dispara `POST /ecm/api/rest/ecm/workflowView/send`,
+  88  |     //     a guarda ABORTA a requisição, o widget fica com o spinner girando e a tela não exibe
+  89  |     //     nada: nenhum diálogo, nenhum heading "Erro". A assertion morria em
+  90  |     //     `Locator: getByRole('heading', { name: 'Erro' })  Timeout` — vermelho que era
+  91  |     //     ARTEFATO DA INTERCEPTAÇÃO, não comportamento do produto (a armadilha "interceptar
+  92  |     //     muda o comportamento" do CLAUDE.md).
+  93  |     //   • SEM guarda   → o servidor responde HTTP 500 e o diálogo aparece com o texto
+  94  |     //     "Erro ao salvar dados de formulário: Solicitação só pode ser aberta através do portal
+  95  |     //     de delegação de fiscais!". A recusa é do SERVIDOR — só é observável deixando a
+  96  |     //     requisição chegar nele.
+  97  |     // Por isso o oráculo aqui OBSERVA a resposta do envio em vez de bloqueá-la, e a prova de
+  98  |     // que nada nasceu é a própria resposta do servidor (mesmo padrão de CT-CMP-02-S4
+  99  |     // @destrutivo). `@destrutivo` porque o envio sai de verdade.
+  100 |     /** @type {{ status: number, instanceId: unknown, mensagem: string, url: string }[]} */
+  101 |     const envios = [];
+  102 |     page.on('response', async (resposta) =&gt; {
+  103 |       const metodo = resposta.request().method();
+  104 |       if (metodo === 'GET' || metodo === 'HEAD' || metodo === 'OPTIONS') return;
+  105 |       if (!/workflowView\/send|process-management/.test(resposta.url())) return;
+  106 |       const corpo = await resposta.text().catch(() =&gt; '');
+  107 |       /** @type {unknown} */
+  108 |       let instanceId = null;
+  109 |       /** @type {string} */
+  110 |       let mensagem = corpo.slice(0, 300);
+  111 |       try {
+  112 |         const json = JSON.parse(corpo);
+  113 |         instanceId = json?.content?.processInstanceId ?? json?.processInstanceId ?? null;
+  114 |         mensagem = String(json?.message?.message ?? json?.message ?? mensagem)
+  115 |           .replace(/&lt;[^&gt;]*&gt;/g, ' ')
+  116 |           .replace(/\s+/g, ' ')
+  117 |           .trim();
+  118 |       } catch {
+  119 |         // Corpo não-JSON não carrega id de instância nem mensagem estruturada; o status da
+  120 |         // resposta continua sendo afirmado abaixo, e o trecho bruto vai para a mensagem.
+  121 |         instanceId = null;
+  122 |       }
+  123 |       envios.push({ status: resposta.status(), instanceId, mensagem, url: resposta.url() });
+  124 |     });
+  125 | 
+  126 |     const formulario = new FormularioDelegacaoFiscaisPage(page);
+  127 | 
+  128 |     await formulario.goto();
+  129 |     await formulario.expectAberto();
+  130 | 
+  131 |     // O único campo relacionado a fiscal na tela é somente leitura...
+  132 |     await expect(formulario.campoFiscal).toBeVisible();
+  133 |     expect(await formulario.campoFiscal.isEditable()).toBe(false);
+  134 | 
+  135 |     // ...e não existe, em lugar algum do formulário, um campo de BUSCA/SELEÇÃO de "Fiscal
+  136 |     // Substituto" — nem por nome de campo acessível, nem por zoom.
+  137 |     const buscaSubstituto = formulario.frame
+  138 |       .getByRole('searchbox', { name: /[Ss]ubstitut/ })
+  139 |       .or(formulario.frame.getByRole('combobox', { name: /[Ss]ubstitut/ }));
+  140 |     const controlesDeSubstituto = await buscaSubstituto.count();
+  141 | 
+  142 |     // Exercita o único caminho de escrita disponível e MEDE a recusa do servidor.
+  143 |     await formulario.botaoEnviar.click();
+  144 | 
+  145 |     await expect
+  146 |       .poll(() =&gt; envios.length, {
+  147 |         timeout: 60_000,
+  148 |         intervals: Array(120).fill(500),
+  149 |         message:
+  150 |           'o clique em Enviar não produziu nenhuma resposta do servidor em 60s ' +
+  151 |           '(`workflowView/send` / `process-management`) — sem resposta não há veredito sobre o ' +
+  152 |           'bloqueio, e a causa provável é ambiente, não produto',
+  153 |       })
+  154 |       .toBeGreaterThan(0);
+  155 | 
+  156 |     // Nada pode ter nascido deste envio.
+  157 |     expect(
+  158 |       envios.filter((e) =&gt; e.status &lt; 400 &amp;&amp; e.instanceId != null).map((e) =&gt; `#${e.instanceId}`),
+  159 |       'defeito: o envio da Delegação de Fiscais foi ACEITO e criou registro, num formulário que ' +
+  160 |         'não oferece sequer o campo de fiscal substituto — nenhuma validação de substituto foi ' +
+  161 |         'aplicada',
+  162 |     ).toEqual([]);
+  163 | 
+  164 |     const recusa = envios.map((e) =&gt; `HTTP ${e.status} em ${new URL(e.url).pathname}: ${e.mensagem}`).join(' | ');
+  165 | 
+  166 |     // A assertion que dá o veredito de CT-DEL-01-S1. Ela REPROVA de propósito, e a mensagem diz
+  167 |     // exatamente por quê: o caso é INEXEQUÍVEL pela UI de hoje. "Substituto inválido é
+  168 |     // bloqueado" pressupõe um controle onde informar o substituto; ele não existe, e o único
+  169 |     // caminho de envio é recusado pelo servidor exigindo um "portal de delegação de fiscais"
+  170 |     // que não foi encontrado em nenhum ponto de navegação alcançável (ver CT-DEL-01-H e a nota
+  171 |     // da suíte). Fica verde sozinho quando a Cassi disponibilizar o portal/campo — ou o caso é
+  172 |     // reclassificado como não-automatizável por ausência de entrada de dado.
+  173 |     expect(
+  174 |       controlesDeSubstituto,
+  175 |       'CT-DEL-01-S1 é INEXEQUÍVEL pela interface atual: o formulário de Delegação de Fiscais não ' +
+  176 |         'oferece nenhum controle (searchbox/combobox) para informar um fiscal substituto, então ' +
+  177 |         'não há entrada de dado para exercitar "substituto inválido". O único caminho de escrita ' +
+  178 |         `(Enviar) é recusado pelo servidor — ${recusa} — e esse portal não foi encontrado em ` +
+  179 |         'nenhum ponto de navegação alcançável por este usuário (ver CT-DEL-01-H)',
+&gt; 180 |     ).toBeGreaterThan(0);
+      |       ^ Error: CT-DEL-01-S1 é INEXEQUÍVEL pela interface atual: o formulário de Delegação de Fiscais não oferece nenhum controle (searchbox/combobox) para informar um fiscal substituto, então não há entrada de dado para exercitar "substituto inválido". O único caminho de escrita (Enviar) é recusado pelo servidor — HTTP 500 em /ecm/api/rest/ecm/workflowView/send: Erro ao salvar dados de formulário: Solicitação só pode ser aberta através do portal de delegação de fiscais! — e esse portal não foi encontrado em nenhum ponto de navegação alcançável por este usuário (ver CT-DEL-01-H)
+  181 |   });
+  182 | 
+  183 |   test('CT-DEL-01-S2: período sobreposto a outra delegação vigente não é verificável — não há campo de período (início/fim) em nenhuma parte do formulário', async ({
+  184 |     page,
+  185 |   }) =&gt; {
+  186 |     const formulario = new FormularioDelegacaoFiscaisPage(page);
+  187 | 
+  188 |     await formulario.goto();
+  189 |     await formulario.expectAberto();
+  190 | 
+  191 |     // Os quatro campos de data do formulário são: a data da própria solicitação e três
+  192 |     // carimbos de resposta de aprovação — nenhum é um período de delegação, e nenhum é
+  193 |     // preenchível pelo solicitante.
+  194 |     const camposData = formulario.frame.locator('input[type="date"]');
+  195 |     const nomes = await camposData.evaluateAll((els) =&gt;
+  196 |       els.map((el) =&gt; el.getAttribute('name') ?? el.id ?? ''),
+  197 |     );
+  198 | 
+  199 |     expect(nomes.length).toBeGreaterThan(0);
+  200 |     for (const nome of nomes) {
+  201 |       expect(nome, `campo de data inesperado "${nome}" pode ser o período de delegação procurado — revalidar este teste`).toMatch(
+  202 |         /^(dataSolicitacao|dataResposta.*)$/,
+  203 |       );
+  204 |     }
+  205 | 
+  206 |     // Nenhum dos campos de data existentes é editável pelo solicitante nesta tela.
+  207 |     for (let i = 0; i &lt; (await camposData.count()); i++) {
+  208 |       expect(await camposData.nth(i).isEditable()).toBe(false);
+  209 |     }
+  210 |   });
+  211 | });
+  212 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=793470 npx playwright test tests/e2e/contratos/delegacao-fiscais-ciclo.spec.js -g "CT-DEL-01-S1 @destrutivo: substituto inválido/sem permissão deve ser bloqueado — não há nenhum controle para selecionar um fiscal substituto"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-delegacao-fi-772a7-cionar-um-fiscal-substituto-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-delegacao-fi-772a7-cionar-um-fiscal-substituto-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-delegacao-fi-772a7-cionar-um-fiscal-substituto-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-delegacao-fi-772a7-cionar-um-fiscal-substituto-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+<article class="falha" id="f44" data-classe="catalogado" data-area="contratos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — já catalogado no README</span>
+      <span class="ordem">#45</span>
+    </div>
+    <h2>CT-FAT-02-S2: competência recusada pelo Protheus deve bloquear a medição E avisar o usuário</h2>
+    <p class="suite">e2e/contratos/validacoes-faturamento.spec.js › Faturamento de Contratos — validações e bloqueios</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/contratos/validacoes-faturamento.spec.js:76</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>42.0s</dd></div>
+      
+      <div><dt>Seed do faker</dt><dd><code>153365</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G10">G10</a> — Contratos de API — notificações, favoritos, reset de senha do fornecedor, medição e delegação de fiscais · <b>Referência:</b> CT-FAT-02-S2</p>
+    <p><b>O que acontece:</b> O Protheus recusou a medição ("CNTA120_REV: Existe revisão pendente de aprovação para este contrato…") e a tela não exibiu aviso nenhum — o painel de itens só não abre.</p>
+    <p><b>Por que falha:</b> O widget engole o <code>STATUS: ERROR</code> do dataset de medição. Confirmado interceptando a resposta recebida.</p>
+    <p><b>Onde falha:</b> <code>expect(avisou).toBe(true)</code> em <code>validacoes-faturamento.spec.js:170</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/contratos/validacoes-faturamento.spec.js:170</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: defeito: o Protheus recusou a medição com "Id do submodelo de erro:CNDMASTER - Id do campo de erro:CND_CONTRA - mensagem do erro: CNTA120_REV:Existe revisão pendente de aprovação para este contrato, não ", mas a tela não exibiu nenhum aviso ao usuário — a recusa é engolida silenciosamente</p>
+    <pre class="detalhe">expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">164</span>    // (o diálogo) nunca disparava.</span>
+<span class="linha"><span class="num">165</span>    expect(</span>
+<span class="linha"><span class="num">166</span>      naTela.comErro,</span>
+<span class="linha"><span class="num">167</span>      'defeito: o Protheus recusou a medição com "' +</span>
+<span class="linha"><span class="num">168</span>        bloqueada.mensagemDoServidor.slice(0, 160) +</span>
+<span class="linha"><span class="num">169</span>        '", mas a tela não exibiu nenhum aviso ao usuário — a recusa é engolida silenciosamente',</span>
+<span class="linha alvo"><span class="num">170</span>    ).toBe(true);</span>
+<span class="linha"><span class="num">171</span></span>
+<span class="linha"><span class="num">172</span>    expect(naTela.mensagem).toMatch(/saldo|medições em aberto|revisão pendente|não é permitido medir/i);</span>
+<span class="linha"><span class="num">173</span></span>
+<span class="linha"><span class="num">174</span>    // O painel de itens nunca chegou a ser liberado, e nenhuma medição foi criada.</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/contratos/validacoes-faturamento.spec.js",
+    "Faturamento de Contratos — validações e bloqueios",
+    "CT-FAT-02-S2: competência recusada pelo Protheus deve bloquear a medição E avisar o usuário"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_faturamento_contratos",
+  "fakerSeed": 153365,
+  "reproduzirCom": "FAKER_SEED=153365 npx playwright test",
+  "erro": "Error: defeito: o Protheus recusou a medição com \"Id do submodelo de erro:CNDMASTER - Id do campo de erro:CND_CONTRA - mensagem do erro: CNTA120_REV:Existe revisão pendente de aprovação para este contrato, não \", mas a tela não exibiu nenhum aviso ao usuário — a recusa é engolida silenciosamente\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m"
+}</pre>
+  </section>
+
+  
+
+  
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/contratos/validacoes-faturamento.spec.js &gt;&gt; Faturamento de Contratos — validações e bloqueios &gt;&gt; CT-FAT-02-S2: competência recusada pelo Protheus deve bloquear a medição E avisar o usuário
+- Location: tests/e2e/contratos/validacoes-faturamento.spec.js:76:3
+
+# Error details
+
+```
+Error: defeito: o Protheus recusou a medição com "Id do submodelo de erro:CNDMASTER - Id do campo de erro:CND_CONTRA - mensagem do erro: CNTA120_REV:Existe revisão pendente de aprovação para este contrato, não ", mas a tela não exibiu nenhum aviso ao usuário — a recusa é engolida silenciosamente
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - generic [ref=f1e3]:
+      - navigation [ref=f1e4]:
+        - generic [ref=f1e5]:
+          - generic [ref=f1e6]:
+            - generic [ref=f1e7]:
+              - text: 
+              - link [ref=f1e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=f1e9]
+            - generic [ref=f1e10]:
+              - text: 
+              - button "Abrir ajuda" [ref=f1e12] [cursor=pointer]:
+                - generic [ref=f1e13]: 
+              - button "Abrir notificações" [ref=f1e15] [cursor=pointer]:
+                - generic [ref=f1e16]: 9+
+                - generic [ref=f1e17]: 
+              - img "Usuário TBC (TOTVS)" [ref=f1e20] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=f1e21]:
+      - generic [ref=f1e23]:
+        - list [ref=f1e24]:
+          - listitem [ref=f1e25]:
+            - link "Home" [ref=f1e26] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=f1e27]: 
+          - listitem [ref=f1e29]:
+            - link "Buscar" [ref=f1e30] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=f1e31]: 
+              - generic [ref=f1e33]: 
+          - listitem [ref=f1e35]:
+            - link "Favoritos" [ref=f1e36] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=f1e37]: 
+              - generic [ref=f1e39]: 
+        - list [ref=f1e41]:
+          - listitem [ref=f1e42]:
+            - link "Documentos" [ref=f1e43] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=f1e44]: 
+          - listitem [ref=f1e46]:
+            - link "Processos" [ref=f1e47] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=f1e48]: 
+              - generic [ref=f1e50]: 
+          - listitem [ref=f1e52]:
+            - link "Central de Tarefas" [ref=f1e53] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=f1e54]: 
+          - listitem [ref=f1e56]:
+            - link "Social" [ref=f1e57] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=f1e58]: 
+          - listitem [ref=f1e60]:
+            - link "Comunidades" [ref=f1e61] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=f1e62]: 
+          - listitem [ref=f1e64]:
+            - link "Páginas" [ref=f1e65] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=f1e66]: 
+              - generic [ref=f1e68]: 
+        - list [ref=f1e70]:
+          - listitem [ref=f1e71]:
+            - link "Store" [ref=f1e72] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=f1e73]: 
+          - listitem [ref=f1e75]:
+            - link "Lixeira" [ref=f1e76] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=f1e77]: 
+        - list [ref=f1e79]:
+          - listitem [ref=f1e80]:
+            - link "Fechar menu" [ref=f1e81] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=f1e83]: 
+    - generic [ref=f1e94]:
+      - generic [ref=f1e95]:
+        - list [ref=f1e97]:
+          - listitem [ref=f1e98]:
+            - link "Início" [ref=f1e99] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=f1e100]:
+            - text: 
+            - link "Processos" [ref=f1e101] [cursor=pointer]:
+              - /url: /portal/p/1/pageprocessstart
+          - listitem [ref=f1e102]:
+            - text: 
+            - link "Iniciar Solicitações" [ref=f1e103] [cursor=pointer]:
+              - /url: /portal/p/1/pageprocessstart
+          - listitem [ref=f1e104]: Faturamento de Contratos
+        - generic [ref=f1e105]:
+          - heading "Início" [level=2] [ref=f1e106]
+          - list [ref=f1e107]:
+            - listitem [ref=f1e108]:
+              - link " Formulário" [ref=f1e109]:
+                - /url: "#form-tab"
+                - generic [ref=f1e110]: 
+                - generic [ref=f1e111]: Formulário
+            - listitem [ref=f1e112]:
+              - link " Informações" [ref=f1e113] [cursor=pointer]:
+                - /url: "#informations-tab"
+                - generic [ref=f1e114]: 
+                - generic [ref=f1e115]: Informações
+            - listitem [ref=f1e116]:
+              - link " Histórico 0" [ref=f1e117] [cursor=pointer]:
+                - /url: "#historic-tab"
+                - generic [ref=f1e118]: 
+                - generic [ref=f1e119]: Histórico
+                - generic "Quantidade de registros" [ref=f1e120]: "0"
+            - listitem [ref=f1e121]:
+              - link " Anexos 0" [ref=f1e122] [cursor=pointer]:
+                - /url: "#attachments-tab"
+                - generic [ref=f1e123]: 
+                - generic [ref=f1e124]: Anexos
+                - generic "Quantidade de registros" [ref=f1e125]: "0"
+            - text:  
+      - generic [ref=f1e127]:
+        - iframe [active] [ref=f1e131]:
+          - generic [ref=f4e1]:
+            - generic [ref=f4e2]:
+              - generic [ref=f4e6]:
+                - heading [level=1] [ref=f4e10]: Faturamento de Contratos
+                - text: 
+              - heading [level=1] [ref=f4e19]:
+                - text: Todos os campos com
+                - strong [ref=f4e21]: "*"
+                - text: são de preenchimento obrigatório.
+              - generic [ref=f4e22]:
+                - generic [ref=f4e23]:
+                  - generic [ref=f4e24]:
+                    - generic [ref=f4e25]: 
+                    - heading [level=3] [ref=f4e26]: Identificação do Processo/Solicitante
+                  - generic [ref=f4e28]:
+                    - generic [ref=f4e31]:
+                      - generic [ref=f4e32]:
+                        - text: Nº do Processo
+                        - strong [ref=f4e34]: "*"
+                      - spinbutton [ref=f4e35]
+                      - generic: 
+                    - generic [ref=f4e38]:
+                      - generic [ref=f4e39]:
+                        - text: Solicitante
+                        - strong [ref=f4e41]: "*"
+                      - textbox [ref=f4e42]:
+                        - /placeholder: Solicitante
+                      - generic: 
+                    - generic [ref=f4e45]:
+                      - generic [ref=f4e46]:
+                        - text: Email do Solicitante
+                        - strong [ref=f4e48]: "*"
+                      - textbox [ref=f4e49]:
+                        - /placeholder: "Email do Solicitante "
+                      - generic: 
+                    - generic [ref=f4e52]:
+                      - generic [ref=f4e53]:
+                        - text: Data da Solicitação
+                        - strong [ref=f4e55]: "*"
+                      - textbox [ref=f4e56]:
+                        - /placeholder: Data de Solicitação
+                        - text: 2026-09-02
+                      - generic: 
+                    - generic [ref=f4e59]:
+                      - generic [ref=f4e60]:
+                        - text: Hora da Solicitação
+                        - strong [ref=f4e62]: "*"
+                      - textbox [ref=f4e63]:
+                        - /placeholder: Hora da Solicitação
+                        - text: 15:03:33
+                      - generic: 
+                - generic [ref=f4e64]:
+                  - generic [ref=f4e65]:
+                    - generic [ref=f4e66]: 
+                    - heading [level=3] [ref=f4e67]: Informações da Medição
+                  - generic [ref=f4e68]:
+                    - generic [ref=f4e69]:
+                      - generic [ref=f4e73]:
+                        - generic [ref=f4e74]:
+                          - text: Fornecedor
+                          - strong [ref=f4e76]: "*"
+                        - listbox [ref=f4e77]:
+                          - option [selected] [ref=f4e78]: TELEFONICA BRASIL S A - 02558157000162
+                        - combobox [ref=f4e81]:
+                          - list [ref=f4e82]:
+                            - listitem [ref=f4e83]: × TELEFONICA BRASIL S A - 02558157000162
+                            - listitem [ref=f4e84]:
+                              - searchbox [ref=f4e85]
+                        - generic: 
+                      - generic [ref=f4e89]:
+                        - generic [ref=f4e90]:
+                          - text: Nº do Contrato
+                          - strong [ref=f4e92]: "*"
+                        - listbox [ref=f4e93]:
+                          - option [selected] [ref=f4e94]: "000000000000001"
+                        - combobox [ref=f4e97]:
+                          - list [ref=f4e98]:
+                            - listitem [ref=f4e99]: × 000000000000001
+                            - listitem [ref=f4e100]:
+                              - searchbox [ref=f4e101]
+                        - generic: 
+                    - generic [ref=f4e102]:
+                      - generic [ref=f4e105]:
+                        - generic [ref=f4e106]:
+                          - text: Revisão
+                          - strong [ref=f4e108]: "*"
+                        - textbox [ref=f4e109]:
+                          - /placeholder: Revisão
+                          - text: "003"
+                      - generic [ref=f4e111]:
+                        - generic [ref=f4e112]:
+                          - text: Filial do Contrato
+                          - strong [ref=f4e114]: "*"
+                        - textbox [ref=f4e115]:
+                          - /placeholder: Filial do Contrato
+                          - text: 3517 - CASSI - CENTRAL DE ATENDIMENTO
+                      - generic [ref=f4e118]:
+                        - generic [ref=f4e119]:
+                          - text: Competência do Contrato
+                          - strong [ref=f4e121]: "*"
+                        - listbox [ref=f4e122]:
+                          - option [selected] [ref=f4e123]: 03-2025
+                        - combobox [ref=f4e126]:
+                          - list [ref=f4e127]:
+                            - listitem [ref=f4e128]: × 03-2025
+                            - listitem [ref=f4e129]:
+                              - searchbox [ref=f4e130]
+                        - generic: 
+                      - generic [ref=f4e133]:
+                        - generic [ref=f4e134]:
+                          - text: Filial da Medição
+                          - strong [ref=f4e136]: "*"
+                        - listbox [ref=f4e137]:
+                          - option [selected] [ref=f4e138]: 3517 - CASSI - CENTRAL DE ATENDIMENTO
+                        - combobox [ref=f4e141]:
+                          - list [ref=f4e142]:
+                            - listitem [ref=f4e143]: × 3517 - CASSI - CENTRAL DE ATENDIMENTO
+                            - listitem [ref=f4e144]:
+                              - searchbox [ref=f4e145]
+                        - generic: 
+                    - generic [ref=f4e146]:
+                      - generic [ref=f4e148]:
+                        - generic [ref=f4e149]:
+                          - text: Tipo do Contrato
+                          - strong [ref=f4e151]: "*"
+                        - textbox [ref=f4e152]:
+                          - /placeholder: Tipo do Contrato
+                          - text: 076 - TELEFONIA FIXA
+                      - generic [ref=f4e154]:
+                        - generic [ref=f4e155]:
+                          - text: Situação do Contrato
+                          - strong [ref=f4e157]: "*"
+                        - textbox [ref=f4e158]:
+                          - /placeholder: Situação do Contrato
+                          - text: 05 - Vigente
+                      - generic [ref=f4e161]:
+                        - generic [ref=f4e162]:
+                          - text: Data Início
+                          - strong [ref=f4e164]: "*"
+                        - textbox [ref=f4e165]:
+                          - /placeholder: Data Início
+                          - text: 2025-03-10
+                        - generic: 
+                      - generic [ref=f4e168]:
+                        - generic [ref=f4e169]:
+                          - text: Data Final
+                          - strong [ref=f4e171]: "*"
+                        - textbox [ref=f4e172]:
+                          - /placeholder: Data Final
+                          - text: 2028-03-09
+                        - generic: 
+                    - generic [ref=f4e173]:
+                      - generic [ref=f4e176]:
+                        - generic [ref=f4e177]:
+                          - text: Nº da Medição
+                          - strong [ref=f4e179]: "*"
+                        - textbox [ref=f4e180]:
+                          - /placeholder: Nº do Medição
+                      - generic [ref=f4e183]:
+                        - generic [ref=f4e184]:
+                          - text: Nº da Planilha
+                          - strong [ref=f4e186]: "*"
+                        - listbox [ref=f4e187]:
+                          - option [selected] [ref=f4e188]: "000002"
+                        - combobox [ref=f4e191]:
+                          - list [ref=f4e192]:
+                            - listitem [ref=f4e193]: × 000002
+                            - listitem [ref=f4e194]:
+                              - searchbox [ref=f4e195]
+                        - generic: 
+                    - generic [ref=f4e198]:
+                      - generic [ref=f4e199]:
+                        - text: Objeto
+                        - strong [ref=f4e201]: "*"
+                      - textbox [ref=f4e202]:
+                        - /placeholder: Objeto
+                        - text: O presente Contrato tem por objeto a prestação dos serviços de telefonia, na modalidade ilimitada para os números 0800-729-0080, 0800-729-0081, 080 0-729-0090, 0800-729-0083, 0800-729-0085, e tarifado para os números 4004- 4550, 4004-7880, 4004-7980, da Central CASSI e Ouvidoria, com o ponto cent ral de processamento de dados no Data Center da CASSI, em Brasília/DF. 0800 e 4004 da CENTRAL(R$11.726,40) e OUVIDORIA (R$2.931,60) / Portabilida de recebida da CLARO (00118-2022-5303)
+                    - separator [ref=f4e203]
+                    - generic [ref=f4e204]:
+                      - generic [ref=f4e206]:
+                        - generic [ref=f4e207]:
+                          - text: Aprovação Prévia CSE?
+                          - strong [ref=f4e209]: "*"
+                        - combobox
+                      - generic [ref=f4e212]:
+                        - generic [ref=f4e213]:
+                          - text: Aprovador CSE
+                          - strong [ref=f4e215]: "*"
+                        - textbox [ref=f4e216]:
+                          - /placeholder: Aprovador CSE
+                          - text: sandi.moreira@cassi.com.br
+                        - generic: 
+                      - generic [ref=f4e218]:
+                        - generic [ref=f4e219]:
+                          - text: Aprov. Fiscal de Serviço?
+                          - strong [ref=f4e221]: "*"
+                        - combobox
+                      - generic [ref=f4e224]:
+                        - generic [ref=f4e225]:
+                          - text: Fiscal de Serviço
+                          - strong [ref=f4e227]: "*"
+                        - textbox [ref=f4e228]:
+                          - /placeholder: Fiscal de Serviço
+                          - text: silvio.nascimento@cassi.com.br
+                        - generic: 
+                      - generic [ref=f4e231]:
+                        - generic [ref=f4e232]:
+                          - text: Fiscal de Contrato
+                          - strong [ref=f4e234]: "*"
+                        - textbox [ref=f4e235]:
+                          - /placeholder: Fiscal de Contrato
+                          - text: wilton.ribeiro@cassi.com.br
+                        - generic: 
+                - text:             
+            - dialog [ref=f4e237]:
+              - heading "Erro:" [level=2] [ref=f4e242]
+              - generic [ref=f4e243]: "Erro ao buscar as informações da medição.Mensagem do erro: CNTA120_REV:Existe revisão pendente de aprovação para este contrato, não é permitido medir contratos em revisão. - mensagem da solução:\\r\\n - Valor anterior:000000000000001\""
+              - text: "!"
+              - button "OK" [active] [ref=f4e245] [cursor=pointer]
+        - text:                  
+      - generic [ref=f1e136]:
+        - button "Enviar" [ref=f1e137] [cursor=pointer]
+        - button "Opções" [ref=f1e138] [cursor=pointer]:
+          - generic [ref=f1e139]: 
+  - text:  
+```
+
+# Test source
+
+```ts
+  70  |   }
+  71  | 
+  72  |   return { resultado, contratosTentados, descartes };
+  73  | }
+  74  | 
+  75  | test.describe('Faturamento de Contratos — validações e bloqueios', () =&gt; {
+  76  |   test('CT-FAT-02-S2: competência recusada pelo Protheus deve bloquear a medição E avisar o usuário', async ({
+  77  |     page,
+  78  |   }) =&gt; {
+  79  |     // Antes este teste levava 153s: procurava a competência bloqueada NAVEGANDO, uma cadeia de
+  80  |     // cinco zooms por tentativa (~30s), em até 5 contratos. A mesma informação está em dois
+  81  |     // datasets que respondem em milissegundos — ver `utils/massa-medicao.js`, que documenta os
+  82  |     // endpoints capturados em campo. Medido depois da mudança: **8,8s**, dos quais 8,2s são a
+  83  |     // própria grade de contratos carregando; a descoberta em si custa 0,7s.
+  84  |     test.setTimeout(120_000);
+  85  | 
+  86  |     const guarda = await bloquearCriacaoDeSolicitacao(page);
+  87  | 
+  88  |     const contratosPage = new AcompanhamentoContratosPage(page);
+  89  |     await contratosPage.goto();
+  90  |     await contratosPage.expectCarregada();
+  91  | 
+  92  |     const vigentes = (await contratosPage.lerLinhasDaGrade()).filter((l) =&gt; l.status === 'Vigente');
+  93  |     if (vigentes.length === 0) {
+  94  |       throw new Error(
+  95  |         'PRÉ-CONDIÇÃO AUSENTE: a grade não trouxe nenhum contrato vigente. A integração com o ' +
+  96  |           'Protheus está indisponível ou sem dados — isto NÃO é defeito do produto sob teste.',
+  97  |       );
+  98  |     }
+  99  | 
+  100 |     const MAX_CONTRATOS = 4;
+  101 |     const tentados = /** @type {string[]} */ ([]);
+  102 |     /** @type {{ competencia: string, mensagemDoServidor: string } | null} */
+  103 |     let bloqueada = null;
+  104 |     /** @type {(typeof vigentes)[number] | undefined} */
+  105 |     let contratoAlvo;
+  106 | 
+  107 |     for (const linha of vigentes.slice(0, MAX_CONTRATOS)) {
+  108 |       tentados.push(linha.contrato);
+  109 |       bloqueada = await descobrirCompetenciaBloqueada(page, {
+  110 |         contrato: linha.contrato,
+  111 |         filial: linha.filial,
+  112 |         maxCompetencias: 4,
+  113 |       });
+  114 |       if (bloqueada) {
+  115 |         contratoAlvo = linha;
+  116 |         break;
+  117 |       }
+  118 |     }
+  119 | 
+  120 |     if (!bloqueada || !contratoAlvo) {
+  121 |       throw new Error(
+  122 |         'PRÉ-CONDIÇÃO AUSENTE: nenhuma competência recusada pelo Protheus foi encontrada nos ' +
+  123 |           `contratos vigentes consultados (${tentados.join(', ')}). Isto NÃO é defeito do ` +
+  124 |           'produto sob teste: significa que, no momento desta execução, todas as competências ' +
+  125 |           'amostradas estavam liberadas para medir.',
+  126 |       );
+  127 |     }
+  128 | 
+  129 |     // ── Prova 1: o SERVIDOR recusa, e a recusa é validação de negócio, não erro genérico.
+  130 |     expect(
+  131 |       bloqueada.mensagemDoServidor,
+  132 |       `o Protheus recusou a medição de ${contratoAlvo.contrato}/${bloqueada.competencia}, mas com ` +
+  133 |         'uma mensagem que não parece validação de negócio — se virou erro de infraestrutura, ' +
+  134 |         'este teste não está mais medindo o que deveria',
+  135 |     ).toMatch(/saldo|medições em aberto|revisão pendente|não é permitido medir/i);
+  136 | 
+  137 |     // ── Prova 2: a INTERFACE tem que repassar essa recusa ao usuário.
+  138 |     const medicao = new MedicaoContratoPage(page);
+  139 |     await medicao.goto();
+  140 |     await medicao.expectAberto();
+  141 | 
+  142 |     const fornecedor = parseFornecedorDaGrade(contratoAlvo.fornecedor);
+  143 |     await medicao.selecionarFornecedorPorCodigoLoja(fornecedor.codigo, fornecedor.loja);
+  144 |     await medicao.selecionarPrimeiroContrato();
+  145 | 
+  146 |     const competencias = await medicao.listarCompetencias();
+  147 |     const rotulo = competencias.find((c) =&gt; c.includes(bloqueada.competencia));
+  148 |     expect(
+  149 |       rotulo,
+  150 |       `a competência ${bloqueada.competencia}, que o dataset ofereceu para o contrato ` +
+  151 |         `${contratoAlvo.contrato}, não apareceu no zoom da tela: ${JSON.stringify(competencias)}`,
+  152 |     ).toBeDefined();
+  153 | 
+  154 |     await medicao.selecionarCompetencia(/** @type {string} */ (rotulo));
+  155 |     await medicao.selecionarPrimeiraFilialMedicao();
+  156 |     await medicao.selecionarPrimeiraPlanilha();
+  157 |     const naTela = await medicao.aguardarResultadoDaConsultaDeSaldo();
+  158 | 
+  159 |     // ⚠️ REPROVA DE PROPÓSITO — defeito confirmado em 26/08/2026, interceptando a resposta que
+  160 |     // o widget recebe: com `STATUS: ERROR` e a mensagem do Protheus no corpo, NENHUM diálogo é
+  161 |     // exibido. O painel de itens não abre (então nada é medido), mas o usuário não é informado
+  162 |     // do motivo — a tela simplesmente não reage. Foi por isso que este teste antes concluía
+  163 |     // "nenhuma competência bloqueada encontrada": o bloqueio existia em todas, e o oráculo
+  164 |     // (o diálogo) nunca disparava.
+  165 |     expect(
+  166 |       naTela.comErro,
+  167 |       'defeito: o Protheus recusou a medição com "' +
+  168 |         bloqueada.mensagemDoServidor.slice(0, 160) +
+  169 |         '", mas a tela não exibiu nenhum aviso ao usuário — a recusa é engolida silenciosamente',
+&gt; 170 |     ).toBe(true);
+      |       ^ Error: defeito: o Protheus recusou a medição com "Id do submodelo de erro:CNDMASTER - Id do campo de erro:CND_CONTRA - mensagem do erro: CNTA120_REV:Existe revisão pendente de aprovação para este contrato, não ", mas a tela não exibiu nenhum aviso ao usuário — a recusa é engolida silenciosamente
+  171 | 
+  172 |     expect(naTela.mensagem).toMatch(/saldo|medições em aberto|revisão pendente|não é permitido medir/i);
+  173 | 
+  174 |     // O painel de itens nunca chegou a ser liberado, e nenhuma medição foi criada.
+  175 |     await expect(medicao.frame.locator('#panel_MeasurementItens')).toBeHidden();
+  176 |     expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);
+  177 |   });
+  178 | 
+  179 |   test('CT-FAT-02-S1: lançar quantidade acima do Saldo a Medir não é alcançável pelo usuário desta automação — o campo de quantidade fica bloqueado até a etapa "Realizar Medição do Contrato"', async ({
+  180 |     page,
+  181 |   }) =&gt; {
+  182 |     test.setTimeout(240_000);
+  183 |     const guarda = await bloquearCriacaoDeSolicitacao(page);
+  184 | 
+  185 |     const contratosPage = new AcompanhamentoContratosPage(page);
+  186 |     await contratosPage.goto();
+  187 |     await contratosPage.expectCarregada();
+  188 | 
+  189 |     const medicao = new MedicaoContratoPage(page);
+  190 |     const { resultado, contratosTentados } = await encontrarMedicaoComSaldo(contratosPage, medicao);
+  191 | 
+  192 |     if (!resultado?.sucesso) {
+  193 |       throw new Error(
+  194 |         'PRÉ-CONDIÇÃO AUSENTE: nenhum contrato vigente tentado teve competência com saldo em ' +
+  195 |           `aberto — impossível chegar ao estado onde o campo de quantidade existiria. Tentados: ${contratosTentados.join(', ')}.`,
+  196 |       );
+  197 |     }
+  198 | 
+  199 |     // A cadeia de zooms resolveu SEM erro (há saldo em aberto): mesmo assim, o painel que
+  200 |     // conteria os campos de quantidade continua oculto (`display: none` inline, ver
+  201 |     // `#panel_MeasurementItens` no HTML do formulário) — não é revelado pela seleção em si,
+  202 |     // só na etapa seguinte do workflow, assumida por quem consta como Fiscal/CSE do contrato.
+  203 |     const inputsQuantidade = medicao.frame.locator('input[id^="quantidade___"]');
+  204 |     await expect(medicao.frame.locator('#panel_MeasurementItens')).toBeHidden();
+  205 |     // Quando o Protheus já populou os itens da planilha no DOM (confirmado acontecer em
+  206 |     // parte das execuções — depende de timing do backend, não é garantido a cada chamada),
+  207 |     // isso reforça a prova de que o bloqueio é de ETAPA, não de ausência de dado: o campo de
+  208 |     // quantidade existe, só que oculto dentro do painel.
+  209 |     // Incondicional de propósito: `filter({ visible: true })` cobre os dois casos de uma vez —
+  210 |     // se o Protheus ainda não populou os itens, a contagem é 0 e a afirmação continua verdadeira;
+  211 |     // se populou, nenhum campo pode estar visível. A forma condicional (`if (count &gt; 0)`) é
+  212 |     // proibida pela skill: um teste que só valida quando o dado aparece passa sem provar nada
+  213 |     // justamente nas execuções em que o backend foi mais lento.
+  214 |     await expect(
+  215 |       inputsQuantidade.filter({ visible: true }),
+  216 |       'nenhum campo de quantidade pode estar alcançável antes da etapa "Realizar Medição do Contrato"',
+  217 |     ).toHaveCount(0);
+  218 | 
+  219 |     // Sem o campo alcançável, não há como lançar quantidade acima do saldo — e, coerentemente,
+  220 |     // nenhuma medição foi enviada por este teste.
+  221 |     expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);
+  222 |   });
+  223 | 
+  224 |   test('CT-FAT-02-S4: fechar rateio contábil diferente de 100% não é alcançável pelo usuário desta automação — a aba "Rateio Contábil" fica bloqueada até a etapa "Realizar Medição do Contrato"', async ({
+  225 |     page,
+  226 |   }) =&gt; {
+  227 |     test.setTimeout(240_000);
+  228 |     const guarda = await bloquearCriacaoDeSolicitacao(page);
+  229 | 
+  230 |     const contratosPage = new AcompanhamentoContratosPage(page);
+  231 |     await contratosPage.goto();
+  232 |     await contratosPage.expectCarregada();
+  233 | 
+  234 |     const medicao = new MedicaoContratoPage(page);
+  235 |     const { resultado, contratosTentados } = await encontrarMedicaoComSaldo(contratosPage, medicao);
+  236 | 
+  237 |     if (!resultado?.sucesso) {
+  238 |       throw new Error(
+  239 |         'PRÉ-CONDIÇÃO AUSENTE: nenhum contrato vigente tentado teve competência com saldo em ' +
+  240 |           `aberto — impossível chegar ao estado onde a aba de rateio existiria. Tentados: ${contratosTentados.join(', ')}.`,
+  241 |       );
+  242 |     }
+  243 | 
+  244 |     const abaRateio = medicao.frame.locator('a[href="#tabRateio"]');
+  245 |     await expect(medicao.frame.locator('#panel_MeasurementItens')).toBeHidden();
+  246 |     await expect(abaRateio).toBeAttached();
+  247 |     await expect(abaRateio).toBeHidden();
+  248 | 
+  249 |     expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);
+  250 |   });
+  251 | 
+  252 |   test('CT-FAT-02-S3: reprovar uma validação (Validação CSE / Validação da Medição CSE / Validação do Fiscal de Contrato) não é alcançável — o usuário desta automação não pertence a nenhum grupo dessas etapas', async ({
+  253 |     page,
+  254 |   }) =&gt; {
+  255 |     const tarefas = new CentralTarefasComprasPage(page);
+  256 |     await tarefas.goto();
+  257 |     await tarefas.titulo.waitFor({ state: 'visible' });
+  258 |     // `abrirTarefasEmPool()` (Page Object existente) parte do pressuposto de que o link
+  259 |     // "Tarefas em pool" já está visível na aba "Resumo de Tarefas" — em campo, ele só fica
+  260 |     // visível depois de abrir o menu "Mais opções" ao lado dela (confirmado nesta
+  261 |     // investigação). Reproduz aqui a navegação real antes de reusar `listarGrupos()`.
+  262 |     await tarefas.abaResumo.click();
+  263 |     await page.getByRole('link', { name: 'Mais opções' }).click();
+  264 |     await page.getByRole('link', { name: /^Tarefas em pool/ }).click();
+  265 |     // Não usa `.first()` sobre `getByRole('link').filter(...)` para esperar: a página tem
+  266 |     // outros links que batem com o mesmo padrão de texto em pontos fora deste dropdown, e
+  267 |     // `.first()` segue a ordem do DOM, não a de visibilidade — esperar por ele trava. A
+  268 |     // legenda do painel é exclusiva deste dropdown e confirma que ele terminou de renderizar.
+  269 |     const dropdownPool = page.locator('[id^="more-options-pool_"]');
+  270 |     await dropdownPool
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=153365 npx playwright test tests/e2e/contratos/validacoes-faturamento.spec.js -g "CT-FAT-02-S2: competência recusada pelo Protheus deve bloquear a medição E avisar o usuário"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-validacoes-f-7dd87--medição-E-avisar-o-usuário-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-validacoes-f-7dd87--medição-E-avisar-o-usuário-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-validacoes-f-7dd87--medição-E-avisar-o-usuário-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-validacoes-f-7dd87--medição-E-avisar-o-usuário-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+<article class="falha" id="f45" data-classe="semVeredito" data-area="contratos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge sem-veredito">Sem veredito (falhou antes da assertion de domínio)</span>
+      <span class="ordem">#46</span>
+    </div>
+    <h2>CT-FAT-02-S3: reprovar uma validação (Validação CSE / Validação da Medição CSE / Validação do Fiscal de Contrato) não é alcançável — o usuário desta automação não pertence a nenhum grupo dessas etapas</h2>
+    <p class="suite">e2e/contratos/validacoes-faturamento.spec.js › Faturamento de Contratos — validações e bloqueios</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/contratos/validacoes-faturamento.spec.js:252</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>52.6s</dd></div>
+      
+      <div><dt>Seed do faker</dt><dd><code>397826</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G14">G14</a> — Divergências pontuais do ambiente e falhas sem veredito · <b>Referência:</b> CT-FAT-02-S3</p>
+    <p><b>O que acontece:</b> <code>locator.click</code> estourou 45 s esperando o link "Tarefas em pool" da Central de Tarefas.</p>
+    <p><b>Por que falha:</b> Falhou na navegação, antes da verificação de alcançabilidade que dá nome ao teste. A Central de Tarefas estava sob carga (4 testes de ciclo em paralelo); é o único teste da execução que não chegou à assertion de domínio por motivo de tela.</p>
+    <p><b>Onde falha:</b> <code>validacoes-faturamento.spec.js:264</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/contratos/validacoes-faturamento.spec.js:264</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">TimeoutError: locator.click: Timeout 45000ms exceeded.</p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">258</span>    // `abrirTarefasEmPool()` (Page Object existente) parte do pressuposto de que o link</span>
+<span class="linha"><span class="num">259</span>    // "Tarefas em pool" já está visível na aba "Resumo de Tarefas" — em campo, ele só fica</span>
+<span class="linha"><span class="num">260</span>    // visível depois de abrir o menu "Mais opções" ao lado dela (confirmado nesta</span>
+<span class="linha"><span class="num">261</span>    // investigação). Reproduz aqui a navegação real antes de reusar `listarGrupos()`.</span>
+<span class="linha"><span class="num">262</span>    await tarefas.abaResumo.click();</span>
+<span class="linha"><span class="num">263</span>    await page.getByRole('link', { name: 'Mais opções' }).click();</span>
+<span class="linha alvo"><span class="num">264</span>    await page.getByRole('link', { name: /^Tarefas em pool/ }).click();</span>
+<span class="linha"><span class="num">265</span>    // Não usa `.first()` sobre `getByRole('link').filter(...)` para esperar: a página tem</span>
+<span class="linha"><span class="num">266</span>    // outros links que batem com o mesmo padrão de texto em pontos fora deste dropdown, e</span>
+<span class="linha"><span class="num">267</span>    // `.first()` segue a ordem do DOM, não a de visibilidade — esperar por ele trava. A</span>
+<span class="linha"><span class="num">268</span>    // legenda do painel é exclusiva deste dropdown e confirma que ele terminou de renderizar.</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/contratos/validacoes-faturamento.spec.js",
+    "Faturamento de Contratos — validações e bloqueios",
+    "CT-FAT-02-S3: reprovar uma validação (Validação CSE / Validação da Medição CSE / Validação do Fiscal de Contrato) não é alcançável — o usuário desta automação não pertence a nenhum grupo dessas etapas"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pagecentraltask",
+  "fakerSeed": 397826,
+  "reproduzirCom": "FAKER_SEED=397826 npx playwright test",
+  "erro": "TimeoutError: locator.click: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^Tarefas em pool/ })\u001b[22m\n"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - waiting for getByRole('link', { name: /^Tarefas em pool/ })</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/contratos/validacoes-faturamento.spec.js &gt;&gt; Faturamento de Contratos — validações e bloqueios &gt;&gt; CT-FAT-02-S3: reprovar uma validação (Validação CSE / Validação da Medição CSE / Validação do Fiscal de Contrato) não é alcançável — o usuário desta automação não pertence a nenhum grupo dessas etapas
+- Location: tests/e2e/contratos/validacoes-faturamento.spec.js:252:3
+
+# Error details
+
+```
+TimeoutError: locator.click: Timeout 45000ms exceeded.
+Call log:
+  - waiting for getByRole('link', { name: /^Tarefas em pool/ })
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - generic [ref=e7]:
+              - text: 
+              - link [ref=e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=e9]
+            - generic [ref=e10]:
+              - text: 
+              - button "Abrir ajuda" [ref=e12] [cursor=pointer]:
+                - generic [ref=e13]: 
+              - button "Abrir notificações" [ref=e15] [cursor=pointer]:
+                - generic [ref=e16]: 9+
+                - generic [ref=e17]: 
+              - img "Usuário TBC (TOTVS)" [ref=e20] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=e21]:
+      - generic [ref=e23]:
+        - list [ref=e24]:
+          - listitem [ref=e25]:
+            - link "Home" [ref=e26] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=e27]: 
+          - listitem [ref=e29]:
+            - link "Buscar" [ref=e30] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e31]: 
+              - generic [ref=e33]: 
+          - listitem [ref=e35]:
+            - link "Favoritos" [ref=e36] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=e37]: 
+              - generic [ref=e39]: 
+        - list [ref=e41]:
+          - listitem [ref=e42]:
+            - link "Documentos" [ref=e43] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=e44]: 
+          - listitem [ref=e46]:
+            - link "Processos" [ref=e47] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=e48]: 
+              - generic [ref=e50]: 
+          - listitem [ref=e52]:
+            - link "Central de Tarefas" [ref=e53] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=e54]: 
+          - listitem [ref=e56]:
+            - link "Social" [ref=e57] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=e58]: 
+          - listitem [ref=e60]:
+            - link "Comunidades" [ref=e61] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=e62]: 
+          - listitem [ref=e64]:
+            - link "Páginas" [ref=e65] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e66]: 
+              - generic [ref=e68]: 
+        - list [ref=e70]:
+          - listitem [ref=e71]:
+            - link "Store" [ref=e72] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=e73]: 
+          - listitem [ref=e75]:
+            - link "Lixeira" [ref=e76] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=e77]: 
+        - list [ref=e79]:
+          - listitem [ref=e80]:
+            - link "Fechar menu" [ref=e81] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e83]: 
+    - generic [ref=e92]:
+      - generic [ref=e96]:
+        - generic [ref=e97]:
+          - heading "Central de tarefas" [level=2] [ref=e99]
+          - button "Você" [ref=e102] [cursor=pointer]:
+            - generic [ref=e103]:
+              - generic [ref=e105]: Você
+              - generic [ref=e106]: 
+        - generic [ref=e107]:
+          - tablist [ref=e109]:
+            - tab [ref=e110]:
+              - link "Resumo de Tarefas" [ref=e111] [cursor=pointer]:
+                - /url: "#centralTaskroot"
+            - text:      
+            - listitem [ref=e113]:
+              - link "Mais opções" [active] [ref=e114] [cursor=pointer]:
+                - /url: "#"
+                - generic [ref=e116]: 
+              - tablist [ref=e117]:
+                - text: 
+                - tab [ref=e118]:
+                  - link "Tarefas a concluir 15" [ref=e119] [cursor=pointer]:
+                    - /url: "#centralTaskopen"
+                    - generic [ref=e120]: Tarefas a concluir
+                    - generic [ref=e121]: "15"
+                - text: 
+                - tab [ref=e122]:
+                  - link "Solicitações 124" [ref=e123] [cursor=pointer]:
+                    - /url: "#"
+                    - generic [ref=e124]: Solicitações
+                    - generic [ref=e125]:
+                      - generic [ref=e126]: "124"
+                      - generic [ref=e127]: 
+                - text:   
+                - tab [ref=e128]:
+                  - link "Documentos 27" [ref=e129] [cursor=pointer]:
+                    - /url: "#"
+                    - generic [ref=e130]: Documentos
+                    - generic [ref=e131]:
+                      - generic [ref=e132]: "27"
+                      - generic [ref=e133]: 
+                - text:   
+          - text:  
+          - link [ref=e135] [cursor=pointer]:
+            - /url: /portal/p/1/pageprocessstart
+            - button "Nova solicitação" [ref=e136]
+      - generic [ref=e141]:
+        - generic [ref=e143]:
+          - generic [ref=e144]:
+            - heading "Tarefas a concluir (15)" [level=1] [ref=e145]:
+              - generic [ref=e146]: 
+              - generic [ref=e148]: Tarefas a concluir
+              - generic [ref=e149]: (15)
+            - paragraph [ref=e150]: Tarefas originadas em solicitações de processos sob sua responsabilidade.
+          - generic [ref=e152]:
+            - generic [ref=e153]:
+              - list [ref=e158]:
+                - listitem [ref=e159] [cursor=pointer]:
+                  - generic [ref=e160]: 
+                  - generic [ref=e161]: "2"
+                  - generic [ref=e162]: No prazo
+                - listitem [ref=e163] [cursor=pointer]:
+                  - generic [ref=e164]: 
+                  - generic [ref=e165]: "4"
+                  - generic [ref=e166]: Próx. a vencer
+                  - generic [ref=e168]: 
+                - listitem [ref=e169] [cursor=pointer]:
+                  - generic [ref=e170]: 
+                  - generic [ref=e171]: "9"
+                  - generic [ref=e172]: Atrasadas
+              - separator [ref=e173]
+            - generic [ref=e175]:
+              - generic [ref=e176]: 
+              - paragraph [ref=e177]:
+                - text: Você possui
+                - generic [ref=e178]: tarefas atrasadas
+                - text: . Mantenha suas pendências dentro do prazo para melhorar sua performance.
+          - text: 
+        - generic [ref=e180]:
+          - generic [ref=e181]:
+            - heading "Documentos (27)" [level=1] [ref=e182]:
+              - generic [ref=e183]:
+                - generic [ref=e184]: 
+                - generic [ref=e186]: Documentos
+                - generic [ref=e187]: (27)
+                - text: 
+            - paragraph [ref=e188]: Pendências em documentos.
+          - list [ref=e191]:
+            - listitem [ref=e192] [cursor=pointer]:
+              - generic [ref=e193]:
+                - generic [ref=e194]: 
+                - generic [ref=e195]: Para aprovar
+              - heading "7" [level=2] [ref=e196]
+            - listitem [ref=e197] [cursor=pointer]:
+              - generic [ref=e198]:
+                - generic [ref=e199]: 
+                - generic [ref=e200]: Meus documentos
+              - heading "20" [level=2] [ref=e201]
+            - listitem [ref=e202]:
+              - generic [ref=e203]:
+                - generic [ref=e204]: 
+                - generic [ref=e205]: Documentos em consenso
+              - heading "0" [level=2] [ref=e206]
+            - listitem [ref=e207]:
+              - generic [ref=e208]:
+                - generic [ref=e209]: 
+                - generic [ref=e210]: Documentos em checkout
+              - heading "0" [level=2] [ref=e211]
+          - text: 
+        - generic [ref=e213]:
+          - generic [ref=e214]:
+            - heading "Solicitações (124)" [level=1] [ref=e215]:
+              - generic [ref=e216]:
+                - generic [ref=e217]: 
+                - generic [ref=e219]: Solicitações
+                - generic [ref=e220]: (124)
+                - text: 
+            - paragraph [ref=e221]: Solicitações gerenciadas ou iniciadas por você.
+          - generic [ref=e224]:
+            - generic [ref=e227] [cursor=pointer]:
+              - generic [ref=e228]: "39"
+              - generic [ref=e229]: Solicitadas por mim
+            - generic [ref=e232] [cursor=pointer]:
+              - generic [ref=e233]: "85"
+              - generic [ref=e234]: Sob minha gerência
+          - text: 
+        - generic [ref=e236]:
+          - generic [ref=e237]:
+            - heading "Tarefas em pool (0)" [level=1] [ref=e238]:
+              - generic [ref=e239]:
+                - generic [ref=e240]: 
+                - generic [ref=e242]: Tarefas em pool
+                - generic [ref=e243]: (0)
+                - text: 
+            - paragraph [ref=e244]: Tarefas para grupos e papéis que você está associado.
+          - generic [ref=e248]:
+            - generic [ref=e249]: 
+            - generic [ref=e250]:
+              - strong [ref=e251]: Você não possui tarefas em pool vinculadas.
+              - text: Quando houver novas tarefas elas serão exibidas aqui.
+        - generic [ref=e253]:
+          - generic [ref=e254]:
+            - heading "Tarefas em consenso (0)" [level=1] [ref=e255]:
+              - generic [ref=e256]:
+                - generic [ref=e257]: 
+                - generic [ref=e259]: Tarefas em consenso
+                - generic [ref=e260]: (0)
+                - text: 
+            - paragraph [ref=e261]: Tarefas em consenso com outro usuário.
+          - generic [ref=e265]:
+            - generic [ref=e266]: 
+            - generic [ref=e267]:
+              - strong [ref=e268]: Você não possui tarefas em consenso.
+              - text: Quando houver novas tarefas em conseso elas serão exibidas aqui.
+  - text: 
+```
+
+# Test source
+
+```ts
+  164 |     // (o diálogo) nunca disparava.
+  165 |     expect(
+  166 |       naTela.comErro,
+  167 |       'defeito: o Protheus recusou a medição com "' +
+  168 |         bloqueada.mensagemDoServidor.slice(0, 160) +
+  169 |         '", mas a tela não exibiu nenhum aviso ao usuário — a recusa é engolida silenciosamente',
+  170 |     ).toBe(true);
+  171 | 
+  172 |     expect(naTela.mensagem).toMatch(/saldo|medições em aberto|revisão pendente|não é permitido medir/i);
+  173 | 
+  174 |     // O painel de itens nunca chegou a ser liberado, e nenhuma medição foi criada.
+  175 |     await expect(medicao.frame.locator('#panel_MeasurementItens')).toBeHidden();
+  176 |     expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);
+  177 |   });
+  178 | 
+  179 |   test('CT-FAT-02-S1: lançar quantidade acima do Saldo a Medir não é alcançável pelo usuário desta automação — o campo de quantidade fica bloqueado até a etapa "Realizar Medição do Contrato"', async ({
+  180 |     page,
+  181 |   }) =&gt; {
+  182 |     test.setTimeout(240_000);
+  183 |     const guarda = await bloquearCriacaoDeSolicitacao(page);
+  184 | 
+  185 |     const contratosPage = new AcompanhamentoContratosPage(page);
+  186 |     await contratosPage.goto();
+  187 |     await contratosPage.expectCarregada();
+  188 | 
+  189 |     const medicao = new MedicaoContratoPage(page);
+  190 |     const { resultado, contratosTentados } = await encontrarMedicaoComSaldo(contratosPage, medicao);
+  191 | 
+  192 |     if (!resultado?.sucesso) {
+  193 |       throw new Error(
+  194 |         'PRÉ-CONDIÇÃO AUSENTE: nenhum contrato vigente tentado teve competência com saldo em ' +
+  195 |           `aberto — impossível chegar ao estado onde o campo de quantidade existiria. Tentados: ${contratosTentados.join(', ')}.`,
+  196 |       );
+  197 |     }
+  198 | 
+  199 |     // A cadeia de zooms resolveu SEM erro (há saldo em aberto): mesmo assim, o painel que
+  200 |     // conteria os campos de quantidade continua oculto (`display: none` inline, ver
+  201 |     // `#panel_MeasurementItens` no HTML do formulário) — não é revelado pela seleção em si,
+  202 |     // só na etapa seguinte do workflow, assumida por quem consta como Fiscal/CSE do contrato.
+  203 |     const inputsQuantidade = medicao.frame.locator('input[id^="quantidade___"]');
+  204 |     await expect(medicao.frame.locator('#panel_MeasurementItens')).toBeHidden();
+  205 |     // Quando o Protheus já populou os itens da planilha no DOM (confirmado acontecer em
+  206 |     // parte das execuções — depende de timing do backend, não é garantido a cada chamada),
+  207 |     // isso reforça a prova de que o bloqueio é de ETAPA, não de ausência de dado: o campo de
+  208 |     // quantidade existe, só que oculto dentro do painel.
+  209 |     // Incondicional de propósito: `filter({ visible: true })` cobre os dois casos de uma vez —
+  210 |     // se o Protheus ainda não populou os itens, a contagem é 0 e a afirmação continua verdadeira;
+  211 |     // se populou, nenhum campo pode estar visível. A forma condicional (`if (count &gt; 0)`) é
+  212 |     // proibida pela skill: um teste que só valida quando o dado aparece passa sem provar nada
+  213 |     // justamente nas execuções em que o backend foi mais lento.
+  214 |     await expect(
+  215 |       inputsQuantidade.filter({ visible: true }),
+  216 |       'nenhum campo de quantidade pode estar alcançável antes da etapa "Realizar Medição do Contrato"',
+  217 |     ).toHaveCount(0);
+  218 | 
+  219 |     // Sem o campo alcançável, não há como lançar quantidade acima do saldo — e, coerentemente,
+  220 |     // nenhuma medição foi enviada por este teste.
+  221 |     expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);
+  222 |   });
+  223 | 
+  224 |   test('CT-FAT-02-S4: fechar rateio contábil diferente de 100% não é alcançável pelo usuário desta automação — a aba "Rateio Contábil" fica bloqueada até a etapa "Realizar Medição do Contrato"', async ({
+  225 |     page,
+  226 |   }) =&gt; {
+  227 |     test.setTimeout(240_000);
+  228 |     const guarda = await bloquearCriacaoDeSolicitacao(page);
+  229 | 
+  230 |     const contratosPage = new AcompanhamentoContratosPage(page);
+  231 |     await contratosPage.goto();
+  232 |     await contratosPage.expectCarregada();
+  233 | 
+  234 |     const medicao = new MedicaoContratoPage(page);
+  235 |     const { resultado, contratosTentados } = await encontrarMedicaoComSaldo(contratosPage, medicao);
+  236 | 
+  237 |     if (!resultado?.sucesso) {
+  238 |       throw new Error(
+  239 |         'PRÉ-CONDIÇÃO AUSENTE: nenhum contrato vigente tentado teve competência com saldo em ' +
+  240 |           `aberto — impossível chegar ao estado onde a aba de rateio existiria. Tentados: ${contratosTentados.join(', ')}.`,
+  241 |       );
+  242 |     }
+  243 | 
+  244 |     const abaRateio = medicao.frame.locator('a[href="#tabRateio"]');
+  245 |     await expect(medicao.frame.locator('#panel_MeasurementItens')).toBeHidden();
+  246 |     await expect(abaRateio).toBeAttached();
+  247 |     await expect(abaRateio).toBeHidden();
+  248 | 
+  249 |     expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);
+  250 |   });
+  251 | 
+  252 |   test('CT-FAT-02-S3: reprovar uma validação (Validação CSE / Validação da Medição CSE / Validação do Fiscal de Contrato) não é alcançável — o usuário desta automação não pertence a nenhum grupo dessas etapas', async ({
+  253 |     page,
+  254 |   }) =&gt; {
+  255 |     const tarefas = new CentralTarefasComprasPage(page);
+  256 |     await tarefas.goto();
+  257 |     await tarefas.titulo.waitFor({ state: 'visible' });
+  258 |     // `abrirTarefasEmPool()` (Page Object existente) parte do pressuposto de que o link
+  259 |     // "Tarefas em pool" já está visível na aba "Resumo de Tarefas" — em campo, ele só fica
+  260 |     // visível depois de abrir o menu "Mais opções" ao lado dela (confirmado nesta
+  261 |     // investigação). Reproduz aqui a navegação real antes de reusar `listarGrupos()`.
+  262 |     await tarefas.abaResumo.click();
+  263 |     await page.getByRole('link', { name: 'Mais opções' }).click();
+&gt; 264 |     await page.getByRole('link', { name: /^Tarefas em pool/ }).click();
+      |                                                                ^ TimeoutError: locator.click: Timeout 45000ms exceeded.
+  265 |     // Não usa `.first()` sobre `getByRole('link').filter(...)` para esperar: a página tem
+  266 |     // outros links que batem com o mesmo padrão de texto em pontos fora deste dropdown, e
+  267 |     // `.first()` segue a ordem do DOM, não a de visibilidade — esperar por ele trava. A
+  268 |     // legenda do painel é exclusiva deste dropdown e confirma que ele terminou de renderizar.
+  269 |     const dropdownPool = page.locator('[id^="more-options-pool_"]');
+  270 |     await dropdownPool
+  271 |       .getByText('Tarefas para grupos e papéis que você está associado.')
+  272 |       .waitFor({ state: 'visible' });
+  273 | 
+  274 |     // Não reusa `CentralTarefasComprasPage.listarGrupos()` aqui: seu locator
+  275 |     // (`getByRole('link').filter({ hasText: /\(\d+\)$/ })`) devolve ZERO elementos neste
+  276 |     // dropdown específico mesmo com os links realmente presentes e com texto batendo a
+  277 |     // regex (confirmado isoladamente) — os nós de texto internos (nome do grupo e "(N)" em
+  278 |     // `&lt;span&gt;` separados) fazem o `$` da regex não casar do jeito que o `hasText` do
+  279 |     // Playwright normaliza o texto aqui. Filtrar por substring evita a armadilha.
+  280 |     const linksDeGrupo = dropdownPool.getByRole('link').filter({ hasText: 'Grupo de' });
+  281 |     const nomes = await linksDeGrupo.allInnerTexts();
+  282 |     const grupos = nomes.map((n) =&gt; ({ nome: n.replace(/\s*\(\d+\)\s*$/, '').trim() }));
+  283 | 
+  284 |     // Evidência positiva de que o pool foi lido de verdade (não é um falso-negativo de rede):
+  285 |     // o usuário TEM grupos em pool — só não tem nenhum relacionado a Contratos/Fiscal/CSE.
+  286 |     expect(grupos.length).toBeGreaterThan(0);
+  287 | 
+  288 |     const gruposDeValidacaoDeMedicao = grupos.filter((g) =&gt;
+  289 |       /fiscal|cse|medi(ç|c)[aã]o|contrato/i.test(g.nome),
+  290 |     );
+  291 |     expect(
+  292 |       gruposDeValidacaoDeMedicao.map((g) =&gt; g.nome),
+  293 |       'nenhum grupo de pool relacionado a Fiscal/CSE/Medição de Contrato deveria existir para ' +
+  294 |         'este usuário — se existir, os cenários de validação passaram a ser alcançáveis e este ' +
+  295 |         'teste deve ser revisto para exercitá-los de fato',
+  296 |     ).toEqual([]);
+  297 |   });
+  298 | });
+  299 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=397826 npx playwright test tests/e2e/contratos/validacoes-faturamento.spec.js -g "CT-FAT-02-S3: reprovar uma validação (Validação CSE / Validação da Medição CSE / Validação do Fiscal de Contrato) não é alcançável — o usuário desta automação não pertence a nenhum grupo dessas etapas"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-validacoes-f-0a493--nenhum-grupo-dessas-etapas-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-validacoes-f-0a493--nenhum-grupo-dessas-etapas-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-validacoes-f-0a493--nenhum-grupo-dessas-etapas-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/contratos/e2e-contratos-validacoes-f-0a493--nenhum-grupo-dessas-etapas-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+</main>
+<footer>
+  <p>Relatório da execução de 02/09/2026 — gerado por <code>scripts/relatorio-falhas.mjs</code> (evidências) +
+  <code>relatorios/gerar-final.mjs</code> (análise). Screenshots e aria-snapshots estão embutidos; trace e vídeo de cada
+  falha ficam em <code>test-results/&lt;fatia&gt;/</code> nos caminhos indicados em cada cartão
+  (<code>npx playwright show-trace &lt;trace.zip&gt;</code>).</p>
+</footer>
+
+</body>
+</html>

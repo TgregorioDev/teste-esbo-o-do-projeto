@@ -1,0 +1,1710 @@
+
+
+######## [acomp] e2e/acompanhamento-contratos/ciclo-correcao-reenvio.spec.js:242 (failed, 75s)
+TITULO: Ciclo de retorno da SC: reprovação → Correção → reenvio (CT-CMP-08-H) › CT-CMP-08-H @destrutivo — reprovada e corrigida, a SC deveria voltar para a Validação do Gestor com o contrato de origem íntegro
+ANOTACOES: faker-seed: 756242
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/ciclo-gestor.spec.js:36 (failed, 83s)
+TITULO: A SC criada nasce no estado e no dono corretos (CT-E2E-01-H) › @destrutivo estado inicial e responsável deveriam refletir uma etapa de trabalho do solicitante
+ANOTACOES: faker-seed: 459867
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/ciclo-gestor.spec.js:109 (failed, 74s)
+TITULO: Gestor Imediato assume do pool e aprova (CT-E2E-02-H) › @destrutivo aprovada pelo Gestor Imediato, a SC deveria avançar para Validação Orçamentária
+ANOTACOES: faker-seed: 15260
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/ciclo-gestor.spec.js:155 (failed, 74s)
+TITULO: Gestor Imediato reprova com justificativa (CT-E2E-02-S1) › @destrutivo reprovada, a SC deveria voltar para Ajustar Informações com o solicitante, itens e contrato íntegros
+ANOTACOES: faker-seed: 979780
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:106 (failed, 78s)
+TITULO: Confirmar cria a SC e ela deveria chegar ao solicitante (CT-ACC-05-H / D-01) › @destrutivo a SC deveria nascer atribuída ao solicitante logado, não à conta de integração
+ANOTACOES: faker-seed: 698490
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:218 (failed, 80s)
+TITULO: Item sem quantidade e sem valor no contrato não pode virar item da SC (CT-ACC-06-S1) › @destrutivo item de quantidade/valor zerado no contrato não deveria virar item extra na SC criada
+ANOTACOES: faker-seed: 228675
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:286 (failed, 69s)
+TITULO: Bypass da validação de cliente no start direto (CT-ACC-04-S6 / D-10) › @destrutivo o servidor deveria recusar tipoSolicitacao vazio tanto quanto recusa motivoSolCompra vazio
+ANOTACOES: faker-seed: 95168
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:416 (failed, 58s)
+TITULO: Segunda SC para o mesmo contrato/revisão sem alerta de duplicidade (CT-E2E-12-S1) › @destrutivo o portal deveria alertar sobre a SC já em andamento para o mesmo contrato/revisão
+ANOTACOES: faker-seed: 875768
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/criacao-solicitacao.spec.js:507 (failed, 59s)
+TITULO: Quantidade e valor em contrato de serviço sem CNB_QUANT (CT-ACC-06-S2) › CT-ACC-06-S2 — item sem quantidade no contrato deve herdar a cascata e o preço real, nunca R$ 1,00
+ANOTACOES: faker-seed: 728859
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/erros-no-start.spec.js:34 (failed, 59s)
+TITULO: Erro no start — HTTP 500 (CT-ACC-05-S2) › deve avisar o usuário e permitir nova tentativa quando o start falha
+ANOTACOES: faker-seed: 68752
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/erros-no-start.spec.js:67 (failed, 59s)
+TITULO: Sucesso simulado com falha na transferência da tarefa (D-01 / CT-ACC-05-S1) › deve avisar quando a SC é criada mas não pôde ser atribuída ao solicitante, em vez de anunciar sucesso pleno
+ANOTACOES: faker-seed: 12202
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/grade-contratos.spec.js:45 (failed, 13s)
+TITULO: Grade de contratos › CT-ACC-02-S1 — deve exibir a situação do contrato por extenso, sem truncar
+ANOTACOES: faker-seed: 217948
+ERRO: Error: situações exibidas de forma truncada/ilegível na grade: ["Finali","Paralisa","Sol.Finali","Cancel."]
+
+expect(received).toEqual(expected) // deep equality
+
+- Expected  - 1
++ Received  + 6
+
+- Array []
++ Array [
++   "Finali",
++   "Paralisa",
++   "Sol.Finali",
++   "Cancel.",
++ ]
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/acompanhamento-contratos/grade-contratos.spec.js","column":7,"line":62}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/acompanhamento-contratos/grade-contratos.spec.js",
+    "Grade de contratos",
+    "CT-ACC-02-S1 — deve exibir a situação do contrato por extenso, sem truncar"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/acompanhamentoContrato",
+  "fakerSeed": 217948,
+  "reproduzirCom": "FAKER_SEED=217948 npx playwright test",
+  "erro": "Error: situações exibidas de forma truncada/ilegível na grade: [\"Finali\",\"Paralisa\",\"Sol.Finali\",\"Cancel.\"]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Exp
+
+
+######## [acomp] e2e/acompanhamento-contratos/indisponibilidade-protheus.spec.js:54 (failed, 14s)
+TITULO: Indisponibilidade do Protheus ao abrir a Solicitação de Compra › deve exibir um alerta por dado indisponível, nomeando o dado que faltou
+ANOTACOES: faker-seed: 415502
+ERRO: Error: defeito: o alerta não nomeia o dado que faltou — a falha do dataset `dsProtheus_getItensPlanilha_restGetAll` (itens da planilha do contrato) é anunciada ao usuário com o rótulo "Erro ao buscar dados da filial". Rótulo errado, e é a origem da leitura de que o "mesmo alerta aparece duas vezes" quando os dois datasets caem juntos
+
+expect(received).toMatch(expected)
+
+Expected pattern: /iten|planilha/i
+Received string:  "ERRO: Erro ao buscar dados da filial: "
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/acompanhamento-contratos/indisponibilidade-protheus.spec.js","column":7,"line":141}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/acompanhamento-contratos/indisponibilidade-protheus.spec.js",
+    "Indisponibilidade do Protheus ao abrir a Solicitação de Compra",
+    "deve exibir um alerta por dado indisponível, nomeando o dado que faltou"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/acompanhamentoContrato",
+  "fakerSeed": 415502,
+  "reproduzirCom": "FAKER_SEED=415502 npx playwright test",
+  "erro": "Error: defeito: o alerta não nomeia o dado que faltou — a falha do dataset `dsProtheus_getItensPlanilha_restGetAll` (itens da planilha do contrato) é anunciada ao usuário com o rótulo \"Erro ao buscar dados da filial\". Rótulo errado, e é a origem da le
+
+
+######## [acomp] e2e/acompanhamento-contratos/indisponibilidade-protheus.spec.js:144 (failed, 60s)
+TITULO: Indisponibilidade do Protheus ao abrir a Solicitação de Compra › não deve enviar solicitação alguma quando o contrato não trouxe itens
+ANOTACOES: faker-seed: 484695
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js:65 (failed, 11s)
+TITULO: Abertura da Solicitação de Compra a partir do contrato › deve oferecer os tipos contratuais de solicitação
+ANOTACOES: faker-seed: 619281
+ERRO: Error: expect(received).toContain(expected) // indexOf
+
+Expected value: "Renovação Contratual"
+Received array: ["Selecione...", "Selecione...", "Aditivo Contratual", "Nova Contratação"]
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js","column":20,"line":82}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js",
+    "Abertura da Solicitação de Compra a partir do contrato",
+    "deve oferecer os tipos contratuais de solicitação"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/acompanhamentoContrato",
+  "fakerSeed": 619281,
+  "reproduzirCom": "FAKER_SEED=619281 npx playwright test",
+  "erro": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected value: \u001b[32m\"Renovação Contratual\"\u001b[39m\nReceived array: \u001b[31m[\"Selecione...\", \"Se
+
+
+######## [acomp] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:59 (failed, 58s)
+TITULO: Payload de start — targetState e targetAssignee (D-01 / CT-E2E-01-H) › a SC deve nascer numa etapa de trabalho atribuída ao solicitante, não presa no marco de Início da conta de integração
+ANOTACOES: faker-seed: 900670
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:100 (failed, 59s)
+TITULO: Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1) › itens com quantidades diferentes não devem trazer o mesmo valor total
+ANOTACOES: faker-seed: 619774
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:142 (failed, 58s)
+TITULO: Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1) › não deve existir item de quantidade 1 repetindo o valor total de outro item
+ANOTACOES: faker-seed: 965754
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:174 (failed, 60s)
+TITULO: Payload de start — valor multiplicado (D-02 / CT-ACC-06-S1) › itens com quantidade e preço diferentes não deveriam compartilhar o mesmo valor total
+ANOTACOES: faker-seed: 589297
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:219 (failed, 59s)
+TITULO: Payload de start — campos chumbados (D-04 / CT-ACC-07-S1) › classeOrca, classificação e o descritor deveriam refletir o contrato de origem, não vir fixos para todos
+ANOTACOES: faker-seed: 72787
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:275 (failed, 58s)
+TITULO: Payload de start — integridade dos valores e do rateio (CT-ACC-08-S1 / CT-ACC-08-S2) › os valores monetários devem ser numericamente coerentes, sem NaN, sem casa perdida e sem inflação
+ANOTACOES: faker-seed: 23067
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:309 (failed, 60s)
+TITULO: Payload de start — integridade dos valores e do rateio (CT-ACC-08-S1 / CT-ACC-08-S2) › as linhas de rateio devem trazer percentual, centro de custo e classe de valor preenchidos, somando 100%
+ANOTACOES: faker-seed: 151642
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:339 (failed, 59s)
+TITULO: Payload de start — integridade dos valores e do rateio (CT-ACC-08-S1 / CT-ACC-08-S2) › classeValor do item deveria vir preenchido junto com classeOrca e classificação
+ANOTACOES: faker-seed: 995887
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:365 (failed, 59s)
+TITULO: Payload de start — duplo clique (CT-ACC-04-S3) › duplo clique em Confirmar não deve disparar duas requisições de start
+ANOTACOES: faker-seed: 613197
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/payload-solicitacao.spec.js:434 (failed, 58s)
+TITULO: Payload de start — número de contrato incoerente (CT-ACC-04-S5) › não deve permitir que nrContrato divirja do contrato real da revisão/filial/itens enviados
+ANOTACOES: faker-seed: 33346
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/validacoes-solicitacao.spec.js:48 (failed, 59s)
+TITULO: Campos obrigatórios da Solicitação de Compra › deve cobrar apenas os campos restantes quando o tipo já foi informado
+ANOTACOES: faker-seed: 535650
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [acomp] e2e/acompanhamento-contratos/validacoes-solicitacao.spec.js:65 (failed, 58s)
+TITULO: Campos obrigatórios da Solicitação de Compra › deve cobrar somente o motivo quando tipo e data já foram informados
+ANOTACOES: faker-seed: 684246
+ERRO: [combobox Tipo de Solicitação — did not find some options]
+
+
+######## [api] api/dataset-colleague-vazamento.spec.js:22 (failed, 2s)
+TITULO: Vazamento de dados — dataset colleague sem aplicar constraint › deve retornar somente o registro do login filtrado, não a base inteira
+ANOTACOES: faker-seed: 958184
+ERRO: Error: a constraint 'colleagueId' não filtrou o resultado: retornou 3493 registros, o MESMO total obtido sem nenhuma constraint (3493). O endpoint expõe a base inteira de colaboradores. Ver CT-SEG-01-S1 / mapa-do-ambiente.md.
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 1
+Received: 3493
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/api/dataset-colleague-vazamento.spec.js","column":7,"line":60}
+ANEXO sem-captura: Este teste não dirige interface — a página nunca saiu de about:blank. Screenshot omitida de propósito: a evidência aqui é a resposta do endpoint, que está na mensagem da falha.
+ANEXO contexto-da-falha: {
+  "teste": [
+    "api/dataset-colleague-vazamento.spec.js",
+    "Vazamento de dados — dataset colleague sem aplicar constraint",
+    "deve retornar somente o registro do login filtrado, não a base inteira"
+  ],
+  "status": "failed",
+  "url": "about:blank",
+  "fakerSeed": 958184,
+  "reproduzirCom": "FAKER_SEED=958184 npx playwright test",
+  "erro": "Error: a constraint 'colleagueId' não filtrou o resultado: retornou 3493 registros, o MESMO total obtido sem nenhuma constraint (3493). O endpoint expõe a base inteira de colaboradores. Ver CT-SEG-01-S1 / mapa-do-ambiente.md.\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\
+
+
+######## [api] api/sincronizacao-protheus.spec.js:31 (failed, 1s)
+TITULO: Integração Protheus — sincronização e cache › CT-INT-02-S1: variantes de cache (_Sync) dos dados de RH e vigência de compra não devem estar em erro
+ANOTACOES: faker-seed: 461800
+ERRO: Error: dataset de sincronização 'ds_protheus_getFuncionarios_restGetAll_Sync' respondeu 500: {"content":"ERROR","message":{"message":"java.lang.NullPointerException","detail":"java.lang.NullPointerException","type":"ERROR","param":null,"errorCode":"ECMException"}}. Sincronização em erro deixa dado de RH/vigência de compra defasado sem aviso. Ver CT-INT-02-S1 / achado U-12.
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/api/sincronizacao-protheus.spec.js","column":10,"line":60}
+ANEXO sem-captura: Este teste não dirige interface — a página nunca saiu de about:blank. Screenshot omitida de propósito: a evidência aqui é a resposta do endpoint, que está na mensagem da falha.
+ANEXO contexto-da-falha: {
+  "teste": [
+    "api/sincronizacao-protheus.spec.js",
+    "Integração Protheus — sincronização e cache",
+    "CT-INT-02-S1: variantes de cache (_Sync) dos dados de RH e vigência de compra não devem estar em erro"
+  ],
+  "status": "failed",
+  "url": "about:blank",
+  "fakerSeed": 461800,
+  "reproduzirCom": "FAKER_SEED=461800 npx playwright test",
+  "erro": "Error: dataset de sincronização 'ds_protheus_getFuncionarios_restGetAll_Sync' respondeu 500: {\"content\":\"ERROR\",\"message\":{\"message\":\"java.lang.NullPointerException\",\"detail\":\"java.lang.NullPointerException\",\"type\":\"ERROR\",\"param\":null,\"errorCode\":\"ECMException\"}}. Sincronização em erro deixa dado de RH/vigência d
+
+
+######## [compras] e2e/compras/aprovacoes-solicitacao-compras.spec.js:317 (failed, 231s)
+TITULO: Validação do Gestor Imediato (Tarefas em pool) › @destrutivo deve assumir e aprovar uma tarefa do pool do Gestor Imediato
+ANOTACOES: faker-seed: 569526
+ERRO: Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113166, criada por este teste, não ficou assumível ("Assumir tarefa") na Validação do Gestor dentro de 180s. Isto NÃO é defeito do produto confirmado — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada na tela de detalhe: "Grava SC e Anexos". Causa do polling: expect(locator).toBeVisible() failed
+
+Locator: getByRole('button', { name: 'Assumir tarefa' })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for getByRole('button', { name: 'Assumir tarefa' })
+
+
+Call Log:
+- Timeout 180000ms exceeded while waiting on the predicate
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/compras/aprovacoes-solicitacao-compras.spec.js","column":11,"line":290}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/compras/aprovacoes-solicitacao-compras.spec.js",
+    "Validação do Gestor Imediato (Tarefas em pool)",
+    "@destrutivo deve assumir e aprovar uma tarefa do pool do Gestor Imediato"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?app_ecm_workflowview_detailsProcessInstanceID=113166",
+  "fakerSeed": 569526,
+  "reproduzirCom": "FAKER_SEED=569526 npx playwright test",
+  "erro": "Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113166, criada por este teste, não ficou assumível (\"Assumir tarefa\") na Validação do Gestor dentro de 180s. Isto NÃO é defeito do produto confirmado — pode ser lentidão do BPMN acima do observado 
+
+
+######## [compras] e2e/compras/aprovacoes-solicitacao-compras.spec.js:358 (failed, 225s)
+TITULO: Validação do Gestor Imediato (Tarefas em pool) › @destrutivo deve assumir e reprovar uma tarefa do pool do Gestor Imediato com justificativa
+ANOTACOES: faker-seed: 537244
+ERRO: Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113165, criada por este teste, não ficou assumível ("Assumir tarefa") na Validação do Gestor dentro de 180s. Isto NÃO é defeito do produto confirmado — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada na tela de detalhe: "Grava SC e Anexos". Causa do polling: expect(locator).toBeVisible() failed
+
+Locator: getByRole('button', { name: 'Assumir tarefa' })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for getByRole('button', { name: 'Assumir tarefa' })
+
+
+Call Log:
+- Timeout 180000ms exceeded while waiting on the predicate
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/compras/aprovacoes-solicitacao-compras.spec.js","column":11,"line":290}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/compras/aprovacoes-solicitacao-compras.spec.js",
+    "Validação do Gestor Imediato (Tarefas em pool)",
+    "@destrutivo deve assumir e reprovar uma tarefa do pool do Gestor Imediato com justificativa"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?app_ecm_workflowview_detailsProcessInstanceID=113165",
+  "fakerSeed": 537244,
+  "reproduzirCom": "FAKER_SEED=537244 npx playwright test",
+  "erro": "Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113165, criada por este teste, não ficou assumível (\"Assumir tarefa\") na Validação do Gestor dentro de 180s. Isto NÃO é defeito do produto confirmado — pode ser lentidão do BPMN 
+
+
+######## [compras] e2e/compras/aprovacoes-solicitacao-compras.spec.js:401 (failed, 237s)
+TITULO: Validação do Gestor Imediato (Tarefas em pool) › @destrutivo deve sinalizar explicitamente quando não há aprovador habilitado para a próxima etapa
+ANOTACOES: faker-seed: 244022
+ERRO: Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113168, criada por este teste, não ficou assumível ("Assumir tarefa") na Validação do Gestor dentro de 180s. Isto NÃO é defeito do produto confirmado — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada na tela de detalhe: "Grava SC e Anexos". Causa do polling: expect(locator).toBeVisible() failed
+
+Locator: getByRole('button', { name: 'Assumir tarefa' })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for getByRole('button', { name: 'Assumir tarefa' })
+
+
+Call Log:
+- Timeout 180000ms exceeded while waiting on the predicate
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/compras/aprovacoes-solicitacao-compras.spec.js","column":11,"line":290}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/compras/aprovacoes-solicitacao-compras.spec.js",
+    "Validação do Gestor Imediato (Tarefas em pool)",
+    "@destrutivo deve sinalizar explicitamente quando não há aprovador habilitado para a próxima etapa"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?app_ecm_workflowview_detailsProcessInstanceID=113168",
+  "fakerSeed": 244022,
+  "reproduzirCom": "FAKER_SEED=244022 npx playwright test",
+  "erro": "Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113168, criada por este teste, não ficou assumível (\"Assumir tarefa\") na Validação do Gestor dentro de 180s. Isto NÃO é defeito do produto confirmado — pode ser lentidão do
+
+
+######## [compras] e2e/compras/ciclo-cotacao.spec.js:125 (failed, 15s)
+TITULO: Cotação de Produtos e Serviços — formulário avulso (shell fora de contexto) › CT-COT (defeito) — o shell aceita Enviar sem nenhuma validação de fornecedor/vínculos obrigatórios
+ANOTACOES: faker-seed: 724484
+ERRO: Error: defeito: o Fluig deveria recusar o envio da Cotação sem fornecedor/vínculos (como faz a Solicitação de Compras), mas o shell aceita e tenta criar um processo real sem nenhuma validação — só não chegou ao servidor porque este teste bloqueia toda escrita no host
+
+expect(locator).toBeVisible() failed
+
+Locator: getByRole('dialog').filter({ hasText: 'Erro' })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - defeito: o Fluig deveria recusar o envio da Cotação sem fornecedor/vínculos (como faz a Solicitação de Compras), mas o shell aceita e tenta criar um processo real sem nenhuma validação — só não chegou ao servidor porque este teste bloqueia toda escrita no host with timeout 5000ms
+  - waiting for getByRole('dialog').filter({ hasText: 'Erro' })
+
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/compras/ciclo-cotacao.spec.js","column":7,"line":157}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/compras/ciclo-cotacao.spec.js",
+    "Cotação de Produtos e Serviços — formulário avulso (shell fora de contexto)",
+    "CT-COT (defeito) — o shell aceita Enviar sem nenhuma validação de fornecedor/vínculos obrigatórios"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_cotacao_produtos_servicos",
+  "fakerSeed": 724484,
+  "reproduzirCom": "FAKER_SEED=724484 npx playwright test",
+  "erro": "Error: defeito: o Fluig deveria recusar o envio da Cotação sem fornecedor/vínculos (como faz a Solicitação de Compras), mas o shell aceita e tenta criar um processo real sem nenhuma validação — só não chegou ao
+
+
+######## [compras] e2e/compras/ciclo-cotacao.spec.js:168 (failed, 10s)
+TITULO: Cotação de Produtos e Serviços — ponto de entrada real (Portal do Comprador) › CT-COT — a fila real de "Controle De Cotações" está vazia (pré-condição ausente para qualquer cenário com cotação real)
+ANOTACOES: faker-seed: 829088
+ERRO: Error: PRÉ-CONDIÇÃO AUSENTE: a fila de "Controle De Cotações" do Portal do Comprador não tem nenhuma Cotação para operar. Isto NÃO é defeito do produto sob teste isolado — é consequência de D-01 (toda Solicitação de Compra criada por esta suíte fica presa no marco de Início do BPMN e nunca chega ao Protheus, então nunca gera uma Cotação real) somada à ausência de massa pré-existente na base. CT-COT-01-H, CT-COT-01-S1, CT-COT-02-S1, CT-COT-02-S2 e CT-COT-02-S3 continuam bloqueados até D-01 ser corrigido e/ou existir uma Cotação real nesta fila.
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/compras/ciclo-cotacao.spec.js","column":11,"line":188}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/compras/ciclo-cotacao.spec.js",
+    "Cotação de Produtos e Serviços — ponto de entrada real (Portal do Comprador)",
+    "CT-COT — a fila real de \"Controle De Cotações\" está vazia (pré-condição ausente para qualquer cenário com cotação real)"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/portal-do-comprador#/controleCotacao",
+  "fakerSeed": 829088,
+  "reproduzirCom": "FAKER_SEED=829088 npx playwright test",
+  "erro": "Error: PRÉ-CONDIÇÃO AUSENTE: a fila de \"Controle De Cotações\" do Portal do Comprador não tem nenhuma Cotação para operar. Isto NÃO é defeito do produto sob teste isolado — é consequência de D-01 (toda So
+
+
+######## [compras] e2e/compras/ciclo-solicitacao-compras.spec.js:489 (failed, 30s)
+TITULO: Ciclo de criação da Solicitação de Compras (formulário clássico) › CT-CMP-02-S4 — deve bloquear o envio quando nenhum anexo é informado
+ANOTACOES: faker-seed: 243157
+ERRO: Error: defeito: o envio sem anexo deveria ser recusado no cliente, sem gerar nenhuma requisição de escrita — em vez disso tentou: POST https://caixade182374.fluig.cloudtotvs.com.br/ecm/api/rest/ecm/workflowView/send
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 0
+Received: 1
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/compras/ciclo-solicitacao-compras.spec.js","column":7,"line":530}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/compras/ciclo-solicitacao-compras.spec.js",
+    "Ciclo de criação da Solicitação de Compras (formulário clássico)",
+    "CT-CMP-02-S4 — deve bloquear o envio quando nenhum anexo é informado"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_solicitacao_compras",
+  "fakerSeed": 243157,
+  "reproduzirCom": "FAKER_SEED=243157 npx playwright test",
+  "erro": "Error: defeito: o envio sem anexo deveria ser recusado no cliente, sem gerar nenhuma requisição de escrita — em vez disso tentou: POST https://caixade182374.fluig.cloudtotvs.com.br/ecm/api/rest/ecm/workflowView/send\n\n\u001b[2mexpect(\u001b[22m
+
+
+######## [compras] e2e/compras/ciclo-solicitacao-compras.spec.js:567 (failed, 33s)
+TITULO: Ciclo de criação da Solicitação de Compras (formulário clássico) › CT-CMP-02-S4 @destrutivo — o servidor não deve criar a SC quando falta o anexo obrigatório
+ANOTACOES: faker-seed: 111220
+ERRO: Error: defeito: o servidor aceitou e CRIOU a Solicitação de Compras sem o anexo obrigatório — a regra do catálogo (CT-CMP-02-S4) não está implementada nem no cliente nem no servidor, e o cliente é contornável
+
+expect(received).toEqual(expected) // deep equality
+
+- Expected  - 1
++ Received  + 3
+
+- Array []
++ Array [
++   "#113167 via /ecm/api/rest/ecm/workflowView/send",
++ ]
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/compras/ciclo-solicitacao-compras.spec.js","column":7,"line":646}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/compras/ciclo-solicitacao-compras.spec.js",
+    "Ciclo de criação da Solicitação de Compras (formulário clássico)",
+    "CT-CMP-02-S4 @destrutivo — o servidor não deve criar a SC quando falta o anexo obrigatório"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_solicitacao_compras",
+  "fakerSeed": 111220,
+  "reproduzirCom": "FAKER_SEED=111220 npx playwright test",
+  "erro": "Error: defeito: o servidor aceitou e CRIOU a Solicitação de Compras sem o anexo obrigatório — a regra do catálogo (CT-CMP-02-S4) não está implementada nem no cliente nem no servidor, e o cliente é contornável\n\n\u001b[2mex
+
+
+######## [compras] e2e/compras/ciclo-solicitacao-compras.spec.js:815 (failed, 158s)
+TITULO: Anexo da Solicitação de Compras chega íntegro ao GED (CT-ACC-09-H) › CT-ACC-09-H @destrutivo — o anexo enviado deveria gerar os dois registros no GED, sob a pasta da solicitação, e ser listado na solicitação
+ANOTACOES: faker-seed: 148997 | solicitacao-criada: numero=113169 anexo="QA Organized zero administration function 1673a374 - anexo"
+ERRO: Error: nenhuma pasta "Processo 113169 - ..." existe no GED. O produto cria essa cadeia sozinho na etapa "Grava SC e Anexos"; sem ela o anexo não tem onde ser navegado e o aprovador não o alcança
+
+expect(received).not.toBeNull()
+
+Received: null
+
+Call Log:
+- Timeout 120000ms exceeded while waiting on the predicate
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/compras/ciclo-solicitacao-compras.spec.js","column":8,"line":886}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/compras/ciclo-solicitacao-compras.spec.js",
+    "Anexo da Solicitação de Compras chega íntegro ao GED (CT-ACC-09-H)",
+    "CT-ACC-09-H @destrutivo — o anexo enviado deveria gerar os dois registros no GED, sob a pasta da solicitação, e ser listado na solicitação"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_solicitacao_compras",
+  "fakerSeed": 148997,
+  "reproduzirCom": "FAKER_SEED=148997 npx playwright test",
+  "erro": "Error: nenhuma pasta \"Processo 113169 - ...\" existe no GED. O produto cria essa cadeia sozinho na etapa \"Grava SC e Anexos\"; sem ela o anexo não tem onde ser navegado e 
+
+
+######## [compras] e2e/compras/fail-open-formulario-sc.spec.js:127 (failed, 9s)
+TITULO: Fail-open do formulário clássico de Solicitação de Compras (CT-CMP-07-S1) › CT-CMP-07-S1 @destrutivo — Enviar não deveria criar solicitação antes de o formulário terminar de montar
+ANOTACOES: faker-seed: 754216
+ERRO: Error: DEFEITO (fail-open, CT-CMP-07-S1): o Fluig aceitou submeter um formulário de Solicitação de Compras que ainda NÃO terminou de montar — nenhuma validação de cliente rodou e 1 requisição(ões) de criação saíram para `\/ecm\/api\/rest\/ecm\/workflowView\/send$`. O servidor recusou esta submissão (HTTP 500, corpo: "{\"content\":\"ERROR\",\"message\":{\"message\":\"Erro ao salvar dados de formulário: \\n\\n<br/><b class=\\\"text-danger fs-font-bold\\\">- O campo \\\"Nome da Filial\\\" é obrigatório!\\n Favor preencher o campo e tentar novamente.</b>\",\"detail\":\"FLUIG INFO\\nHora: 2026-09-02 15:11:41\\nVersão Fluig: TOTVS Fluig Plataf") e NENHUMA solicitação nasceu desta execução — o defeito documentado aqui é do CLIENTE: ele submeteu um formulário não montado sem rodar validação nenhuma. A recusa do servidor é acidental (o formulário estava vazio); quando a montagem falha depois de os campos já terem valor, a MESMA janela cria a SC de verdade — foi assim que o defeito foi descoberto (ver `docs/estado-do-gate.md`). Não trate a recusa como se o produto estivesse protegido. O esperado é ZERO: enquanto a montagem não termina, o Enviar tem de ficar inerte (ou desabilitado), e submissão de formulário não montado nunca pode ser aceita
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 0
+Received: 1
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/compras/fail-open-formulario-sc.spec.js","column":7,"line":266}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/compras/fail-open-formulario-sc.spec.js",
+    "Fail-open do formulário clássico de Solicitação de Compras (CT-CMP-07-S1)",
+    "CT-CMP-07-S1 @destrutivo — Enviar não deveria criar solicitação antes de o formulário terminar de montar"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_solicitacao_compras",
+  "fakerSeed": 754216,
+  "reproduzirCom": "FAKER_SEED=754216 npx playwright test",
+  "erro": "Error: DEFEITO (fail-open, CT-CMP-07-S1): o Fluig aceitou submeter um formulário de Solicitação de Compras que ainda NÃO terminou de montar — nenhuma validação de cliente rodou e 1 requisição(ões) de cr
+
+
+######## [compras] e2e/compras/negociacao-proposta.spec.js:97 (failed, 6s)
+TITULO: Negociação de Cotação — formulário avulso (shell fora de contexto) › CT-NEG — o Enviar do shell sem proposta real vinculada nunca deveria completar uma requisição de escrita
+ANOTACOES: faker-seed: 24107
+ERRO: Error: o clique em Enviar deveria ter sido recusado no cliente, sem gerar nenhuma requisição de escrita — em vez disso tentou: POST https://caixade182374.fluig.cloudtotvs.com.br/ecm/api/rest/ecm/workflowView/send
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 0
+Received: 1
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/compras/negociacao-proposta.spec.js","column":7,"line":126}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/compras/negociacao-proposta.spec.js",
+    "Negociação de Cotação — formulário avulso (shell fora de contexto)",
+    "CT-NEG — o Enviar do shell sem proposta real vinculada nunca deveria completar uma requisição de escrita"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_negociacao_cotacao_prod_serv",
+  "fakerSeed": 24107,
+  "reproduzirCom": "FAKER_SEED=24107 npx playwright test",
+  "erro": "Error: o clique em Enviar deveria ter sido recusado no cliente, sem gerar nenhuma requisição de escrita — em vez disso tentou: POST https://caixade182374.fluig.cloudtotvs.com.br/ecm/api/rest/ecm/workflowVie
+
+
+######## [compras] e2e/compras/negociacao-proposta.spec.js:131 (failed, 6s)
+TITULO: Negociação de Cotação — ponto de entrada real (Portal do Comprador) › CT-NEG — a fila real de "Avaliação de Propostas" está vazia (pré-condição ausente para validar/reprovar uma proposta real)
+ANOTACOES: faker-seed: 237007
+ERRO: Error: PRÉ-CONDIÇÃO AUSENTE: a fila de "Avaliação de Propostas" do Portal do Comprador não tem nenhuma cotação, com ou sem proposta de fornecedor. Isto NÃO é defeito isolado do produto — é o mesmo bloqueio de fundo que impede CT-COT: D-01 mantém toda Solicitação de Compra presa na conta de integração, então nenhuma Cotação real chega a existir para negociar. CT-NEG-01-H, CT-NEG-01-S1 e CT-NEG-01-S2 continuam bloqueados até D-01 ser corrigido e/ou existir uma proposta real nesta fila.
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/compras/negociacao-proposta.spec.js","column":11,"line":150}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/compras/negociacao-proposta.spec.js",
+    "Negociação de Cotação — ponto de entrada real (Portal do Comprador)",
+    "CT-NEG — a fila real de \"Avaliação de Propostas\" está vazia (pré-condição ausente para validar/reprovar uma proposta real)"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/portal-do-comprador#/avaliacaoPropostas",
+  "fakerSeed": 237007,
+  "reproduzirCom": "FAKER_SEED=237007 npx playwright test",
+  "erro": "Error: PRÉ-CONDIÇÃO AUSENTE: a fila de \"Avaliação de Propostas\" do Portal do Comprador não tem nenhuma cotação, com ou sem proposta de fornecedor. Isto NÃO é defeito isolado do produto — é o mesmo blo
+
+
+######## [compras] e2e/compras/parecer-tecnico.spec.js:84 (failed, 6s)
+TITULO: Parecer Técnico — formulário avulso › CT-PAR-01-S1 — parecer sem responsável definido não pode completar uma requisição de escrita ao Enviar
+ANOTACOES: faker-seed: 543862
+ERRO: Error: um parecer sem responsável definido não deveria gerar nenhuma requisição de escrita — em vez disso tentou: POST https://caixade182374.fluig.cloudtotvs.com.br/ecm/api/rest/ecm/workflowView/send
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 0
+Received: 1
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/compras/parecer-tecnico.spec.js","column":7,"line":109}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/compras/parecer-tecnico.spec.js",
+    "Parecer Técnico — formulário avulso",
+    "CT-PAR-01-S1 — parecer sem responsável definido não pode completar uma requisição de escrita ao Enviar"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_solicitacao_compras_parecer",
+  "fakerSeed": 543862,
+  "reproduzirCom": "FAKER_SEED=543862 npx playwright test",
+  "erro": "Error: um parecer sem responsável definido não deveria gerar nenhuma requisição de escrita — em vez disso tentou: POST https://caixade182374.fluig.cloudtotvs.com.br/ecm/api/rest/ecm/workflowView/send\n\n\u001b[2mexpect(\u001b[22m\u001b[31mrec
+
+
+######## [compras] e2e/compras/parecer-tecnico.spec.js:112 (failed, 7s)
+TITULO: Parecer Técnico — formulário avulso › CT-PAR-01-S2 — parecer desfavorável (Reprovado/Ajustes) com justificativa também é barrado pela ausência de responsável
+ANOTACOES: faker-seed: 200992
+ERRO: Error: um parecer reprovado sem responsável definido não deveria gerar nenhuma requisição de escrita — em vez disso tentou: POST https://caixade182374.fluig.cloudtotvs.com.br/ecm/api/rest/ecm/workflowView/send
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 0
+Received: 1
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/compras/parecer-tecnico.spec.js","column":7,"line":134}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/compras/parecer-tecnico.spec.js",
+    "Parecer Técnico — formulário avulso",
+    "CT-PAR-01-S2 — parecer desfavorável (Reprovado/Ajustes) com justificativa também é barrado pela ausência de responsável"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_solicitacao_compras_parecer",
+  "fakerSeed": 200992,
+  "reproduzirCom": "FAKER_SEED=200992 npx playwright test",
+  "erro": "Error: um parecer reprovado sem responsável definido não deveria gerar nenhuma requisição de escrita — em vez disso tentou: POST https://caixade182374.fluig.cloudtotvs.com.br/ecm/api/rest/ecm/workflowView/send\n\n\u001b[2mexp
+
+
+######## [contratos] e2e/contratos/delegacao-fiscais-ciclo.spec.js:42 (failed, 33s)
+TITULO: Delegação de Fiscais de Contrato/Serviço — ciclo completo › CT-DEL-01-H @destrutivo: delegar um fiscal substituto para um contrato deve criar a delegação
+ANOTACOES: faker-seed: 675195
+ERRO: Error: a Delegação de Fiscais deveria ser criável a partir do catálogo de processos (onde é anunciada como iniciável), mas o formulário recusa o envio exigindo um "portal de delegação de fiscais" inalcançável — ver comentário da suíte para a investigação completa
+
+expect(locator).toBeVisible() failed
+
+Locator: getByText(/iniciada com sucesso\./)
+Expected: visible
+Timeout: 15000ms
+Error: element(s) not found
+
+Call log:
+  - a Delegação de Fiscais deveria ser criável a partir do catálogo de processos (onde é anunciada como iniciável), mas o formulário recusa o envio exigindo um "portal de delegação de fiscais" inalcançável — ver comentário da suíte para a investigação completa with timeout 15000ms
+  - waiting for getByText(/iniciada com sucesso\./)
+
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/contratos/delegacao-fiscais-ciclo.spec.js","column":7,"line":77}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/contratos/delegacao-fiscais-ciclo.spec.js",
+    "Delegação de Fiscais de Contrato/Serviço — ciclo completo",
+    "CT-DEL-01-H @destrutivo: delegar um fiscal substituto para um contrato deve criar a delegação"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_delegacaoFiscalContratoServico",
+  "fakerSeed": 675195,
+  "reproduzirCom": "FAKER_SEED=675195 npx playwright test",
+  "erro": "Error: a Delegação de Fiscais deveria ser criável a partir do catálogo de processos (onde é anunciada como iniciável), mas o formulário recusa o envio exigindo um \"portal de delegação de fiscais\" inalcançável — ver
+
+
+######## [contratos] e2e/contratos/delegacao-fiscais-ciclo.spec.js:82 (failed, 12s)
+TITULO: Delegação de Fiscais de Contrato/Serviço — ciclo completo › CT-DEL-01-S1 @destrutivo: substituto inválido/sem permissão deve ser bloqueado — não há nenhum controle para selecionar um fiscal substituto
+ANOTACOES: faker-seed: 793470
+ERRO: Error: CT-DEL-01-S1 é INEXEQUÍVEL pela interface atual: o formulário de Delegação de Fiscais não oferece nenhum controle (searchbox/combobox) para informar um fiscal substituto, então não há entrada de dado para exercitar "substituto inválido". O único caminho de escrita (Enviar) é recusado pelo servidor — HTTP 500 em /ecm/api/rest/ecm/workflowView/send: Erro ao salvar dados de formulário: Solicitação só pode ser aberta através do portal de delegação de fiscais! — e esse portal não foi encontrado em nenhum ponto de navegação alcançável por este usuário (ver CT-DEL-01-H)
+
+expect(received).toBeGreaterThan(expected)
+
+Expected: > 0
+Received:   0
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/contratos/delegacao-fiscais-ciclo.spec.js","column":7,"line":180}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/contratos/delegacao-fiscais-ciclo.spec.js",
+    "Delegação de Fiscais de Contrato/Serviço — ciclo completo",
+    "CT-DEL-01-S1 @destrutivo: substituto inválido/sem permissão deve ser bloqueado — não há nenhum controle para selecionar um fiscal substituto"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_delegacaoFiscalContratoServico",
+  "fakerSeed": 793470,
+  "reproduzirCom": "FAKER_SEED=793470 npx playwright test",
+  "erro": "Error: CT-DEL-01-S1 é INEXEQUÍVEL pela interface atual: o formulário de Delegação de Fiscais não oferece nenhum controle (searchbox/combobox) para informar um fiscal sub
+
+
+######## [contratos] e2e/contratos/validacoes-faturamento.spec.js:76 (failed, 42s)
+TITULO: Faturamento de Contratos — validações e bloqueios › CT-FAT-02-S2: competência recusada pelo Protheus deve bloquear a medição E avisar o usuário
+ANOTACOES: faker-seed: 153365
+ERRO: Error: defeito: o Protheus recusou a medição com "Id do submodelo de erro:CNDMASTER - Id do campo de erro:CND_CONTRA - mensagem do erro: CNTA120_REV:Existe revisão pendente de aprovação para este contrato, não ", mas a tela não exibiu nenhum aviso ao usuário — a recusa é engolida silenciosamente
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/contratos/validacoes-faturamento.spec.js","column":7,"line":170}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/contratos/validacoes-faturamento.spec.js",
+    "Faturamento de Contratos — validações e bloqueios",
+    "CT-FAT-02-S2: competência recusada pelo Protheus deve bloquear a medição E avisar o usuário"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_faturamento_contratos",
+  "fakerSeed": 153365,
+  "reproduzirCom": "FAKER_SEED=153365 npx playwright test",
+  "erro": "Error: defeito: o Protheus recusou a medição com \"Id do submodelo de erro:CNDMASTER - Id do campo de erro:CND_CONTRA - mensagem do erro: CNTA120_REV:Existe revisão pendente de aprovação para este contrato, não \", mas a tela não exibiu
+
+
+######## [contratos] e2e/contratos/validacoes-faturamento.spec.js:252 (failed, 53s)
+TITULO: Faturamento de Contratos — validações e bloqueios › CT-FAT-02-S3: reprovar uma validação (Validação CSE / Validação da Medição CSE / Validação do Fiscal de Contrato) não é alcançável — o usuário desta automação não pertence a nenhum grupo dessas etapas
+ANOTACOES: faker-seed: 397826
+ERRO: TimeoutError: locator.click: Timeout 45000ms exceeded.
+Call log:
+  - waiting for getByRole('link', { name: /^Tarefas em pool/ })
+
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/contratos/validacoes-faturamento.spec.js","column":64,"line":264}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/contratos/validacoes-faturamento.spec.js",
+    "Faturamento de Contratos — validações e bloqueios",
+    "CT-FAT-02-S3: reprovar uma validação (Validação CSE / Validação da Medição CSE / Validação do Fiscal de Contrato) não é alcançável — o usuário desta automação não pertence a nenhum grupo dessas etapas"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pagecentraltask",
+  "fakerSeed": 397826,
+  "reproduzirCom": "FAKER_SEED=397826 npx playwright test",
+  "erro": "TimeoutError: locator.click: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^Tarefas em pool/ })\u001b[22m\n"
+}
+
+
+######## [documentos] e2e/documentos/bloqueio-extensoes.spec.js:133 (failed, 8s)
+TITULO: GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2) › CT-GED-02-S2 @destrutivo — script de lote (.bat) deveria ser rejeitado
+ANOTACOES: faker-seed: 474961
+ERRO: Error: page.goto: net::ERR_NETWORK_CHANGED at https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation
+Call log:
+  - navigating to "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation", waiting until "domcontentloaded"
+
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/pages/DocumentosPage.js","column":21,"line":92}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/documentos/bloqueio-extensoes.spec.js",
+    "GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)",
+    "CT-GED-02-S2 @destrutivo — script de lote (.bat) deveria ser rejeitado"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation",
+  "fakerSeed": 474961,
+  "reproduzirCom": "FAKER_SEED=474961 npx playwright test",
+  "erro": "Error: page.goto: net::ERR_NETWORK_CHANGED at https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation\nCall log:\n\u001b[2m  - navigating to \"https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation\", waiting until \"domcontentloaded\"\u001b[22m\n"
+
+
+
+######## [documentos] e2e/documentos/bloqueio-extensoes.spec.js:149 (failed, 56s)
+TITULO: GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2) › CT-GED-02-S2 @destrutivo — shell script (.sh) deveria ser rejeitado
+ANOTACOES: faker-seed: 929833
+ERRO: Error: esperada uma mensagem de bloqueio ao publicar "qa-script-shell.sh": um .sh é executável e não pertence a uma allowlist de documentos. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele
+
+expect(locator).toBeVisible() failed
+
+Locator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+  - esperada uma mensagem de bloqueio ao publicar "qa-script-shell.sh": um .sh é executável e não pertence a uma allowlist de documentos. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele with timeout 30000ms
+  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/documentos/bloqueio-extensoes.spec.js","column":5,"line":119}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/documentos/bloqueio-extensoes.spec.js",
+    "GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)",
+    "CT-GED-02-S2 @destrutivo — shell script (.sh) deveria ser rejeitado"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation",
+  "fakerSeed": 929833,
+  "reproduzirCom": "FAKER_SEED=929833 npx playwright test",
+  "erro": "Error: esperada uma mensagem de bloqueio ao publicar \"qa-script-shell.sh\": um .sh é executável e não pertence a uma allowlist de documentos. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção qu
+
+
+######## [documentos] e2e/documentos/bloqueio-extensoes.spec.js:163 (failed, 48s)
+TITULO: GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2) › CT-GED-02-S2 @destrutivo — dupla extensão (.pdf.exe) deveria ser rejeitada
+ANOTACOES: faker-seed: 471797
+ERRO: Error: esperada uma mensagem de bloqueio ao publicar "qa-relatorio.pdf.exe": é o disfarce clássico — o nome sugere um PDF, a extensão REAL é .exe, e uma validação que olhe só o começo do nome (ou que procure ".pdf" em qualquer posição) deixa passar. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele
+
+expect(locator).toBeVisible() failed
+
+Locator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+  - esperada uma mensagem de bloqueio ao publicar "qa-relatorio.pdf.exe": é o disfarce clássico — o nome sugere um PDF, a extensão REAL é .exe, e uma validação que olhe só o começo do nome (ou que procure ".pdf" em qualquer posição) deixa passar. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele with timeout 30000ms
+  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/documentos/bloqueio-extensoes.spec.js","column":5,"line":119}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/documentos/bloqueio-extensoes.spec.js",
+    "GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)",
+    "CT-GED-02-S2 @destrutivo — dupla extensão (.pdf.exe) deveria ser rejeitada"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation",
+  "fakerSeed": 471797,
+  "reproduzirCom": "FAKER_SEED=471797 npx playwright test",
+  "erro": "Error: esperada uma mensagem de bloqueio ao publicar \"qa-relatorio.pdf.exe\": é o disfarce clássico — o nome sugere um PDF, a extensão REAL é .exe, e uma validação que olhe só o começo do nome (ou que procure \".pdf\" em qualquer posição) deixa passar. Nenhuma mensagem de bl
+
+
+######## [documentos] e2e/documentos/bloqueio-extensoes.spec.js:176 (failed, 46s)
+TITULO: GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2) › CT-GED-02-S2 @destrutivo — executável renomeado para .pdf deveria ser rejeitado pelo conteúdo
+ANOTACOES: faker-seed: 943592
+ERRO: Error: esperada mensagem de bloqueio ao publicar "qa-executavel-disfarcado.pdf": o nome diz ".pdf" mas o conteúdo começa com os magic bytes "MZ" de um executável PE/DOS. Nenhuma mensagem foi exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros três casos de CT-GED-02-S2 estiverem VERDES e só este reprovar, a allowlist foi implementada mas valida apenas a EXTENSÃO DO NOME — nunca o conteúdo —, e renomear o arquivo continua sendo suficiente para subir um binário ao GED
+
+expect(locator).toBeVisible() failed
+
+Locator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido|conteúdo não corresponde|arquivo inválido/i)
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+  - esperada mensagem de bloqueio ao publicar "qa-executavel-disfarcado.pdf": o nome diz ".pdf" mas o conteúdo começa com os magic bytes "MZ" de um executável PE/DOS. Nenhuma mensagem foi exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros três casos de CT-GED-02-S2 estiverem VERDES e só este reprovar, a allowlist foi implementada mas valida apenas a EXTENSÃO DO NOME — nunca o conteúdo —, e renomear o arquivo continua sendo suficiente para subir um binário ao GED with timeout 30000ms
+  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido|conteúdo não corresponde|arquivo inválido/i)
+
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/documentos/bloqueio-extensoes.spec.js","column":7,"line":209}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/documentos/bloqueio-extensoes.spec.js",
+    "GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)",
+    "CT-GED-02-S2 @destrutivo — executável renomeado para .pdf deveria ser rejeitado pelo conteúdo"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation",
+  "fakerSeed": 943592,
+  "reproduzirCom": "FAKER_SEED=943592 npx playwright test",
+  "erro": "Error: esperada mensagem de bloqueio ao publicar \"qa-executavel-disfarcado.pdf\": o nome diz \".pdf\" mas o conteúdo começa com os magic bytes \"MZ\" de um executável PE/DOS. Nenhuma mensagem foi exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros trê
+
+
+######## [documentos] e2e/documentos/gestao-documentos.spec.js:66 (failed, 58s)
+TITULO: Documentos — upload (CT-GED-02) › CT-GED-02-S1 upload de extensão bloqueada é rejeitado e nada é gravado @destrutivo
+ANOTACOES: faker-seed: 850318
+ERRO: Error: esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação)
+
+expect(locator).toBeVisible() failed
+
+Locator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+  - esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação) with timeout 30000ms
+  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/documentos/gestao-documentos.spec.js","column":7,"line":93}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/documentos/gestao-documentos.spec.js",
+    "Documentos — upload (CT-GED-02)",
+    "CT-GED-02-S1 upload de extensão bloqueada é rejeitado e nada é gravado @destrutivo"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation",
+  "fakerSeed": 850318,
+  "reproduzirCom": "FAKER_SEED=850318 npx playwright test",
+  "erro": "Error: esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed
+
+
+######## [juridico] e2e/juridico/sigajuri-consultivo.spec.js:48 (failed, 6s)
+TITULO: SIGAJURI_Consultivo — solicitação, D-JUR-01 › CT-JUR-01-H deveria criar a solicitação de Consultivo e vinculá-la à área informada @destrutivo
+ANOTACOES: faker-seed: 340681
+ERRO: Error: Tipo Consulta deveria oferecer mais de uma opção (tipos reais de consulta)
+
+expect(received).toBeGreaterThan(expected)
+
+Expected: > 1
+Received:   1
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/juridico/sigajuri-consultivo.spec.js","column":7,"line":66}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/juridico/sigajuri-consultivo.spec.js",
+    "SIGAJURI_Consultivo — solicitação, D-JUR-01",
+    "CT-JUR-01-H deveria criar a solicitação de Consultivo e vinculá-la à área informada @destrutivo"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=SIGAJURI_Consultivo",
+  "fakerSeed": 340681,
+  "reproduzirCom": "FAKER_SEED=340681 npx playwright test",
+  "erro": "Error: Tipo Consulta deveria oferecer mais de uma opção (tipos reais de consulta)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n
+
+
+######## [juridico] e2e/juridico/sigajuri-contencioso.spec.js:196 (failed, 8s)
+TITULO: SIGAJURI_Contencioso — roteamento por área e parte contrária › CT-JUR-04-S1 deveria oferecer campo para registrar a parte contrária em consultas contenciosas
+ANOTACOES: faker-seed: 206423
+ERRO: Error: deveria existir um caminho visível para registrar a parte contrária (botão "Novo Envolvido") em uma consulta do tipo "Liminar" — testado com o formulário no estado padrão e com "Não possui processo." marcado, o botão fica oculto (classe CSS `sem-processo-hide`) nos dois casos
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/juridico/sigajuri-contencioso.spec.js","column":7,"line":230}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/juridico/sigajuri-contencioso.spec.js",
+    "SIGAJURI_Contencioso — roteamento por área e parte contrária",
+    "CT-JUR-04-S1 deveria oferecer campo para registrar a parte contrária em consultas contenciosas"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=SIGAJURI_Contencioso",
+  "fakerSeed": 206423,
+  "reproduzirCom": "FAKER_SEED=206423 npx playwright test",
+  "erro": "Error: deveria existir um caminho visível para registrar a parte contrária (botão \"Novo Envolvido\") em uma consulta do tipo \"Liminar\" — testado com o formulário no estado padrão e com \"Não possui processo.\" marcado, o botão
+
+
+######## [juridico] e2e/juridico/sigajuri-contrato.spec.js:32 (failed, 7s)
+TITULO: SIGAJURI_Contrato — geração de minuta, D-JUR-01 › CT-JUR-03-H deveria permitir montar uma minuta preenchendo Filial e Tipo Contrato
+ANOTACOES: faker-seed: 922064
+ERRO: Error: Filial deveria oferecer mais de uma opção (filiais reais)
+
+expect(received).toBeGreaterThan(expected)
+
+Expected: > 1
+Received:   1
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/juridico/sigajuri-contrato.spec.js","column":7,"line":48}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/juridico/sigajuri-contrato.spec.js",
+    "SIGAJURI_Contrato — geração de minuta, D-JUR-01",
+    "CT-JUR-03-H deveria permitir montar uma minuta preenchendo Filial e Tipo Contrato"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=SIGAJURI_Contrato",
+  "fakerSeed": 922064,
+  "reproduzirCom": "FAKER_SEED=922064 npx playwright test",
+  "erro": "Error: Filial deveria oferecer mais de uma opção (filiais reais)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m1\u001b[3
+
+
+######## [notificacoes] e2e/notificacoes/contratos-api-notificacao.spec.js:98 (failed, 31s)
+TITULO: Notificações — contratos da API (CT-NOT-03-S1) › CT-NOT-03-S1: `GET /notification/api/v1/notifications` deve respeitar `limit` e `offset`
+ANOTACOES: faker-seed: 506007
+ERRO: Error: `GET /notification/api/v1/notifications?limit=3` deveria devolver 3 notificações e devolveu 1000: o parâmetro `limit` é ignorado pelo servidor. Todo cliente recebe a lista inteira hoje; no dia em que a paginação passar a valer, esses clientes mudam de comportamento sem nenhum aviso.
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 3
+Received: 1000
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/notificacoes/contratos-api-notificacao.spec.js","column":7,"line":162}
+ANEXO paginacao-de-notificacoes: {
+  "semParametro": {
+    "status": 200,
+    "quantidade": 1000,
+    "primeiroId": 3328180,
+    "texto": ""
+  },
+  "limite3": {
+    "status": 200,
+    "quantidade": 1000,
+    "primeiroId": 3328180,
+    "texto": ""
+  },
+  "segundaPagina": {
+    "status": 200,
+    "quantidade": 1000,
+    "primeiroId": 3328180,
+    "texto": ""
+  }
+}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/notificacoes/contratos-api-notificacao.spec.js",
+    "Notificações — contratos da API (CT-NOT-03-S1)",
+    "CT-NOT-03-S1: `GET /notification/api/v1/notifications` deve respeitar `limit` e `offset`"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home",
+  "fakerSeed": 506007,
+  "reproduzirCom": "FAKER_SEED=506007 npx playwright test",
+  "erro": "Error: `GET /notification/api/v1/notifications?limit=3` deveria devolver 3 notificações e devolveu 1000: o parâmetro `limit` é ignorado pelo servidor. Todo cliente recebe a lista inteira hoje; no dia em que a paginação passar a valer, esses clientes mudam de comportamento sem nenhum
+
+
+######## [notificacoes] e2e/notificacoes/contratos-api-notificacao.spec.js:171 (failed, 14s)
+TITULO: Notificações — contratos da API (CT-NOT-03-S1) › CT-NOT-03-S1: notificação declara `canRemove: true`, então o verbo REST de remoção deveria existir
+ANOTACOES: faker-seed: 491719
+ERRO: Error: as notificações declaram `canRemove: true`, mas `DELETE /notification/api/v1/notifications/{id}` responde 500 `NotFoundException` — neste ambiente isso significa que a ROTA NÃO EXISTE (a coleção existe e responde `NotAllowedException`; uma rota inventada responde `NotFoundException`, como o controle acima confirma). A remoção real só existe em `POST /globalalertapi/api/rest/alert/removeAlerts`, em outro módulo e sem nenhuma referência no recurso que promete ser removível.
+
+expect(received).not.toBe(expected) // Object.is equality
+
+Expected: not "NotFoundException"
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/notificacoes/contratos-api-notificacao.spec.js","column":11,"line":259}
+ANEXO sondagem-de-rotas-de-remocao: {
+  "lista": {
+    "status": 200,
+    "total": 1000,
+    "removiveis": 1000
+  },
+  "deleteComId": {
+    "status": 500,
+    "code": "NotFoundException",
+    "corpo": "{\"code\":\"NotFoundException\",\"message\":\"\",\"detailedMessage\":\"\",\"helpUrl\":null,\"details\":[]}"
+  },
+  "deleteNaColecao": {
+    "status": 500,
+    "code": "NotAllowedException",
+    "corpo": "{\"code\":\"NotAllowedException\",\"message\":\"\",\"detailedMessage\":\"\",\"helpUrl\":null,\"details\":[]}"
+  },
+  "removeAlerts": {
+    "status": 500,
+    "code": "NotAllowedException",
+    "corpo": "{\"code\":\"NotAllowedException\",\"detailedMessage\":\"\",\"details\":[],\"message\":\"\"}"
+  },
+  "controleRotaInexistente": 
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/notificacoes/contratos-api-notificacao.spec.js",
+    "Notificações — contratos da API (CT-NOT-03-S1)",
+    "CT-NOT-03-S1: notificação declara `canRemove: true`, então o verbo REST de remoção deveria existir"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home",
+  "fakerSeed": 491719,
+  "reproduzirCom": "FAKER_SEED=491719 npx playwright test",
+  "erro": "Error: as notificações declaram `canRemove: true`, mas `DELETE /notification/api/v1/notifications/{id}` responde 500 `NotFoundException` — neste ambiente isso significa que a ROTA NÃO EXISTE (a coleção existe e responde `NotAllowedException`; uma rota inventada responde `N
+
+
+######## [plataforma] e2e/plataforma/catalogo-invariante.spec.js:149 (failed, 7s)
+TITULO: Plataforma — invariante do catálogo de processos › CT-PLT-10-H: o conjunto de processos publicados e o de iniciáveis devem bater exatamente com o inventário versionado
+ANOTACOES: faker-seed: 25340
+ERRO: Error: o catálogo "Iniciar Solicitações" (`onlyCanStart=true`) mudou para esta conta. Processo que ENTRA passou a ser iniciável por um usuário de Compras; processo que SAI deixou de ser oferecido. Este é o ponto de controle de permissão de início — trate cada linha como mudança de acesso, não como ajuste de dados.
+
+expect(received).toEqual(expected) // deep equality
+
+- Expected  - 1
++ Received  + 8
+
+  Object {
+-   "entraram": Array [],
++   "entraram": Array [
++     "GestaoDependentes",
++     "SIGAJURI_AprovaFU",
++     "SIGAJURI_Contencioso",
++     "SIGAJURI_Contrato",
++     "rh_gbeneficios_planosaude",
++     "wf_substituicaocargos",
++   ],
+    "sairam": Array [],
+  }
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/plataforma/catalogo-invariante.spec.js","column":7,"line":221}
+ANEXO inventario-lido-do-servidor: {
+  "totalPublicados": 34,
+  "ativos": [
+    "FLUIGADHOC",
+    "FLUIGADHOCPROCESS",
+    "GestaoDependentes",
+    "SIGAJURI_AprovaFU",
+    "SIGAJURI_Consultivo",
+    "SIGAJURI_Contencioso",
+    "SIGAJURI_Contrato",
+    "bpm_addUserFluig",
+    "bpm_addUserGroup",
+    "bpm_financeiro_rejeicoes_bancarias",
+    "bpm_recepcao_documentos_fiscais_comprador_compras",
+    "bpm_recepcao_documentos_fiscais_compras",
+    "bpm_recepcao_documentos_fiscais_contratos",
+    "bpm_recepcao_documentos_fiscais_demandante_compras",
+    "bpm_recepcao_documentos_fiscais_fiscais_contratos",
+    "prc_questionario_v2",
+    "rh_gbeneficios_planosaude",
+    "teste",
+    "wf_SubstituiçãoCargosFluig",
+    "wf_aprovacao_oco
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/plataforma/catalogo-invariante.spec.js",
+    "Plataforma — invariante do catálogo de processos",
+    "CT-PLT-10-H: o conjunto de processos publicados e o de iniciáveis devem bater exatamente com o inventário versionado"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home",
+  "fakerSeed": 25340,
+  "reproduzirCom": "FAKER_SEED=25340 npx playwright test",
+  "erro": "Error: o catálogo \"Iniciar Solicitações\" (`onlyCanStart=true`) mudou para esta conta. Processo que ENTRA passou a ser iniciável por um usuário de Compras; processo que SAI deixou de ser oferecido. Este é o ponto de controle de permissão de início — trate cada l
+
+
+######## [plataforma] e2e/plataforma/catalogo-invariante.spec.js:224 (failed, 7s)
+TITULO: Plataforma — invariante do catálogo de processos › CT-PLT-10-H: `SIGAJURI_Contencioso` continua fora do catálogo `onlyCanStart` embora crie solicitação — a permissão real diverge do filtro da tela
+ANOTACOES: faker-seed: 680097
+ERRO: Error: a divergência mudou: `SIGAJURI_Contencioso` PASSOU a constar do catálogo `onlyCanStart`. Se a permissão de início foi alinhada ao filtro da tela, o achado foi resolvido e este teste deve ser reescrito para a nova regra — não silenciado.
+
+expect(received).not.toContain(expected) // indexOf
+
+Expected value: not "SIGAJURI_Contencioso"
+Received array:     ["bpm_addUserGroup", "bpm_addUserFluig", "teste", "wf_cadastro_fornecedor", "wf_cotacao_produtos_servicos", "wf_negociacao_cotacao_prod_serv", "wf_solicitacao_compras", "wf_solicitacao_compras_parecer", "wf_SubstituiçãoCargosFluig", "wf_delegacaoFiscalContratoServico", "wf_faturamento_contratos", "bpm_financeiro_rejeicoes_bancarias", "prc_questionario_v2", "GestaoDependentes", "rh_gbeneficios_planosaude", "wf_automacao_admissao", "wf_pagamento_horas_extras", "wf_substituicaocargos", "FLUIGADHOC", "SIGAJURI_AprovaFU", "SIGAJURI_Consultivo", "SIGAJURI_Contencioso", "SIGAJURI_Contrato"]
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/plataforma/catalogo-invariante.spec.js","column":11,"line":265}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/plataforma/catalogo-invariante.spec.js",
+    "Plataforma — invariante do catálogo de processos",
+    "CT-PLT-10-H: `SIGAJURI_Contencioso` continua fora do catálogo `onlyCanStart` embora crie solicitação — a permissão real diverge do filtro da tela"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home",
+  "fakerSeed": 680097,
+  "reproduzirCom": "FAKER_SEED=680097 npx playwright test",
+  "erro": "Error: a divergência mudou: `SIGAJURI_Contencioso` PASSOU a constar do catálogo `onlyCanStart`. Se a permissão de início foi alinhada ao filtro da tela, o achado foi resolvido e este teste deve ser reescrito para a nova regra — não 
+
+
+######## [plataforma] e2e/plataforma/deep-link-spa.spec.js:19 (failed, 38s)
+TITULO: Deep-link de rota SPA (defeito U-01) › acessar /portal/p/1/principalprocess diretamente deve abrir a página, não redirecionar para 404
+ANOTACOES: faker-seed: 135581
+ERRO: Error: defeito U-01: abrir /portal/p/1/principalprocess diretamente pela URL cai em errorPage/404. A rota existe e funciona quando alcançada pela navegação interna da SPA — o que quebra é o deep-link, então link salvo, favorito e compartilhamento de endereço não funcionam
+
+expect(page).not.toHaveURL(expected) failed
+
+Expected pattern: not /errorPage\/404/
+Received string: "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/errorPage/404"
+Timeout: 30000ms
+
+Call log:
+  - defeito U-01: abrir /portal/p/1/principalprocess diretamente pela URL cai em errorPage/404. A rota existe e funciona quando alcançada pela navegação interna da SPA — o que quebra é o deep-link, então link salvo, favorito e compartilhamento de endereço não funcionam with timeout 30000ms
+    61 × locator resolved to <html lang="pt-BR" class="k-webkit k-webkit151">…</html>
+       - unexpected value "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/errorPage/404"
+
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/plataforma/deep-link-spa.spec.js","column":13,"line":32}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/plataforma/deep-link-spa.spec.js",
+    "Deep-link de rota SPA (defeito U-01)",
+    "acessar /portal/p/1/principalprocess diretamente deve abrir a página, não redirecionar para 404"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/errorPage/404",
+  "fakerSeed": 135581,
+  "reproduzirCom": "FAKER_SEED=135581 npx playwright test",
+  "erro": "Error: defeito U-01: abrir /portal/p/1/principalprocess diretamente pela URL cai em errorPage/404. A rota existe e funciona quando alcançada pela navegação interna da SPA — o que quebra é o deep-link, então link salvo, favorito e compartilhamento de endereço não funcionam\n\n\u001b[2mexpect
+
+
+######## [plataforma] e2e/plataforma/deep-link-spa.spec.js:19 (failed, 37s)
+TITULO: Deep-link de rota SPA (defeito U-01) › acessar /portal/p/1/gestao_ferias diretamente deve abrir a página, não redirecionar para 404
+ANOTACOES: faker-seed: 998175
+ERRO: Error: defeito U-01: abrir /portal/p/1/gestao_ferias diretamente pela URL cai em errorPage/404. A rota existe e funciona quando alcançada pela navegação interna da SPA — o que quebra é o deep-link, então link salvo, favorito e compartilhamento de endereço não funcionam
+
+expect(page).not.toHaveURL(expected) failed
+
+Expected pattern: not /errorPage\/404/
+Received string: "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/errorPage/404"
+Timeout: 30000ms
+
+Call log:
+  - defeito U-01: abrir /portal/p/1/gestao_ferias diretamente pela URL cai em errorPage/404. A rota existe e funciona quando alcançada pela navegação interna da SPA — o que quebra é o deep-link, então link salvo, favorito e compartilhamento de endereço não funcionam with timeout 30000ms
+    61 × locator resolved to <html lang="pt-BR" class="k-webkit k-webkit151">…</html>
+       - unexpected value "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/errorPage/404"
+
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/plataforma/deep-link-spa.spec.js","column":13,"line":32}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/plataforma/deep-link-spa.spec.js",
+    "Deep-link de rota SPA (defeito U-01)",
+    "acessar /portal/p/1/gestao_ferias diretamente deve abrir a página, não redirecionar para 404"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/errorPage/404",
+  "fakerSeed": 998175,
+  "reproduzirCom": "FAKER_SEED=998175 npx playwright test",
+  "erro": "Error: defeito U-01: abrir /portal/p/1/gestao_ferias diretamente pela URL cai em errorPage/404. A rota existe e funciona quando alcançada pela navegação interna da SPA — o que quebra é o deep-link, então link salvo, favorito e compartilhamento de endereço não funcionam\n\n\u001b[2mexpect(\u001
+
+
+######## [plataforma] e2e/plataforma/erros-de-console.spec.js:152 (failed, 19s)
+TITULO: Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1) › CT-PLT-06-S1: Portal do Comprador (/portal/p/1/portal-do-comprador) deve carregar sem erro de console não catalogado
+ANOTACOES: faker-seed: 960256
+ERRO: Error: 2 erro(s) de console NÃO catalogado(s) em /portal/p/1/portal-do-comprador (Portal do Comprador): [{"mensagem":"Failed to load resource: the server responded with a status of 404 (Not Found)","recurso":"https://caixade182374.fluig.cloudtotvs.com.br/style-guide/css/fluig-style-guide.min.css"},{"mensagem":"Erro ao buscar as informações do colaborador na lista de usuários do ERP Protheus. Error: Error: Comprador não encontrado.","recurso":"https://caixade182374.fluig.cloudtotvs.com.br/wg_portalCompradores/resources/js/App/Scripts/browser/main.js"}]. Erro de JS/rede na carga degrada o widget em silêncio — a tela continua "abrindo" e só quebra na função que ninguém testou. Se o erro for conhecido e aceito, catalogue-o em EXCECOES_CATALOGADAS com id, data e motivo, e registre-o na tabela de defeitos do README; nunca alargue um filtro para calá-lo.
+
+expect(received).toEqual(expected) // deep equality
+
+- Expected  -  1
++ Received  + 10
+
+- Array []
++ Array [
++   Object {
++     "mensagem": "Failed to load resource: the server responded with a status of 404 (Not Found)",
++     "recurso": "https://caixade182374.fluig.cloudtotvs.com.br/style-guide/css/fluig-style-guide.min.css",
++   },
++   Object {
++     "mensagem": "Erro ao buscar as informações do colaborador na lista de usuários do ERP Protheus. Error: Error: Comprador não encontrado.",
++     "recurso": "https://caixade182374.fluig.cloudtotvs.com.br/wg_portalCompradores/resources/js/App/Scripts/browser/main.js",
++   },
++ ]
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/plataforma/erros-de-console.spec.js","column":9,"line":210}
+ANEXO console-observado: {
+  "rota": "/portal/p/1/portal-do-comprador",
+  "todosOsErros": [
+    {
+      "mensagem": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "recurso": "https://caixade182374.fluig.cloudtotvs.com.br/style-guide/css/fluig-style-guide.min.css"
+    },
+    {
+      "mensagem": "Erro ao buscar as informações do colaborador na lista de usuários do ERP Protheus. Error: Error: Comprador não encontrado.",
+      "recurso": "https://caixade182374.fluig.cloudtotvs.com.br/wg_portalCompradores/resources/js/App/Scripts/browser/main.js"
+    },
+    {
+      "mensagem": "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+      "recurso": "https
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/plataforma/erros-de-console.spec.js",
+    "Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1)",
+    "CT-PLT-06-S1: Portal do Comprador (/portal/p/1/portal-do-comprador) deve carregar sem erro de console não catalogado"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/portal-do-comprador#/",
+  "fakerSeed": 960256,
+  "reproduzirCom": "FAKER_SEED=960256 npx playwright test",
+  "erro": "Error: 2 erro(s) de console NÃO catalogado(s) em /portal/p/1/portal-do-comprador (Portal do Comprador): [{\"mensagem\":\"Failed to load resource: the server responded with a status of 404 (Not Found)\",\"recurso\":\"https://caixade18237
+
+
+######## [plataforma] e2e/plataforma/favoritos-contrato-api.spec.js:126 (failed, 6s)
+TITULO: Plataforma — contrato de `addFavorites` (CT-PLT-07-S1) @destrutivo › CT-PLT-07-S1: favoritar o mesmo processo duas vezes deve responder erro de negócio em JSON (ou 200 idempotente), não 500 em texto puro @destrutivo
+ANOTACOES: faker-seed: 613921
+ERRO: Error: favoritar duas vezes o mesmo processo é condição de negócio trivial (duplo clique, duas abas, retentativa de rede) e o servidor responde 500 com corpo em text/plain;charset=UTF-8: "Processo SIGAJURI_Contencioso já está nos seus favoritos.". Deveria ser 200 idempotente ou erro de negócio em JSON — 500 com texto puro quebra qualquer cliente que faça parse do corpo e transforma uma mensagem clara em "erro inesperado" na tela.
+
+expect(received).toEqual(expected) // deep equality
+
+- Expected  - 2
++ Received  + 2
+
+  Object {
+-   "contentType": StringContaining "application/json",
+-   "status": 200,
++   "contentType": "text/plain;charset=UTF-8",
++   "status": 500,
+  }
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/plataforma/favoritos-contrato-api.spec.js","column":9,"line":180}
+ANEXO contrato-addFavorites: {
+  "processo": "SIGAJURI_Contencioso",
+  "primeiro": {
+    "status": 200,
+    "contentType": "application/json",
+    "corpo": "{\"content\":\"OK\",\"message\":null}"
+  },
+  "duplicado": {
+    "status": 500,
+    "contentType": "text/plain;charset=UTF-8",
+    "corpo": "Processo SIGAJURI_Contencioso já está nos seus favoritos."
+  },
+  "remocao": {
+    "status": 200,
+    "contentType": "application/json",
+    "corpo": "{\"content\":\"OK\",\"message\":null}"
+  },
+  "favoritosAoFinal": [
+    "bpm_addUserGroup",
+    "SIGAJURI_Consultivo",
+    "wf_automacao_admissao",
+    "wf_faturamento_contratos",
+    "wf_pagamento_horas_extras"
+  ]
+}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/plataforma/favoritos-contrato-api.spec.js",
+    "Plataforma — contrato de `addFavorites` (CT-PLT-07-S1) @destrutivo",
+    "CT-PLT-07-S1: favoritar o mesmo processo duas vezes deve responder erro de negócio em JSON (ou 200 idempotente), não 500 em texto puro @destrutivo"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageprocessstart",
+  "fakerSeed": 613921,
+  "reproduzirCom": "FAKER_SEED=613921 npx playwright test",
+  "erro": "Error: favoritar duas vezes o mesmo processo é condição de negócio trivial (duplo clique, duas abas, retentativa de rede) e o servidor responde 500 com corpo em text/plain;charset=UTF-8: \"Processo 
+
+
+######## [plataforma] e2e/plataforma/home.spec.js:7 (failed, 13s)
+TITULO: Home da plataforma › deve carregar os apps e contadores sem erro de console
+ANOTACOES: faker-seed: 306574
+ERRO: Error: erro(s) de console na Home: ["Failed to load resource: the server responded with a status of 403 (Forbidden)"]
+
+expect(received).toEqual(expected) // deep equality
+
+- Expected  - 1
++ Received  + 3
+
+- Array []
++ Array [
++   "Failed to load resource: the server responded with a status of 403 (Forbidden)",
++ ]
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/plataforma/home.spec.js","column":7,"line":39}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/plataforma/home.spec.js",
+    "Home da plataforma",
+    "deve carregar os apps e contadores sem erro de console"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home",
+  "fakerSeed": 306574,
+  "reproduzirCom": "FAKER_SEED=306574 npx playwright test",
+  "erro": "Error: erro(s) de console na Home: [\"Failed to load resource: the server responded with a status of 403 (Forbidden)\"]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n
+
+
+######## [plataforma] e2e/plataforma/processo-inativo-e-residuo.spec.js:62 (failed, 5s)
+TITULO: Plataforma — processo inativo e resíduo de desenvolvimento (CT-PLT-08-S1) › CT-PLT-08-S1: o processo `teste` (categoria ADMIN) não deveria constar do catálogo de início de um usuário de Compras
+ANOTACOES: faker-seed: 919144
+ERRO: Error: o processo `teste` (categoria ADMIN, resíduo de desenvolvimento, nunca iniciado) continua sendo oferecido na tela "Iniciar Solicitações" de um usuário de Compras. É falta de governança de publicação: um processo de teste administrativo não deveria ser iniciável por perfil de negócio. Catálogo lido: [{"processId":"bpm_addUserGroup","categoria":""},{"processId":"bpm_addUserFluig","categoria":"ADM"},{"processId":"teste","categoria":"ADMIN"},{"processId":"wf_cadastro_fornecedor","categoria":"Compras"},{"processId":"wf_cotacao_produtos_servicos","categoria":"Compras"},{"processId":"wf_negociacao_cotacao_prod_serv","categoria":"Compras"},{"processId":"wf_solicitacao_compras","categoria":"Compras"},{"processId":"wf_solicitacao_compras_parecer","categoria":"Compras"},{"processId":"wf_SubstituiçãoCargosFluig","categoria":"Compras"},{"processId":"wf_delegacaoFiscalContratoServico","categoria":"Contratos"},{"processId":"wf_faturamento_contratos","categoria":"Contratos"},{"processId":"bpm_financeiro_rejeicoes_bancarias","categoria":"Financeiro"},{"processId":"prc_questionario_v2","categoria":"Questionarios"},{"processId":"GestaoDependentes","categoria":"RH"},{"processId":"rh_gbeneficios_planosaude","categoria":"RH"},{"processId":"wf_automacao_admissao","categoria":"RH"},{"processId":"wf_pagamento_horas_extras","categoria":"RH"},{"processId":"wf_substituicaocargos","categoria":"RH"},{"processId":"FLUIGADHOC","categoria":"Tarefas Gerais"},{"processId":"SIGAJURI_AprovaFU","categoria":"TOTVS Juridico"},{"processId":"SIGAJURI_Consultivo","categoria":"TOTVS Juridico"},{"processId":"SIGAJURI_Contencioso","categoria":"TOTVS Juridico"},{"processId":"SIGAJURI_Contrato","categoria":"TOTVS Juridico"}]
+
+expect(received).not.toContain(expected) // indexOf
+
+Expected value: not "teste"
+Rece
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/plataforma/processo-inativo-e-residuo.spec.js","column":11,"line":116}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/plataforma/processo-inativo-e-residuo.spec.js",
+    "Plataforma — processo inativo e resíduo de desenvolvimento (CT-PLT-08-S1)",
+    "CT-PLT-08-S1: o processo `teste` (categoria ADMIN) não deveria constar do catálogo de início de um usuário de Compras"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home",
+  "fakerSeed": 919144,
+  "reproduzirCom": "FAKER_SEED=919144 npx playwright test",
+  "erro": "Error: o processo `teste` (categoria ADMIN, resíduo de desenvolvimento, nunca iniciado) continua sendo oferecido na tela \"Iniciar Solicitações\" de um usuário de Compras. É falta de governança de publicação: um processo de test
+
+
+######## [portais] e2e/portais/acesso-fornecedor.spec.js:107 (failed, 7s)
+TITULO: Redefinição de senha do fornecedor — link de reset › CT-PFN-02-S2 deve recusar um token de redefinição expirado/adulterado sem efetivar a troca
+ANOTACOES: faker-seed: 992164
+ERRO: Error: endpoint deveria devolver um erro controlado (4xx), não crashar com 500
+
+expect(received).toBeLessThan(expected)
+
+Expected: < 500
+Received:   500
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/portais/acesso-fornecedor.spec.js","column":7,"line":134}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/portais/acesso-fornecedor.spec.js",
+    "Redefinição de senha do fornecedor — link de reset",
+    "CT-PFN-02-S2 deve recusar um token de redefinição expirado/adulterado sem efetivar a troca"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/portal_fornecedores_senha?token=qa-token-adulterado-46fcb570&user=08821606894524",
+  "fakerSeed": 992164,
+  "reproduzirCom": "FAKER_SEED=992164 npx playwright test",
+  "erro": "Error: endpoint deveria devolver um erro controlado (4xx), não crashar com 500\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[
+
+
+######## [portais] e2e/portais/gerencia-compras.spec.js:31 (failed, 47s)
+TITULO: Gerência de Compras › deve listar as solicitações pendentes de atribuição ao abrir a aba Atribuir
+ANOTACOES: faker-seed: 99639
+ERRO: Error: aba Atribuir deveria listar as SCs pendentes de atribuição
+
+aba Atribuir deveria listar as SCs pendentes de atribuição
+
+expect(received).toBeGreaterThan(expected)
+
+Expected: > 1
+Received:   1
+
+Call Log:
+- Timeout 30000ms exceeded while waiting on the predicate
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/portais/gerencia-compras.spec.js","column":8,"line":58}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/portais/gerencia-compras.spec.js",
+    "Gerência de Compras",
+    "deve listar as solicitações pendentes de atribuição ao abrir a aba Atribuir"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/gerenciaCompras#/",
+  "fakerSeed": 99639,
+  "reproduzirCom": "FAKER_SEED=99639 npx playwright test",
+  "erro": "Error: aba Atribuir deveria listar as SCs pendentes de atribuição\n\naba Atribuir deveria listar as SCs pendentes de atribuição\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m1\u001b[39m
+
+
+######## [rh] e2e/rh/admissao.spec.js:36 (failed, 15s)
+TITULO: Automação Admissão › CT-ADM-01-H — deveria abrir um formulário de admissão de novo funcionário
+ANOTACOES: faker-seed: 515384 | massa-pronta-para-uso-futuro: criarAdmitido() geraria {"nome":"QA Sophia Braga 84433299","cpf":"10666416761","cargo":"QA Senior Configuration Produtor","dataAdmissao":"2026-09-17","email":"natalia.84433299@example.test"} — não preenchido em tela porque o processo não serve nenhum formulário de admissão. | pre-condicao-ausente: CT-ADM-01-S1 (dados obrigatórios ausentes) e 01-S2 (reprocessamento após falha) exigem um formulário de admissão com campos próprios (nome, CPF, cargo, data de admissão), que este processo não serve — ele abre o template de rh_gbeneficios_planosaude. É consequência direta do defeito que este teste reprova.
+ERRO: Error: defeito: o processo de Admissão (wf_automacao_admissao) abre o formulário de Plano de Saúde (mesmo template de rh_gbeneficios_planosaude) em vez de um formulário de admissão — associação processo↔formulário incorreta
+
+expect(received).not.toBe(expected) // Object.is equality
+
+Expected: not "Gestão de Benefícios - Plano de Saúde"
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/rh/admissao.spec.js","column":11,"line":81}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/rh/admissao.spec.js",
+    "Automação Admissão",
+    "CT-ADM-01-H — deveria abrir um formulário de admissão de novo funcionário"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_automacao_admissao",
+  "fakerSeed": 515384,
+  "reproduzirCom": "FAKER_SEED=515384 npx playwright test",
+  "erro": "Error: defeito: o processo de Admissão (wf_automacao_admissao) abre o formulário de Plano de Saúde (mesmo template de rh_gbeneficios_planosaude) em vez de um formulário de admissão — associação processo↔formulário incorreta\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u00
+
+
+######## [rh] e2e/rh/banco-horas-limite.spec.js:38 (failed, 40s)
+TITULO: Portal de Autorização de Horas Extras — limite de autorização › CT-BH-01-S2 — autorizar horas acima do limite deve bloquear
+ANOTACOES: faker-seed: 792681
+ERRO: Error: defeito: a aba Autorização do Banco de Horas nunca sai do estado "Aguarde, processando" — mesma causa raiz de U-02 (integração com o Protheus fora do ar). Nenhum campo de autorização de horas aparece, então "autorizar acima do limite deve bloquear" não é executável por esta rota.
+
+expect(locator).toBeHidden() failed
+
+Locator:  getByText('Aguarde, processando')
+Expected: hidden
+Received: visible
+Timeout:  30000ms
+
+Call log:
+  - defeito: a aba Autorização do Banco de Horas nunca sai do estado "Aguarde, processando" — mesma causa raiz de U-02 (integração com o Protheus fora do ar). Nenhum campo de autorização de horas aparece, então "autorizar acima do limite deve bloquear" não é executável por esta rota. with timeout 30000ms
+  - waiting for getByText('Aguarde, processando')
+    63 × locator resolved to <span class="loading-text">…</span>
+       - unexpected value "visible"
+
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/rh/banco-horas-limite.spec.js","column":7,"line":71}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/rh/banco-horas-limite.spec.js",
+    "Portal de Autorização de Horas Extras — limite de autorização",
+    "CT-BH-01-S2 — autorizar horas acima do limite deve bloquear"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/PORTAL_AUTORIZACAO_HORAS_EXTRAS",
+  "fakerSeed": 792681,
+  "reproduzirCom": "FAKER_SEED=792681 npx playwright test",
+  "erro": "Error: defeito: a aba Autorização do Banco de Horas nunca sai do estado \"Aguarde, processando\" — mesma causa raiz de U-02 (integração com o Protheus fora do ar). Nenhum campo de autorização de horas aparece, então \"autorizar acima do limite deve bloquear\" não é executável por esta r
+
+
+######## [rh] e2e/rh/banco-horas.spec.js:14 (failed, 6s)
+TITULO: Portal de Autorização de Horas Extras › CT-BH-01-S1 — não deve alertar o usuário final com erro de configuração de servidor ao abrir o Banco de Horas
+ANOTACOES: faker-seed: 208814
+ERRO: Error: o widget não deveria expor erro de configuração de servidor ao usuário final via alert() nativo — ver defeito U-02
+
+expect(received).toEqual(expected) // deep equality
+
+- Expected  - 1
++ Received  + 6
+
+- Array []
++ Array [
++   Object {
++     "message": "Existem parâmetros não informado para esse servidor, informe o administrador",
++     "type": "alert",
++   },
++ ]
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/rh/banco-horas.spec.js","column":9,"line":33}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/rh/banco-horas.spec.js",
+    "Portal de Autorização de Horas Extras",
+    "CT-BH-01-S1 — não deve alertar o usuário final com erro de configuração de servidor ao abrir o Banco de Horas"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/PORTAL_AUTORIZACAO_HORAS_EXTRAS",
+  "fakerSeed": 208814,
+  "reproduzirCom": "FAKER_SEED=208814 npx playwright test",
+  "erro": "Error: o widget não deveria expor erro de configuração de servidor ao usuário final via alert() nativo — ver defeito U-02\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) //
+
+
+######## [rh] e2e/rh/substituicao-cargos.spec.js:32 (failed, 54s)
+TITULO: Substituição de Cargos › CT-SUB — bloqueia a identificação do solicitante antes de expor campos de substituto
+ANOTACOES: faker-seed: 316257 | massa-pronta-para-uso-futuro: criarSubstituto() geraria {"nome":"QA Raul Melo 02fa3897","matricula":"915795","dataInicio":"2026-09-09","dataFim":"2026-10-09","motivo":"QA Upgradable leading edge challenge 02fa3897"} — não preenchido em tela porque o formulário bloqueia antes de expor campo de substituto. | pre-condicao-ausente: CT-SUB-01-H (substituto válido), 01-S1 (substituto sem vínculo ativo) e 01-S2 (período retroativo/inválido) exigem passar da identificação do SOLICITANTE, que falha para esta conta antes de qualquer campo de substituto ser exibido. Mesma causa raiz de CT-DEP-02-S1: a conta de automação não corresponde a um funcionário ativo no Protheus.
+ERRO: Error: o formulário NÃO apresentou o bloqueio de identificação do solicitante. Estado observado: SEM bloqueio algum, 8 campo(s) visível(is) e utilizável(is). Não-determinismo conhecido do produto (ver comentário em SubstituicaoCargosPage): com a MESMA resposta do ERP, a tela às vezes bloqueia e às vezes libera os campos. Erro original: locator.waitFor: Timeout 45000ms exceeded.
+Call log:
+  - waiting for locator('iframe').first().contentFrame().getByText(/Funcionario não localizado|Funcionário não localizado/) to be visible
+
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/pages/SubstituicaoCargosPage.js","column":13,"line":88}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/rh/substituicao-cargos.spec.js",
+    "Substituição de Cargos",
+    "CT-SUB — bloqueia a identificação do solicitante antes de expor campos de substituto"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=wf_substituicaocargos",
+  "fakerSeed": 316257,
+  "reproduzirCom": "FAKER_SEED=316257 npx playwright test",
+  "erro": "Error: o formulário NÃO apresentou o bloqueio de identificação do solicitante. Estado observado: SEM bloqueio algum, 8 campo(s) visível(is) e utilizável(is). Não-determinismo conhecido do produto (ver comentário em SubstituicaoCargosPage): com a MESMA resposta do ERP, a tela às veze
+
+
+######## [saude] e2e/saude/questionario-clinicassi.spec.js:217 (failed, 7s)
+TITULO: Questionário CliniCASSI — contexto da clínica (CT-CLI-02-S1, achado U-14) › Clínica/Unidade deveriam identificar a clínica do diagnóstico e não nascer vazias
+ANOTACOES: faker-seed: 344394
+ERRO: Error: o campo "Clínica" deveria vir preenchido com a clínica do diagnóstico — sintoma compatível com o achado U-14 (job dsQDC000 parado); sem acesso admin, a suíte não confirma a causa, só o sintoma
+
+expect(received).not.toBe(expected) // Object.is equality
+
+Expected: not ""
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/saude/questionario-clinicassi.spec.js","column":11,"line":232}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/saude/questionario-clinicassi.spec.js",
+    "Questionário CliniCASSI — contexto da clínica (CT-CLI-02-S1, achado U-14)",
+    "Clínica/Unidade deveriam identificar a clínica do diagnóstico e não nascer vazias"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=prc_questionario_v2",
+  "fakerSeed": 344394,
+  "reproduzirCom": "FAKER_SEED=344394 npx playwright test",
+  "erro": "Error: o campo \"Clínica\" deveria vir preenchido com a clínica do diagnóstico — sintoma compatível com o achado U-14 (job dsQDC000 parado); sem acesso admin, a suíte não confirma a causa, só o sintoma\n\n\u001b[2mexpect(\u001b[22
+
+
+######## [seguranca] e2e/seguranca/auditoria-datasets.spec.js:18 (failed, 2s)
+TITULO: Segurança — auditoria de datasets sem acesso admin › CT-SEG-02-S1: contas de integração/serviço não devem ter privilégio de administrador
+ANOTACOES: faker-seed: 3281
+ERRO: Error: 6 de 23 administradores da plataforma têm login/nome compatível com conta de integração/serviço (padrões: consumerkey, consumer_key, fluig_consumer, integr). Contas técnicas não deveriam ter privilégio de administrador de plataforma — menor privilégio violado. Ver CT-SEG-02-S1 / achado U-13.
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 0
+Received: 6
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/seguranca/auditoria-datasets.spec.js","column":7,"line":68}
+ANEXO sem-captura: Este teste não dirige interface — a página nunca saiu de about:blank. Screenshot omitida de propósito: a evidência aqui é a resposta do endpoint, que está na mensagem da falha.
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/seguranca/auditoria-datasets.spec.js",
+    "Segurança — auditoria de datasets sem acesso admin",
+    "CT-SEG-02-S1: contas de integração/serviço não devem ter privilégio de administrador"
+  ],
+  "status": "failed",
+  "url": "about:blank",
+  "fakerSeed": 3281,
+  "reproduzirCom": "FAKER_SEED=3281 npx playwright test",
+  "erro": "Error: 6 de 23 administradores da plataforma têm login/nome compatível com conta de integração/serviço (padrões: consumerkey, consumer_key, fluig_consumer, integr). Contas técnicas não deveriam ter privilégio de administrador de plataforma — menor privilégio violado. Ver CT-SEG-02-S1 / achado U-13.\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived
+
+
+######## [seguranca] e2e/seguranca/auditoria-datasets.spec.js:71 (failed, 1s)
+TITULO: Segurança — auditoria de datasets sem acesso admin › CT-SEG-03-S1: dataset de credencial de integração não deve ser legível por sessão sem privilégio admin
+ANOTACOES: faker-seed: 134429
+ERRO: Error: dataset 'ds_Fluig' (descrito no ambiente como "Usuário e Senha usuario de integração") respondeu 200 para uma sessão sem privilégio administrativo — deveria negar acesso (403), como acontece em /webdesk (CT-SEG-05-S1). Evidência estrutural, nunca o conteúdo: 1 registro(s), 3 coluna(s) na resposta. Ver CT-SEG-03-S1 / achado U-03.
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 403
+Received: 200
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/seguranca/auditoria-datasets.spec.js","column":7,"line":100}
+ANEXO sem-captura: Este teste não dirige interface — a página nunca saiu de about:blank. Screenshot omitida de propósito: a evidência aqui é a resposta do endpoint, que está na mensagem da falha.
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/seguranca/auditoria-datasets.spec.js",
+    "Segurança — auditoria de datasets sem acesso admin",
+    "CT-SEG-03-S1: dataset de credencial de integração não deve ser legível por sessão sem privilégio admin"
+  ],
+  "status": "failed",
+  "url": "about:blank",
+  "fakerSeed": 134429,
+  "reproduzirCom": "FAKER_SEED=134429 npx playwright test",
+  "erro": "Error: dataset 'ds_Fluig' (descrito no ambiente como \"Usuário e Senha usuario de integração\") respondeu 200 para uma sessão sem privilégio administrativo — deveria negar acesso (403), como acontece em /webdesk (CT-SEG-05-S1). Evidência estrutural, nunca o conteúdo: 1 registro(s), 3 coluna(s) na resposta. Ver CT-SEG-03-S1 
+
+
+######## [seguranca] e2e/seguranca/auditoria-datasets.spec.js:103 (failed, 1s)
+TITULO: Segurança — auditoria de datasets sem acesso admin › CT-SEG-04-S1: datasets de execução de SQL não devem ser alcançáveis por sessão sem privilégio admin
+ANOTACOES: faker-seed: 523953
+ERRO: Error: dataset 'dsFluig_executeSql' (executor de SQL, achado U-04) respondeu 200 para sessão sem perfil admin — deveria exigir privilégio elevado (403). Auditoria de injeção real está fora de escopo (ver comentário no topo do teste); esta assertion cobre só a alcançabilidade.
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 403
+Received: 200
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/seguranca/auditoria-datasets.spec.js","column":10,"line":130}
+ANEXO sem-captura: Este teste não dirige interface — a página nunca saiu de about:blank. Screenshot omitida de propósito: a evidência aqui é a resposta do endpoint, que está na mensagem da falha.
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/seguranca/auditoria-datasets.spec.js",
+    "Segurança — auditoria de datasets sem acesso admin",
+    "CT-SEG-04-S1: datasets de execução de SQL não devem ser alcançáveis por sessão sem privilégio admin"
+  ],
+  "status": "failed",
+  "url": "about:blank",
+  "fakerSeed": 523953,
+  "reproduzirCom": "FAKER_SEED=523953 npx playwright test",
+  "erro": "Error: dataset 'dsFluig_executeSql' (executor de SQL, achado U-04) respondeu 200 para sessão sem perfil admin — deveria exigir privilégio elevado (403). Auditoria de injeção real está fora de escopo (ver comentário no topo do teste); esta assertion cobre só a alcançabilidade.\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u00
+
+
+######## [seguranca] e2e/seguranca/isolamento-horizontal-api-processos.spec.js:59 (failed, 5s)
+TITULO: Segurança — isolamento horizontal na API v2 de processos (BOLA) › CT-SEG-07-S1 — não deve entregar o objeto de um processo em que o usuário não participa
+ANOTACOES: faker-seed: 992985
+ERRO: Error: BOLA / isolamento horizontal violado: a conta 'TOTVS-FS' (que NÃO é requisitante, responsável nem participante — 8 tarefa(s) da instância inspecionadas, nenhuma sua) leu o objeto da instância 112009 do processo 'bpm_recepcao_documentos_fiscais_compras' — um processo que esta conta nem sequer pode INICIAR. Esperado: 403/404, ou 200 com formFields:null. Obtido: HTTP 200 com 44 formField(s) do formulário completo (que inclui razão social e CNPJ do fornecedor). A ausência de 403 aqui significa que qualquer sessão autenticada enumera a base inteira de documentos fiscais pelo processInstanceId sequencial. Vermelho intencional — ver CT-SEG-07-S1.
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/seguranca/isolamento-horizontal-api-processos.spec.js","column":7,"line":177}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/seguranca/isolamento-horizontal-api-processos.spec.js",
+    "Segurança — isolamento horizontal na API v2 de processos (BOLA)",
+    "CT-SEG-07-S1 — não deve entregar o objeto de um processo em que o usuário não participa"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home",
+  "fakerSeed": 992985,
+  "reproduzirCom": "FAKER_SEED=992985 npx playwright test",
+  "erro": "Error: BOLA / isolamento horizontal violado: a conta 'TOTVS-FS' (que NÃO é requisitante, responsável nem participante — 8 tarefa(s) da instância inspecionadas, nenhuma sua) leu o objeto da instância 112009 do processo 'bpm_recepcao_documentos_fiscais_compras' 
+
+
+######## [seguranca] e2e/seguranca/lgpd-envio-google-analytics.spec.js:22 (failed, 15s)
+TITULO: LGPD — telemetria enviada a serviço externo › não deve enviar dados de navegação para o Google Analytics
+ANOTACOES: faker-seed: 885294
+ERRO: Error: 2 requisição(ões) de navegação enviada(s) a google-analytics.com (medição G-F0FT6D1NQG). Ver achado U-11 / mapa-do-ambiente.md.
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 0
+Received: 2
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/seguranca/lgpd-envio-google-analytics.spec.js","column":7,"line":45}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/seguranca/lgpd-envio-google-analytics.spec.js",
+    "LGPD — telemetria enviada a serviço externo",
+    "não deve enviar dados de navegação para o Google Analytics"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/acompanhamentoContrato",
+  "fakerSeed": 885294,
+  "reproduzirCom": "FAKER_SEED=885294 npx playwright test",
+  "erro": "Error: 2 requisição(ões) de navegação enviada(s) a google-analytics.com (medição G-F0FT6D1NQG). Ver achado U-11 / mapa-do-ambiente.md.\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u
+
+
+######## [seguranca] e2e/seguranca/processos-administrativos-usuario-comum.spec.js:39 (failed, 9s)
+TITULO: Segurança — processos administrativos não devem abrir para usuário comum › CT-SEG-08-S1 — "bpm_addUserFluig" (Adicionar Usuário) não deve constar do catálogo nem abrir para conta não-admin
+ANOTACOES: faker-seed: 879765 | achado-segregacao-de-funcao: bpm_addUserFluig: consta do catálogo onlyCanStart e ABRE o formulário de início para a conta da automação (perfil Compras/Contratos, não-admin). Esperado seria o bloqueio de permissão, como em processos de RH barrados. Escalada de privilégio por processo administrativo.
+ERRO: Error: o processo administrativo 'bpm_addUserFluig' consta do catálogo de início desta conta não-admin. Um processo de criação de usuário/grupo na plataforma não deveria ser iniciável por um perfil de Compras — segregação de função violada. Ver CT-SEG-08-S1.
+
+expect(received).not.toContain(expected) // indexOf
+
+Expected value: not "bpm_addUserFluig"
+Received array:     ["bpm_addUserGroup", "bpm_addUserFluig", "teste", "wf_cadastro_fornecedor", "wf_cotacao_produtos_servicos", "wf_negociacao_cotacao_prod_serv", "wf_solicitacao_compras", "wf_solicitacao_compras_parecer", "wf_SubstituiçãoCargosFluig", "wf_delegacaoFiscalContratoServico", "wf_faturamento_contratos", "bpm_financeiro_rejeicoes_bancarias", "prc_questionario_v2", "GestaoDependentes", "rh_gbeneficios_planosaude", "wf_automacao_admissao", "wf_pagamento_horas_extras", "wf_substituicaocargos", "FLUIGADHOC", "SIGAJURI_AprovaFU", "SIGAJURI_Consultivo", "SIGAJURI_Contencioso", "SIGAJURI_Contrato"]
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/seguranca/processos-administrativos-usuario-comum.spec.js","column":14,"line":88}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/seguranca/processos-administrativos-usuario-comum.spec.js",
+    "Segurança — processos administrativos não devem abrir para usuário comum",
+    "CT-SEG-08-S1 — \"bpm_addUserFluig\" (Adicionar Usuário) não deve constar do catálogo nem abrir para conta não-admin"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=bpm_addUserFluig",
+  "fakerSeed": 879765,
+  "reproduzirCom": "FAKER_SEED=879765 npx playwright test",
+  "erro": "Error: o processo administrativo 'bpm_addUserFluig' consta do catálogo de início desta conta não-admin. Um processo de criação de usuário/grupo na plataforma não deveria ser iniciá
+
+
+######## [seguranca] e2e/seguranca/processos-administrativos-usuario-comum.spec.js:39 (failed, 8s)
+TITULO: Segurança — processos administrativos não devem abrir para usuário comum › CT-SEG-08-S1 — "bpm_addUserGroup" (Adicionar Grupo) não deve constar do catálogo nem abrir para conta não-admin
+ANOTACOES: faker-seed: 413213 | achado-segregacao-de-funcao: bpm_addUserGroup: consta do catálogo onlyCanStart e ABRE o formulário de início para a conta da automação (perfil Compras/Contratos, não-admin). Esperado seria o bloqueio de permissão, como em processos de RH barrados. Escalada de privilégio por processo administrativo.
+ERRO: Error: o processo administrativo 'bpm_addUserGroup' consta do catálogo de início desta conta não-admin. Um processo de criação de usuário/grupo na plataforma não deveria ser iniciável por um perfil de Compras — segregação de função violada. Ver CT-SEG-08-S1.
+
+expect(received).not.toContain(expected) // indexOf
+
+Expected value: not "bpm_addUserGroup"
+Received array:     ["bpm_addUserGroup", "bpm_addUserFluig", "teste", "wf_cadastro_fornecedor", "wf_cotacao_produtos_servicos", "wf_negociacao_cotacao_prod_serv", "wf_solicitacao_compras", "wf_solicitacao_compras_parecer", "wf_SubstituiçãoCargosFluig", "wf_delegacaoFiscalContratoServico", "wf_faturamento_contratos", "bpm_financeiro_rejeicoes_bancarias", "prc_questionario_v2", "GestaoDependentes", "rh_gbeneficios_planosaude", "wf_automacao_admissao", "wf_pagamento_horas_extras", "wf_substituicaocargos", "FLUIGADHOC", "SIGAJURI_AprovaFU", "SIGAJURI_Consultivo", "SIGAJURI_Contencioso", "SIGAJURI_Contrato"]
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/seguranca/processos-administrativos-usuario-comum.spec.js","column":14,"line":88}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/seguranca/processos-administrativos-usuario-comum.spec.js",
+    "Segurança — processos administrativos não devem abrir para usuário comum",
+    "CT-SEG-08-S1 — \"bpm_addUserGroup\" (Adicionar Grupo) não deve constar do catálogo nem abrir para conta não-admin"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=bpm_addUserGroup",
+  "fakerSeed": 413213,
+  "reproduzirCom": "FAKER_SEED=413213 npx playwright test",
+  "erro": "Error: o processo administrativo 'bpm_addUserGroup' consta do catálogo de início desta conta não-admin. Um processo de criação de usuário/grupo na plataforma não deveria ser iniciáve
+
+
+######## [tarefas] e2e/tarefas/acoes-da-tarefa.spec.js:184 (failed, 225s)
+TITULO: Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08) › CT-TSK-07-H @destrutivo — "Somente salvar" deve persistir o rascunho sem movimentar a atividade
+ANOTACOES: faker-seed: 15227
+ERRO: Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113163, criada por este teste, não ficou assumível ("Assumir tarefa") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada: "Grava SC e Anexos". Causa do polling: expect(locator).toBeVisible() failed
+
+Locator: getByRole('button', { name: 'Assumir tarefa' })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for getByRole('button', { name: 'Assumir tarefa' })
+
+
+Call Log:
+- Timeout 180000ms exceeded while waiting on the predicate
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/tarefas/acoes-da-tarefa.spec.js","column":11,"line":86}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/tarefas/acoes-da-tarefa.spec.js",
+    "Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08)",
+    "CT-TSK-07-H @destrutivo — \"Somente salvar\" deve persistir o rascunho sem movimentar a atividade"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?app_ecm_workflowview_detailsProcessInstanceID=113163",
+  "fakerSeed": 15227,
+  "reproduzirCom": "FAKER_SEED=15227 npx playwright test",
+  "erro": "Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113163, criada por este teste, não ficou assumível (\"Assumir tarefa\") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Tr
+
+
+######## [tarefas] e2e/tarefas/acoes-da-tarefa.spec.js:297 (failed, 220s)
+TITULO: Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08) › CT-TSK-08-H @destrutivo — transferir deve trocar o responsável mantendo a mesma atividade
+ANOTACOES: faker-seed: 819977
+ERRO: Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113162, criada por este teste, não ficou assumível ("Assumir tarefa") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Transferir) — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ter sido assumida por outra execução concorrente que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). Atividade atual observada: "Grava SC e Anexos". Causa do polling: expect(locator).toBeVisible() failed
+
+Locator: getByRole('button', { name: 'Assumir tarefa' })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for getByRole('button', { name: 'Assumir tarefa' })
+
+
+Call Log:
+- Timeout 180000ms exceeded while waiting on the predicate
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/tarefas/acoes-da-tarefa.spec.js","column":11,"line":86}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/tarefas/acoes-da-tarefa.spec.js",
+    "Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08)",
+    "CT-TSK-08-H @destrutivo — transferir deve trocar o responsável mantendo a mesma atividade"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?app_ecm_workflowview_detailsProcessInstanceID=113162",
+  "fakerSeed": 819977,
+  "reproduzirCom": "FAKER_SEED=819977 npx playwright test",
+  "erro": "Error: PRÉ-CONDIÇÃO AUSENTE: a SC #113162, criada por este teste, não ficou assumível (\"Assumir tarefa\") em Validação do Gestor Imediato dentro de 180s. Isto NÃO é defeito da ação sob teste (Somente salvar / Transfer
+
+
+######## [tarefas] e2e/tarefas/assumir-tarefa-pool.spec.js:34 (failed, 10s)
+TITULO: Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H) @destrutivo › assumir a primeira tarefa disponível de um grupo do pool deve movê-la para "Tarefas a concluir"
+ANOTACOES: faker-seed: 585433
+ERRO: Error: PRÉ-CONDIÇÃO AUSENTE: o Resumo de Tarefas anuncia "Tarefas em pool (0)" no momento da execução. Não há tarefa de pool disponível para assumir agora — isto NÃO é defeito do produto sob teste. Reexecute quando houver massa (o usuário TOTVS-FS pertence aos pools "Validação do Gestor Imediato" e "Validação dos Compradores").
+LOCAL: {"file":"/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests/e2e/tarefas/assumir-tarefa-pool.spec.js","column":13,"line":46}
+ANEXO contexto-da-falha: {
+  "teste": [
+    "e2e/tarefas/assumir-tarefa-pool.spec.js",
+    "Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H) @destrutivo",
+    "assumir a primeira tarefa disponível de um grupo do pool deve movê-la para \"Tarefas a concluir\""
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pagecentraltask",
+  "fakerSeed": 585433,
+  "reproduzirCom": "FAKER_SEED=585433 npx playwright test",
+  "erro": "Error: PRÉ-CONDIÇÃO AUSENTE: o Resumo de Tarefas anuncia \"Tarefas em pool (0)\" no momento da execução. Não há tarefa de pool disponível para assumir agora — isto NÃO é defeito do produto sob teste. Reexecute quando houver massa (o usuário TOTVS-FS p

@@ -1,0 +1,1586 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Falhas da suíte E2E — Fluig Cassi — 02/09/2026 (versão leve, sem screenshots embutidas)</title>
+<style>
+  :root {
+    --fundo: #0f1115; --cartao: #171a21; --borda: #262b36; --texto: #e6e9ef;
+    --suave: #9aa4b2; --codigo: #0b0d11;
+    --produto: #ef4444; --ambiente: #f59e0b; --infra: #8b5cf6; --sem-veredito: #64748b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --fundo:#f6f7f9; --cartao:#fff; --borda:#e2e5ea; --texto:#1b1f27; --suave:#5b6472; --codigo:#f1f3f6; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--fundo); color:var(--texto);
+         font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .capa { padding:32px 24px 20px; border-bottom:1px solid var(--borda); }
+  .capa h1 { margin:0 0 6px; font-size:26px; }
+  .capa p { margin:0; color:var(--suave); }
+  .numeros { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+  .numero { background:var(--cartao); border:1px solid var(--borda); border-radius:10px; padding:10px 14px; }
+  .numero b { display:block; font-size:22px; }
+  .numero span { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  main { padding:24px; max-width:1100px; margin:0 auto; }
+  .filtros { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+  .filtros button { background:var(--cartao); color:var(--texto); border:1px solid var(--borda);
+                    border-radius:999px; padding:6px 14px; cursor:pointer; font-size:13px; }
+  .filtros button[aria-pressed="true"] { border-color:var(--texto); font-weight:600; }
+  .falha { background:var(--cartao); border:1px solid var(--borda); border-radius:14px;
+           padding:20px; margin-bottom:20px; }
+  .falha[hidden] { display:none; }
+  .cabecalho { display:flex; justify-content:space-between; align-items:center; }
+  .ordem { color:var(--suave); font-size:13px; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px;
+           font-weight:600; color:#fff; }
+  .badge.produto { background:var(--produto); }
+  .badge.ambiente { background:var(--ambiente); color:#231a05; }
+  .badge.infra { background:var(--infra); }
+  .badge.sem-veredito { background:var(--sem-veredito); }
+  .falha h2 { margin:12px 0 4px; font-size:18px; line-height:1.35; }
+  .suite { margin:0 0 14px; color:var(--suave); font-size:13px; }
+  .meta { display:flex; flex-wrap:wrap; gap:18px; margin:0 0 4px; }
+  .meta div { display:flex; flex-direction:column; }
+  .meta dt { color:var(--suave); font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  .meta dd { margin:2px 0 0; font-size:13px; }
+  .bloco { margin-top:18px; }
+  .bloco h3 { margin:0 0 8px; font-size:13px; text-transform:uppercase;
+              letter-spacing:.05em; color:var(--suave); }
+  .resumo { margin:0 0 8px; font-weight:600; }
+  pre { background:var(--codigo); border:1px solid var(--borda); border-radius:10px;
+        padding:12px 14px; overflow-x:auto; font-size:12.5px; line-height:1.5; margin:0;
+        white-space:pre-wrap; word-break:break-word; }
+  pre.codigo, pre.cmd { white-space:pre; }
+  code { background:var(--codigo); padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .codigo .linha { display:block; }
+  .codigo .num { display:inline-block; width:44px; color:var(--suave); user-select:none; }
+  .codigo .alvo { background:rgba(239,68,68,.16); font-weight:600; }
+  figure { margin:0 0 12px; }
+  figure img { max-width:100%; border:1px solid var(--borda); border-radius:10px; display:block; }
+  figcaption { color:var(--suave); font-size:12px; margin-top:5px; }
+  details > summary { cursor:pointer; color:var(--suave); font-size:13px; padding:6px 0; }
+  details[open] > summary { margin-bottom:8px; }
+  .dica { color:var(--suave); font-size:13px; margin:8px 0 0; }
+  a { color:inherit; }
+  footer { padding:20px 24px 44px; color:var(--suave); font-size:13px; max-width:1100px; margin:0 auto; }
+  .badge.divergencia { background:#0ea5e9; color:#06202b; }
+  .sumario { background:var(--cartao); border:1px solid var(--borda); border-radius:14px; padding:20px 24px; margin-bottom:22px; }
+  .sumario h2 { margin:0 0 12px; font-size:20px; }
+  .sumario h3 { margin:18px 0 8px; font-size:14px; text-transform:uppercase; letter-spacing:.05em; color:var(--suave); }
+  .sumario table { border-collapse:collapse; width:100%; font-size:13.5px; }
+  .sumario th, .sumario td { border-bottom:1px solid var(--borda); padding:6px 8px; text-align:left; vertical-align:top; }
+  .sumario th { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .grupo { border-top:1px solid var(--borda); padding-top:14px; margin-top:14px; }
+  .grupo h3 { text-transform:none; letter-spacing:0; font-size:16px; color:var(--texto); margin:0 0 6px; }
+  .gid { display:inline-block; background:var(--codigo); border:1px solid var(--borda); border-radius:6px; padding:0 6px; font-size:12px; margin-right:6px; }
+  .suave { color:var(--suave); font-size:13px; margin:0 0 8px; }
+  .lista-testes { font-size:13px; color:var(--suave); }
+  .analise { border-left:3px solid #0ea5e9; padding-left:14px; }
+  .analise p { margin:0 0 8px; }
+  .analise .g, .g { color:var(--suave); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="capa">
+  <h1>Falhas da suíte E2E — TOTVS Fluig Cassi</h1>
+  <p>Execução de 02/09/2026 · 233 testes, 81 reprovados · destrutivos incluídos · com análise de causa raiz</p>
+  </div>
+<main>
+<nav class="filtros" style="margin:16px 0"><a href="index.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">Sumário</a> <a href="area-acompanhamento-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">acompanhamento-contratos (27)</a> <a href="area-api.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">api (2)</a> <a href="area-compras.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">compras (13)</a> <a href="area-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">contratos (4)</a> <a href="area-documentos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">documentos (5)</a> <a href="area-juridico.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;font-weight:700;border-color:var(--texto)">juridico (3)</a> <a href="area-notificacoes.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">notificacoes (2)</a> <a href="area-plataforma.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">plataforma (8)</a> <a href="area-portais.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">portais (2)</a> <a href="area-rh.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">rh (4)</a> <a href="area-saude.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">saude (1)</a> <a href="area-seguranca.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">seguranca (7)</a> <a href="area-tarefas.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">tarefas (3)</a></nav><h2>juridico — 3 teste(s) reprovado(s)</h2><p class="dica"><a href="index.html">← voltar ao sumário e às causas raiz</a></p><article class="falha" id="f51" data-classe="novo" data-area="juridico">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — achado desta execução (não catalogado)</span>
+      <span class="ordem">#52</span>
+    </div>
+    <h2>CT-JUR-01-H deveria criar a solicitação de Consultivo e vinculá-la à área informada @destrutivo</h2>
+    <p class="suite">e2e/juridico/sigajuri-consultivo.spec.js › SIGAJURI_Consultivo — solicitação, D-JUR-01</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/juridico/sigajuri-consultivo.spec.js:48</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>6.4s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>340681</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G8">G8</a> — Jurídico (SIGAJURI) — combos vazios e parte contrária inalcançável · <b>Referência:</b> CT-JUR-01-H / D-JUR-01</p>
+    <p><b>O que acontece:</b> O combo "Tipo Consulta" do SIGAJURI_Consultivo oferece 1 opção (só o placeholder).</p>
+    <p><b>Por que falha:</b> O dataset que alimenta os tipos de consulta não devolve registros — não dá para criar uma consulta vinculada a uma área.</p>
+    <p><b>Onde falha:</b> <code>expect(opcoes).toBeGreaterThan(1)</code> em <code>sigajuri-consultivo.spec.js:66</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/juridico/sigajuri-consultivo.spec.js:66</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: Tipo Consulta deveria oferecer mais de uma opção (tipos reais de consulta)</p>
+    <pre class="detalhe">expect(received).toBeGreaterThan(expected)
+
+Expected: &gt; 1
+Received:   1</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">60</span>    // `count()` não espera pelo formulário do iframe carregar — por isso a visibilidade é</span>
+<span class="linha"><span class="num">61</span>    // confirmada primeiro (essa, sim, com auto-wait).</span>
+<span class="linha"><span class="num">62</span>    await expect(sigajuri.comboTipoConsulta).toBeVisible();</span>
+<span class="linha"><span class="num">63</span>    expect(</span>
+<span class="linha"><span class="num">64</span>      await sigajuri.comboTipoConsulta.locator('option').count(),</span>
+<span class="linha"><span class="num">65</span>      'Tipo Consulta deveria oferecer mais de uma opção (tipos reais de consulta)',</span>
+<span class="linha alvo"><span class="num">66</span>    ).toBeGreaterThan(1);</span>
+<span class="linha"><span class="num">67</span></span>
+<span class="linha"><span class="num">68</span>    await sigajuri.preencherConsultivo(dados);</span>
+<span class="linha"><span class="num">69</span></span>
+<span class="linha"><span class="num">70</span>    const resposta = await sigajuri.enviarECapturarResposta();</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/juridico/sigajuri-consultivo.spec.js",
+    "SIGAJURI_Consultivo — solicitação, D-JUR-01",
+    "CT-JUR-01-H deveria criar a solicitação de Consultivo e vinculá-la à área informada @destrutivo"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=SIGAJURI_Consultivo",
+  "fakerSeed": 340681,
+  "reproduzirCom": "FAKER_SEED=340681 npx playwright test",
+  "erro": "Error: Tipo Consulta deveria oferecer mais de uma opção (tipos reais de consulta)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: &gt; \u001b[32m1\u001b[39m\nReceived:   \u001b[31m1\u001b[39m"
+}</pre>
+  </section>
+
+  
+
+  
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/juridico/sigajuri-consultivo.spec.js &gt;&gt; SIGAJURI_Consultivo — solicitação, D-JUR-01 &gt;&gt; CT-JUR-01-H deveria criar a solicitação de Consultivo e vinculá-la à área informada @destrutivo
+- Location: tests/e2e/juridico/sigajuri-consultivo.spec.js:48:3
+
+# Error details
+
+```
+Error: Tipo Consulta deveria oferecer mais de uma opção (tipos reais de consulta)
+
+expect(received).toBeGreaterThan(expected)
+
+Expected: &gt; 1
+Received:   1
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - generic [ref=e7]:
+              - text: 
+              - link [ref=e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=e9]
+            - generic [ref=e10]:
+              - text: 
+              - button "Abrir ajuda" [ref=e12] [cursor=pointer]:
+                - generic [ref=e13]: 
+              - button "Abrir notificações" [ref=e15] [cursor=pointer]:
+                - generic [ref=e16]: 9+
+                - generic [ref=e17]: 
+              - img "Usuário TBC (TOTVS)" [ref=e20] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=e21]:
+      - generic [ref=e23]:
+        - list [ref=e24]:
+          - listitem [ref=e25]:
+            - link "Home" [ref=e26] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=e27]: 
+          - listitem [ref=e29]:
+            - link "Buscar" [ref=e30] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e31]: 
+              - generic [ref=e33]: 
+          - listitem [ref=e35]:
+            - link "Favoritos" [ref=e36] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=e37]: 
+              - generic [ref=e39]: 
+        - list [ref=e41]:
+          - listitem [ref=e42]:
+            - link "Documentos" [ref=e43] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=e44]: 
+          - listitem [ref=e46]:
+            - link "Processos" [ref=e47] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=e48]: 
+              - generic [ref=e50]: 
+          - listitem [ref=e52]:
+            - link "Central de Tarefas" [ref=e53] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=e54]: 
+          - listitem [ref=e56]:
+            - link "Social" [ref=e57] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=e58]: 
+          - listitem [ref=e60]:
+            - link "Comunidades" [ref=e61] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=e62]: 
+          - listitem [ref=e64]:
+            - link "Páginas" [ref=e65] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e66]: 
+              - generic [ref=e68]: 
+        - list [ref=e70]:
+          - listitem [ref=e71]:
+            - link "Store" [ref=e72] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=e73]: 
+          - listitem [ref=e75]:
+            - link "Lixeira" [ref=e76] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=e77]: 
+        - list [ref=e79]:
+          - listitem [ref=e80]:
+            - link "Fechar menu" [ref=e81] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e83]: 
+    - generic [ref=e94]:
+      - generic [ref=e95]:
+        - list [ref=e97]:
+          - listitem [ref=e98]:
+            - link "Início" [ref=e99] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e100]:
+            - text: 
+            - link "Processos" [ref=e101] [cursor=pointer]:
+              - /url: /portal/p/1/pageprocessstart
+          - listitem [ref=e102]:
+            - text: 
+            - link "Iniciar Solicitações" [ref=e103] [cursor=pointer]:
+              - /url: /portal/p/1/pageprocessstart
+          - listitem [ref=e104]: Consultas/Pareceres
+        - generic [ref=e105]:
+          - heading "Início" [level=2] [ref=e106]
+          - list [ref=e107]:
+            - listitem [ref=e108]:
+              - link " Formulário" [ref=e109]:
+                - /url: "#form-tab"
+                - generic [ref=e110]: 
+                - generic [ref=e111]: Formulário
+            - listitem [ref=e112]:
+              - link " Informações" [ref=e113] [cursor=pointer]:
+                - /url: "#informations-tab"
+                - generic [ref=e114]: 
+                - generic [ref=e115]: Informações
+            - listitem [ref=e116]:
+              - link " Histórico 0" [ref=e117] [cursor=pointer]:
+                - /url: "#historic-tab"
+                - generic [ref=e118]: 
+                - generic [ref=e119]: Histórico
+                - generic "Quantidade de registros" [ref=e120]: "0"
+            - listitem [ref=e121]:
+              - link " Anexos 0" [ref=e122] [cursor=pointer]:
+                - /url: "#attachments-tab"
+                - generic [ref=e123]: 
+                - generic [ref=e124]: Anexos
+                - generic "Quantidade de registros" [ref=e125]: "0"
+            - text:  
+      - generic [ref=e127]:
+        - iframe [ref=e131]:
+          - generic [ref=f3e3]:
+            - generic [ref=f3e4]:
+              - generic [ref=f3e5]: "N: da Solicitação"
+              - 'textbox "N: da Solicitação" [ref=f3e7]': "0"
+              - generic [ref=f3e8]: Data de Inclusão
+              - textbox "Data de Inclusão" [ref=f3e10]: 02/09/2026
+            - generic [ref=f3e11]:
+              - generic [ref=f3e12]: Solicitante
+              - textbox "Solicitante" [ref=f3e14]: Usuário TBC (TOTVS)
+              - generic [ref=f3e15]: Tipo Consulta
+              - combobox "Tipo Consulta" [ref=f3e17]:
+                - 'option "com.totvs.technology.foundation.dataservice.exception.ServiceNotFoundException: Não foi possível encontrar o serviço '' SIGAJURI ''" [selected]'
+            - generic [ref=f3e18]:
+              - generic [ref=f3e19]: Filial
+              - combobox "Filial" [ref=f3e21]:
+                - 'option "com.totvs.technology.foundation.dataservice.exception.ServiceNotFoundException: Não foi possível encontrar o serviço '' SIGAJURI ''" [selected]'
+              - generic [ref=f3e22]: Área Solicitante
+              - combobox "Área Solicitante" [ref=f3e24]:
+                - option [selected]
+                - option "CONSELHO DELIBERATIVO"
+                - option "CONSELHO FISCAL"
+                - option "COORDENAÇÃO DE ADMINISTRAÇÃO DE PESSOAL DSC"
+                - option "COORDENAÇÃO DE FINANCEIRO"
+                - option "COORDENAÇÃO DE PROCESSAMENTO E SERVIÇOS"
+                - option "DIRETORIA ADMINISTRATIVA E FINANCEIRA"
+                - option "DIRETORIA EXECUTIVA"
+                - option "DIVISÃO DA GESTÃO DE REDE DE PRESTADORES"
+                - option "DIVISÃO DE ACORDOS DE TRABALHO"
+                - option "DIVISÃO DE ADMINISTRAÇÃO DE DADOS E INTEGRAÇÃO"
+                - option "DIVISÃO DE ASSUNTOS INSTITUCIONAIS"
+                - option "DIVISÃO DE AVAL. E ACOMP. DE PRODUTOS"
+                - option "DIVISÃO DE CAPITAL HUMANO"
+                - option "DIVISÃO DE COMPRAS E CONTRATAÇÕES"
+                - option "DIVISÃO DE CONTABILIDADE"
+                - option "DIVISÃO DE CONTADORIA"
+                - option "DIVISÃO DE CONTENCIOSO"
+                - option "DIVISÃO DE CONTROLADORIA"
+                - option "DIVISÃO DE CONVÊNIOS"
+                - option "DIVISÃO DE DESENVOLVIMENTO ORGANIZACIONAL"
+                - option "DIVISÃO DE ESTRATÉGIA DE ANÁLISE DE CONTAS MÉDICAS"
+                - option "DIVISÃO DE ESTRATÉGIA E DESIGN ORGANIZACIONAL"
+                - option "DIVISÃO DE ESTRATEGIA E NEGOCIAÇÃO"
+                - option "DIVISÃO DE FINANÇAS"
+                - option "DIVISÃO DE GESTÃO DA REDE DE PRESTADORES"
+                - option "DIVISÃO DE GESTÃO DE PESSOAS"
+                - option "DIVISÃO DE GESTÃO DE RISCOS"
+                - option "DIVISÃO DE GESTÃO DO DESEMPENHO"
+                - option "DIVISÃO DE INFORMAÇÃO EM SAÚDE"
+                - option "DIVISÃO DE MARKETING E COMUNICAÇÃO"
+                - option "DIVISÃO DE NEG. COM PREST. DE SERVIÇOS"
+                - option "DIVISÃO DE NEG. COM PRESTADORES ASSISTENCIAIS"
+                - option "DIVISÃO DE NEGOCIAÇÃO"
+                - option "DIVISÃO DE NORMAT. DE PLANOS DE SAÚDE"
+                - option "DIVISÃO DE NORMAT. E ACOMP. DE PRODUTOS"
+                - option "DIVISÃO DE OUVIDORIA"
+                - option "DIVISÃO DE PATRIMÔNIOS E SERVIÇOS"
+                - option "DIVISÃO DE PLANEJAMENTO"
+                - option "DIVISÃO DE PROGRAMA DE SAUDE"
+                - option "DIVISÃO DE PROGRAMA E AVALIAÇÃO DA SAÚDE"
+                - option "DIVISÃO DE REDES E ATENDIMENTO"
+                - option "DIVISÃO DE REGULAÇÃO TÉCNICA"
+                - option "DIVISÃO DE REGULAMENTAÇÃO DE PRODUTOS"
+                - option "DIVISÃO DE RELAC. COM EMPRESAS CONVENIADAS"
+                - option "DIVISÃO DE RELACIONAMENTO COM CLIENTES"
+                - option "DIVISÃO DE RELACIONAMENTO COM PARTICIPANTES"
+                - option "DIVISÃO DE RISCOS E CONTROLES INTERNOS"
+                - option "DIVISÃO DE SERVIÇOS COMPARTILHADOS"
+                - option "DIVISÃO DE SERVIÇOS DE SAÚDE"
+                - option "DIVISÃO DE SISTEMAS"
+                - option "GERÊNCIA ADMINISTRATIVA"
+                - option "GERÊNCIA DE APOIO CORPORATIVO"
+                - option "GERENCIA DE AREA DE NEGOCIAÇÃO E REL.CLIENTE"
+                - option "GERÊNCIA DE CONTROLE INTERNOS E CONFORMIDADE"
+                - option "GERÊNCIA DE ESTRATÉGIA E ORGANIZAÇÃO"
+                - option "GERÊNCIA DE LOGÍSTICA"
+                - option "GERÊNCIA DE NEGOCIAÇÃO"
+                - option "GERÊNCIA DE PLANOS DE SAÚDE"
+                - option "GERÊNCIA DE PRODUTOS E ATENDIMENTO A CLIENTES"
+                - option "GERENCIA DE REDE DE ATENDIMENTO"
+                - option "GERÊNCIA DE RELACIONAMENTO COM CLIENTES"
+                - option "GERÊNCIA DE RISCO E CONTROLES INTERNOS"
+                - option "GERÊNCIA DE SAÚDE"
+                - option "GERENCIA DE TECNOLOGIA DA INFORMAÇÃO"
+                - option "GERÊNCIA DE TECNOLOGIA E INFORMAÇÃO"
+                - option "GERÊNCIA FINANCEIRA"
+                - option "GERENCIA JURIDICA"
+                - option "PAGAMENTOS JUDICIAIS - DSC"
+                - option "PRESIDÊNCIA"
+                - option "SECRETARIA DE ORGÃOS COLEGIADOS"
+                - option "DEMANDA EXTERNA"
+                - option "MINISTÉRIO PÚBLICO"
+                - option "PROCON"
+            - generic [ref=f3e25]:
+              - generic [ref=f3e26]: Empresa
+              - textbox "Empresa" [ref=f3e28]: CASSI - SEDE - CASSI - SEDE. - 33719485000127
+            - generic [ref=f3e29]:
+              - generic [ref=f3e30]: Solicitação
+              - textbox "Solicitação" [ref=f3e32]
+            - generic [ref=f3e33]:
+              - generic [ref=f3e34]: Observações
+              - textbox "Observações" [ref=f3e36]
+            - generic [ref=f3e37]:
+              - generic [ref=f3e38]: Advogado
+              - textbox "Advogado" [ref=f3e40]
+            - generic [ref=f3e41]:
+              - generic [ref=f3e42]: Gestor
+              - textbox "Gestor" [ref=f3e44]
+            - generic [ref=f3e45]:
+              - generic [ref=f3e46]: Prazo de Encerramento
+              - textbox "Prazo de Encerramento" [ref=f3e48]
+            - text:  
+        - text:                  
+      - generic [ref=e136]:
+        - button "Enviar" [ref=e137] [cursor=pointer]
+        - button "Opções" [ref=e138] [cursor=pointer]:
+          - generic [ref=e139]: 
+  - text:  
+```
+
+# Test source
+
+```ts
+  1   | // @ts-check
+  2   | import { test, expect } from '../../../fixtures/fixtures.js';
+  3   | import { SigajuriPage } from '../../../pages/SigajuriPage.js';
+  4   | import { criarSolicitacaoConsultivo } from '../../../factories/juridico.js';
+  5   | import { envObrigatoria } from '../../../config/ambiente.js';
+  6   | import { LoginPage } from '../../../pages/LoginPage.js';
+  7   | 
+  8   | const PROCESS_ID = 'SIGAJURI_Consultivo';
+  9   | 
+  10  | /**
+  11  |  * CT-JUR-01-H / CT-JUR-01-S1 — Consultivo (`SIGAJURI_Consultivo`).
+  12  |  *
+  13  |  * ## O que foi confirmado em campo (navegação direta por URL, sessão normal)
+  14  |  *
+  15  |  * O documento de casos supunha este processo bloqueado por perfil. **Não está**: o
+  16  |  * formulário abre completo (heading "Início", abas, botão Enviar) — não aparece o modal de
+  17  |  * bloqueio de permissão que bloqueia RDFC e alguns processos de RH.
+  18  |  *
+  19  |  * O que bloqueia é outra coisa: os combos `Tipo Consulta` e `Filial` são alimentados por um
+  20  |  * serviço externo chamado "SIGAJURI" que o dataset não encontra — o HTML servido já vem com
+  21  |  * uma ÚNICA opção, o texto do erro:
+  22  |  * `com.totvs.technology.foundation.dataservice.exception.ServiceNotFoundException: Não foi
+  23  |  * possível encontrar o serviço ' SIGAJURI '`. Não há como selecionar um valor válido para
+  24  |  * nenhum dos dois campos — em NENHUMA das duas comboboxes existe outra opção.
+  25  |  *
+  26  |  * O clique em Enviar chega a POSTAR em `/ecm/api/rest/ecm/workflowView/send` (a escrita real
+  27  |  * — equivalente jurídico do `/wf_solicitacao_compras/start` documentado em
+  28  |  * `utils/captura-payload.js`), mas o servidor responde **500**. A `beforeStateEntry` do BPM
+  29  |  * tenta determinar o responsável pela tarefa a partir de `cdTipoSol`/`cdFilialNS7`/
+  30  |  * `cdAreaSol` — todos vazios pela falha do serviço — e lança
+  31  |  * `Não foi possível determinar o responsável pela Consulta/Parecer`. A UI ABRE um `role=dialog`
+  32  |  * com heading "Erro" mostrando essa mensagem (não é uma falha silenciosa) e NENHUM processo é
+  33  |  * criado: `/portal/p/1/pageprocessstart` continua listando "Consultas/Pareceres — Último
+  34  |  * iniciado: Nunca" depois da tentativa.
+  35  |  *
+  36  |  * Isto foi reproduzido com QUALQUER valor de `Área Solicitante` (a única combo deste
+  37  |  * formulário que tem opções reais) — a falha não é "esta área não tem aprovador configurado",
+  38  |  * é "nenhuma área tem, porque o campo que decidiria isso nunca carrega um valor". Por isso
+  39  |  * CT-JUR-01-H e CT-JUR-01-S1 documentam o MESMO defeito (D-JUR-01) a partir de duas áreas
+  40  |  * diferentes, em vez de duplicar o mesmo teste: a prova de que é universal, não pontual, está
+  41  |  * em o resultado NÃO mudar com a área.
+  42  |  *
+  43  |  * CT-JUR-01-S2 (prazo de ~41 dias / atraso) **não foi implementado**: exige um processo
+  44  |  * criado de verdade para avançar o relógio de negócio, e nenhuma tentativa de criação chega a
+  45  |  * completar por causa do D-JUR-01 acima — não há processo para medir prazo.
+  46  |  */
+  47  | test.describe('SIGAJURI_Consultivo — solicitação, D-JUR-01', () =&gt; {
+  48  |   test('CT-JUR-01-H deveria criar a solicitação de Consultivo e vinculá-la à área informada @destrutivo', async ({
+  49  |     page,
+  50  |   }) =&gt; {
+  51  |     const sigajuri = new SigajuriPage(page);
+  52  |     const dados = criarSolicitacaoConsultivo({ areaSolicitante: 'DIVISÃO DE CONTENCIOSO' });
+  53  | 
+  54  |     await sigajuri.goto(PROCESS_ID);
+  55  |     await sigajuri.expectFormularioAberto();
+  56  | 
+  57  |     // Prova de campo, documentada ANTES de tentar enviar (para não confundir "não consegui
+  58  |     // preencher" com "preenchi e falhou por outro motivo"): Tipo Consulta deveria oferecer
+  59  |     // tipos reais de consulta jurídica — hoje a única opção é o texto do erro do serviço.
+  60  |     // `count()` não espera pelo formulário do iframe carregar — por isso a visibilidade é
+  61  |     // confirmada primeiro (essa, sim, com auto-wait).
+  62  |     await expect(sigajuri.comboTipoConsulta).toBeVisible();
+  63  |     expect(
+  64  |       await sigajuri.comboTipoConsulta.locator('option').count(),
+  65  |       'Tipo Consulta deveria oferecer mais de uma opção (tipos reais de consulta)',
+&gt; 66  |     ).toBeGreaterThan(1);
+      |       ^ Error: Tipo Consulta deveria oferecer mais de uma opção (tipos reais de consulta)
+  67  | 
+  68  |     await sigajuri.preencherConsultivo(dados);
+  69  | 
+  70  |     const resposta = await sigajuri.enviarECapturarResposta();
+  71  | 
+  72  |     expect(
+  73  |       resposta.status(),
+  74  |       'uma solicitação de Consultivo com Solicitação/Área preenchidas deveria ser aceita ' +
+  75  |         '(200) — o servidor respondeu com erro porque Tipo Consulta/Filial nunca chegam a ' +
+  76  |         'carregar um valor (D-JUR-01, ServiceNotFoundException no serviço SIGAJURI)',
+  77  |     ).toBe(200);
+  78  |   });
+  79  | 
+  80  |   test('CT-JUR-01-S1 falha de mesma forma em uma área diferente — não é "área sem aprovador", é universal @destrutivo', async ({
+  81  |     page,
+  82  |   }) =&gt; {
+  83  |     const sigajuri = new SigajuriPage(page);
+  84  |     const dados = criarSolicitacaoConsultivo({ areaSolicitante: 'DIVISÃO DE CONVÊNIOS' });
+  85  | 
+  86  |     await sigajuri.goto(PROCESS_ID);
+  87  |     await sigajuri.expectFormularioAberto();
+  88  |     await sigajuri.preencherConsultivo(dados);
+  89  | 
+  90  |     await sigajuri.enviarECapturarResposta();
+  91  | 
+  92  |     // O requisito de negócio testado aqui é "deve sinalizar, não rotear para o vazio" — e É
+  93  |     // o que acontece: a UI abre um diálogo de erro visível e nomeado, com a mensagem de
+  94  |     // negócio, em vez de redirecionar silenciosamente como se tivesse dado certo (o padrão
+  95  |     // que quebrou D-01 em Compras, documentado em `docs/mapa-do-ambiente.md`). Este teste
+  96  |     // passa hoje — a causa do sinal é o defeito universal D-JUR-01 (não uma regra de alçada
+  97  |     // por área específica), mas o comportamento de UX sob teste está correto.
+  98  |     await expect(
+  99  |       sigajuri.dialogErroEnvio.getByRole('heading', { name: 'Erro', exact: true }),
+  100 |     ).toBeVisible();
+  101 |     await expect(sigajuri.dialogErroEnvio).toContainText('Não foi possível determinar o responsável');
+  102 |     await expect(page).toHaveURL(/processID=SIGAJURI_Consultivo/);
+  103 |   });
+  104 | });
+  105 | 
+  106 | /**
+  107 |  * CT-JUR-02-S1 — acesso público indevido a `SIGAJURI_Consultivo`.
+  108 |  *
+  109 |  * O processo está marcado `public:true` no metadado da definição. Medido com um contexto
+  110 |  * SEM sessão (sem `storageState`, sem cookie de autenticação):
+  111 |  *
+  112 |  * - `GET /portal/p/1/pageworkflowview?processID=SIGAJURI_Consultivo` responde 200, mas o
+  113 |  *   documento servido é a tela de LOGIN (`&lt;title&gt;Login&lt;/title&gt;`) — mesma regra documentada em
+  114 |  *   `docs/mapa-do-ambiente.md`: o Fluig serve o login na MESMA url, o critério de sessão é o
+  115 |  *   título/conteúdo, nunca o código HTTP nem a URL.
+  116 |  * - `GET /ecm/api/rest/ecm/workflowView/getDefinitionProcess` (a API que devolveria o
+  117 |  *   `formHtml` e os dados do processo) responde 200, mas o corpo é só um redirecionamento de
+  118 |  *   página (`&lt;script&gt;window.location.replace("/portal/home")&lt;/script&gt;`) — nenhum dado do
+  119 |  *   processo, do formulário ou do caso jurídico é exposto no corpo da resposta.
+  120 |  *
+  121 |  * `public:true` não expõe dado jurídico sem autenticação por esta rota — a suíte não
+  122 |  * encontrou requisição capaz de ler dado de negócio sem sessão válida.
+  123 |  */
+  124 | test.describe('SIGAJURI_Consultivo — acesso sem sessão (CT-JUR-02-S1, public:true)', () =&gt; {
+  125 |   test.use({ storageState: { cookies: [], origins: [] } });
+  126 | 
+  127 |   test('deve exigir autenticação e não expor dado do processo sem sessão', async ({ page }) =&gt; {
+  128 |     const baseUrl = envObrigatoria('BASE_URL');
+  129 | 
+  130 |     // Ponto 1: navegação real, anônima, para a URL do processo.
+  131 |     await page.goto(`${baseUrl}/portal/p/1/pageworkflowview?processID=${PROCESS_ID}`, {
+  132 |       waitUntil: 'domcontentloaded',
+  133 |     });
+  134 | 
+  135 |     // Critério de sessão do projeto: título do documento, nunca a URL nem o status HTTP —
+  136 |     // o Fluig serve o login na MESMA url (docs/mapa-do-ambiente.md).
+  137 |     await expect(page).toHaveTitle('Login', { timeout: 30_000 });
+  138 | 
+  139 |     // Nenhum vestígio do formulário do processo deveria estar acessível — a tela anônima é
+  140 |     // a de login, não a SPA do workflow (por isso a API abaixo precisa ser testada à parte:
+  141 |     // a SPA que a chamaria nunca chega a carregar para uma sessão anônima).
+  142 |     await expect(page.getByRole('heading', { name: 'Início', exact: true })).toHaveCount(0);
+  143 |     await expect(page.getByRole('button', { name: 'Enviar', exact: true })).toHaveCount(0);
+  144 |     await expect(new LoginPage(page).campoUsuario).toBeVisible();
+  145 | 
+  146 |     // Ponto 2: a API que devolveria o payload do processo (`formHtml`, dados do caso),
+  147 |     // chamada diretamente SEM cookie de sessão (`credentials: 'omit'`) — a forma mais direta
+  148 |     // de medir se o endpoint em si vaza dado de negócio a quem não está autenticado,
+  149 |     // independente de a SPA do workflow chegar a carregar.
+  150 |     const resultado = await page.evaluate(
+  151 |       async ({ url, processId }) =&gt; {
+  152 |         const resposta = await fetch(
+  153 |           `${url}/ecm/api/rest/ecm/workflowView/getDefinitionProcess?processId=${processId}&amp;processInstanceId=0&amp;taskUserId=anonimo&amp;currentMovto=0&amp;managerMode=false`,
+  154 |           { credentials: 'omit' },
+  155 |         );
+  156 |         return { status: resposta.status, corpo: await resposta.text() };
+  157 |       },
+  158 |       { url: baseUrl, processId: PROCESS_ID },
+  159 |     );
+  160 | 
+  161 |     expect(
+  162 |       resultado.corpo,
+  163 |       'a API de definição de processo não deveria devolver dado do formulário/caso sem sessão',
+  164 |     ).not.toContain('formHtml');
+  165 |     expect(
+  166 |       resultado.corpo,
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=340681 npx playwright test tests/e2e/juridico/sigajuri-consultivo.spec.js -g "CT-JUR-01-H deveria criar a solicitação de Consultivo e vinculá-la à área informada @destrutivo"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/juridico/e2e-juridico-sigajuri-cons-c671a-à-área-informada-destrutivo-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/juridico/e2e-juridico-sigajuri-cons-c671a-à-área-informada-destrutivo-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/juridico/e2e-juridico-sigajuri-cons-c671a-à-área-informada-destrutivo-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/juridico/e2e-juridico-sigajuri-cons-c671a-à-área-informada-destrutivo-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+<article class="falha" id="f52" data-classe="novo" data-area="juridico">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — achado desta execução (não catalogado)</span>
+      <span class="ordem">#53</span>
+    </div>
+    <h2>CT-JUR-04-S1 deveria oferecer campo para registrar a parte contrária em consultas contenciosas</h2>
+    <p class="suite">e2e/juridico/sigajuri-contencioso.spec.js › SIGAJURI_Contencioso — roteamento por área e parte contrária</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/juridico/sigajuri-contencioso.spec.js:196</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>7.5s</dd></div>
+      
+      <div><dt>Seed do faker</dt><dd><code>206423</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G8">G8</a> — Jurídico (SIGAJURI) — combos vazios e parte contrária inalcançável · <b>Referência:</b> CT-JUR-04-S1</p>
+    <p><b>O que acontece:</b> Numa consulta do tipo "Liminar", o botão "Novo Envolvido" fica oculto (classe <code>sem-processo-hide</code>) tanto no estado padrão quanto com "Não possui processo." marcado.</p>
+    <p><b>Por que falha:</b> A regra de exibição esconde o único caminho para registrar a parte contrária.</p>
+    <p><b>Onde falha:</b> <code>expect(visivel).toBe(true)</code> em <code>sigajuri-contencioso.spec.js:230</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/juridico/sigajuri-contencioso.spec.js:230</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: deveria existir um caminho visível para registrar a parte contrária (botão "Novo Envolvido") em uma consulta do tipo "Liminar" — testado com o formulário no estado padrão e com "Não possui processo." marcado, o botão fica oculto (classe CSS `sem-processo-hide`) nos dois casos</p>
+    <pre class="detalhe">expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">224</span>    expect(</span>
+<span class="linha"><span class="num">225</span>      botaoVisivelPorPadrao || botaoVisivelSemProcesso,</span>
+<span class="linha"><span class="num">226</span>      'deveria existir um caminho visível para registrar a parte contrária (botão "Novo ' +</span>
+<span class="linha"><span class="num">227</span>        'Envolvido") em uma consulta do tipo "Liminar" — testado com o formulário no estado ' +</span>
+<span class="linha"><span class="num">228</span>        'padrão e com "Não possui processo." marcado, o botão fica oculto (classe CSS ' +</span>
+<span class="linha"><span class="num">229</span>        '`sem-processo-hide`) nos dois casos',</span>
+<span class="linha alvo"><span class="num">230</span>    ).toBe(true);</span>
+<span class="linha"><span class="num">231</span></span>
+<span class="linha"><span class="num">232</span>    // Investigação ficou só na leitura — nenhum Enviar foi acionado neste caso.</span>
+<span class="linha"><span class="num">233</span>    expect(guarda.tentativas(), `tentativa(s) de escrita bloqueada(s): ${JSON.stringify(guarda.urls())}`).toBe(0);</span>
+<span class="linha"><span class="num">234</span>  });</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/juridico/sigajuri-contencioso.spec.js",
+    "SIGAJURI_Contencioso — roteamento por área e parte contrária",
+    "CT-JUR-04-S1 deveria oferecer campo para registrar a parte contrária em consultas contenciosas"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=SIGAJURI_Contencioso",
+  "fakerSeed": 206423,
+  "reproduzirCom": "FAKER_SEED=206423 npx playwright test",
+  "erro": "Error: deveria existir um caminho visível para registrar a parte contrária (botão \"Novo Envolvido\") em uma consulta do tipo \"Liminar\" — testado com o formulário no estado padrão e com \"Não possui processo.\" marcado, o botão fica oculto (classe CSS `sem-processo-hide`) nos dois casos\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m"
+}</pre>
+  </section>
+
+  
+
+  
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/juridico/sigajuri-contencioso.spec.js &gt;&gt; SIGAJURI_Contencioso — roteamento por área e parte contrária &gt;&gt; CT-JUR-04-S1 deveria oferecer campo para registrar a parte contrária em consultas contenciosas
+- Location: tests/e2e/juridico/sigajuri-contencioso.spec.js:196:3
+
+# Error details
+
+```
+Error: deveria existir um caminho visível para registrar a parte contrária (botão "Novo Envolvido") em uma consulta do tipo "Liminar" — testado com o formulário no estado padrão e com "Não possui processo." marcado, o botão fica oculto (classe CSS `sem-processo-hide`) nos dois casos
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - generic [ref=e7]:
+              - text: 
+              - link [ref=e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=e9]
+            - generic [ref=e10]:
+              - text: 
+              - button "Abrir ajuda" [ref=e12] [cursor=pointer]:
+                - generic [ref=e13]: 
+              - button "Abrir notificações" [ref=e15] [cursor=pointer]:
+                - generic [ref=e16]: 9+
+                - generic [ref=e17]: 
+              - img "Usuário TBC (TOTVS)" [ref=e20] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=e21]:
+      - generic [ref=e23]:
+        - list [ref=e24]:
+          - listitem [ref=e25]:
+            - link "Home" [ref=e26] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=e27]: 
+          - listitem [ref=e29]:
+            - link "Buscar" [ref=e30] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e31]: 
+              - generic [ref=e33]: 
+          - listitem [ref=e35]:
+            - link "Favoritos" [ref=e36] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=e37]: 
+              - generic [ref=e39]: 
+        - list [ref=e41]:
+          - listitem [ref=e42]:
+            - link "Documentos" [ref=e43] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=e44]: 
+          - listitem [ref=e46]:
+            - link "Processos" [ref=e47] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=e48]: 
+              - generic [ref=e50]: 
+          - listitem [ref=e52]:
+            - link "Central de Tarefas" [ref=e53] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=e54]: 
+          - listitem [ref=e56]:
+            - link "Social" [ref=e57] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=e58]: 
+          - listitem [ref=e60]:
+            - link "Comunidades" [ref=e61] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=e62]: 
+          - listitem [ref=e64]:
+            - link "Páginas" [ref=e65] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e66]: 
+              - generic [ref=e68]: 
+        - list [ref=e70]:
+          - listitem [ref=e71]:
+            - link "Store" [ref=e72] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=e73]: 
+          - listitem [ref=e75]:
+            - link "Lixeira" [ref=e76] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=e77]: 
+        - list [ref=e79]:
+          - listitem [ref=e80]:
+            - link "Fechar menu" [ref=e81] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e83]: 
+    - generic [ref=e94]:
+      - generic [ref=e95]:
+        - list [ref=e97]:
+          - listitem [ref=e98]:
+            - link "Início" [ref=e99] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e100]:
+            - text: 
+            - link "Processos" [ref=e101] [cursor=pointer]:
+              - /url: /portal/p/1/pageprocessstart
+          - listitem [ref=e102]:
+            - text: 
+            - link "Iniciar Solicitações" [ref=e103] [cursor=pointer]:
+              - /url: /portal/p/1/pageprocessstart
+          - listitem [ref=e104]: Contencioso
+        - generic [ref=e105]:
+          - heading "Início" [level=2] [ref=e106]
+          - list [ref=e107]:
+            - listitem [ref=e108]:
+              - link " Formulário" [ref=e109]:
+                - /url: "#form-tab"
+                - generic [ref=e110]: 
+                - generic [ref=e111]: Formulário
+            - listitem [ref=e112]:
+              - link " Informações" [ref=e113] [cursor=pointer]:
+                - /url: "#informations-tab"
+                - generic [ref=e114]: 
+                - generic [ref=e115]: Informações
+            - listitem [ref=e116]:
+              - link " Histórico 0" [ref=e117] [cursor=pointer]:
+                - /url: "#historic-tab"
+                - generic [ref=e118]: 
+                - generic [ref=e119]: Histórico
+                - generic "Quantidade de registros" [ref=e120]: "0"
+            - listitem [ref=e121]:
+              - link " Anexos 0" [ref=e122] [cursor=pointer]:
+                - /url: "#attachments-tab"
+                - generic [ref=e123]: 
+                - generic [ref=e124]: Anexos
+                - generic "Quantidade de registros" [ref=e125]: "0"
+            - text:  
+      - generic [ref=e127]:
+        - iframe [active] [ref=e131]:
+          - generic [ref=f3e1]:
+            - form [ref=f3e2]:
+              - generic [ref=f3e3]:
+                - tablist [ref=f3e4]:
+                  - listitem [ref=f3e5]:
+                    - tab "Solicitação" [selected] [ref=f3e6]
+                  - listitem [ref=f3e7]:
+                    - tab "Análise/ Resposta" [expanded] [ref=f3e8] [cursor=pointer]
+                - tabpanel "Solicitação" [ref=f3e10]:
+                  - group "Dados do Solicitante:" [ref=f3e11]:
+                    - generic [ref=f3e13]:
+                      - generic [ref=f3e14]:
+                        - generic [ref=f3e15]: UF
+                        - combobox "UF" [ref=f3e16]:
+                          - option "Selecione" [selected]
+                          - option "BA"
+                          - option "RR"
+                          - option "RO"
+                          - option "AC"
+                          - option "AP"
+                          - option "MT"
+                          - option "MS"
+                          - option "MA"
+                          - option "PB"
+                          - option "RN"
+                          - option "SC"
+                          - option "SP"
+                          - option "RJ"
+                          - option "PR"
+                          - option "MG"
+                          - option "TO"
+                          - option "RS"
+                          - option "CE"
+                          - option "AL"
+                          - option "AM"
+                          - option "ES"
+                          - option "GO"
+                          - option "DF"
+                          - option "PE"
+                          - option "SE"
+                          - option "PI"
+                          - option "PA"
+                          - option "Sede"
+                      - generic [ref=f3e17]:
+                        - generic [ref=f3e18]: Nome Solicitante
+                        - textbox "Nome Solicitante" [ref=f3e19]: Usuário TBC (TOTVS)
+                      - generic [ref=f3e20]:
+                        - generic [ref=f3e21]: Data
+                        - textbox "Data" [ref=f3e22]: 2/09/2026
+                      - generic [ref=f3e23]:
+                        - generic [ref=f3e24]: Não possui processo.
+                        - checkbox "Não possui processo." [checked] [active] [ref=f3e25]
+                  - group "Detalhes da abertura:" [ref=f3e26]:
+                    - generic [ref=f3e28]:
+                      - generic [ref=f3e29]:
+                        - generic [ref=f3e30]: Responsável pela Demanda.
+                        - combobox "Responsável pela Demanda. Grupo responsável." [ref=f3e31]:
+                          - option "Selecione uma opção" [selected]
+                          - option "CASSI Sede"
+                          - option "CASSI Estratégico"
+                          - option "Escritório Rueda"
+                          - option "Escritório QVQR"
+                          - option "Escritório Porto e Costa"
+                          - option "Escritório Macedo"
+                          - option "Escritório Nidelvalchianca"
+                          - option "Escritório Baleeiro"
+                          - option "Escritório Ferreira e Santos"
+                          - option "Advogado AC - GEJUR"
+                          - option "Advogado AL - GEJUR"
+                          - option "Advogado AM - GEJUR"
+                          - option "Advogado AP - GEJUR"
+                          - option "Advogado BA - GEJUR - Interior"
+                          - option "Advogado BA - GEJUR - Capital"
+                          - option "Advogado CE - GEJUR"
+                          - option "Advogado DF - GEJUR"
+                          - option "Advogado ES - GEJUR"
+                          - option "Advogado GO - GEJUR"
+                          - option "Advogado MA - GEJUR"
+                          - option "Advogado MG - GEJUR"
+                          - option "Advogado MS - GEJUR"
+                          - option "Advogado MT - GEJUR"
+                          - option "Advogado PA - GEJUR"
+                          - option "Advogado PB - GEJUR"
+                          - option "Advogado PE - GEJUR"
+                          - option "Advogado PI - GEJUR"
+                          - option "Advogado PR - GEJUR"
+                          - option "Advogado RJ - GEJUR"
+                          - option "Advogado RN - GEJUR"
+                          - option "Advogado RO - GEJUR"
+                          - option "Advogado RR - GEJUR"
+                          - option "Advogado RS - GEJUR"
+                          - option "Advogado SC - GEJUR"
+                          - option "Advogado SE - GEJUR"
+                          - option "Advogado SP - GEJUR"
+                          - option "Advogado TO - GEJUR"
+                          - option "Unidade AC"
+                          - option "Unidade AL"
+                          - option "Unidade AM"
+                          - option "Unidade AP"
+                          - option "Unidade BA"
+                          - option "Unidade CE"
+                          - option "Unidade DF"
+                          - option "Unidade ES"
+                          - option "Unidade GO"
+                          - option "Unidade MA"
+                          - option "Unidade MG"
+                          - option "Unidade MS"
+                          - option "Unidade MT"
+                          - option "Unidade PA"
+                          - option "Unidade PB"
+                          - option "Unidade PE"
+                          - option "Unidade PI"
+                          - option "Unidade PR"
+                          - option "Unidade RJ"
+                          - option "Unidade RN"
+                          - option "Unidade RO"
+                          - option "Unidade RR"
+                          - option "Unidade RS"
+                          - option "Unidade SC"
+                          - option "Unidade SE"
+                          - option "Unidade SP"
+                          - option "Unidade TO"
+                          - option "Auditoria Interna - GEJUR Contencioso"
+                          - option "Central CASSI - GEJUR Contencioso"
+                          - option "Divisão Compras e Contratações - GEJUR Contencioso"
+                          - option "Divisão de Avaliação e Acompanhamento de Produtos - GEJUR Contencioso"
+                          - option "Divisão de Capital Humano - GEJUR Contencioso"
+                          - option "Divisão de Contabilidade e Equipe de Tributos - GEJUR Contencioso"
+                          - option "Divisão de Controladoria - GEJUR Contencioso"
+                          - option "Divisão de Convênios - GEJUR Contencioso"
+                          - option "Divisão de Estratégia de Negociação - GEJUR Contencioso"
+                          - option "Divisão de Estratégia e Design Organizacional - GEJUR Contencioso"
+                          - option "Divisão de Gestão da Rede de Prestadores - GEJUR Contencioso"
+                          - option "Divisão de Gestão do Risco Populacional - GEJUR Contencioso"
+                          - option "Divisão de Marketing e Comunicação - GEJUR Contencioso"
+                          - option "Divisão de Negociação com Rede Complementar - GEJUR Contencioso"
+                          - option "Divisão de Programas de Saúde - GEJUR Contencioso"
+                          - option "Divisão de Regulação Técnica - GEJUR Contencioso"
+                          - option "Divisão de Regulamentação de Produtos - GEJUR Contencioso"
+                          - option "Divisão de Relacionamento com Participantes - GEJUR Contencioso"
+                          - option "Divisão de Serviços de Saúde - GEJUR Contencioso"
+                          - option "Divisão de Finanças - GEJUR Contencioso"
+                          - option "Equipe de Pessoal - GEJUR Contencioso"
+                          - option "Gerência de Contas Médicas - GEJUR Contencioso"
+                          - option "Gerência de Risco Populacional - GEJUR Contencioso"
+                          - option "Gerência de Tecnologia da Informação - GEJUR Contencioso"
+                          - option "Ouvidoria - GEJUR Contencioso"
+                          - option "Secretaria de Órgãos Colegiados - GEJUR Contencioso"
+                      - generic [ref=f3e32]:
+                        - generic [ref=f3e33]: Tipo da Consulta.
+                        - combobox "Tipo da Consulta." [ref=f3e34]:
+                          - option "Selecione uma opção"
+                          - option "Cadastro"
+                          - option "Liminar" [selected]
+                          - option "Procon"
+                          - option "Orientação processual"
+                      - generic [ref=f3e35]:
+                        - generic [ref=f3e36]: Urgência 24h.
+                        - checkbox "Urgência 24h." [checked] [ref=f3e37]
+                      - generic [ref=f3e38]:
+                        - generic [ref=f3e39]: Prazo Análise.(horas)
+                        - textbox "Prazo Análise.(horas)" [ref=f3e40]: "12"
+                      - generic [ref=f3e41]:
+                        - generic [ref=f3e42]: Prazo Resposta Final.(horas)
+                        - textbox "Prazo Resposta Final.(horas)" [ref=f3e43]: "12"
+                    - generic [ref=f3e45]:
+                      - generic [ref=f3e46]: Titulo Mensagem
+                      - textbox "Titulo Mensagem" [ref=f3e47]
+                    - generic [ref=f3e49]:
+                      - generic [ref=f3e50]: Descrição
+                      - textbox "Descrição" [ref=f3e51]
+                  - group "Notificação de Acompanhamento:" [ref=f3e52]:
+                    - generic [ref=f3e54]:
+                      - table [ref=f3e56]:
+                        - rowgroup [ref=f3e57]:
+                          - row [ref=f3e58]:
+                            - columnheader "Nome" [ref=f3e59]
+                            - columnheader "E-mail" [ref=f3e60]
+                            - columnheader "Remover" [ref=f3e61]
+                        - rowgroup: 
+                      - button "Adicionar" [ref=f3e63] [cursor=pointer]
+                  - group "Solicitação:" [ref=f3e64]
+                  - group "Envolvidos:" [ref=f3e66]: 
+                  - group "Instâncias:" [ref=f3e68]
+                  - group "Campos Adicionais:" [ref=f3e70]
+                  - group "Pedidos:" [ref=f3e72]: 
+            - generic:    
+        - text:                  
+      - generic [ref=e136]:
+        - button "Enviar" [ref=e137] [cursor=pointer]
+        - button "Opções" [ref=e138] [cursor=pointer]:
+          - generic [ref=e139]: 
+  - text:  
+```
+
+# Test source
+
+```ts
+  130 |     const corpo = await resposta.json();
+  131 |     const processInstanceId = corpo?.content?.processInstanceId;
+  132 |     expect(
+  133 |       typeof processInstanceId === 'number' &amp;&amp; processInstanceId &gt; 0,
+  134 |       `a resposta deveria trazer um processInstanceId numérico positivo (recebido: ${JSON.stringify(processInstanceId)})`,
+  135 |     ).toBe(true);
+  136 | 
+  137 |     testInfo.annotations.push({ type: 'contencioso-criado', description: String(processInstanceId) });
+  138 | 
+  139 |     // Nenhum diálogo de erro deveria aparecer para um envio aceito.
+  140 |     await expect(
+  141 |       page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Erro', exact: true }) }),
+  142 |     ).toHaveCount(0);
+  143 | 
+  144 |     // ── CT-JUR-06-H — o que a tela diz não é o que o servidor fez ──────────────────────────
+  145 |     //
+  146 |     // Até aqui o teste só afirma sobre a RESPOSTA do envio ("criado com sucesso"). É
+  147 |     // exatamente o falso positivo do D-01 em outra área: a SC de Compras também responde
+  148 |     // 200 e mesmo assim nasce presa no marco de Início, com a conta de integração. As
+  149 |     // assertions abaixo leem o ESTADO RESULTANTE no servidor.
+  150 |     const estado = await lerEstadoDaSolicitacao(page, processInstanceId);
+  151 | 
+  152 |     expect(
+  153 |       estado.status,
+  154 |       `Contencioso ${processInstanceId}: a solicitação deveria ficar ABERTA depois de criada ` +
+  155 |         `(status observado: "${estado.status}")`,
+  156 |     ).toBe('OPEN');
+  157 | 
+  158 |     expect(
+  159 |       estado.etapas.map((e) =&gt; `${e.sequencia}:${e.nome}`),
+  160 |       `Contencioso ${processInstanceId}: deveria parar na etapa ` +
+  161 |         `${SEQUENCIA_INICIAL_ESPERADA}:${ETAPA_INICIAL_ESPERADA}. Outra etapa aqui significa ` +
+  162 |         'que o desenho do processo mudou — e quem depende dela (o jurídico que responde) ' +
+  163 |         'deixa de receber a demanda',
+  164 |     ).toEqual([`${SEQUENCIA_INICIAL_ESPERADA}:${ETAPA_INICIAL_ESPERADA}`]);
+  165 | 
+  166 |     expect(
+  167 |       estado.tarefaCorrente,
+  168 |       `Contencioso ${processInstanceId}: nenhuma tarefa NOT_COMPLETED — a solicitação foi ` +
+  169 |         'criada mas não deixou trabalho para ninguém',
+  170 |     ).not.toBeNull();
+  171 | 
+  172 |     expect(
+  173 |       estado.tarefaCorrente?.assignee,
+  174 |       `Contencioso ${processInstanceId}: a tarefa corrente deveria estar no pool ` +
+  175 |         `"${POOL_ESPERADO}" (grupo do "Responsável pela Demanda" = "${dados.responsavel}"). ` +
+  176 |         'Cair em outro grupo é a demanda chegando ao jurídico errado',
+  177 |     ).toBe(POOL_ESPERADO);
+  178 | 
+  179 |     // O oráculo do ROTEAMENTO: o pool em que a tarefa parou tem de ser exatamente o que o
+  180 |     // formulário calculou e gravou no campo `grupo` a partir do "Responsável pela Demanda".
+  181 |     // Sem esta assertion, um BPM que ignorasse o campo e mandasse tudo para um grupo padrão
+  182 |     // passaria despercebido enquanto esse padrão fosse o GRUPO_GEJUR_9.
+  183 |     expect(
+  184 |       estado.tarefaCorrente?.assignee,
+  185 |       `Contencioso ${processInstanceId}: o pool da tarefa deveria ser o mesmo que o formulário ` +
+  186 |         `gravou em "grupo" ("${estado.campos.grupo}") — divergência aqui significa que o BPM ` +
+  187 |         'ignorou a escolha do solicitante e roteou por outro critério',
+  188 |     ).toBe(estado.campos.grupo);
+  189 | 
+  190 |     expect(
+  191 |       estado.campos.uf,
+  192 |       `Contencioso ${processInstanceId}: a UF escolhida deveria ser gravada na solicitação`,
+  193 |     ).toBe(dados.uf);
+  194 |   });
+  195 | 
+  196 |   test('CT-JUR-04-S1 deveria oferecer campo para registrar a parte contrária em consultas contenciosas', async ({
+  197 |     page,
+  198 |   }) =&gt; {
+  199 |     const guarda = await bloquearEscritaNoAmbiente(page);
+  200 |     const sigajuri = new SigajuriPage(page);
+  201 | 
+  202 |     await sigajuri.goto(PROCESS_ID);
+  203 |     await sigajuri.expectFormularioAberto();
+  204 | 
+  205 |     // "Liminar" é o tipo de consulta mais claramente contencioso do catálogo — se algum tipo
+  206 |     // revelasse o controle de parte contrária ao ser escolhido, seria este.
+  207 |     await sigajuri.comboTipoConsultaContencioso.selectOption('Liminar');
+  208 |     await expect(sigajuri.grupoEnvolvidos).toBeVisible();
+  209 | 
+  210 |     // Prova de campo: o grupo "Envolvidos:" contém uma tabela (`tabEnvolvidos`) com um botão
+  211 |     // "Novo Envolvido" (`wdkAddChild`) — o único caminho real para registrar uma parte. A
+  212 |     // ÚNICA linha da tabela é um MODELO oculto (`style="display:none"`, usado pelo widget
+  213 |     // para clonar linhas novas), então contar `input`/`select` dentro do grupo sem filtrar
+  214 |     // essa linha (a primeira versão deste teste fazia isso) apontava 7 campos que ninguém
+  215 |     // consegue ver nem preencher — falso positivo. A pergunta certa é: existe um caminho
+  216 |     // VISÍVEL para adicionar uma parte?
+  217 |     const botaoVisivelPorPadrao = await sigajuri.botaoNovoEnvolvido.isVisible();
+  218 | 
+  219 |     // "Não possui processo." reage de fato (desmarca `readonly` da linha-modelo — confirmado
+  220 |     // em campo), então testamos também com ela marcada antes de concluir.
+  221 |     await sigajuri.checkboxNaoPossuiProcesso.check();
+  222 |     const botaoVisivelSemProcesso = await sigajuri.botaoNovoEnvolvido.isVisible();
+  223 | 
+  224 |     expect(
+  225 |       botaoVisivelPorPadrao || botaoVisivelSemProcesso,
+  226 |       'deveria existir um caminho visível para registrar a parte contrária (botão "Novo ' +
+  227 |         'Envolvido") em uma consulta do tipo "Liminar" — testado com o formulário no estado ' +
+  228 |         'padrão e com "Não possui processo." marcado, o botão fica oculto (classe CSS ' +
+  229 |         '`sem-processo-hide`) nos dois casos',
+&gt; 230 |     ).toBe(true);
+      |       ^ Error: deveria existir um caminho visível para registrar a parte contrária (botão "Novo Envolvido") em uma consulta do tipo "Liminar" — testado com o formulário no estado padrão e com "Não possui processo." marcado, o botão fica oculto (classe CSS `sem-processo-hide`) nos dois casos
+  231 | 
+  232 |     // Investigação ficou só na leitura — nenhum Enviar foi acionado neste caso.
+  233 |     expect(guarda.tentativas(), `tentativa(s) de escrita bloqueada(s): ${JSON.stringify(guarda.urls())}`).toBe(0);
+  234 |   });
+  235 | });
+  236 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=206423 npx playwright test tests/e2e/juridico/sigajuri-contencioso.spec.js -g "CT-JUR-04-S1 deveria oferecer campo para registrar a parte contrária em consultas contenciosas"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/juridico/e2e-juridico-sigajuri-cont-5eff7-a-em-consultas-contenciosas-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/juridico/e2e-juridico-sigajuri-cont-5eff7-a-em-consultas-contenciosas-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/juridico/e2e-juridico-sigajuri-cont-5eff7-a-em-consultas-contenciosas-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/juridico/e2e-juridico-sigajuri-cont-5eff7-a-em-consultas-contenciosas-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+<article class="falha" id="f53" data-classe="novo" data-area="juridico">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — achado desta execução (não catalogado)</span>
+      <span class="ordem">#54</span>
+    </div>
+    <h2>CT-JUR-03-H deveria permitir montar uma minuta preenchendo Filial e Tipo Contrato</h2>
+    <p class="suite">e2e/juridico/sigajuri-contrato.spec.js › SIGAJURI_Contrato — geração de minuta, D-JUR-01</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/juridico/sigajuri-contrato.spec.js:32</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>7.0s</dd></div>
+      
+      <div><dt>Seed do faker</dt><dd><code>922064</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G8">G8</a> — Jurídico (SIGAJURI) — combos vazios e parte contrária inalcançável · <b>Referência:</b> CT-JUR-03-H / D-JUR-01</p>
+    <p><b>O que acontece:</b> O combo "Filial" do SIGAJURI_Contrato oferece 1 opção.</p>
+    <p><b>Por que falha:</b> Dataset de filiais vazio para esta conta/processo; não é possível montar a minuta.</p>
+    <p><b>Onde falha:</b> <code>sigajuri-contrato.spec.js:48</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/juridico/sigajuri-contrato.spec.js:48</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: Filial deveria oferecer mais de uma opção (filiais reais)</p>
+    <pre class="detalhe">expect(received).toBeGreaterThan(expected)
+
+Expected: &gt; 1
+Received:   1</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">42</span>    // opções reais de Filial/Área/Tipo de Contrato — hoje só a mensagem de erro. `count()`</span>
+<span class="linha"><span class="num">43</span>    // não espera o iframe carregar, por isso a visibilidade é confirmada primeiro.</span>
+<span class="linha"><span class="num">44</span>    await expect(sigajuri.comboFilialContrato).toBeVisible();</span>
+<span class="linha"><span class="num">45</span>    expect(</span>
+<span class="linha"><span class="num">46</span>      await sigajuri.comboFilialContrato.locator('option').count(),</span>
+<span class="linha"><span class="num">47</span>      'Filial deveria oferecer mais de uma opção (filiais reais)',</span>
+<span class="linha alvo"><span class="num">48</span>    ).toBeGreaterThan(1);</span>
+<span class="linha"><span class="num">49</span>    await expect(sigajuri.comboTipoContrato).toBeVisible();</span>
+<span class="linha"><span class="num">50</span>    expect(</span>
+<span class="linha"><span class="num">51</span>      await sigajuri.comboTipoContrato.locator('option').count(),</span>
+<span class="linha"><span class="num">52</span>      'Tipo Contrato deveria oferecer mais de uma opção (tipos reais de contrato)',</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/juridico/sigajuri-contrato.spec.js",
+    "SIGAJURI_Contrato — geração de minuta, D-JUR-01",
+    "CT-JUR-03-H deveria permitir montar uma minuta preenchendo Filial e Tipo Contrato"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=SIGAJURI_Contrato",
+  "fakerSeed": 922064,
+  "reproduzirCom": "FAKER_SEED=922064 npx playwright test",
+  "erro": "Error: Filial deveria oferecer mais de uma opção (filiais reais)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: &gt; \u001b[32m1\u001b[39m\nReceived:   \u001b[31m1\u001b[39m"
+}</pre>
+  </section>
+
+  
+
+  
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/juridico/sigajuri-contrato.spec.js &gt;&gt; SIGAJURI_Contrato — geração de minuta, D-JUR-01 &gt;&gt; CT-JUR-03-H deveria permitir montar uma minuta preenchendo Filial e Tipo Contrato
+- Location: tests/e2e/juridico/sigajuri-contrato.spec.js:32:3
+
+# Error details
+
+```
+Error: Filial deveria oferecer mais de uma opção (filiais reais)
+
+expect(received).toBeGreaterThan(expected)
+
+Expected: &gt; 1
+Received:   1
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - generic [ref=e7]:
+              - text: 
+              - link [ref=e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=e9]
+            - generic [ref=e10]:
+              - text: 
+              - button "Abrir ajuda" [ref=e12] [cursor=pointer]:
+                - generic [ref=e13]: 
+              - button "Abrir notificações" [ref=e15] [cursor=pointer]:
+                - generic [ref=e16]: 9+
+                - generic [ref=e17]: 
+              - img "Usuário TBC (TOTVS)" [ref=e20] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=e21]:
+      - generic [ref=e23]:
+        - list [ref=e24]:
+          - listitem [ref=e25]:
+            - link "Home" [ref=e26] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=e27]: 
+          - listitem [ref=e29]:
+            - link "Buscar" [ref=e30] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e31]: 
+              - generic [ref=e33]: 
+          - listitem [ref=e35]:
+            - link "Favoritos" [ref=e36] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=e37]: 
+              - generic [ref=e39]: 
+        - list [ref=e41]:
+          - listitem [ref=e42]:
+            - link "Documentos" [ref=e43] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=e44]: 
+          - listitem [ref=e46]:
+            - link "Processos" [ref=e47] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=e48]: 
+              - generic [ref=e50]: 
+          - listitem [ref=e52]:
+            - link "Central de Tarefas" [ref=e53] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=e54]: 
+          - listitem [ref=e56]:
+            - link "Social" [ref=e57] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=e58]: 
+          - listitem [ref=e60]:
+            - link "Comunidades" [ref=e61] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=e62]: 
+          - listitem [ref=e64]:
+            - link "Páginas" [ref=e65] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e66]: 
+              - generic [ref=e68]: 
+        - list [ref=e70]:
+          - listitem [ref=e71]:
+            - link "Store" [ref=e72] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=e73]: 
+          - listitem [ref=e75]:
+            - link "Lixeira" [ref=e76] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=e77]: 
+        - list [ref=e79]:
+          - listitem [ref=e80]:
+            - link "Fechar menu" [ref=e81] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e83]: 
+    - generic [ref=e94]:
+      - generic [ref=e95]:
+        - list [ref=e97]:
+          - listitem [ref=e98]:
+            - link "Início" [ref=e99] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e100]:
+            - text: 
+            - link "Processos" [ref=e101] [cursor=pointer]:
+              - /url: /portal/p/1/pageprocessstart
+          - listitem [ref=e102]:
+            - text: 
+            - link "Iniciar Solicitações" [ref=e103] [cursor=pointer]:
+              - /url: /portal/p/1/pageprocessstart
+          - listitem [ref=e104]: Solicitação de Contratos
+        - generic [ref=e105]:
+          - heading "Início" [level=2] [ref=e106]
+          - list [ref=e107]:
+            - listitem [ref=e108]:
+              - link " Formulário" [ref=e109]:
+                - /url: "#form-tab"
+                - generic [ref=e110]: 
+                - generic [ref=e111]: Formulário
+            - listitem [ref=e112]:
+              - link " Informações" [ref=e113] [cursor=pointer]:
+                - /url: "#informations-tab"
+                - generic [ref=e114]: 
+                - generic [ref=e115]: Informações
+            - listitem [ref=e116]:
+              - link " Histórico 0" [ref=e117] [cursor=pointer]:
+                - /url: "#historic-tab"
+                - generic [ref=e118]: 
+                - generic [ref=e119]: Histórico
+                - generic "Quantidade de registros" [ref=e120]: "0"
+            - listitem [ref=e121]:
+              - link " Anexos 0" [ref=e122] [cursor=pointer]:
+                - /url: "#attachments-tab"
+                - generic [ref=e123]: 
+                - generic [ref=e124]: Anexos
+                - generic "Quantidade de registros" [ref=e125]: "0"
+            - text:  
+      - generic [ref=e127]:
+        - iframe [ref=e131]:
+          - generic [ref=f3e3]:
+            - text:  
+            - generic [ref=f3e4]:
+              - generic [ref=f3e5]: "N: Solicitação"
+              - 'textbox "N: Solicitação" [ref=f3e7]'
+              - generic [ref=f3e8]: Solicitante
+              - textbox "Solicitante" [ref=f3e10]: Usuário TBC (TOTVS)
+              - generic [ref=f3e11]: Data de Inclusão
+              - textbox "Data de Inclusão" [ref=f3e13]: 02/09/2026
+            - generic [ref=f3e14]:
+              - generic [ref=f3e15]: Filial
+              - combobox "Filial" [ref=f3e18]:
+                - 'option "com.totvs.technology.foundation.dataservice.exception.ServiceNotFoundException: Não foi possível encontrar o serviço '' SIGAJURI ''" [selected]'
+              - generic [ref=f3e19]: Área Solicitante
+              - combobox "Área Solicitante" [ref=f3e21]:
+                - 'option "com.totvs.technology.foundation.dataservice.exception.ServiceNotFoundException: Não foi possível encontrar o serviço '' SIGAJURI ''" [selected]'
+            - generic [ref=f3e22]:
+              - generic [ref=f3e23]: Tipo Contrato
+              - combobox "Tipo Contrato" [ref=f3e25]:
+                - 'option "com.totvs.technology.foundation.dataservice.exception.ServiceNotFoundException: Não foi possível encontrar o serviço '' SIGAJURI ''" [selected]'
+              - text: 
+            - generic [ref=f3e26]:
+              - generic [ref=f3e27]: Solicitação
+              - textbox "Solicitação" [ref=f3e29]
+            - generic [ref=f3e30]:
+              - generic [ref=f3e31]: Observações
+              - textbox "Observações" [ref=f3e33]
+            - generic [ref=f3e36]:
+              - heading "Envolvidos" [level=2] [ref=f3e38]
+              - generic [ref=f3e39]:
+                - generic [ref=f3e40]: Contratante
+                - generic [ref=f3e41]:
+                  - generic [ref=f3e42] [cursor=pointer]:
+                    - radio "Cliente/Unidade" [checked] [ref=f3e43]
+                    - text: Cliente/Unidade
+                  - generic [ref=f3e44] [cursor=pointer]:
+                    - radio "Fornecedor" [ref=f3e45]
+                    - text: Fornecedor
+                  - generic [ref=f3e46] [cursor=pointer]:
+                    - radio "Outros" [ref=f3e47]
+                    - text: Outros
+                - generic [ref=f3e48]:
+                  - textbox [ref=f3e49]
+                  - generic [ref=f3e50] [cursor=pointer]: 
+                - generic [ref=f3e52]: Contratado
+                - generic [ref=f3e53]:
+                  - generic [ref=f3e54] [cursor=pointer]:
+                    - radio "Cliente/Unidade" [checked] [ref=f3e55]
+                    - text: Cliente/Unidade
+                  - generic [ref=f3e56] [cursor=pointer]:
+                    - radio "Fornecedor" [ref=f3e57]
+                    - text: Fornecedor
+                  - generic [ref=f3e58] [cursor=pointer]:
+                    - radio "Outros" [ref=f3e59]
+                    - text: Outros
+                - generic [ref=f3e60]:
+                  - textbox [ref=f3e61]
+                  - generic [ref=f3e62] [cursor=pointer]: 
+                - button "Cadastrar Novo" [disabled] [ref=f3e67]
+            - generic [ref=f3e68]: 
+            - generic [ref=f3e70]:
+              - generic [ref=f3e71]: Valor do Contrato
+              - generic [ref=f3e73]:
+                - generic [ref=f3e74]: $
+                - textbox "Valor do Contrato" [ref=f3e75]
+              - generic [ref=f3e76]: Cond. Pagamento
+              - textbox "Cond. Pagamento" [ref=f3e78]
+              - generic [ref=f3e79]: Tipo impressão Minuta
+              - combobox "Tipo impressão Minuta" [ref=f3e81]:
+                - option "Word" [selected]
+                - option "PDF"
+            - generic [ref=f3e82]:
+              - generic [ref=f3e83]: Vigência
+              - generic [ref=f3e85]:
+                - generic [ref=f3e86]: 
+                - textbox "Data Início" [ref=f3e87]
+              - generic [ref=f3e88]: Até
+              - generic [ref=f3e90]:
+                - generic [ref=f3e91]: 
+                - textbox "Data Fim" [ref=f3e92]
+              - generic [ref=f3e93]: Renovação Automática
+              - generic [ref=f3e94]: "OFF"
+            - generic [ref=f3e100]:
+              - generic [ref=f3e101]: Codigo Jurídico
+              - textbox "Codigo Jurídico" [ref=f3e103]
+              - generic [ref=f3e104]: Advogado
+              - textbox "Advogado" [ref=f3e106]
+              - generic [ref=f3e107]: Prazo de Retorno
+              - textbox "Prazo de Retorno" [ref=f3e109]
+        - text:                  
+      - generic [ref=e136]:
+        - button "Enviar" [ref=e137] [cursor=pointer]
+        - button "Opções" [ref=e138] [cursor=pointer]:
+          - generic [ref=e139]: 
+  - text:  
+```
+
+# Test source
+
+```ts
+  1  | // @ts-check
+  2  | import { test, expect } from '../../../fixtures/fixtures.js';
+  3  | import { SigajuriPage } from '../../../pages/SigajuriPage.js';
+  4  | import { bloquearEscritaNoAmbiente } from '../../../utils/guarda-criacao.js';
+  5  | 
+  6  | const PROCESS_ID = 'SIGAJURI_Contrato';
+  7  | 
+  8  | /**
+  9  |  * CT-JUR-03-H / CT-JUR-03-S1 — Contrato (`SIGAJURI_Contrato`, breadcrumb "Solicitação de
+  10 |  * Contratos").
+  11 |  *
+  12 |  * Confirmado em campo: o formulário abre completo (mesmo padrão dos demais SIGAJURI — não é
+  13 |  * bloqueado por permissão). O MESMO defeito do Consultivo (D-JUR-01) se repete aqui: `Filial`,
+  14 |  * `Área Solicitante` e `Tipo Contrato` — os três alimentados pelo serviço "SIGAJURI" — nascem
+  15 |  * com uma única opção, o texto de
+  16 |  * `ServiceNotFoundException: Não foi possível encontrar o serviço ' SIGAJURI '`.
+  17 |  *
+  18 |  * Diferente do Consultivo, aqui o botão **Enviar nasce `disabled`** — o formulário tem uma
+  19 |  * segunda camada de validação client-side (bloco "Envolvidos", com radio Cliente/Unidade /
+  20 |  * Fornecedor / Outros e um campo de busca por zoom para Contratante/Contratado) que mantém o
+  21 |  * botão desabilitado até que dados mínimos sejam informados. Como consequência prática, os
+  22 |  * dois defeitos (SIGAJURI indisponível + Envolvidos vazio) se sobrepõem: não dá pra saber, só
+  23 |  * por esta tela, se preencher Envolvidos sozinho já habilitaria o Enviar, porque não há como
+  24 |  * escolher um `Tipo Contrato` válido para chegar lá.
+  25 |  *
+  26 |  * CT-JUR-03-S1 (bloqueio quando faltam dados obrigatórios) é o único dos dois casos que o
+  27 |  * ambiente permite comprovar sem tocar o SIGAJURI: o Enviar nasce desabilitado, e a suíte
+  28 |  * DEVE tratar isso como caminho negativo válido — provando que a trava funciona é exatamente
+  29 |  * o objetivo do caso, não um efeito colateral do outro defeito.
+  30 |  */
+  31 | test.describe('SIGAJURI_Contrato — geração de minuta, D-JUR-01', () =&gt; {
+  32 |   test('CT-JUR-03-H deveria permitir montar uma minuta preenchendo Filial e Tipo Contrato', async ({
+  33 |     page,
+  34 |   }) =&gt; {
+  35 |     const guarda = await bloquearEscritaNoAmbiente(page);
+  36 |     const sigajuri = new SigajuriPage(page);
+  37 | 
+  38 |     await sigajuri.goto(PROCESS_ID);
+  39 |     await sigajuri.expectFormularioAberto();
+  40 | 
+  41 |     // Prova de campo: os três combos alimentados pelo serviço SIGAJURI deveriam oferecer
+  42 |     // opções reais de Filial/Área/Tipo de Contrato — hoje só a mensagem de erro. `count()`
+  43 |     // não espera o iframe carregar, por isso a visibilidade é confirmada primeiro.
+  44 |     await expect(sigajuri.comboFilialContrato).toBeVisible();
+  45 |     expect(
+  46 |       await sigajuri.comboFilialContrato.locator('option').count(),
+  47 |       'Filial deveria oferecer mais de uma opção (filiais reais)',
+&gt; 48 |     ).toBeGreaterThan(1);
+     |       ^ Error: Filial deveria oferecer mais de uma opção (filiais reais)
+  49 |     await expect(sigajuri.comboTipoContrato).toBeVisible();
+  50 |     expect(
+  51 |       await sigajuri.comboTipoContrato.locator('option').count(),
+  52 |       'Tipo Contrato deveria oferecer mais de uma opção (tipos reais de contrato)',
+  53 |     ).toBeGreaterThan(1);
+  54 | 
+  55 |     // Consequência direta: sem Filial/Tipo Contrato selecionáveis, o formulário nunca sai do
+  56 |     // estado inválido — Enviar deveria eventualmente habilitar depois de preenchido, mas fica
+  57 |     // preso em `disabled` desde a abertura.
+  58 |     await expect(
+  59 |       sigajuri.botaoEnviar,
+  60 |       'o botão Enviar deveria habilitar quando os dados obrigatórios estivessem preenchidos ' +
+  61 |         '— aqui fica sempre desabilitado porque Filial/Tipo Contrato nunca chegam a carregar ' +
+  62 |         'um valor (D-JUR-01, ServiceNotFoundException no serviço SIGAJURI)',
+  63 |     ).toBeEnabled();
+  64 | 
+  65 |     // Nada foi escrito — a trava confirma que esta investigação ficou só na leitura.
+  66 |     expect(guarda.tentativas(), `tentativa(s) de escrita bloqueada(s): ${JSON.stringify(guarda.urls())}`).toBe(0);
+  67 |   });
+  68 | 
+  69 |   test('CT-JUR-03-S1 Enviar nasce desabilitado quando faltam dados obrigatórios', async ({ page }) =&gt; {
+  70 |     const guarda = await bloquearEscritaNoAmbiente(page);
+  71 |     const sigajuri = new SigajuriPage(page);
+  72 | 
+  73 |     await sigajuri.goto(PROCESS_ID);
+  74 |     await sigajuri.expectFormularioAberto();
+  75 | 
+  76 |     // Caminho negativo real e verificado: nenhum campo obrigatório foi preenchido, e o botão
+  77 |     // que dispararia a escrita (`workflowView/send`) permanece bloqueado.
+  78 |     await expect(sigajuri.botaoEnviar).toBeDisabled();
+  79 | 
+  80 |     expect(guarda.tentativas(), `tentativa(s) de escrita bloqueada(s): ${JSON.stringify(guarda.urls())}`).toBe(0);
+  81 |   });
+  82 | });
+  83 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=922064 npx playwright test tests/e2e/juridico/sigajuri-contrato.spec.js -g "CT-JUR-03-H deveria permitir montar uma minuta preenchendo Filial e Tipo Contrato"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/juridico/e2e-juridico-sigajuri-cont-f999c-endo-Filial-e-Tipo-Contrato-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/juridico/e2e-juridico-sigajuri-cont-f999c-endo-Filial-e-Tipo-Contrato-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/juridico/e2e-juridico-sigajuri-cont-f999c-endo-Filial-e-Tipo-Contrato-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/juridico/e2e-juridico-sigajuri-cont-f999c-endo-Filial-e-Tipo-Contrato-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+</main>
+<footer>
+  <p>Relatório da execução de 02/09/2026 — gerado por <code>scripts/relatorio-falhas.mjs</code> (evidências) +
+  <code>relatorios/gerar-final.mjs</code> (análise). Screenshots e aria-snapshots estão embutidos; trace e vídeo de cada
+  falha ficam em <code>test-results/&lt;fatia&gt;/</code> nos caminhos indicados em cada cartão
+  (<code>npx playwright show-trace &lt;trace.zip&gt;</code>).</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Falhas da suíte E2E — Fluig Cassi — 02/09/2026 (versão leve, sem screenshots embutidas)</title>
+<style>
+  :root {
+    --fundo: #0f1115; --cartao: #171a21; --borda: #262b36; --texto: #e6e9ef;
+    --suave: #9aa4b2; --codigo: #0b0d11;
+    --produto: #ef4444; --ambiente: #f59e0b; --infra: #8b5cf6; --sem-veredito: #64748b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --fundo:#f6f7f9; --cartao:#fff; --borda:#e2e5ea; --texto:#1b1f27; --suave:#5b6472; --codigo:#f1f3f6; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--fundo); color:var(--texto);
+         font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .capa { padding:32px 24px 20px; border-bottom:1px solid var(--borda); }
+  .capa h1 { margin:0 0 6px; font-size:26px; }
+  .capa p { margin:0; color:var(--suave); }
+  .numeros { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+  .numero { background:var(--cartao); border:1px solid var(--borda); border-radius:10px; padding:10px 14px; }
+  .numero b { display:block; font-size:22px; }
+  .numero span { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  main { padding:24px; max-width:1100px; margin:0 auto; }
+  .filtros { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+  .filtros button { background:var(--cartao); color:var(--texto); border:1px solid var(--borda);
+                    border-radius:999px; padding:6px 14px; cursor:pointer; font-size:13px; }
+  .filtros button[aria-pressed="true"] { border-color:var(--texto); font-weight:600; }
+  .falha { background:var(--cartao); border:1px solid var(--borda); border-radius:14px;
+           padding:20px; margin-bottom:20px; }
+  .falha[hidden] { display:none; }
+  .cabecalho { display:flex; justify-content:space-between; align-items:center; }
+  .ordem { color:var(--suave); font-size:13px; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px;
+           font-weight:600; color:#fff; }
+  .badge.produto { background:var(--produto); }
+  .badge.ambiente { background:var(--ambiente); color:#231a05; }
+  .badge.infra { background:var(--infra); }
+  .badge.sem-veredito { background:var(--sem-veredito); }
+  .falha h2 { margin:12px 0 4px; font-size:18px; line-height:1.35; }
+  .suite { margin:0 0 14px; color:var(--suave); font-size:13px; }
+  .meta { display:flex; flex-wrap:wrap; gap:18px; margin:0 0 4px; }
+  .meta div { display:flex; flex-direction:column; }
+  .meta dt { color:var(--suave); font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  .meta dd { margin:2px 0 0; font-size:13px; }
+  .bloco { margin-top:18px; }
+  .bloco h3 { margin:0 0 8px; font-size:13px; text-transform:uppercase;
+              letter-spacing:.05em; color:var(--suave); }
+  .resumo { margin:0 0 8px; font-weight:600; }
+  pre { background:var(--codigo); border:1px solid var(--borda); border-radius:10px;
+        padding:12px 14px; overflow-x:auto; font-size:12.5px; line-height:1.5; margin:0;
+        white-space:pre-wrap; word-break:break-word; }
+  pre.codigo, pre.cmd { white-space:pre; }
+  code { background:var(--codigo); padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .codigo .linha { display:block; }
+  .codigo .num { display:inline-block; width:44px; color:var(--suave); user-select:none; }
+  .codigo .alvo { background:rgba(239,68,68,.16); font-weight:600; }
+  figure { margin:0 0 12px; }
+  figure img { max-width:100%; border:1px solid var(--borda); border-radius:10px; display:block; }
+  figcaption { color:var(--suave); font-size:12px; margin-top:5px; }
+  details > summary { cursor:pointer; color:var(--suave); font-size:13px; padding:6px 0; }
+  details[open] > summary { margin-bottom:8px; }
+  .dica { color:var(--suave); font-size:13px; margin:8px 0 0; }
+  a { color:inherit; }
+  footer { padding:20px 24px 44px; color:var(--suave); font-size:13px; max-width:1100px; margin:0 auto; }
+  .badge.divergencia { background:#0ea5e9; color:#06202b; }
+  .sumario { background:var(--cartao); border:1px solid var(--borda); border-radius:14px; padding:20px 24px; margin-bottom:22px; }
+  .sumario h2 { margin:0 0 12px; font-size:20px; }
+  .sumario h3 { margin:18px 0 8px; font-size:14px; text-transform:uppercase; letter-spacing:.05em; color:var(--suave); }
+  .sumario table { border-collapse:collapse; width:100%; font-size:13.5px; }
+  .sumario th, .sumario td { border-bottom:1px solid var(--borda); padding:6px 8px; text-align:left; vertical-align:top; }
+  .sumario th { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .grupo { border-top:1px solid var(--borda); padding-top:14px; margin-top:14px; }
+  .grupo h3 { text-transform:none; letter-spacing:0; font-size:16px; color:var(--texto); margin:0 0 6px; }
+  .gid { display:inline-block; background:var(--codigo); border:1px solid var(--borda); border-radius:6px; padding:0 6px; font-size:12px; margin-right:6px; }
+  .suave { color:var(--suave); font-size:13px; margin:0 0 8px; }
+  .lista-testes { font-size:13px; color:var(--suave); }
+  .analise { border-left:3px solid #0ea5e9; padding-left:14px; }
+  .analise p { margin:0 0 8px; }
+  .analise .g, .g { color:var(--suave); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="capa">
+  <h1>Falhas da suíte E2E — TOTVS Fluig Cassi</h1>
+  <p>Execução de 02/09/2026 · 233 testes, 81 reprovados · destrutivos incluídos · com análise de causa raiz</p>
+  </div>
+<main>
+<nav class="filtros" style="margin:16px 0"><a href="index.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">Sumário</a> <a href="area-acompanhamento-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">acompanhamento-contratos (27)</a> <a href="area-api.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">api (2)</a> <a href="area-compras.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">compras (13)</a> <a href="area-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">contratos (4)</a> <a href="area-documentos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">documentos (5)</a> <a href="area-juridico.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">juridico (3)</a> <a href="area-notificacoes.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">notificacoes (2)</a> <a href="area-plataforma.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">plataforma (8)</a> <a href="area-portais.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">portais (2)</a> <a href="area-rh.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">rh (4)</a> <a href="area-saude.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;font-weight:700;border-color:var(--texto)">saude (1)</a> <a href="area-seguranca.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">seguranca (7)</a> <a href="area-tarefas.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">tarefas (3)</a></nav><h2>saude — 1 teste(s) reprovado(s)</h2><p class="dica"><a href="index.html">← voltar ao sumário e às causas raiz</a></p><article class="falha" id="f70" data-classe="novo" data-area="saude">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — achado desta execução (não catalogado)</span>
+      <span class="ordem">#71</span>
+    </div>
+    <h2>Clínica/Unidade deveriam identificar a clínica do diagnóstico e não nascer vazias</h2>
+    <p class="suite">e2e/saude/questionario-clinicassi.spec.js › Questionário CliniCASSI — contexto da clínica (CT-CLI-02-S1, achado U-14)</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/saude/questionario-clinicassi.spec.js:217</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>6.9s</dd></div>
+      
+      <div><dt>Seed do faker</dt><dd><code>344394</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G11">G11</a> — Plataforma — deep-link 404, erros de console, resíduo <code>teste</code>, Aba Atribuir, Clínica vazia, cache _Sync · <b>Referência:</b> CT-CLI-02-S1 / U-14</p>
+    <p><b>O que acontece:</b> O campo "Clínica" do Questionário CliniCASSI nasce vazio em vez de identificar a clínica do diagnóstico.</p>
+    <p><b>Por que falha:</b> Sintoma compatível com o job <code>dsQDC000</code> parado (U-14); sem acesso admin a suíte só confirma o sintoma.</p>
+    <p><b>Onde falha:</b> <code>expect(clinica).not.toBe("")</code> em <code>questionario-clinicassi.spec.js:232</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/saude/questionario-clinicassi.spec.js:232</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: o campo "Clínica" deveria vir preenchido com a clínica do diagnóstico — sintoma compatível com o achado U-14 (job dsQDC000 parado); sem acesso admin, a suíte não confirma a causa, só o sintoma</p>
+    <pre class="detalhe">expect(received).not.toBe(expected) // Object.is equality
+
+Expected: not ""</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">226</span></span>
+<span class="linha"><span class="num">227</span>    expect(</span>
+<span class="linha"><span class="num">228</span>      await questionario.campoClinica.inputValue(),</span>
+<span class="linha"><span class="num">229</span>      'o campo "Clínica" deveria vir preenchido com a clínica do diagnóstico — sintoma ' +</span>
+<span class="linha"><span class="num">230</span>        'compatível com o achado U-14 (job dsQDC000 parado); sem acesso admin, a suíte não ' +</span>
+<span class="linha"><span class="num">231</span>        'confirma a causa, só o sintoma',</span>
+<span class="linha alvo"><span class="num">232</span>    ).not.toBe('');</span>
+<span class="linha"><span class="num">233</span>    expect(</span>
+<span class="linha"><span class="num">234</span>      await questionario.campoUnidade.inputValue(),</span>
+<span class="linha"><span class="num">235</span>      'o campo "Unidade" deveria vir preenchido — mesmo sintoma do campo Clínica',</span>
+<span class="linha"><span class="num">236</span>    ).not.toBe('');</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/saude/questionario-clinicassi.spec.js",
+    "Questionário CliniCASSI — contexto da clínica (CT-CLI-02-S1, achado U-14)",
+    "Clínica/Unidade deveriam identificar a clínica do diagnóstico e não nascer vazias"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/pageworkflowview?processID=prc_questionario_v2",
+  "fakerSeed": 344394,
+  "reproduzirCom": "FAKER_SEED=344394 npx playwright test",
+  "erro": "Error: o campo \"Clínica\" deveria vir preenchido com a clínica do diagnóstico — sintoma compatível com o achado U-14 (job dsQDC000 parado); sem acesso admin, a suíte não confirma a causa, só o sintoma\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m"
+}</pre>
+  </section>
+
+  
+
+  
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/saude/questionario-clinicassi.spec.js &gt;&gt; Questionário CliniCASSI — contexto da clínica (CT-CLI-02-S1, achado U-14) &gt;&gt; Clínica/Unidade deveriam identificar a clínica do diagnóstico e não nascer vazias
+- Location: tests/e2e/saude/questionario-clinicassi.spec.js:217:3
+
+# Error details
+
+```
+Error: o campo "Clínica" deveria vir preenchido com a clínica do diagnóstico — sintoma compatível com o achado U-14 (job dsQDC000 parado); sem acesso admin, a suíte não confirma a causa, só o sintoma
+
+expect(received).not.toBe(expected) // Object.is equality
+
+Expected: not ""
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - generic [ref=e7]:
+              - text: 
+              - link [ref=e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=e9]
+            - generic [ref=e10]:
+              - text: 
+              - button "Abrir ajuda" [ref=e12] [cursor=pointer]:
+                - generic [ref=e13]: 
+              - button "Abrir notificações" [ref=e15] [cursor=pointer]:
+                - generic [ref=e16]: 9+
+                - generic [ref=e17]: 
+              - img "Usuário TBC (TOTVS)" [ref=e20] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=e21]:
+      - generic [ref=e23]:
+        - list [ref=e24]:
+          - listitem [ref=e25]:
+            - link "Home" [ref=e26] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=e27]: 
+          - listitem [ref=e29]:
+            - link "Buscar" [ref=e30] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e31]: 
+              - generic [ref=e33]: 
+          - listitem [ref=e35]:
+            - link "Favoritos" [ref=e36] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=e37]: 
+              - generic [ref=e39]: 
+        - list [ref=e41]:
+          - listitem [ref=e42]:
+            - link "Documentos" [ref=e43] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=e44]: 
+          - listitem [ref=e46]:
+            - link "Processos" [ref=e47] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=e48]: 
+              - generic [ref=e50]: 
+          - listitem [ref=e52]:
+            - link "Central de Tarefas" [ref=e53] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=e54]: 
+          - listitem [ref=e56]:
+            - link "Social" [ref=e57] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=e58]: 
+          - listitem [ref=e60]:
+            - link "Comunidades" [ref=e61] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=e62]: 
+          - listitem [ref=e64]:
+            - link "Páginas" [ref=e65] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e66]: 
+              - generic [ref=e68]: 
+        - list [ref=e70]:
+          - listitem [ref=e71]:
+            - link "Store" [ref=e72] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=e73]: 
+          - listitem [ref=e75]:
+            - link "Lixeira" [ref=e76] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=e77]: 
+        - list [ref=e79]:
+          - listitem [ref=e80]:
+            - link "Fechar menu" [ref=e81] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e83]: 
+    - generic [ref=e94]:
+      - generic [ref=e95]:
+        - list [ref=e97]:
+          - listitem [ref=e98]:
+            - link "Início" [ref=e99] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e100]:
+            - text: 
+            - link "Processos" [ref=e101] [cursor=pointer]:
+              - /url: /portal/p/1/pageprocessstart
+          - listitem [ref=e102]:
+            - text: 
+            - link "Iniciar Solicitações" [ref=e103] [cursor=pointer]:
+              - /url: /portal/p/1/pageprocessstart
+          - listitem [ref=e104]: Questionário de diagnóstico CliniCASSI V2
+        - generic [ref=e105]:
+          - heading "Início" [level=2] [ref=e106]
+          - list [ref=e107]:
+            - listitem [ref=e108]:
+              - link " Formulário" [ref=e109]:
+                - /url: "#form-tab"
+                - generic [ref=e110]: 
+                - generic [ref=e111]: Formulário
+            - listitem [ref=e112]:
+              - link " Informações" [ref=e113] [cursor=pointer]:
+                - /url: "#informations-tab"
+                - generic [ref=e114]: 
+                - generic [ref=e115]: Informações
+            - listitem [ref=e116]:
+              - link " Histórico 0" [ref=e117] [cursor=pointer]:
+                - /url: "#historic-tab"
+                - generic [ref=e118]: 
+                - generic [ref=e119]: Histórico
+                - generic "Quantidade de registros" [ref=e120]: "0"
+            - listitem [ref=e121]:
+              - link " Anexos 0" [ref=e122] [cursor=pointer]:
+                - /url: "#attachments-tab"
+                - generic [ref=e123]: 
+                - generic [ref=e124]: Anexos
+                - generic "Quantidade de registros" [ref=e125]: "0"
+            - text:  
+      - generic [ref=e127]:
+        - iframe [ref=e131]:
+          - form [ref=f3e2]:
+            - generic [ref=f3e3]:
+              - heading " Questionário de Diagnóstico - CliniCASSI" [level=1] [ref=f3e6]:
+                - generic [ref=f3e7]: 
+                - text: Questionário de Diagnóstico - CliniCASSI
+              - generic [ref=f3e8]:
+                - strong [ref=f3e10]: CliniCASSI
+                - generic [ref=f3e12]:
+                  - generic [ref=f3e14]:
+                    - generic [ref=f3e15]: "Processo:"
+                    - textbox [ref=f3e16]
+                  - generic [ref=f3e18]:
+                    - generic [ref=f3e19]: "Data:"
+                    - textbox [ref=f3e20]: 02/09/2026 - 15:01
+                  - generic [ref=f3e22]:
+                    - generic [ref=f3e23]: "Solicitante:"
+                    - textbox [ref=f3e24]: Usuário TBC (TOTVS)
+                  - generic [ref=f3e26]:
+                    - generic [ref=f3e27]: "Clínica:"
+                    - textbox [ref=f3e28]
+                  - generic [ref=f3e30]:
+                    - generic [ref=f3e31]: "Gestor Clínica:"
+                    - textbox [ref=f3e32]
+                  - generic [ref=f3e34]:
+                    - generic [ref=f3e35]: "Unidade:"
+                    - textbox [ref=f3e36]
+                  - generic [ref=f3e38]:
+                    - generic [ref=f3e39]: "Gestor Unidade:"
+                    - textbox [ref=f3e40]
+              - generic [ref=f3e41]:
+                - strong [ref=f3e43]: QUESTIONÁRIO
+                - generic [ref=f3e44]:
+                  - generic [ref=f3e46]:
+                    - generic [ref=f3e47]: "Descrição:"
+                    - textbox [ref=f3e48]: Perguntas 2022
+                  - generic [ref=f3e50]:
+                    - generic [ref=f3e51]: "Periodo de:"
+                    - textbox [ref=f3e52]
+                  - generic [ref=f3e54]:
+                    - generic [ref=f3e55]: Periodo Até
+                    - textbox [ref=f3e56]
+                  - generic [ref=f3e57]:
+                    - 'heading "Categoria: DOCUMENTAÇÃO PARA FUNCIONAMENTO" [level=4] [ref=f3e58]'
+                    - generic [ref=f3e59]:
+                      - heading "Questão 001" [level=3] [ref=f3e61]
+                      - generic [ref=f3e62]:
+                        - generic [ref=f3e63]: Fonte
+                        - textbox "Fonte" [ref=f3e64]: A Clinicassi atualiza anualmente ou conforme a validade os documentos obrigatórios para a renovação do funcionamento (Certificado de Vistoria de Estabelecimentos (CVE), Alvará de funcionamento, Alvará da Vigilância Sanitária e Certificado de cadastro ou registro no CRM).
+                      - generic [ref=f3e65]:
+                        - generic [ref=f3e66]: Pergunta
+                        - textbox "Pergunta" [ref=f3e67]: NR-36.0004 - Orienta as Unidades e CliniCASSI quanto aos documentos obrigatórios ao seu funcionamentoe e PO-36.0001 - Define os procedimentos para obtenção, renovação em acompanhamento dos documentos obrigatórios ao funcionamento das Unidades e CliniCASSI.
+                      - generic [ref=f3e68]:
+                        - generic [ref=f3e69]:
+                          - radio [ref=f3e70]
+                          - generic [ref=f3e71]: Não
+                        - generic [ref=f3e72]:
+                          - radio [ref=f3e73]
+                          - generic [ref=f3e74]: Parcial
+                        - generic [ref=f3e75]:
+                          - radio [ref=f3e76]
+                          - generic [ref=f3e77]: Total
+                    - 'heading "Categoria: ATENDIMENTO E ACOLHIMENTO" [level=4] [ref=f3e79]'
+                    - generic [ref=f3e80]:
+                      - heading "Questão 002" [level=3] [ref=f3e82]
+                      - generic [ref=f3e83]:
+                        - generic [ref=f3e84]: Fonte
+                        - textbox "Fonte" [ref=f3e85]: No atendimento/consulta da CliniCassi identifica-se o participante solicitando que confirme seu o nome completo e a data de nascimento.
+                      - generic [ref=f3e86]:
+                        - generic [ref=f3e87]: Pergunta
+                        - textbox "Pergunta" [ref=f3e88]: PO-30.0040 - Orienta o processo de atendimento do participante na CliniCASSI (Atualizar documento)
+                      - generic [ref=f3e89]:
+                        - generic [ref=f3e90]:
+                          - radio [ref=f3e91]
+                          - generic [ref=f3e92]: Não
+                        - generic [ref=f3e93]:
+                          - radio [ref=f3e94]
+                          - generic [ref=f3e95]: Parcial
+                        - generic [ref=f3e96]:
+                          - radio [ref=f3e97]
+                          - generic [ref=f3e98]: Total
+                    - text: ","
+                    - generic [ref=f3e100]:
+                      - heading "Questão 003" [level=3] [ref=f3e102]
+                      - generic [ref=f3e103]:
+                        - generic [ref=f3e104]: Fonte
+                        - textbox "Fonte" [ref=f3e105]: A equipe de enfermagem realiza vistoria diária do ambiente de atendimento na CliniCassi.
+                      - generic [ref=f3e106]:
+                        - generic [ref=f3e107]: Pergunta
+                        - textbox "Pergunta" [ref=f3e108]: PO-30.0043 - Orienta a equipe de enfermagem quanto ao processo de vistoria diária do ambiente de atendimento da CliniCASSI
+                      - generic [ref=f3e109]:
+                        - generic [ref=f3e110]:
+                          - radio [ref=f3e111]
+                          - generic [ref=f3e112]: Não
+                        - generic [ref=f3e113]:
+                          - radio [ref=f3e114]
+                          - generic [ref=f3e115]: Parcial
+                        - generic [ref=f3e116]:
+                          - radio [ref=f3e117]
+                          - generic [ref=f3e118]: Total
+                    - text: ","
+                    - generic [ref=f3e120]:
+                      - heading "Questão 004" [level=3] [ref=f3e122]
+                      - generic [ref=f3e123]:
+                        - generic [ref=f3e124]: Fonte
+                        - textbox "Fonte" [ref=f3e125]: A equipe de enfermagem realiza vistoria diária da disponibilidade de materiais e medicamentos na CliniCassi.
+                      - generic [ref=f3e126]:
+                        - generic [ref=f3e127]: Pergunta
+                        - textbox "Pergunta" [ref=f3e128]: PO-30.0043 - Orienta a equipe de enfermagem quanto ao processo de vistoria diária do ambiente de atendimento da CliniCASSI
+                      - generic [ref=f3e129]:
+                        - generic [ref=f3e130]:
+                          - radio [ref=f3e131]
+                          - generic [ref=f3e132]: Não
+                        - generic [ref=f3e133]:
+                          - radio [ref=f3e134]
+                          - generic [ref=f3e135]: Parcial
+                        - generic [ref=f3e136]:
+                          - radio [ref=f3e137]
+                          - generic [ref=f3e138]: Total
+                    - text: ","
+                    - generic [ref=f3e140]:
+                      - heading "Questão 005" [level=3] [ref=f3e142]
+                      - generic [ref=f3e143]:
+                        - generic [ref=f3e144]: Fonte
+                        - textbox "Fonte" [ref=f3e145]: A equipe de enfermagem realiza vistoria diária das condições de uso de equipamentos médicos na CliniCassi na CliniCassi.
+                      - generic [ref=f3e146]:
+                        - generic [ref=f3e147]: Pergunta
+                        - textbox "Pergunta" [ref=f3e148]: PO-30.0043 - Orienta a equipe de enfermagem quanto ao processo de vistoria diária do ambiente de atendimento da CliniCASSI
+                      - generic [ref=f3e149]:
+                        - generic [ref=f3e150]:
+                          - radio [ref=f3e151]
+                          - generic [ref=f3e152]: Não
+                        - generic [ref=f3e153]:
+                          - radio [ref=f3e154]
+                          - generic [ref=f3e155]: Parcial
+                        - generic [ref=f3e156]:
+                          - radio [ref=f3e157]
+                          - generic [ref=f3e158]: Total
+                    - text: ","
+                    - generic [ref=f3e160]:
+                      - heading "Questão 006 - Estratégico" [level=3] [ref=f3e162]
+                      - generic [ref=f3e163]:
+                        - generic [ref=f3e164]: Fonte
+                        - textbox "Fonte" [ref=f3e165]: Os profissionais da equipe tem conhecimento sobre o Documento Orientador da Atenção Primária da Cassi.
+                      - generic [ref=f3e166]:
+                        - generic [ref=f3e167]: Pergunta
+                        - textbox "Pergunta" [ref=f3e168]: DA-30.0003 - Documento Orientador da Atenção Primária da Cassi.
+                      - generic [ref=f3e169]:
+                        - generic [ref=f3e170]:
+                          - radio [ref=f3e171]
+                          - generic [ref=f3e172]: Não
+                        - generic [ref=f3e173]:
+                          - radio [ref=f3e174]
+                          - generic [ref=f3e175]: Parcial
+                        - generic [ref=f3e176]:
+                          - radio [ref=f3e177]
+                          - generic [ref=f3e178]: Total
+                    - text: ","
+                    - generic [ref=f3e180]:
+                      - heading "Questão 007 - Estratégico" [level=3] [ref=f3e182]
+                      - generic [ref=f3e183]:
+                        - generic [ref=f3e184]: Fonte
+                        - textbox "Fonte" [ref=f3e185]: A CliniCASSI implementou a Avaliação e Classificação de risco e Vulnerabilidade.
+                      - generic [ref=f3e186]:
+                        - generic [ref=f3e187]: Pergunta
+                        - textbox "Pergunta" [ref=f3e188]: AN-NR-30.0031 - Protocolo de Avaliação e Classificação de risco e Vulnerabilidade
+                      - generic [ref=f3e189]:
+                        - generic [ref=f3e190]:
+                          - radio [ref=f3e191]
+                          - generic [ref=f3e192]: Não
+                        - generic [ref=f3e193]:
+                          - radio [ref=f3e194]
+                          - generic [ref=f3e195]: Parcial
+                        - generic [ref=f3e196]:
+                          - radio [ref=f3e197]
+                          - generic [ref=f3e198]: Total
+                    - text: ","
+                    - generic [ref=f3e200]:
+                      - heading "Questão 008 - Estratégico" [level=3] [ref=f3e202]
+                      - generic [ref=f3e203]:
+                        - generic [ref=f3e204]: Fonte
+                        - textbox "Fonte" [ref=f3e205]: A CliniCASSI implementou o Acesso Avançado.
+                      - generic [ref=f3e206]:
+                        - generic [ref=f3e207]: Pergunta
+                        - textbox "Pergunta" [ref=f3e208]: DA-30.0003 - Documento Orientador da Atenção Primária da Cassi.
+                      - generic [ref=f3e209]:
+                        - generic [ref=f3e210]:
+                          - radio [ref=f3e211]
+                          - generic [ref=f3e212]: Não
+                        - generic [ref=f3e213]:
+                          - radio [ref=f3e214]
+                          - generic [ref=f3e215]: Parcial
+                        - generic [ref=f3e216]:
+                          - radio [ref=f3e217]
+                          - generic [ref=f3e218]: Total
+                    - 'heading "Categoria: PRESCRIÇÃO E ADMINISTRAÇÃO DE MEDICAMENTOS" [level=4] [ref=f3e220]'
+                    - generic [ref=f3e221]:
+                      - heading "Questão 009" [level=3] [ref=f3e223]
+                      - generic [ref=f3e224]:
+                        - generic [ref=f3e225]: Fonte
+                        - textbox "Fonte" [ref=f3e226]: A prescrição e administração de medicamentos é registrada no Prontuário Eletrônico do Paciente – PEP na CliniCassi.
+                      - generic [ref=f3e227]:
+                        - generic [ref=f3e228]: Pergunta
+                        - textbox "Pergunta" [ref=f3e229]: NR-30.0086 - Define o processo de prescrição de medicamentos nas CliniCASSI.
+                      - generic [ref=f3e230]:
+                        - generic [ref=f3e231]:
+                          - radio [ref=f3e232]
+                          - generic [ref=f3e233]: Não
+                        - generic [ref=f3e234]:
+                          - radio [ref=f3e235]
+                          - generic [ref=f3e236]: Parcial
+                        - generic [ref=f3e237]:
+                          - radio [ref=f3e238]
+                          - generic [ref=f3e239]: Total
+                    - text: ","
+                    - generic [ref=f3e241]:
+                      - heading "Questão 010" [level=3] [ref=f3e243]
+                      - generic [ref=f3e244]:
+                        - generic [ref=f3e245]: Fonte
+                        - textbox "Fonte" [ref=f3e246]: Na Clinicassi são utilizados formulários e receitas especificas para a prescrição de medicamentos com substâncias entorpecentes, psicotrópicas e antimicrobianas.
+                      - generic [ref=f3e247]:
+                        - generic [ref=f3e248]: Pergunta
+                        - textbox "Pergunta" [ref=f3e249]: NR-30.0086 - Define o processo de prescrição de medicamentos nas CliniCASSI.
+                      - generic [ref=f3e250]:
+                        - generic [ref=f3e251]:
+                          - radio [ref=f3e252]
+                          - generic [ref=f3e253]: Não
+                        - generic [ref=f3e254]:
+                          - radio [ref=f3e255]
+                          - generic [ref=f3e256]: Parcial
+                        - generic [ref=f3e257]:
+                          - radio [ref=f3e258]
+                          - generic [ref=f3e259]: Total
+        - text:                  
+      - generic [ref=e136]:
+        - button "Enviar" [ref=e137] [cursor=pointer]
+        - button "Opções" [ref=e138] [cursor=pointer]:
+          - generic [ref=e139]: 
+  - text:  
+```
+
+# Test source
+
+```ts
+  132 |     // Até aqui o teste afirmava só sobre o status da resposta. É o mesmo falso positivo que
+  133 |     // o D-01 produz em Compras: o servidor responde 200 e a solicitação pode ter nascido em
+  134 |     // qualquer etapa, com qualquer responsável. Custo de massa ZERO — a instância já foi
+  135 |     // criada pela assertion acima, isto só a lê.
+  136 |     const corpo = await resposta.json();
+  137 |     const processInstanceId = corpo?.content?.processInstanceId;
+  138 |     expect(
+  139 |       typeof processInstanceId === 'number' &amp;&amp; processInstanceId &gt; 0,
+  140 |       `a resposta de um envio aceito deveria trazer o processInstanceId da instância criada ` +
+  141 |         `(recebido: ${JSON.stringify(processInstanceId)})`,
+  142 |     ).toBe(true);
+  143 |     testInfo.annotations.push({ type: 'questionario-criado', description: String(processInstanceId) });
+  144 | 
+  145 |     const estado = await lerEstadoDaSolicitacao(page, processInstanceId);
+  146 | 
+  147 |     expect(
+  148 |       estado.status,
+  149 |       `Questionário ${processInstanceId}: deveria ficar ABERTO depois de criado ` +
+  150 |         `(status observado: "${estado.status}")`,
+  151 |     ).toBe('OPEN');
+  152 | 
+  153 |     expect(
+  154 |       estado.etapas,
+  155 |       `Questionário ${processInstanceId}: deveria parar em ` +
+  156 |         `${SEQUENCIA_INICIAL_ESPERADA}:${ETAPA_INICIAL_ESPERADA}. Outra etapa significa que o ` +
+  157 |         'desenho do processo mudou e o acompanhamento do diagnóstico deixou de existir',
+  158 |     ).toEqual([`${SEQUENCIA_INICIAL_ESPERADA}:${ETAPA_INICIAL_ESPERADA}`]);
+  159 | 
+  160 |     expect(
+  161 |       estado.tarefaCorrente?.assignee,
+  162 |       `Questionário ${processInstanceId}: a tarefa em aberto deveria ficar com o PRÓPRIO ` +
+  163 |         'solicitante — é ele quem acompanha o status do diagnóstico. Responsável observado: ' +
+  164 |         `"${estado.tarefaCorrente?.assignee ?? '(nenhuma tarefa NOT_COMPLETED)'}"`,
+  165 |     ).toBe(envObrigatoria('QA_USERNAME'));
+  166 |   });
+  167 | 
+  168 |   test('CT-CLI-01-S2 questionário incompleto não deveria finalizar/criar o processo @destrutivo', async ({
+  169 |     page,
+  170 |   }) =&gt; {
+  171 |     const questionario = new QuestionarioClinicassiPage(page);
+  172 | 
+  173 |     await questionario.goto();
+  174 |     await questionario.expectFormularioAberto();
+  175 |     await expect(questionario.headingQuestionario).toBeVisible();
+  176 | 
+  177 |     const totalQuestoes = await questionario.contarQuestoes();
+  178 |     expect(totalQuestoes, 'pré-condição: precisa haver mais de uma questão para deixar parte sem responder').toBeGreaterThan(1);
+  179 | 
+  180 |     // Responde só a primeira questão — todas as demais ficam sem seleção.
+  181 |     await questionario.responder(1, 'Total');
+  182 | 
+  183 |     const resposta = await questionario.enviarECapturarResposta();
+  184 | 
+  185 |     expect(
+  186 |       resposta.status(),
+  187 |       'questionário incompleto não deveria ser aceito com sucesso',
+  188 |     ).not.toBe(200);
+  189 | 
+  190 |     const corpo = await resposta.json();
+  191 |     expect(
+  192 |       corpo?.content?.processInstanceId,
+  193 |       'a resposta a um envio incompleto não deveria trazer um processInstanceId de um ' +
+  194 |         'processo criado',
+  195 |     ).toBeFalsy();
+  196 | 
+  197 |     // Diálogo de erro visível ao usuário — não é uma falha silenciosa.
+  198 |     await expect(questionario.dialogErro.getByRole('heading', { name: 'Erro', exact: true })).toBeVisible();
+  199 |   });
+  200 | });
+  201 | 
+  202 | /**
+  203 |  * CT-CLI-02-S1 — job `dsQDC000` parado desde 06/10/2023 (achado U-14).
+  204 |  *
+  205 |  * Sem acesso de administrador, a suíte não alcança o painel de scheduler para confirmar o
+  206 |  * job diretamente. O que dá para observar SEM esse acesso: o bloco de contexto do
+  207 |  * questionário (`Clínica`, `Gestor Clínica`, `Unidade`, `Gestor Unidade`) — que deveria
+  208 |  * identificar a QUAL clínica/unidade o diagnóstico se refere — nasce e permanece vazio,
+  209 |  * mesmo depois do formulário terminar de carregar, para o usuário desta suíte.
+  210 |  *
+  211 |  * Isto é um SINTOMA compatível com uma fonte de dados desatualizada/parada (consistente com
+  212 |  * U-14), não uma prova direta do job — a suíte não tem visibilidade do scheduler para afirmar
+  213 |  * causalidade. Registrado como teste porque é o observável mais próximo do achado que a conta
+  214 |  * de automação alcança.
+  215 |  */
+  216 | test.describe('Questionário CliniCASSI — contexto da clínica (CT-CLI-02-S1, achado U-14)', () =&gt; {
+  217 |   test('Clínica/Unidade deveriam identificar a clínica do diagnóstico e não nascer vazias', async ({
+  218 |     page,
+  219 |   }) =&gt; {
+  220 |     const guarda = await bloquearEscritaNoAmbiente(page);
+  221 |     const questionario = new QuestionarioClinicassiPage(page);
+  222 | 
+  223 |     await questionario.goto();
+  224 |     await questionario.expectFormularioAberto();
+  225 |     await expect(questionario.headingQuestionario).toBeVisible();
+  226 | 
+  227 |     expect(
+  228 |       await questionario.campoClinica.inputValue(),
+  229 |       'o campo "Clínica" deveria vir preenchido com a clínica do diagnóstico — sintoma ' +
+  230 |         'compatível com o achado U-14 (job dsQDC000 parado); sem acesso admin, a suíte não ' +
+  231 |         'confirma a causa, só o sintoma',
+&gt; 232 |     ).not.toBe('');
+      |           ^ Error: o campo "Clínica" deveria vir preenchido com a clínica do diagnóstico — sintoma compatível com o achado U-14 (job dsQDC000 parado); sem acesso admin, a suíte não confirma a causa, só o sintoma
+  233 |     expect(
+  234 |       await questionario.campoUnidade.inputValue(),
+  235 |       'o campo "Unidade" deveria vir preenchido — mesmo sintoma do campo Clínica',
+  236 |     ).not.toBe('');
+  237 | 
+  238 |     expect(guarda.tentativas(), `tentativa(s) de escrita bloqueada(s): ${JSON.stringify(guarda.urls())}`).toBe(0);
+  239 |   });
+  240 | });
+  241 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=344394 npx playwright test tests/e2e/saude/questionario-clinicassi.spec.js -g "Clínica/Unidade deveriam identificar a clínica do diagnóstico e não nascer vazias"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/saude/e2e-saude-questionario-cli-06cf3-nóstico-e-não-nascer-vazias-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/saude/e2e-saude-questionario-cli-06cf3-nóstico-e-não-nascer-vazias-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/saude/e2e-saude-questionario-cli-06cf3-nóstico-e-não-nascer-vazias-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/saude/e2e-saude-questionario-cli-06cf3-nóstico-e-não-nascer-vazias-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+</main>
+<footer>
+  <p>Relatório da execução de 02/09/2026 — gerado por <code>scripts/relatorio-falhas.mjs</code> (evidências) +
+  <code>relatorios/gerar-final.mjs</code> (análise). Screenshots e aria-snapshots estão embutidos; trace e vídeo de cada
+  falha ficam em <code>test-results/&lt;fatia&gt;/</code> nos caminhos indicados em cada cartão
+  (<code>npx playwright show-trace &lt;trace.zip&gt;</code>).</p>
+</footer>
+
+</body>
+</html>
