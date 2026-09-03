@@ -1,7 +1,7 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
-import { criarSolicitacaoCompra } from '../../../factories/solicitacao-compra.js';
+import { criarSolicitacaoCompra, QUALQUER_TIPO_VALIDO } from '../../../factories/solicitacao-compra.js';
 import { derrubarTransferenciaDeTarefa, responderEnvioSolicitacaoCom } from '../../../utils/captura-payload.js';
 
 /**
@@ -27,7 +27,7 @@ async function abrirEPreencher(page, contratosPage, solicitacaoModal) {
   await contratosPage.filtrarPorContrato((await descobrirContratoVigente(contratosPage)).contrato);
   await contratosPage.abrirSolicitacaoCompra();
   await solicitacaoModal.expectAberto();
-  await solicitacaoModal.preencher(criarSolicitacaoCompra());
+  await solicitacaoModal.preencher(criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO }));
 }
 
 test.describe('Erro no start — HTTP 500 (CT-ACC-05-S2)', () => {

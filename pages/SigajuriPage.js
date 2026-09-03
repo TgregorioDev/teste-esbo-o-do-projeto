@@ -1,7 +1,20 @@
 // @ts-check
+import { expect } from '@playwright/test';
 
 /** Rota de abertura/movimentação de processo por URL — igual a `FormularioProcessoPage`. */
 const ROTA_WORKFLOW_VIEW = '/portal/p/1/pageworkflowview';
+
+/**
+ * Normaliza o rótulo de uma `<option>` para comparação/mensagem seguras — mesmo tratamento (e
+ * mesmo motivo) de `normalizarRotuloOpcao` em `components/SolicitacaoCompraModal.js`: o HTML
+ * servido pelo Fluig pode trazer o rótulo com `&nbsp;`/entidades, cujo espaço decodificado é
+ * NBSP (U+00A0), não o espaço comum (U+0020) que um literal de teste usa.
+ * @param {string} rotulo
+ * @returns {string}
+ */
+function normalizarRotulo(rotulo) {
+  return rotulo.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+}
 
 /**
  * Formulários do SIGAJURI (`SIGAJURI_Consultivo`, `SIGAJURI_Contrato`, `SIGAJURI_Contencioso`,
@@ -103,6 +116,55 @@ export class SigajuriPage {
   }
 
   /**
+   * Opções REAIS de um combo `<select>`, como `{ valor, rotulo }` — nunca hardcoded. `rotulo`
+   * já vem normalizado (ver `normalizarRotulo`). Não filtra `disabled`: ao contrário do combo
+   * "Tipo de Solicitação" de Compras, aqui o cenário que importa é justamente o inverso —
+   * `Tipo Consulta`/`Filial` do Consultivo nascem com uma ÚNICA opção HABILITADA (o texto do
+   * `ServiceNotFoundException`), então excluir `disabled` não ajudaria a distinguir nada.
+   * @param {import('@playwright/test').Locator} combo
+   * @returns {Promise<Array<{ valor: string, rotulo: string }>>}
+   */
+  async listarOpcoesReais(combo) {
+    const opcoes = await combo.locator('option').evaluateAll((els) =>
+      els.map((el) => ({
+        valor: /** @type {HTMLOptionElement} */ (el).value,
+        rotulo: el.textContent ?? '',
+      })),
+    );
+    return opcoes.map(({ valor, rotulo }) => ({ valor, rotulo: normalizarRotulo(rotulo) }));
+  }
+
+  /**
+   * Seleciona `valorOuRotulo` num combo só depois de confirmar que ele existe de verdade entre
+   * as opções que o AMBIENTE oferece agora — nunca um `selectOption` cego com um literal da
+   * factory. Mesmo princípio e mesma motivação de `SolicitacaoCompraModal.selecionarTipo`: um
+   * valor de cadastro (UF, Responsável pela Demanda, Tipo da Consulta, Área Solicitante) que
+   * deixar de existir no SIGAJURI deve produzir uma falha de PRÉ-CONDIÇÃO legível — nomeando o
+   * que existe — em vez de um erro de locator opaco ou, pior, um `selectOption` que combina por
+   * acidente com outra opção.
+   * @param {import('@playwright/test').Locator} combo
+   * @param {string} valorOuRotulo o que o CASO declara precisar (rótulo ou value do cadastro)
+   * @param {string} nomeCampo só para a mensagem de erro (ex.: "Responsável pela Demanda")
+   * @returns {Promise<void>}
+   */
+  async selecionarComPreCondicao(combo, valorOuRotulo, nomeCampo) {
+    const disponiveis = await this.listarOpcoesReais(combo);
+    const alvo = normalizarRotulo(valorOuRotulo);
+
+    const existe = disponiveis.some((op) => op.valor === valorOuRotulo || op.rotulo === alvo);
+
+    expect(
+      existe,
+      `PRÉ-CONDIÇÃO AUSENTE: o caso precisa de "${valorOuRotulo}" no combo "${nomeCampo}", mas ` +
+        `o ambiente hoje só oferece: ${disponiveis.map((o) => o.rotulo).join(', ') || '(nenhuma opção)'}. ` +
+        'Não é para ser contornado trocando o valor pedido no teste — é sinal de que o cadastro ' +
+        'do SIGAJURI mudou; confirme com o dono do ambiente antes de ajustar o teste.',
+    ).toBe(true);
+
+    await combo.selectOption(valorOuRotulo);
+  }
+
+  /**
    * Preenche os campos de texto livre do Consultivo. A `Área Solicitante` é a única combo
    * populada de verdade neste formulário — as demais (`Tipo Consulta`, `Filial`) carregam
    * só o texto do `ServiceNotFoundException`, então NÃO são preenchidas aqui: forçar um
@@ -114,7 +176,11 @@ export class SigajuriPage {
     await this.campoSolicitacaoConsultivo.fill(dados.solicitacao);
     if (dados.observacoes) await this.campoObservacoesConsultivo.fill(dados.observacoes);
     if (dados.areaSolicitante) {
-      await this.comboAreaSolicitanteConsultivo.selectOption({ label: dados.areaSolicitante });
+      await this.selecionarComPreCondicao(
+        this.comboAreaSolicitanteConsultivo,
+        dados.areaSolicitante,
+        'Área Solicitante',
+      );
     }
   }
 
@@ -122,9 +188,9 @@ export class SigajuriPage {
    * @param {{ uf: string, responsavel: string, tipoConsulta: string, titulo: string, descricao: string }} dados
    */
   async preencherContencioso(dados) {
-    await this.comboUF.selectOption(dados.uf);
-    await this.comboResponsavelDemanda.selectOption(dados.responsavel);
-    await this.comboTipoConsultaContencioso.selectOption(dados.tipoConsulta);
+    await this.selecionarComPreCondicao(this.comboUF, dados.uf, 'UF');
+    await this.selecionarComPreCondicao(this.comboResponsavelDemanda, dados.responsavel, 'Responsável pela Demanda');
+    await this.selecionarComPreCondicao(this.comboTipoConsultaContencioso, dados.tipoConsulta, 'Tipo da Consulta');
     await this.campoTituloMensagem.fill(dados.titulo);
     await this.campoDescricaoContencioso.fill(dados.descricao);
   }
