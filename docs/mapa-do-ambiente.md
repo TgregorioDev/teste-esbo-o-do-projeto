@@ -180,6 +180,9 @@ Controles sem nome acessível ou fora da árvore de acessibilidade. Levar ao tim
    HTML inválido; o Chromium calcula bounding box **0×0** para a âncora, que fica inalcançável
    por teclado e leitor de tela.
 
+Os três estão absorvidos, com arquivo:linha, atributo recomendado e destinatário — ver
+`docs/recomendacoes-de-testabilidade.md`.
+
 ## Comportamentos de tela que decidem o desenho do teste
 
 - **Central de Tarefas guarda a sub-aba por sessão no servidor** — um `goto()` novo pode
