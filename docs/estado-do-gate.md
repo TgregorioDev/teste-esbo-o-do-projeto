@@ -1,24 +1,51 @@
 # Estado do quality gate — medições
 
 Números **medidos**, não estimados. Relatório JSON do Playwright, ambiente real.
-Última atualização: 25/08/2026, ao fim das três ondas de implementação.
+Última atualização: 03/09/2026, ao fim do plano de melhoria
+(`docs/plano-de-melhoria-2026-09-03.md`). As seções mais antigas ficam como histórico.
 
 ## Suíte
 
 | | |
 |---|---|
-| Specs | 65 |
-| Testes na execução padrão | 143 (57 arquivos) |
-| Testes `@destrutivo`, sob demanda | 34 (16 arquivos) |
-| **Total** | **177** |
-| Page Objects | 36 |
+| Specs | 81 |
+| Testes na execução padrão (destrutivos **incluídos** desde 25/08/2026) | **233** (81 arquivos) |
+| … dos quais `@destrutivo` | 47 (23 arquivos) |
+| … dos quais `@bug` (vermelho intencional) | 54 (35 arquivos) |
+| … dos quais `@achado` (verde enquanto o comportamento medido persistir) | 9 (5 arquivos) |
+| Escopo do gate de CI (`PULAR_DESTRUTIVOS=1 --grep-invert "@bug\|@achado"`) | 141 (54 arquivos) |
+| Page Objects (`pages/`) + componentes (`components/`) | 41 + 1 |
 
 Conferir os totais:
 
 ```bash
-npx playwright test --list | tail -1                                    # 143
-INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo --list | tail -1   # 34
+find tests -name '*.spec.js' | wc -l                                          # 81
+npx playwright test --list | tail -1                                          # 233
+npx playwright test --grep @destrutivo --list | tail -1                       # 47
+npx playwright test --grep @bug --list | tail -1                              # 54
+npx playwright test --grep @achado --list | tail -1                           # 9
+PULAR_DESTRUTIVOS=1 npx playwright test --grep-invert "@bug|@achado" --list | tail -1   # 141
+ls pages | wc -l                                                              # 41
 ```
+
+## Execução completa — 03/09/2026, 09h03–11h55
+
+Commit `eb41213`, suíte inteira com destrutivos, um destrutivo por invocação com 60 s de
+intervalo: **233 testes · 162 verdes · 71 vermelhos**. Classificação (análise cartão a cartão em
+`docs/execucoes/relatorio-falhas-2026-09-03.md`):
+
+| Natureza | Testes |
+|---|---|
+| Defeito de produto já catalogado no README (`@bug`) | 38 |
+| Defeito de produto achado na execução, ainda não catalogado | 18 |
+| Pré-condição ausente (ambiente / massa / latência do BPMN) | 13 |
+| Divergência ambiente × inventário versionado (`catalogo-invariante`) | 2 |
+| Erro da suíte | **0** |
+
+No escopo do gate (141 testes), os 9 vermelhos eram 7 pré-condições ausentes e os 2 do invariante
+de catálogo — **nenhuma regressão**, mas o gate estava vermelho porque o runner só sabe dizer
+"falhou". Foi isso que a Etapa 1 do plano corrigiu: `utils/pre-condicao.js` anota a classe e
+`scripts/veredito-do-gate.mjs` a lê. A medição pós-plano está na seção "Carimbo" abaixo.
 
 ## Determinismo — CERTIFICADO do lado do teste
 
@@ -74,9 +101,13 @@ Não é pendência de código.
    ninguém o havia escolhido.
 2. **Pendente**: `CT-FAT-02-S2` roda até 182s e às vezes estoura o próprio `test.setTimeout`,
    prendendo um worker por 3 minutos. Candidato a projeto isolado.
-3. **Pendente**: portão de pré-condição por execução — as ~34 specs dependentes da grade poderiam
-   checar uma vez, no início, se o Protheus responde, e reportar a janela de ambiente como bloco
-   em vez de dezenas de vermelhos que parecem flaky.
+3. ✅ **Aplicado em 03/09/2026** — portão de pré-condição: `utils/pre-condicao.js`
+   (`faltaPreCondicao`) grava a anotação `pre-condicao-ausente` em todo vermelho de ambiente, e
+   `scripts/veredito-do-gate.mjs` lê o relatório JSON e separa regressão de pré-condição ausente
+   (o job `regressao` do CI passa a usar esse veredito, não o exit do runner). A forma
+   originalmente imaginada — checar o Protheus uma vez no início e reportar a janela como bloco —
+   continua como refinamento possível; o que estava pendente (vermelhos de ambiente que pareciam
+   flaky e derrubavam o gate) está resolvido pela classificação por anotação.
 4. **Pendente**: `test-results/`, `playwright-report/` e o `storageState` por execução, quando
    houver runs concorrentes no mesmo diretório.
 

@@ -23,10 +23,13 @@ npm run cobertura             # regenera docs/cobertura.md a partir do catálogo
 PULAR_DESTRUTIVOS=1 npm test  # regressão rápida, sem criar registro novo
 ```
 
-Reproduzir exatamente a massa de uma execução que falhou (a seed fica anexada ao relatório):
+Reproduzir exatamente a massa de um teste que falhou (a seed fica anexada ao relatório, e desde
+03/09/2026 cada teste é semeado com `FAKER_SEED ^ hash(identidade do teste)` — a massa não
+depende mais de qual worker o executou nem da ordem de despacho; o comando exato está no anexo
+`contexto-da-falha`):
 
 ```bash
-FAKER_SEED=<valor> npx playwright test
+FAKER_SEED=<valor> npx playwright test <arquivo> -g "<título do teste>"
 ```
 
 ---
@@ -135,20 +138,22 @@ e como a oscilação recente do Protheus e do SIGAJURI foi medida — ver
 
 | | |
 |---|---|
-| Casos no catálogo (`docs/catalogo-casos.md`) | **163** |
-| Casos com teste na suíte | **133** (82%) — os contados por menção em prosa ficam listados na matriz |
-| Casos sem nenhum teste | **30** — cada um com motivo medido |
-| Testes que **criam ou editam** registro (`@destrutivo`) | **34** — rodam na execução padrão |
+| Casos no catálogo (`docs/catalogo-casos.md`) | **196** (`npm run cobertura`) |
+| Casos com teste na suíte | **154** (79%) — só conta ID em **título** de teste ou no cabeçalho do arquivo; menção em prosa não conta desde 03/09/2026 |
+| Casos sem nenhum teste | **42** — cada um com motivo medido |
+| Testes que **criam ou editam** registro (`@destrutivo`) | **47** (`npx playwright test --grep @destrutivo --list`) — rodam na execução padrão |
 
-**Última execução medida (26/08/2026, 12h18 — suíte inteira, destrutivos incluídos): 178 testes,
-131 verdes, 47 vermelhos.** Os 34 `@destrutivo` rodaram **um por vez, com 60s entre cada** — o
-Fluig tem proteção contra volume de requisições, e bloqueio de taxa apareceria como vermelho
-que parece defeito. A pausa é decisão de quem roda, não código da suíte. Dos 34 `@destrutivo`, 22 verdes e 12 vermelhos. **Nenhum dos 47
-reprova por timeout opaco**: 44 trazem mensagem de domínio nomeando o defeito e 3 são
-`PRÉ-CONDIÇÃO AUSENTE` nomeando o que falta. ⚠️ **O total de
-vermelhos não é comparável entre execuções sem olhar quais testes são**: dois testes variam por
-não-determinismo do próprio produto. Detalhe em [`docs/estado-do-gate.md`](docs/estado-do-gate.md). Detalhe e classificação em
-[`docs/estado-do-gate.md`](docs/estado-do-gate.md).
+**Última execução completa medida (03/09/2026, 09h03–11h55 — suíte inteira, destrutivos
+incluídos): 233 testes, 162 verdes, 71 vermelhos.** Os 47 `@destrutivo` rodaram **um por vez,
+com 60s entre cada** — o Fluig tem proteção contra volume de requisições, e bloqueio de taxa
+apareceria como vermelho que parece defeito. A pausa é decisão de quem roda, não código da
+suíte. Dos 71 vermelhos, 38 são defeito já catalogado nesta tabela, 18 defeito de produto achado
+naquela execução, 13 pré-condição ausente e 2 divergência do catálogo de processos com o
+inventário versionado — **nenhum atribuído a erro da suíte**. A análise cartão a cartão está em
+[`docs/execucoes/relatorio-falhas-2026-09-03.md`](docs/execucoes/relatorio-falhas-2026-09-03.md).
+⚠️ **O total de vermelhos não é comparável entre execuções sem olhar quais testes são**: dois
+testes variam por não-determinismo do próprio produto, e a integração com o Protheus oscila.
+Detalhe e classificação em [`docs/estado-do-gate.md`](docs/estado-do-gate.md).
 
 **A matriz caso a caso está em [`docs/cobertura.md`](docs/cobertura.md)**, gerada por
 `npm run cobertura` — que falha se um teste citar um ID inexistente no catálogo, ou se um caso
@@ -156,7 +161,7 @@ ficar sem teste e sem motivo declarado. A ligação é o **ID citado no título 
 autenticar…`) — é o que torna o número auditável em vez de declarado. Ao trazer um caso do
 catálogo, cite o ID: sem isso ele aparece como lacuna (aconteceu com nove deles).
 
-**"Coberto" não significa sempre "fluxo executado".** Parte dos 132 está coberta como **bloqueio
+**"Coberto" não significa sempre "fluxo executado".** Parte dos 154 está coberta como **bloqueio
 documentado**: o processo não abre, ou abre e o formulário não monta campo. Esses testes provam a
 condição real do ambiente e ficam prontos para exercitar o fluxo no dia em que a pré-condição
 existir.
@@ -228,8 +233,10 @@ e histórico não têm rota de remoção para usuário comum. Detalhes na skill 
 
 ## Relatório de falhas
 
-Depois de uma execução completa, `relatorio-falhas.html` reúne **todos os testes que reprovaram**
-numa página só: o caso, a falha, a classificação da causa e as evidências.
+Depois de uma execução completa, `relatorios/relatorio-falhas.html` (diretório ignorado pelo
+git) reúne **todos os testes que reprovaram** numa página só: o caso, a falha, a classificação
+da causa e as evidências. A análise em Markdown de cada execução fica versionada em
+`docs/execucoes/`.
 
 ```bash
 # 1. execute em fatias, gravando blobs (evita estourar o tempo de uma execução única)
@@ -281,10 +288,10 @@ não o entrega. Ajustá-los para passar documentaria o defeito como se fosse reg
 | **CT-PLT-08-S1** 🔴 | catálogo de processos | o processo `teste` (categoria **admin**, resíduo de desenvolvimento) continua ofertado no catálogo de início — e abri-lo **serve o formulário completo da Solicitação de Compras**, 147 campos, com Validação do Gestor/Orçamentária/Comprador. Superfície administrativa exposta a usuário comum |
 | **CT-SEG-08-S1** 🟠 | catálogo de início | `bpm_addUserFluig` e `bpm_addUserGroup` — processos de **criação de usuário e de grupo** — constam do catálogo `onlyCanStart` desta conta não-admin e abrem o formulário. Mesma classe da segregação de RH, com alvo pior |
 | **CT-NOT-03-S1** 🟡 | API de notificação | `GET /notification/api/v1/notifications?limit=3` **ignora `limit`** e devolve 707; e `DELETE /notifications/{id}` responde `500 NotFoundException` apesar de cada item declarar `canRemove: true` — a rota de exclusão anunciada não existe |
-| **CT-PLT-06-S1** 🟡 | Portal do Comprador | **atualizado 31/08/2026 — 2 → 4 erros**: aos dois já catalogados (`404` em `/style-guide/css/fluig-style-guide.min.css` e `console.error` *"Comprador não encontrado"* na busca do colaborador no Protheus) somaram-se as 2 ocorrências do U-16 (logo 404) abaixo, que agora atingem também esta rota |
+| **CT-PLT-06-S1** 🟡 | Portal do Comprador | **atualizado 03/09/2026 — volta a 2 erros**: `404` em `/style-guide/css/fluig-style-guide.min.css` e `console.error` *"Comprador não encontrado"* na busca do colaborador no Protheus (`wg_portalCompradores/…/main.js`). As 2 ocorrências do U-16 (logo 404) somadas em 31/08 **não reproduziram** na remedição de 03/09. É a **única** das 8 rotas com defeito catalogado — desde 03/09/2026 a tag `@bug` é aplicada por rota (`ROTAS_COM_DEFEITO_CATALOGADO` no spec), não ao arquivo inteiro. O `404` do CSS é o sintoma documentado de widget pré-Voyager em plataforma 2.0 — ver [`docs/recomendacoes-de-testabilidade.md`](docs/recomendacoes-de-testabilidade.md) |
 | **CT-PLT-07-S1** 🟡 | favoritos | favoritar o mesmo processo duas vezes (duplo clique, duas abas) responde **500 em `text/plain`** *"…já está nos seus favoritos"* — deveria ser 200 idempotente ou erro de negócio em JSON. Quebra qualquer cliente que faça parse do corpo |
 | **CT-PFN-02-S2** 🟠 | redefinição de senha do fornecedor | token de redefinição adulterado/expirado é recusado na TELA (aviso genérico *"Senha não foi atualizada!"*), mas o endpoint responde **500** com `{"message": "...", "exception": "java.lang..."}` — vazamento de classe de exceção na camada de rede, visível em qualquer DevTools. Deveria ser erro controlado (4xx) sem detalhe de implementação |
-| **U-16** 🟡 | 8 rotas-chave (`erros-de-console.spec.js`) + Home | **NOVO, 31/08/2026 — regressão.** `GET /portal/api/servlet/image/1/custom/logo_image.png` (servlet de imagem do próprio Fluig, branding/logo customizado — não é dataset do ERP) → **404**, duas vezes por carga. Atinge 7 das 8 rotas de `erros-de-console.spec.js` (todas exceto Portal do Comprador, que já tinha erro próprio — ver CT-PLT-06-S1 acima) mais `home.spec.js` (NPS 403 vira 3 erros). Confirmado por `curl` direto (HTTP 404) e por 2 execuções completas do arquivo. Em 27/08/2026 essas 7 rotas carregavam **sem** erro de console — é regressão, não achado antigo |
+| **U-16** ⚪ | 8 rotas-chave (`erros-de-console.spec.js`) + Home | **NÃO REPRODUZIDO desde 03/09/2026.** `GET /portal/api/servlet/image/1/custom/logo_image.png` (servlet de imagem do próprio Fluig, branding/logo customizado — não é dataset do ERP) → **404**, duas vezes por carga. Medido em 31/08/2026 em 7 das 8 rotas de `erros-de-console.spec.js` mais `home.spec.js`, confirmado por `curl` direto e por 2 execuções completas. **Remedição de 03/09/2026, 3 repetições × 8 rotas (24 anexos `console-observado` inspecionados): 0 ocorrências.** Nada foi catalogado em `EXCECOES_CATALOGADAS` — se o defeito voltar, o teste reprova de novo por conta própria. Mantido aqui como histórico; pergunta ao dono do ambiente (D2): o branding foi corrigido, ou é intermitente? |
 | **CT-PAR-01-S1 / CT-PAR-01-S2** 🔴 | Parecer Técnico (formulário avulso) | **NOVO, 31/08/2026.** A seção "Aprovação do Parecer Técnico" (Responsável/Email/Data/Hora) nasce `readonly` e vazia, sem caminho de UI para preenchê-la — mas o clique em Enviar completa `POST .../ecm/api/rest/ecm/workflowView/send` mesmo assim (confirmado com `bloquearTodaEscritaNoHost` interceptando qualquer não-GET). O catálogo (`CT-PAR-01-S1`, `docs/catalogo-casos.md:413`) exige que o sistema sinalize a ausência de responsável, não que rotule/perca a tarefa. Mesma família do fail-open já catalogado acima (D-04 / CT-CMP-02-S4 / Fail-open no formulário), instância nova, em processo diferente |
 
 Quando cada defeito for corrigido, o teste correspondente fica verde sozinho — nenhuma alteração
@@ -297,8 +304,11 @@ catalogado em comentário no próprio spec — nem todos os defeitos autodocumen
 entrar nesta tabela, ex. `D-JUR-01` em `sigajuri-consultivo.spec.js`/`sigajuri-contrato.spec.js`,
 `D-10` em `criacao-solicitacao.spec.js`, `CT-DEL-01-H`/`CT-DEL-01-S1` em
 `delegacao-fiscais-ciclo.spec.js`) leva a tag **`@bug`** no título, na mesma convenção de
-`@destrutivo` — um teste pode ter as duas: `@destrutivo @bug`. Hoje são **66 testes** (`npx
-playwright test --grep @bug --list | tail -1`).
+`@destrutivo` — um teste pode ter as duas: `@destrutivo @bug`. Hoje são **54 testes em 35
+arquivos** (`npx playwright test --grep @bug --list | tail -1`), 36 deles sem os destrutivos.
+Desde 03/09/2026 a tag é aplicada **por rota** em `erros-de-console.spec.js` (só o Portal do
+Comprador tem defeito catalogado), e não ao `for` inteiro — era isso que fazia 7 testes verdes
+carregarem `@bug` e o alerta de defeito corrigido disparar sem motivo.
 
 **Quem recebe:** o teste está escrito contra o comportamento esperado, reprova hoje por um defeito
 de produto já identificado, e ficaria verde sozinho no dia em que a TOTVS/Cassi corrigir o
@@ -342,15 +352,15 @@ nesta entrega.
    `wf_substituicaocargos`, `GestaoDependentes` e `rh_gbeneficios_planosaude` **abrem** para um
    usuário de Compras. Parte pode ser autoatendimento por desenho. **Quais deveriam exigir grupo
    de RH?** O que sobrar é defeito de segregação.
-2. **Tipo de Solicitação.** O roteiro registrava *Renovação Contratual*, *Aditivo Contratual* e
-   *Nova Solicitação*. **Medido de novo em 30/08/2026 e a lista mudou outra vez**: o combo agora
-   oferece *Aditivo Contratual* e ***Nova Contratação***, e **"Renovação Contratual" sumiu**.
-   Confirmado como **independente do contrato** — o `000000000000001` e outros dois vigentes
-   escolhidos ao acaso devolvem exatamente a mesma lista —, então não é efeito da distribuição de
-   massa. Consequência hoje: três testes reprovam por isso, dois deles porque
-   `factories/solicitacao-compra.js` usa *Renovação Contratual* como tipo padrão e o
-   `selectOption` não acha a opção. **Qual é a lista correta?** Sem essa resposta, mudar o padrão
-   da factory seria adivinhar.
+2. **Tipo de Solicitação — respondida em 31/08/2026.** O combo oferece *Aditivo Contratual* e
+   *Nova Contratação* (o roteiro registrava três tipos; *Renovação Contratual* sumiu), e o dono do
+   ambiente **confirmou a lista como mudança intencional**. A factory
+   (`factories/solicitacao-compra.js`) **não tem mais tipo padrão**: cada caso declara a intenção
+   (`{ qualquerValido: true }` ou um literal do catálogo) e `SolicitacaoCompraModal.selecionarTipo`
+   confere contra o combo real antes de selecionar. O guardião é
+   `modal-solicitacao-compra.spec.js` ("deve oferecer os tipos contratuais de solicitação"): se a
+   lista mudar de novo, é ele que reprova, e a factory acompanha — nunca o contrário. Fica aqui
+   como histórico do incidente que custou 24 testes em 31/08.
 3. **Telemetria externa.** O envio de URL e título a serviço externo é aceitável para uma
    operadora de saúde? O teste está escrito contra "não deve enviar".
 4. **Confirmar sem itens.** O envio é corretamente bloqueado, mas o usuário não recebe mensagem
@@ -405,13 +415,14 @@ virar flaky.
 
 ---
 
-## Backlog — os 30 casos sem teste
+## Backlog — os 42 casos sem teste
 
 Lista completa, com o motivo de cada um, em [`docs/cobertura.md`](docs/cobertura.md). Agrupados:
 
 | Motivo | Casos |
 |---|---|
-| **Falta usuário de RH** (matrícula ativa no Protheus **e** grupo de RH) | 11 — `CT-DEP` (3), `CT-FER` (5), `CT-SUB` (2), `CT-ADM-01-S2` |
+| **Falta usuário de RH** (matrícula ativa no Protheus **e** grupo de RH) | 13 — `CT-DEP-01` (4), `CT-FER` (5), `CT-SUB-01` (3), `CT-ADM-01-S2` |
+| **Regra de negócio declarada pelo cliente, não automatizável com esta conta** — concorrência de fornecedores (`CT-COT-03-H/S1/S2`), trava de alçada contra manipulação client-side (`CT-CMP-05-S2`) e os 5 retornos da devolução na alçada (`CT-CMP-06-S1..S5`) | 9 — **consequência de defeito aberto (D-01) + cadastro no ERP (SY1/AL)**: a SC da automação não chega à Cotação e `TOTVS-FS` não é comprador nem aprovador de alçada. Declarados no catálogo em 03/09/2026 (fonte: `cassi-fluig-master`, regras de negócio de Compras) para que a lacuna seja visível, não omitida; o provisionamento compete ao cliente |
 | **Falta credencial de fornecedor** de homologação | 4 — `CT-PFN-02-H` a `CT-PFN-05-H` |
 | **Ataque real, que não se executa aqui** (decisão) | 3 — força bruta, XSS, IDOR |
 | **Protocolo fora do navegador** | 2 — `CT-GED-03-H/S1`, check-out por `dav4:`/WebDAV |
@@ -420,6 +431,7 @@ Lista completa, com o motivo de cada um, em [`docs/cobertura.md`](docs/cobertura
 | **Massa inexistente na base** | 1 — `CT-ACC-03-S1` (filial órfã) |
 | **Consequência de defeito aberto** | 2 — `CT-ACC-03-S3` (D-03 congela o navegador), `CT-ACC-08-H` (D-01 prende a SC) |
 | **Não observável sem admin** | 1 — `CT-NOT-01-S1`, datasets de canal invocados server-side |
+| **Critério não definido pela Cassi** | 1 — `CT-SEG-10-S1`, ACL correta das pastas geradas pelo workflow (pergunta em aberto) |
 
 ### Os dois pedidos de provisionamento
 
@@ -431,10 +443,40 @@ localizado"*. Férias e Ocorrência barram antes disso, por grupo. Destrava 11 c
 **2. Uma credencial de fornecedor de homologação.** O Portal do Fornecedor autentica com
 CNPJ/CPF/senha, separado da plataforma. Destrava 4 casos.
 
-Os 16 restantes não dependem de provisionamento: são decisão de escopo, limitação de protocolo,
-defeito aberto do produto ou massa que não existe na base.
+Os 25 restantes não dependem de provisionamento de usuário: são decisão de escopo, limitação de
+protocolo, defeito aberto do produto (D-01 sozinho bloqueia 11 deles, somando os de regra de
+negócio) ou massa que não existe na base.
 
 ## CI
 
-`.github/workflows/e2e.yml` roda a suíte em push e pull request e publica o relatório HTML e o
-JUnit como artefato. Segredos vêm de *repository secrets* — nunca do repositório.
+`.github/workflows/e2e.yml` tem três jobs. Segredos vêm de *repository secrets* — nunca do
+repositório.
+
+| Job | Quando | Escopo | Veredito |
+|---|---|---|---|
+| `regressao` | push na `main`, pull request, manual | `PULAR_DESTRUTIVOS=1 --grep-invert "@bug\|@achado"` — 141 testes, só o que **deveria** estar verde | **`scripts/veredito-do-gate.mjs`**, não o exit do runner: lê `test-results/relatorio.json` e bloqueia só em **regressão** (falha sem anotação) ou teste pulado. `PRÉ-CONDIÇÃO AUSENTE` (anotação `pre-condicao-ausente`, de `utils/pre-condicao.js`) e flaky (passou no retry) são listados com motivo e não bloqueiam |
+| `defeitos-conhecidos` | idem, informativo | `--grep @bug` | `scripts/alerta-bug-corrigido.mjs`: avisa se algum `@bug` **passou** — o defeito pode ter sido corrigido e a tag precisa sair |
+| `destrutivos` | agendado (madrugada) e manual | `--grep @destrutivo --workers=1 --retries=0` | sem retry de propósito: cada repetição criaria massa de novo na base de homologação |
+
+Cada job publica `playwright-report/`, o JUnit e (no `regressao`) `relatorio.json` +
+`veredito.json` como artefato por 30 dias. O `veredito.json` é o registro compacto por execução
+(classe e motivo por teste) que dispensa guardar os megabytes do relatório completo. Para
+reproduzir o veredito localmente:
+
+```bash
+PULAR_DESTRUTIVOS=1 PLAYWRIGHT_JSON_OUTPUT_NAME=test-results/relatorio.json \
+  npx playwright test --grep-invert "@bug|@achado" --reporter=list,json
+node scripts/veredito-do-gate.mjs test-results/relatorio.json
+```
+
+O que **não** vai para o repositório: HTML, PDF, `.zip` e JSON cru das execuções (regras em
+`.gitignore`). A análise de cada execução completa fica em `docs/execucoes/<data>.md`; a
+evidência pesada vai para um *release asset* por data (decisão D3, pendente com o dono).
+
+## Testabilidade e acessibilidade
+
+A devolutiva ao time de desenvolvimento: os 144 seletores CSS e 5 XPath que a suíte precisou
+usar por falta de âncora semântica, separados por destinatário (plataforma TOTVS / formulários
+da Cassi / widgets Angular), mais o achado de que o 404 de `CT-PLT-06-S1` é o sintoma
+documentado da migração Voyager 2.0. Ver
+[`docs/recomendacoes-de-testabilidade.md`](docs/recomendacoes-de-testabilidade.md).

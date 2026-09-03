@@ -116,8 +116,10 @@ silencioso faz a suíte inteira falhar pelo motivo errado.
 ### `fixtures/fixtures.js` — a base compartilhada
 
 Exporta `test`/`expect` para **todas** as specs. Traz:
-- a **seed do faker**, fixada por execução e anexada ao relatório (sem ela, massa variável gera
-  falha irreproduzível);
+- a **seed do faker**, fixada por execução **e por teste** (`FAKER_SEED ^ hash32(identidade do
+  teste)`, em `utils/identidade-do-teste.js` — a mesma identidade que escolhe o contrato) e
+  anexada ao relatório. Sem ela, massa variável gera falha irreproduzível; com a seed só por
+  execução, a massa dependia de qual worker pegou o teste (medido em 03/09/2026);
 - a fixture `evidence` com `{ auto: true }`, que em toda falha anexa screenshot, URL, título do
   teste, mensagem do erro e o comando de reprodução com a seed.
 
@@ -133,6 +135,12 @@ Specs **não** adicionam fixtures aqui. Page Objects próprios são instanciados
 nem derrubar serviço do cliente.
 
 **`guarda-criacao.js`** — a trava de escrita descrita acima.
+
+**`pre-condicao.js`** — `faltaPreCondicao(motivo)` é a **única** forma de declarar que o cenário
+não pôde ser exercitado por falta de massa, serviço ou permissão. Anota
+`pre-condicao-ausente` no teste e lança `PRÉ-CONDIÇÃO AUSENTE: …`. Nunca escreva o texto à mão:
+a anotação é o que `scripts/veredito-do-gate.mjs` lê para separar ambiente de regressão no CI, e
+um `throw` sem anotação vira "regressão" no gate.
 
 **`captura-payload.js`** — a técnica de maior valor do projeto. Ao clicar em Confirmar, o widget
 faz `POST .../wf_solicitacao_compras/start` com o payload completo da SC (~101 campos, itens
@@ -224,9 +232,11 @@ conclusão errada. Um teste `@achado` afirma o comportamento **REAL medido**, n�
 | Fica **vermelho** quando | — | o comportamento **mudar** (inclusive para melhor) |
 | Um vermelho significa | o defeito persiste | **reabra o assunto**, não "regressão" |
 
-São 8 testes em 4 arquivos: os 5 processos de RH que abrem sem bloqueio de grupo, o resíduo
-`teste` servindo o formulário da SC, o formulário de Rejeições com ids repetidos herdados do
-RDFC, e a identificação do solicitante bloqueada em Substituição de Cargos.
+São 9 testes em 5 arquivos (`npx playwright test --grep @achado --list`): os 5 processos de RH
+que abrem sem bloqueio de grupo, o resíduo `teste` servindo o formulário da SC, o formulário de
+Rejeições com ids repetidos herdados do RDFC, a identificação do solicitante bloqueada em
+Substituição de Cargos, e a aba Atribuir da Gerência de Compras que não lista SC para a conta
+autenticada enquanto a aba Transferir, pelo mesmo mecanismo, lista.
 
 Existem para que o achado **não dependa de alguém lembrar**. O dia em que um deles ficar
 vermelho é o dia em que aquele comportamento mudou — e alguém precisa decidir se a mudança foi
@@ -289,8 +299,9 @@ mede o Protheus, não a suíte.
 ## Cobertura
 
 `docs/cobertura.md` é a matriz caso a caso, **medida** sobre `docs/catalogo-casos.md` (o catálogo
-de 163 casos, versionado aqui) e sobre `tests/`. Hoje: **132 cobertos, 31 sem teste**, cada
-lacuna com motivo.
+de 196 casos, versionado aqui) e sobre `tests/`. Hoje (`npm run cobertura`, 03/09/2026):
+**154 cobertos, 42 sem teste**, cada lacuna com motivo. Só conta ID em **título** de teste ou no
+cabeçalho do arquivo — menção em prosa (comentário, mensagem de assertion) não conta.
 
 A ligação é o **ID no título do teste**. Ao implementar um caso do catálogo, **cite o ID** — sem
 isso a cobertura existe mas não é auditável, e o caso aparece como lacuna. Depois de adicionar
