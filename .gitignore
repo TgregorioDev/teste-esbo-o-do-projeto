@@ -3,12 +3,12 @@
 # da regra e acaba versionado — aconteceu em 03/09/2026 e o link, apontando para um caminho
 # local, quebraria o checkout de qualquer outra máquina.
 node_modules
-test-results/
-# A execução de 03/09/2026 gravou os artefatos por teste em test-results-0903/ (561 MB de trace,
-# vídeo e screenshot). Mesma natureza de test-results/ — evidência reproduzível, não fonte.
-# O que precisa ser lido está embutido no relatório HTML e no pacote .zip da execução.
-test-results-0903/
-playwright-report/
+# Evidência de execução — reproduzível, NÃO é fonte. A regra é por PREFIXO e não por nome
+# literal: a execução de 03/09/2026 gravou 561 MB em `test-results-0903/`, que só não foi
+# versionado porque alguém lembrou de acrescentar a linha à mão. A próxima execução escolhe
+# outro sufixo e a regra literal não a alcança.
+test-results*/
+playwright-report*/
 playwright/.cache/
 playwright/.auth/
 blob-report/
@@ -20,8 +20,21 @@ blob-slices/
 blob-todos/
 qa-probe-*
 tmp-cancel/
-probe-*.mjs
+# `probe.mjs` (sonda descartável de grade) chegou a ser versionado porque a regra só cobria
+# `probe-*.mjs` — o hífen deixava o nome sem sufixo passar.
+probe*.mjs
 limpeza.json
 limpeza-alvos.json
 
 .claude/
+
+# Relatório de execução: o `.md` da ANÁLISE fica versionado em `docs/execucoes/` (é o que se
+# lê); os artefatos derivados dele — HTML autossuficiente com screenshots embutidas, PDF, .zip
+# do pacote, fatias por área e os JSON crus do merge — saem do repositório e vão para o release
+# asset da execução (`gh release create execucao-<data>`), que é o equivalente permanente e por
+# data. Foram 173 arquivos / 277 MB versionados até 03/09/2026.
+relatorio-falhas*.html
+relatorio-falhas*.zip
+relatorio-falhas*.pdf
+relatorio-20*/
+relatorios*/

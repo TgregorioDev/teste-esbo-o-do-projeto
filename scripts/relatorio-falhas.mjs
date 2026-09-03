@@ -10,15 +10,27 @@
  * reprodução com a seed. Para trace, vídeo e passos, ele aponta para o relatório nativo, que é
  * onde essas coisas se navegam de verdade.
  *
+ * ## Onde a saída cai, e por quê
+ *
+ * O padrão é `relatorios/relatorio-falhas.html` — dentro de `relatorios/`, que o `.gitignore`
+ * cobre. O HTML é autossuficiente, embute as screenshots e passa de 15 MB; até 03/09/2026 ele
+ * nascia na RAIZ do repositório, e foi assim que 173 arquivos / 277 MB de evidência acabaram
+ * versionados. Evidência derivada não é fonte: o HTML, o PDF e o `.zip` vão para o release
+ * asset da execução (`gh release create execucao-<data>`); só o `.md` da análise fica no
+ * repositório, em `docs/execucoes/relatorio-falhas-<data>.md`.
+ *
+ * O diretório de saída é criado se não existir — o script não deve falhar por isso.
+ *
  * Uso:
  *   npx playwright merge-reports --reporter=json ./blob-todos > /tmp/merged.json
  *   node scripts/relatorio-falhas.mjs /tmp/merged.json
+ *   node scripts/relatorio-falhas.mjs /tmp/merged.json relatorios/relatorio-falhas-2026-09-04.html
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { basename } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { basename, dirname } from 'node:path';
 
 const entrada = process.argv[2] ?? '/tmp/merged.json';
-const saida = process.argv[3] ?? 'relatorio-falhas.html';
+const saida = process.argv[3] ?? 'relatorios/relatorio-falhas.html';
 
 const relatorio = JSON.parse(readFileSync(entrada, 'utf8'));
 
@@ -462,6 +474,7 @@ npx playwright show-report</pre>
 </body>
 </html>`;
 
+mkdirSync(dirname(saida), { recursive: true });
 writeFileSync(saida, html);
 console.log(
   `${saida} · ${falhas.length} falhas de ${total} testes · ${(Buffer.byteLength(html) / 1048576).toFixed(1)} MB`,
