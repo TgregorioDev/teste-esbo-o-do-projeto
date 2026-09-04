@@ -5,6 +5,7 @@ import { FormularioSolicitacaoCompraPage } from '../../../pages/FormularioSolici
 import { CentralTarefasPage } from '../../../pages/CentralTarefasPage.js';
 import { bloquearCriacaoDeSolicitacao, bloquearCriacaoDeProcesso } from '../../../utils/guarda-criacao.js';
 import { criarProdutoCompra } from '../../../factories/produto-compra.js';
+import { aguardarAtividadeAtual } from '../../../pages/CicloCompradorPage.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -816,13 +817,42 @@ test.describe('Anexo da Solicitação de Compras chega íntegro ao GED (CT-ACC-0
   test('CT-ACC-09-H @destrutivo — o anexo enviado deveria gerar os dois registros no GED, sob a pasta da solicitação, e ser listado na solicitação', async ({
     page,
   }, testInfo) => {
-    // Mesmo orçamento de CT-CMP-01-H: preencher 4 combos assíncronos, anexar, enviar e ainda
-    // navegar até a solicitação criada.
-    testInfo.setTimeout(300_000);
+    // Orçamento de CT-CMP-01-H (preencher 4 combos assíncronos, anexar, enviar, navegar até a
+    // solicitação) MAIS os 180 s de espera pelo BPMN abaixo — o mesmo prazo dos irmãos em
+    // `aprovacoes-solicitacao-compras.spec.js`.
+    testInfo.setTimeout(480_000);
 
     const { massa, numeroProcesso } = await criarSolicitacaoCompletaEEnviar(page);
     // Nome informado no diálogo "Informe o nome do arquivo" — é ele que o GED usa na descrição.
     const nomeDoAnexo = `${massa.justificativa} - anexo`;
+
+    // ── 0. A cadeia de pastas só existe DEPOIS de "Grava SC e Anexos" terminar ──────────
+    //
+    // Medido em 03/09/2026 (investigação da decisão D6, `docs/execucoes/
+    // relatorio-execucao-2026-09-03-final.md`): toda SC que CHEGOU à "Validação do Gestor" tem a
+    // pasta "Processo <n> - <data>" no GED (113225, 113229 e 112679, consultadas pelo dataset
+    // `document`); as duas SCs deste teste que reprovaram naquele dia (113226 e 113242) NÃO a
+    // têm — e nenhuma delas saiu de "Grava SC e Anexos" antes de o teardown cancelá-las, numa
+    // tarde em que essa etapa levou mais de 180 s em cinco testes vizinhos. Ou seja: o produto
+    // cria a cadeia; o que faltou foi o BPMN concluir a etapa dentro do orçamento do teste.
+    //
+    // Por isso a medição do GED só começa quando a SC já passou da etapa de serviço. Se ela não
+    // passar em 180 s, isto é latência do BPMN — pré-condição ausente, com anotação, e não "o
+    // produto não gravou o anexo". O `try/catch` relança via `faltaPreCondicao` (que sempre
+    // lança): nada é engolido, só reclassificado com o motivo medido.
+    try {
+      await aguardarAtividadeAtual(page, numeroProcesso, ['Validação do Gestor'], { timeout: 180_000 });
+    } catch (erro) {
+      if (String(erro).includes('PRÉ-CONDIÇÃO AUSENTE')) throw erro;
+      faltaPreCondicao(
+        `(ambiente): a SC #${numeroProcesso}, criada por este teste com anexo, não chegou à ` +
+          '"Validação do Gestor" em 180 s — o BPMN não concluiu "Grava SC e Anexos", que é a ' +
+          'etapa que cria a cadeia de pastas no GED. Sem ela não há o que medir: isto NÃO prova ' +
+          'que o produto deixou de gravar o anexo (toda SC que passa da etapa tem a pasta — ' +
+          'medido em 03/09/2026). É a mesma lentidão de `aprovacoes-solicitacao-compras.spec.js` ' +
+          `(~76 s observados em campo, >180 s em 03/09). Último erro: ${String(erro).split('\n')[0].slice(0, 200)}`,
+      );
+    }
 
     test.info().annotations.push({
       type: 'solicitacao-criada',

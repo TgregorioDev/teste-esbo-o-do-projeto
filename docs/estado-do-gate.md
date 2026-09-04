@@ -63,14 +63,15 @@ Registro completo: `docs/execucoes/relatorio-execucao-2026-09-03-final.md`; clas
 | Cobertura | 196 casos · 154 cobertos · 42 sem teste | `npm run cobertura` |
 | Estático | limpo | `npm run typecheck` |
 
-**Frase que faltava, agora com a ressalva medida:** o gate de regressão **não tem regressão** — os
-72 vermelhos são defeito catalogado (`@bug`, 54), achado versionado (`@achado`, 1), pré-condição
-registrada em `docs/excecoes-de-pre-condicao.md` ou anotada pelo próprio teste (13), **mais 4 que
-pendem de decisão do dono do ambiente, não de código**: os 2 do invariante de catálogo (D1) e 2
-destrutivos que reprovam pela mesma mensagem desde a execução da manhã e ainda não receberam
-classe — `CT-ACC-09-H` (pasta do GED nunca criada) e `CT-JUR-01-H` (combo do SIGAJURI vazio),
-decisão D6. Quando D1 e D6 forem respondidas, o veredito fecha em 0 sem nenhuma mudança de
-assertion.
+**A frase que faltava, agora sem ressalva:** o gate de regressão **não tem regressão**. Na
+execução, 4 vermelhos estavam sem classe; D1 e D6 foram respondidas **medindo o ambiente** no
+mesmo dia (`docs/execucoes/relatorio-execucao-2026-09-03-final.md`, seção "D1 e D6"): o catálogo
+mudou porque a plataforma subiu para `2.0.0-260901` e o filtro passou a refletir a permissão que
+já existia (lista versionada, invariante verde de novo); `CT-ACC-09-H` era latência do BPMN, não
+defeito (toda SC que passa de "Grava SC e Anexos" tem a pasta no GED — agora o teste espera a
+etapa e declara pré-condição quando ela não conclui); `CT-JUR-01-H` recebeu o `@bug` D-JUR-01 que
+a convenção das exceções 9/10 já previa. Composição final: **163 verdes · 70 vermelhos = 55
+`@bug` + 1 `@achado` + 14 pré-condição anotada · 0 sem classe · 0 flaky.**
 
 **Determinismo, seed e CI — as três ressalvas da revisão de QA:** a seed é por teste e provada
 reproduzível sob `--workers=4` com ordem invertida (Etapa 6); o CI lê classe em vez de exit

@@ -33,6 +33,21 @@ const PROCESS_ID = 'SIGAJURI_Consultivo';
  * criado: `/portal/p/1/pageprocessstart` continua listando "Consultas/Pareceres — Último
  * iniciado: Nunca" depois da tentativa.
  *
+ * ## O que o serviço responde, medido direto no dataset (03/09/2026)
+ *
+ * `POST /api/public/ecm/dataset/datasets` com `name: dsTipoSol` (e `dsFilialSigajuri`,
+ * `dsAreaSigajuri`) responde **HTTP 200 com UMA linha**, cujo valor é o texto da exceção:
+ * `{"TipoSol":"com.totvs.technology.foundation.dataservice.exception.ServiceNotFoundException:
+ * Não foi possível encontrar o serviço ' SIGAJURI '","id":""}`. Não é timeout nem erro HTTP:
+ * o serviço "SIGAJURI" não está **registrado** neste Fluig (Painel de Controle → Serviços), e o
+ * dataset devolve a exceção como registro — que o formulário renderiza como opção. É por isso
+ * que a única opção do combo é o texto do erro.
+ *
+ * Convenção deste caso (`docs/excecoes-de-pre-condicao.md`, exceções 9 e 10): tratado como
+ * defeito documentado `D-JUR-01`, com tag `@bug` — o mesmo tratamento de `sigajuri-contrato`.
+ * No dia em que o serviço for registrado, este teste passa a exercitar o caminho feliz real e
+ * o alerta de `@bug` verde avisa que a tag precisa sair.
+ *
  * Isto foi reproduzido com QUALQUER valor de `Área Solicitante` (a única combo deste
  * formulário que tem opções reais) — a falha não é "esta área não tem aprovador configurado",
  * é "nenhuma área tem, porque o campo que decidiria isso nunca carrega um valor". Por isso
@@ -45,7 +60,7 @@ const PROCESS_ID = 'SIGAJURI_Consultivo';
  * completar por causa do D-JUR-01 acima — não há processo para medir prazo.
  */
 test.describe('SIGAJURI_Consultivo — solicitação, D-JUR-01', () => {
-  test('CT-JUR-01-H deveria criar a solicitação de Consultivo e vinculá-la à área informada @destrutivo', async ({
+  test('CT-JUR-01-H deveria criar a solicitação de Consultivo e vinculá-la à área informada @destrutivo @bug', async ({
     page,
   }) => {
     const sigajuri = new SigajuriPage(page);

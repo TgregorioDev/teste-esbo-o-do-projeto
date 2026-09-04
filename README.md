@@ -148,9 +148,11 @@ incluídos, commit `97ea079`): 233 testes, 161 verdes, 72 vermelhos.** Os 47 `@d
 **um por vez, com 60s entre cada e `--retries=0`** — o Fluig tem proteção contra volume de
 requisições, e bloqueio de taxa apareceria como vermelho que parece defeito. A pausa é decisão de
 quem roda, não código da suíte. Dos 72 vermelhos, 54 são `@bug` (defeito catalogado), 1 `@achado`
-(não-determinismo do produto), 13 pré-condição ausente (anotada pelo próprio teste) e 4 pendem de
-decisão do dono do ambiente (2 do invariante de catálogo, 2 destrutivos ainda sem classe) —
-**nenhum atribuído a erro da suíte, nenhum flaky**. Registro em
+(não-determinismo do produto), 13 pré-condição ausente (anotada pelo próprio teste) e 4 sem classe
+que foram resolvidos no mesmo dia **medindo o ambiente** (a plataforma subiu para `2.0.0-260901` e
+o catálogo passou a refletir a permissão real; `CT-ACC-09-H` era latência do BPMN; `CT-JUR-01-H`
+recebeu o `@bug` D-JUR-01) — composição final 163 verdes / 70 vermelhos, **nenhum atribuído a erro
+da suíte, nenhum flaky, nenhum sem classe**. Registro em
 [`docs/execucoes/relatorio-execucao-2026-09-03-final.md`](docs/execucoes/relatorio-execucao-2026-09-03-final.md);
 a análise cartão a cartão da execução da manhã (162/71) está em
 [`docs/execucoes/relatorio-falhas-2026-09-03.md`](docs/execucoes/relatorio-falhas-2026-09-03.md).
@@ -307,7 +309,7 @@ catalogado em comentário no próprio spec — nem todos os defeitos autodocumen
 entrar nesta tabela, ex. `D-JUR-01` em `sigajuri-consultivo.spec.js`/`sigajuri-contrato.spec.js`,
 `D-10` em `criacao-solicitacao.spec.js`, `CT-DEL-01-H`/`CT-DEL-01-S1` em
 `delegacao-fiscais-ciclo.spec.js`) leva a tag **`@bug`** no título, na mesma convenção de
-`@destrutivo` — um teste pode ter as duas: `@destrutivo @bug`. Hoje são **54 testes em 35
+`@destrutivo` — um teste pode ter as duas: `@destrutivo @bug`. Hoje são **55 testes em 36
 arquivos** (`npx playwright test --grep @bug --list | tail -1`), 36 deles sem os destrutivos.
 Desde 03/09/2026 a tag é aplicada **por rota** em `erros-de-console.spec.js` (só o Portal do
 Comprador tem defeito catalogado), e não ao `for` inteiro — era isso que fazia 7 testes verdes
@@ -354,7 +356,11 @@ nesta entrega.
    `wf_solicitacao_ferias` bloqueiam. `wf_pagamento_horas_extras`, `wf_automacao_admissao`,
    `wf_substituicaocargos`, `GestaoDependentes` e `rh_gbeneficios_planosaude` **abrem** para um
    usuário de Compras. Parte pode ser autoatendimento por desenho. **Quais deveriam exigir grupo
-   de RH?** O que sobrar é defeito de segregação.
+   de RH?** O que sobrar é defeito de segregação. **Atualização de 03/09/2026:** com a
+   plataforma em `2.0.0-260901`, a tela "Iniciar Solicitações" passou a **oferecer** esses
+   processos (e os três `SIGAJURI_*`) ao usuário de Compras — a permissão efetiva não mudou,
+   o filtro da tela é que passou a refleti-la (medido em `catalogo-invariante.spec.js`). A
+   pergunta é a mesma; só ficou visível a quem abre o catálogo.
 2. **Tipo de Solicitação — respondida em 31/08/2026.** O combo oferece *Aditivo Contratual* e
    *Nova Contratação* (o roteiro registrava três tipos; *Renovação Contratual* sumiu), e o dono do
    ambiente **confirmou a lista como mudança intencional**. A factory

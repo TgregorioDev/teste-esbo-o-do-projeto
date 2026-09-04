@@ -84,13 +84,57 @@ classe e motivo legíveis por máquina** (`veredito.json`), e que no escopo do g
 regressão** — os únicos vermelhos sem classe pendem de duas decisões do dono do ambiente (D1 e
 D6), não de código.
 
-## Pendências registradas
+## D1 e D6 — respondidas medindo o ambiente (03/09/2026, 18h10–18h40)
+
+O dono do ambiente não sabia responder; a resposta foi buscada no próprio Fluig, com a sessão da
+automação (`fetch` de dentro da página, nunca `page.request`):
+
+**D1 — o catálogo mudou porque a plataforma mudou de build, não porque alguém abriu permissão.**
+
+| Evidência | Resultado |
+|---|---|
+| `GET /api/public/wcm/version` | **`Voyager 2.0.0-260901`** — em 27/08 o mapa registrava `2.0.0-260811` |
+| Os 6 que "entraram" × tabela da skill de 27/08 | são **exatamente** os 6 com "Catálogo: não · Inicia: abre" — o `TOTVS-FS` já abria o formulário de todos (os `@achado` de RH provam isso desde 27/08 e continuam verdes) |
+| `GET /api/public/2.0/users/getCurrent` → grupos | 36, todos `G.P.*`/`G.Compras.*`/`all_users`/`DefaultGroup-1` — nenhum grupo de RH ou Jurídico |
+| `?expand=versions` dos 6 processos | nenhum `public: true`; a API não expõe data de publicação — sem evidência de republicação |
+
+Conclusão: a **permissão efetiva não mudou**; o filtro `onlyCanStart` da tela passou a refleti-la
+depois da atualização. Item 1.5 executado: `INICIAVEIS_NO_CATALOGO` versionada com 23 processos e
+a data, teste do `SIGAJURI_Contencioso` **reescrito** para a regra nova (consta e está ativo).
+`catalogo-invariante`, `inicio-processo-bloqueado` e `bloqueio-processos-rh` reexecutados: 18
+verdes, coerentes com o catálogo novo. A pergunta de segregação (README, item 1) continua aberta
+— só ficou mais visível.
+
+**D6 — os dois destrutivos sem classe.**
+
+- `CT-ACC-09-H` **não é defeito de produto; é latência do BPMN.** Dataset `document` consultado
+  para "Processo <n> - %": as SCs que chegaram à "Validação do Gestor" **têm** a pasta (113225,
+  113229 de hoje; 112679 de 26/08); as duas SCs deste teste que reprovaram (113226 de manhã,
+  113242 à tarde) **não** saíram de "Grava SC e Anexos" antes de o teardown cancelá-las — numa
+  tarde em que essa etapa passou de 180 s em cinco testes vizinhos. A análise da manhã ("defeito
+  real") estava errada. O teste agora espera a SC chegar à "Validação do Gestor" (180 s, mesmo
+  prazo dos irmãos) e, se não chegar, declara `faltaPreCondicao` com o motivo medido. Reexecutado:
+  SC 113267, de novo >180 s em "Grava SC e Anexos" → **pré-condição ausente, anotada**.
+- `CT-JUR-01-H` **é ambiente de configuração, e a convenção do repositório para isso é `@bug`
+  D-JUR-01.** `POST /api/public/ecm/dataset/datasets` com `dsTipoSol`/`dsFilialSigajuri`/
+  `dsAreaSigajuri` responde 200 com uma linha cujo valor é
+  `ServiceNotFoundException: Não foi possível encontrar o serviço ' SIGAJURI '` — o serviço não
+  está registrado neste Fluig. `docs/excecoes-de-pre-condicao.md` (exceções 9 e 10) já registrava
+  a decisão do time de tratar isso como defeito documentado com `@bug`, e dizia "os dois testes"
+  — mas só `sigajuri-contrato` tinha a tag. Aplicada a `sigajuri-consultivo.spec.js:48`; `@bug`
+  passa a 55 em 36 arquivos. Reexecutados os dois arquivos: vermelhos pela mesma mensagem, agora
+  classificados como conhecido.
+
+**Veredito depois das reexecuções: 0 sem classe.** Os 72 vermelhos são 55 `@bug`, 1 `@achado`,
+14 pré-condição anotada e 2 do invariante que passaram a verde com a lista versionada (161 → 163
+verdes na composição final).
+
+## Pendências que continuam com o dono
 
 | # | Decisão | Bloqueia |
 |---|---|---|
-| D1 | Os 6 processos que entraram no `onlyCanStart` foram abertura intencional? | item 1.5 — reescrever/versionar `catalogo-invariante` ou marcar `@bug` como defeito de segregação |
 | D2 | U-16 (logo 404) não reproduziu em 24 medições — corrigido ou intermitente? | só o estado da linha no README (já "não reproduzido") |
 | D3 | Onde fica a evidência pesada de cada execução (release asset × pasta compartilhada)? `gh` não está instalado nesta máquina | publicação dos `.html`/`.zip` desta e das execuções anteriores (continuam em disco e no histórico do git) |
 | D4 | Aceita declarar as regras de concorrência/alçada como lacuna bloqueada? | **feito** na Etapa 8 — reverter se a resposta for não |
 | D5 | Job noturno com `--retries=0` (comunicado) | — |
-| D6 | Catalogar CT-ACC-09-H (pasta do GED) como defeito com `@bug`; decidir se CT-JUR-01-H é ambiente (exceção 9) ou defeito (D-JUR-01) | os 2 vermelhos destrutivos sem classe |
+| Segregação | Os 6 processos de RH/Jurídico **devem** ser iniciáveis por um usuário de Compras? (pergunta 1 do README, agora visível na tela) | nada na suíte; é defeito de segregação a catalogar se a resposta for não |

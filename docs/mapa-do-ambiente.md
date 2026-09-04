@@ -7,7 +7,10 @@ precise redescobrir e para que ninguém escreva teste sobre suposição.
 
 ## Plataforma
 
-- TOTVS Fluig **Voyager 2.0.0-260811**. Usuário da automação: perfil Compras/Contratos, **não-admin**.
+- TOTVS Fluig **Voyager 2.0.0-260901** (`GET /api/public/wcm/version`, medido em 03/09/2026 —
+  em 27/08 era `2.0.0-260811`; a atualização é a causa medida de o catálogo `onlyCanStart` ter
+  passado a listar 23 processos em vez de 17, ver `catalogo-invariante.spec.js`). Usuário da
+  automação: perfil Compras/Contratos, **não-admin**, 36 grupos, todos de Compras/Contratos.
 - **A tela de login é traduzida pelo locale do navegador.** O `playwright.config.js` fixa `pt-BR`:
   campos *"Digite seu login"* / *"Digite sua senha"*, botão *"Acessar"*, erro *"Usuário ou senha inválidos"*.
   Em `en-US` a mesma tela usa *"Enter your login"* / *"Access"*.

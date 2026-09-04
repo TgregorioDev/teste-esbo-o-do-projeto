@@ -522,7 +522,16 @@ sobre a causa e o prazo de restabelecimento; um mês é estimativa sem informaç
 o caminho feliz real do Consultivo/Contrato — criação de processo, roteamento a advogado/aprovador
 e (para o Contrato) geração de minuta — em vez de documentar a ausência de opções nos combos.
 
-**Estado atual:** exceção confirmada.
+**Evidência direta no dataset (03/09/2026):** `POST /api/public/ecm/dataset/datasets` com
+`dsTipoSol`, `dsFilialSigajuri` e `dsAreaSigajuri` responde **200 com uma linha** cujo valor é
+`com.totvs.technology.foundation.dataservice.exception.ServiceNotFoundException: Não foi possível
+encontrar o serviço ' SIGAJURI '` — não é timeout nem erro HTTP: o serviço não está **registrado**
+neste Fluig (Painel de Controle → Serviços). Isso muda quem destrava: além da TOTVS, a
+**administração do Fluig da Cassi** pode registrar o serviço, se a integração existir. A convenção
+(`@bug`, D-JUR-01) foi aplicada também a `sigajuri-consultivo.spec.js:48`, que estava sem a tag
+apesar de o texto acima dizer "os dois testes".
+
+**Estado atual:** exceção confirmada (revisada em 03/09/2026).
 
 ---
 

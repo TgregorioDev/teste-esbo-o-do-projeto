@@ -22,6 +22,33 @@ import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
  * ⚠️ Divergência com a skill `cassi-fluig-master`, que registrou "34 publicados (32 ativos)":
  * a medição de 27/08/2026 conta **31 ativos**. O ambiente ganha; a lista abaixo é a medida.
  *
+ * ## Remedição de 03/09/2026 — a plataforma mudou de build, o catálogo passou a bater com a permissão
+ *
+ * O invariante ficou vermelho em 03/09/2026: **6 processos entraram** no `onlyCanStart`
+ * (`GestaoDependentes`, `SIGAJURI_AprovaFU`, `SIGAJURI_Contencioso`, `SIGAJURI_Contrato`,
+ * `rh_gbeneficios_planosaude`, `wf_substituicaocargos`) e nenhum saiu. Investigado no ambiente
+ * antes de versionar a lista nova, como este arquivo exige:
+ *
+ * - `GET /api/public/wcm/version` → **`Voyager 2.0.0-260901`**. Em 27/08 o mapa registrava
+ *   `2.0.0-260811`: a plataforma foi atualizada entre as duas medições.
+ * - Os 6 que "entraram" são **exatamente** os 6 que a skill `cassi-fluig-master` já listava em
+ *   27/08 como "Catálogo: não · Inicia: abre" — o `TOTVS-FS` já abria o formulário de início de
+ *   todos eles (os `@achado` de `rh/bloqueio-processos-rh.spec.js` provam isso desde então, e
+ *   continuam verdes). A **permissão efetiva não mudou**; o que mudou foi o filtro da tela, que
+ *   passou a refletir a permissão real.
+ * - `GET /api/public/2.0/users/getCurrent` → 36 grupos, todos de Compras/Contratos
+ *   (`G.P.*`, `G.Compras.*`, `all_users`, `DefaultGroup-1`) — nenhum grupo de RH ou Jurídico
+ *   foi atribuído à conta. Não é abertura de permissão por grupo.
+ * - Nenhum dos 6 processos é `public: true`, e as versões publicadas (`?expand=versions`) não
+ *   trazem data de publicação por esta API — não há como afirmar republicação; a evidência
+ *   convergente é o build da plataforma.
+ *
+ * Consequência: a lista `INICIAVEIS_NO_CATALOGO` abaixo é a de **03/09/2026** (23), e o teste do
+ * `SIGAJURI_Contencioso` foi **reescrito para a nova regra** (catálogo e permissão coincidem),
+ * não silenciado. A pergunta de segregação continua a mesma de antes (README, "Perguntas em
+ * aberto", item 1): esses processos deveriam ser iniciáveis por um usuário de Compras? Ela só
+ * ficou mais visível, porque agora a tela "Iniciar Solicitações" os oferece.
+ *
  * ⚠️ As duas chamadas usam `page.evaluate` + `fetch`, nunca `page.request`: o WAF do TOTVS
  * Cloud responde 403 a `/process-management/api/v2/**` sem `User-Agent` de navegador e
  * `Referer` do portal (ver CLAUDE.md > utils).
@@ -74,15 +101,24 @@ const PUBLICADOS_INATIVOS = ['sumula', 'sumulas_analise_intervenientes', 'testeP
 
 /**
  * Processos que o catálogo "Iniciar Solicitações" oferece ao usuário da automação
- * (`onlyCanStart=true`) em 27/08/2026.
+ * (`onlyCanStart=true`) em **03/09/2026**, plataforma `2.0.0-260901` — 23 processos.
+ *
+ * Em 27/08/2026 (build `260811`) eram 17: esta lista **sem** os 6 marcados abaixo. Os 6 já
+ * abriam o formulário de início para esta conta naquela data; ver "Remedição de 03/09/2026"
+ * no cabeçalho antes de tocar aqui de novo.
  */
 const INICIAVEIS_NO_CATALOGO = [
   'FLUIGADHOC',
+  'GestaoDependentes', // entrou em 03/09/2026 (RH — já abria em 27/08)
+  'SIGAJURI_AprovaFU', // entrou em 03/09/2026 (Jurídico — já abria, só leitura)
   'SIGAJURI_Consultivo',
+  'SIGAJURI_Contencioso', // entrou em 03/09/2026 (Jurídico — já abria E criava, ver teste abaixo)
+  'SIGAJURI_Contrato', // entrou em 03/09/2026 (Jurídico — já abria)
   'bpm_addUserFluig',
   'bpm_addUserGroup',
   'bpm_financeiro_rejeicoes_bancarias',
   'prc_questionario_v2',
+  'rh_gbeneficios_planosaude', // entrou em 03/09/2026 (RH — já abria em 27/08)
   'teste',
   'wf_SubstituiçãoCargosFluig',
   'wf_automacao_admissao',
@@ -94,6 +130,7 @@ const INICIAVEIS_NO_CATALOGO = [
   'wf_pagamento_horas_extras',
   'wf_solicitacao_compras',
   'wf_solicitacao_compras_parecer',
+  'wf_substituicaocargos', // entrou em 03/09/2026 (RH — já abria em 27/08, não-determinístico)
 ];
 
 /**
@@ -224,20 +261,23 @@ test.describe('Plataforma — invariante do catálogo de processos', () => {
     ).toEqual({ entraram: [], sairam: [] });
   });
 
-  test('CT-PLT-10-H: `SIGAJURI_Contencioso` continua fora do catálogo `onlyCanStart` embora crie solicitação — a permissão real diverge do filtro da tela', async ({
+  test('CT-PLT-10-H: `SIGAJURI_Contencioso` consta do catálogo `onlyCanStart` e está ativo — desde o build 2.0.0-260901 o filtro da tela coincide com a permissão efetiva de início', async ({
     page,
   }) => {
-    // ACHADO versionado como oráculo, não como ruído: o Contencioso NÃO aparece na lista
-    // `onlyCanStart` — a tela "Iniciar Solicitações" não o oferece —, mas abrir
-    // `pageworkflowview?processID=SIGAJURI_Contencioso` monta o formulário e o envio CRIA
+    // HISTÓRICO — até 27/08/2026 (build 260811) este teste guardava a divergência oposta: o
+    // Contencioso NÃO aparecia na lista `onlyCanStart`, mas abrir
+    // `pageworkflowview?processID=SIGAJURI_Contencioso` montava o formulário e o envio CRIAVA
     // solicitação de verdade (medido pela skill `cassi-fluig-master` em 26/08/2026, instância
-    // real na etapa "7-Resposta", pool GRUPO_GEJUR_9).
+    // real na etapa "7-Resposta", pool GRUPO_GEJUR_9). O catálogo era só apresentação, não
+    // fronteira de segurança.
     //
-    // Ou seja: o filtro do catálogo e a permissão efetiva de início discordam. Enquanto
-    // discordarem, o catálogo não é fronteira de segurança — é só apresentação. Este teste
-    // fica verde ENQUANTO a divergência existir e vira vermelho no dia em que ela for
-    // resolvida (por qualquer um dos dois lados), que é exatamente quando alguém precisa
-    // reler este comentário.
+    // Em 03/09/2026 a divergência foi resolvida pelo lado do filtro: com a plataforma em
+    // `2.0.0-260901`, o Contencioso passou a constar do catálogo (ver "Remedição de 03/09/2026"
+    // no cabeçalho — a permissão de início não mudou; a tela é que passou a refleti-la). Este
+    // teste foi REESCRITO para a nova regra, como a mensagem da versão anterior mandava: agora
+    // guarda que catálogo e permissão coincidem para o Contencioso. Vira vermelho se ele sumir
+    // da lista de novo (o filtro voltou a esconder um processo iniciável) ou se for
+    // desativado — as duas coisas precisam de decisão consciente, não de ajuste de constante.
     await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
     const { processos, catalogo } = await lerCatalogoDoServidor(page);
 
@@ -262,9 +302,12 @@ test.describe('Plataforma — invariante do catálogo de processos', () => {
 
     expect(
       iniciaveis,
-      'a divergência mudou: `SIGAJURI_Contencioso` PASSOU a constar do catálogo `onlyCanStart`. ' +
-        'Se a permissão de início foi alinhada ao filtro da tela, o achado foi resolvido e este ' +
-        'teste deve ser reescrito para a nova regra — não silenciado.',
-    ).not.toContain('SIGAJURI_Contencioso');
+      'a regra mudou de novo: `SIGAJURI_Contencioso` DEIXOU de constar do catálogo `onlyCanStart` ' +
+        'para esta conta. Ou o filtro da tela voltou a esconder um processo que a permissão ' +
+        'efetiva permite iniciar (a divergência de 27/08/2026 reapareceu — confira abrindo ' +
+        '`pageworkflowview?processID=SIGAJURI_Contencioso`), ou a permissão de início foi ' +
+        'retirada. As duas hipóteses são mudança de acesso e exigem decisão consciente — ' +
+        'reescreva para a regra nova, não silencie.',
+    ).toContain('SIGAJURI_Contencioso');
   });
 });
