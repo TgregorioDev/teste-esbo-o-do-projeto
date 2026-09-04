@@ -1,0 +1,3886 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Falhas da suíte E2E — Fluig Cassi — 02/09/2026 (versão leve, sem screenshots embutidas)</title>
+<style>
+  :root {
+    --fundo: #0f1115; --cartao: #171a21; --borda: #262b36; --texto: #e6e9ef;
+    --suave: #9aa4b2; --codigo: #0b0d11;
+    --produto: #ef4444; --ambiente: #f59e0b; --infra: #8b5cf6; --sem-veredito: #64748b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --fundo:#f6f7f9; --cartao:#fff; --borda:#e2e5ea; --texto:#1b1f27; --suave:#5b6472; --codigo:#f1f3f6; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--fundo); color:var(--texto);
+         font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .capa { padding:32px 24px 20px; border-bottom:1px solid var(--borda); }
+  .capa h1 { margin:0 0 6px; font-size:26px; }
+  .capa p { margin:0; color:var(--suave); }
+  .numeros { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+  .numero { background:var(--cartao); border:1px solid var(--borda); border-radius:10px; padding:10px 14px; }
+  .numero b { display:block; font-size:22px; }
+  .numero span { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  main { padding:24px; max-width:1100px; margin:0 auto; }
+  .filtros { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+  .filtros button { background:var(--cartao); color:var(--texto); border:1px solid var(--borda);
+                    border-radius:999px; padding:6px 14px; cursor:pointer; font-size:13px; }
+  .filtros button[aria-pressed="true"] { border-color:var(--texto); font-weight:600; }
+  .falha { background:var(--cartao); border:1px solid var(--borda); border-radius:14px;
+           padding:20px; margin-bottom:20px; }
+  .falha[hidden] { display:none; }
+  .cabecalho { display:flex; justify-content:space-between; align-items:center; }
+  .ordem { color:var(--suave); font-size:13px; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px;
+           font-weight:600; color:#fff; }
+  .badge.produto { background:var(--produto); }
+  .badge.ambiente { background:var(--ambiente); color:#231a05; }
+  .badge.infra { background:var(--infra); }
+  .badge.sem-veredito { background:var(--sem-veredito); }
+  .falha h2 { margin:12px 0 4px; font-size:18px; line-height:1.35; }
+  .suite { margin:0 0 14px; color:var(--suave); font-size:13px; }
+  .meta { display:flex; flex-wrap:wrap; gap:18px; margin:0 0 4px; }
+  .meta div { display:flex; flex-direction:column; }
+  .meta dt { color:var(--suave); font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  .meta dd { margin:2px 0 0; font-size:13px; }
+  .bloco { margin-top:18px; }
+  .bloco h3 { margin:0 0 8px; font-size:13px; text-transform:uppercase;
+              letter-spacing:.05em; color:var(--suave); }
+  .resumo { margin:0 0 8px; font-weight:600; }
+  pre { background:var(--codigo); border:1px solid var(--borda); border-radius:10px;
+        padding:12px 14px; overflow-x:auto; font-size:12.5px; line-height:1.5; margin:0;
+        white-space:pre-wrap; word-break:break-word; }
+  pre.codigo, pre.cmd { white-space:pre; }
+  code { background:var(--codigo); padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .codigo .linha { display:block; }
+  .codigo .num { display:inline-block; width:44px; color:var(--suave); user-select:none; }
+  .codigo .alvo { background:rgba(239,68,68,.16); font-weight:600; }
+  figure { margin:0 0 12px; }
+  figure img { max-width:100%; border:1px solid var(--borda); border-radius:10px; display:block; }
+  figcaption { color:var(--suave); font-size:12px; margin-top:5px; }
+  details > summary { cursor:pointer; color:var(--suave); font-size:13px; padding:6px 0; }
+  details[open] > summary { margin-bottom:8px; }
+  .dica { color:var(--suave); font-size:13px; margin:8px 0 0; }
+  a { color:inherit; }
+  footer { padding:20px 24px 44px; color:var(--suave); font-size:13px; max-width:1100px; margin:0 auto; }
+  .badge.divergencia { background:#0ea5e9; color:#06202b; }
+  .sumario { background:var(--cartao); border:1px solid var(--borda); border-radius:14px; padding:20px 24px; margin-bottom:22px; }
+  .sumario h2 { margin:0 0 12px; font-size:20px; }
+  .sumario h3 { margin:18px 0 8px; font-size:14px; text-transform:uppercase; letter-spacing:.05em; color:var(--suave); }
+  .sumario table { border-collapse:collapse; width:100%; font-size:13.5px; }
+  .sumario th, .sumario td { border-bottom:1px solid var(--borda); padding:6px 8px; text-align:left; vertical-align:top; }
+  .sumario th { color:var(--suave); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .grupo { border-top:1px solid var(--borda); padding-top:14px; margin-top:14px; }
+  .grupo h3 { text-transform:none; letter-spacing:0; font-size:16px; color:var(--texto); margin:0 0 6px; }
+  .gid { display:inline-block; background:var(--codigo); border:1px solid var(--borda); border-radius:6px; padding:0 6px; font-size:12px; margin-right:6px; }
+  .suave { color:var(--suave); font-size:13px; margin:0 0 8px; }
+  .lista-testes { font-size:13px; color:var(--suave); }
+  .analise { border-left:3px solid #0ea5e9; padding-left:14px; }
+  .analise p { margin:0 0 8px; }
+  .analise .g, .g { color:var(--suave); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="capa">
+  <h1>Falhas da suíte E2E — TOTVS Fluig Cassi</h1>
+  <p>Execução de 02/09/2026 · 233 testes, 81 reprovados · destrutivos incluídos · com análise de causa raiz</p>
+  </div>
+<main>
+<nav class="filtros" style="margin:16px 0"><a href="index.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">Sumário</a> <a href="area-acompanhamento-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">acompanhamento-contratos (27)</a> <a href="area-api.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">api (2)</a> <a href="area-compras.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">compras (13)</a> <a href="area-contratos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">contratos (4)</a> <a href="area-documentos.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;font-weight:700;border-color:var(--texto)">documentos (5)</a> <a href="area-juridico.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">juridico (3)</a> <a href="area-notificacoes.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">notificacoes (2)</a> <a href="area-plataforma.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">plataforma (8)</a> <a href="area-portais.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">portais (2)</a> <a href="area-rh.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">rh (4)</a> <a href="area-saude.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">saude (1)</a> <a href="area-seguranca.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">seguranca (7)</a> <a href="area-tarefas.html" style="background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:6px 14px;text-decoration:none;font-size:13px;">tarefas (3)</a></nav><h2>documentos — 5 teste(s) reprovado(s)</h2><p class="dica"><a href="index.html">← voltar ao sumário e às causas raiz</a></p><article class="falha" id="f46" data-classe="catalogado" data-area="documentos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — já catalogado no README</span>
+      <span class="ordem">#47</span>
+    </div>
+    <h2>CT-GED-02-S2 @destrutivo — script de lote (.bat) deveria ser rejeitado</h2>
+    <p class="suite">e2e/documentos/bloqueio-extensoes.spec.js › GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/documentos/bloqueio-extensoes.spec.js:133</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>7.5s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>474961</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G5">G5</a> — GED aceita qualquer extensão e qualquer conteúdo (CT-GED-02-S1 / S2) · <b>Referência:</b> CT-GED-02-S2 (.bat)</p>
+    <p><b>O que acontece:</b> Execução principal: <code>page.goto</code> caiu com <code>net::ERR_NETWORK_CHANGED</code> (a rede da máquina de execução oscilou) — infraestrutura, sem veredito. 2ª tentativa: a tabela de upload do publicador guardou linhas residuais da tentativa abortada e o page object desistiu após 10 remoções. <b>3ª tentativa: reprovou pelo defeito real</b> — <code>qa-script-lote.bat</code> publicado sem mensagem de bloqueio.</p>
+    <p><b>Por que falha:</b> Não há allowlist de extensão no GED.</p>
+    <p><b>Onde falha:</b> Principal: <code>DocumentosPage.js:92</code> (goto). 3ª tentativa: <code>bloqueio-extensoes.spec.js:119</code>. <span class="g">(local exato registrado pelo Playwright: <code>pages/DocumentosPage.js:92</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: page.goto: net::ERR_NETWORK_CHANGED at https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation</p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">86</span>    this.linhasDeConteudo = this.grade</span>
+<span class="linha"><span class="num">87</span>      .locator('tbody tr[role="row"]')</span>
+<span class="linha"><span class="num">88</span>      .filter({ has: page.locator('.document-description') });</span>
+<span class="linha"><span class="num">89</span>  }</span>
+<span class="linha"><span class="num">90</span></span>
+<span class="linha"><span class="num">91</span>  async goto() {</span>
+<span class="linha alvo"><span class="num">92</span>    await this.page.goto(this.rota, { waitUntil: 'domcontentloaded' });</span>
+<span class="linha"><span class="num">93</span>  }</span>
+<span class="linha"><span class="num">94</span></span>
+<span class="linha"><span class="num">95</span>  /**</span>
+<span class="linha"><span class="num">96</span>   * Pré-condição: a grade carregou as três colunas e ao menos uma linha de conteúdo.</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/documentos/bloqueio-extensoes.spec.js",
+    "GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)",
+    "CT-GED-02-S2 @destrutivo — script de lote (.bat) deveria ser rejeitado"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation",
+  "fakerSeed": 474961,
+  "reproduzirCom": "FAKER_SEED=474961 npx playwright test",
+  "erro": "Error: page.goto: net::ERR_NETWORK_CHANGED at https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation\nCall log:\n\u001b[2m  - navigating to \"https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation\", waiting until \"domcontentloaded\"\u001b[22m\n"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - navigating to "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation", waiting until "domcontentloaded"</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/documentos/bloqueio-extensoes.spec.js &gt;&gt; GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2) &gt;&gt; CT-GED-02-S2 @destrutivo — script de lote (.bat) deveria ser rejeitado
+- Location: tests/e2e/documentos/bloqueio-extensoes.spec.js:133:3
+
+# Error details
+
+```
+Error: page.goto: net::ERR_NETWORK_CHANGED at https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation
+Call log:
+  - navigating to "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation", waiting until "domcontentloaded"
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - generic [ref=f1e3]:
+      - navigation [ref=f1e4]:
+        - generic [ref=f1e5]:
+          - generic [ref=f1e6]:
+            - generic [ref=f1e7]:
+              - text: 
+              - link [ref=f1e8] [cursor=pointer]:
+                - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+                - img "Logo da empresa" [ref=f1e9]
+            - generic [ref=f1e10]:
+              - text: 
+              - button "Abrir ajuda" [ref=f1e12] [cursor=pointer]:
+                - generic [ref=f1e13]: 
+              - button "Abrir notificações" [ref=f1e15] [cursor=pointer]:
+                - generic [ref=f1e16]: 9+
+                - generic [ref=f1e17]: 
+              - img "Usuário TBC (TOTVS)" [ref=f1e20] [cursor=pointer]
+          - text:  
+      - navigation
+    - navigation "Menu de navegação principal responsivo" [ref=f1e21]:
+      - generic [ref=f1e23]:
+        - list [ref=f1e24]:
+          - listitem [ref=f1e25]:
+            - link "Home" [ref=f1e26] [cursor=pointer]:
+              - /url: /portal/p/1/home
+              - generic [ref=f1e27]: 
+          - listitem [ref=f1e29]:
+            - link "Buscar" [ref=f1e30] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=f1e31]: 
+              - generic [ref=f1e33]: 
+          - listitem [ref=f1e35]:
+            - link "Favoritos" [ref=f1e36] [cursor=pointer]:
+              - /url: /portal/p/1/principalfavorites
+              - generic [ref=f1e37]: 
+              - generic [ref=f1e39]: 
+        - list [ref=f1e41]:
+          - listitem [ref=f1e42]:
+            - link "Documentos" [ref=f1e43] [cursor=pointer]:
+              - /url: /portal/p/1/ecmnavigation
+              - generic [ref=f1e44]: 
+          - listitem [ref=f1e46]:
+            - link "Processos" [ref=f1e47] [cursor=pointer]:
+              - /url: /portal/p/1/principalprocess
+              - generic [ref=f1e48]: 
+              - generic [ref=f1e50]: 
+          - listitem [ref=f1e52]:
+            - link "Central de Tarefas" [ref=f1e53] [cursor=pointer]:
+              - /url: /portal/p/1/pagecentraltask
+              - generic [ref=f1e54]: 
+          - listitem [ref=f1e56]:
+            - link "Social" [ref=f1e57] [cursor=pointer]:
+              - /url: /portal/p/1/social
+              - generic [ref=f1e58]: 
+          - listitem [ref=f1e60]:
+            - link "Comunidades" [ref=f1e61] [cursor=pointer]:
+              - /url: /portal/p/1/communities
+              - generic [ref=f1e62]: 
+          - listitem [ref=f1e64]:
+            - link "Páginas" [ref=f1e65] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=f1e66]: 
+              - generic [ref=f1e68]: 
+        - list [ref=f1e70]:
+          - listitem [ref=f1e71]:
+            - link "Store" [ref=f1e72] [cursor=pointer]:
+              - /url: /portal/p/1/mysolutions
+              - generic [ref=f1e73]: 
+          - listitem [ref=f1e75]:
+            - link "Lixeira" [ref=f1e76] [cursor=pointer]:
+              - /url: /portal/p/1/pagerecyclebin
+              - generic [ref=f1e77]: 
+        - list [ref=f1e79]:
+          - listitem [ref=f1e80]:
+            - link "Fechar menu" [ref=f1e81] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=f1e83]: 
+    - generic [ref=f1e93]:
+      - text:    
+      - navigation "Breadcrumb" [ref=f1e96]:
+        - list [ref=f1e97]:
+          - listitem [ref=f1e98]:
+            - link "Raiz" [ref=f1e99] [cursor=pointer]:
+              - /url: javascript:ECM.navigation.getContent(0, 0, 0, null)
+          - text: 
+      - generic [ref=f1e100]:
+        - generic [ref=f1e101]:
+          - group:
+            - row [ref=f1e102]:
+              - rowgroup [ref=f1e103]:
+                - row [ref=f1e104]:
+                  - cell [ref=f1e105]:
+                    - table [ref=f1e106]:
+                      - rowgroup [ref=f1e107]:
+                        - row [ref=f1e108]:
+                          - cell ""
+                          - cell
+                          - cell ""
+                          - cell "30" [ref=f1e109]:
+                            - listbox [ref=f1e110]:
+                              - option "30" [selected]
+                              - option "50"
+                              - option "75"
+                              - option "100"
+                  - cell
+        - list [ref=f1e112]:
+          - listitem [ref=f1e113]:
+            - link "Novo " [ref=f1e114] [cursor=pointer]:
+              - /url: "#"
+              - text: Novo
+              - generic [ref=f1e115]: 
+          - listitem [ref=f1e116]:
+            - link "Copiar" [ref=f1e117] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=f1e118]:
+            - link "Colar" [ref=f1e119] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=f1e120]:
+            - link "Recortar" [ref=f1e121] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=f1e122]:
+            - link "Remover" [ref=f1e123] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=f1e124]:
+            - link "Filtrar" [ref=f1e125] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=f1e126]:
+            - link "Mais " [ref=f1e127] [cursor=pointer]:
+              - /url: "#"
+              - text: Mais
+              - generic [ref=f1e128]: 
+        - generic [ref=f1e129]:
+          - grid "  30 Novo  Copiar Colar Recortar Remover Filtrar Mais  Descrição  Atualização  Código  Meus Documentos 13/08/2026 704916  Anexos de Processo de Compras 08/10/2025 256812      Compras e Contratação 08/04/2025 343010      Modelos de Declaração 31/08/2023 214832    " [ref=f1e132]:
+            - rowgroup [ref=f1e133]:
+              - rowheader "Descrição  Atualização  Código " [ref=f1e134]:
+                - columnheader [ref=f1e135]:
+                  - checkbox [ref=f1e137]
+                - columnheader [ref=f1e138]:
+                  - generic:  
+                - columnheader "Descrição " [ref=f1e140]:
+                  - generic [ref=f1e142] [cursor=pointer]:
+                    - text: Descrição
+                    - generic [ref=f1e143]:
+                      - generic [ref=f1e144]: 
+                      - text: 
+                - text:    
+                - columnheader [ref=f1e145]:
+                  - generic:  
+                - columnheader [ref=f1e147]:
+                  - generic:  
+                - columnheader "Atualização " [ref=f1e149]:
+                  - generic [ref=f1e151] [cursor=pointer]:
+                    - text: Atualização
+                    - generic [ref=f1e152]:
+                      - generic: 
+                      - text: 
+                - columnheader "Código " [ref=f1e153]:
+                  - generic [ref=f1e155] [cursor=pointer]:
+                    - text: Código
+                    - generic [ref=f1e156]:
+                      - generic: 
+                      - text: 
+                - text:  
+                - columnheader [ref=f1e157]:
+                  - generic:  
+          - grid "  30 Novo  Copiar Colar Recortar Remover Filtrar Mais  Descrição  Atualização  Código  Meus Documentos 13/08/2026 704916  Anexos de Processo de Compras 08/10/2025 256812      Compras e Contratação 08/04/2025 343010      Modelos de Declaração 31/08/2023 214832    " [ref=f1e160]:
+            - rowgroup [ref=f1e161]:
+              - row:
+                - gridcell
+                - gridcell
+                - gridcell
+                - gridcell
+                - gridcell
+                - gridcell
+                - gridcell
+                - gridcell
+              - row [ref=f1e162] [cursor=pointer]:
+                - gridcell [ref=f1e163]:
+                  - checkbox [ref=f1e164]
+                - gridcell [ref=f1e165]
+                - gridcell "Meus Documentos" [ref=f1e168]
+                - gridcell [ref=f1e169]
+                - gridcell [ref=f1e170]
+                - gridcell "13/08/2026" [ref=f1e171]
+                - gridcell "704916" [ref=f1e172]
+                - gridcell "" [ref=f1e173]:
+                  - generic "Adicionar aos favoritos" [ref=f1e181]: 
+              - row [ref=f1e183] [cursor=pointer]:
+                - gridcell [ref=f1e184]:
+                  - checkbox [ref=f1e185]
+                - gridcell [ref=f1e186]
+                - gridcell "Anexos de Processo de Compras" [ref=f1e189]
+                - gridcell [ref=f1e190]
+                - gridcell [ref=f1e191]
+                - gridcell "08/10/2025" [ref=f1e192]
+                - gridcell "256812" [ref=f1e193]
+                - gridcell "    " [ref=f1e194]:
+                  - generic [ref=f1e196]:
+                    - generic "Apoiar" [ref=f1e198]: 
+                    - generic "Comentar" [ref=f1e200]: 
+                    - generic "Compartilhar" [ref=f1e202]: 
+                    - generic "Adicionar aos favoritos" [ref=f1e205]: 
+                    - button "" [ref=f1e208]:
+                      - generic "Mais opções" [ref=f1e209]: 
+              - row [ref=f1e210] [cursor=pointer]:
+                - gridcell [ref=f1e211]:
+                  - checkbox [ref=f1e212]
+                - gridcell [ref=f1e213]
+                - gridcell "Compras e Contratação" [ref=f1e216]
+                - gridcell [ref=f1e217]
+                - gridcell [ref=f1e218]
+                - gridcell "08/04/2025" [ref=f1e219]
+                - gridcell "343010" [ref=f1e220]
+                - gridcell "    " [ref=f1e221]:
+                  - generic [ref=f1e223]:
+                    - generic "Apoiar" [ref=f1e225]: 
+                    - generic "Comentar" [ref=f1e227]: 
+                    - generic "Compartilhar" [ref=f1e229]: 
+                    - generic "Adicionar aos favoritos" [ref=f1e232]: 
+                    - button "" [ref=f1e235]:
+                      - generic "Mais opções" [ref=f1e236]: 
+              - row [ref=f1e237] [cursor=pointer]:
+                - gridcell [ref=f1e238]:
+                  - checkbox [ref=f1e239]
+                - gridcell [ref=f1e240]
+                - gridcell "Modelos de Declaração" [ref=f1e243]
+                - gridcell [ref=f1e244]
+                - gridcell [ref=f1e245]
+                - gridcell "31/08/2023" [ref=f1e246]
+                - gridcell "214832" [ref=f1e247]
+                - gridcell "   " [ref=f1e248]:
+                  - generic [ref=f1e250]:
+                    - generic "Apoiar" [ref=f1e252]: 
+                    - generic "Comentar" [ref=f1e254]: 
+                    - generic "Compartilhar" [ref=f1e256]: 
+                    - generic "Adicionar aos favoritos" [ref=f1e259]: 
+      - text:  
+  - text:  
+```
+
+# Test source
+
+```ts
+  1   | // @ts-check
+  2   | import { expect } from '@playwright/test';
+  3   | 
+  4   | /**
+  5   |  * Documentos / GED (`/portal/p/1/ecmnavigation`).
+  6   |  *
+  7   |  * Grid jqGrid (não DataTables): a página expõe DOIS elementos com `role="grid"` (o mesmo
+  8   |  * padrão de ambiguidade documentado para a grade de Acompanhamento de Contratos), então
+  9   |  * colunas e linhas são ancoradas por atributo/estrutura estável, não por `getByRole('grid')`.
+  10  |  *
+  11  |  * ## A pasta corrente é estado de CONTA, no servidor (medido em 25/08/2026)
+  12  |  *
+  13  |  * `goto('/portal/p/1/ecmnavigation')` **sem parâmetro** não abre a Raiz: o servidor redireciona
+  14  |  * para `?app_ecm_navigation_doc=&lt;última pasta que a CONTA visitou&gt;`. Medido com dois contextos
+  15  |  * de navegador independentes (cookies distintos, mesmo login): a sessão A entra em
+  16  |  * "Meus Documentos" (id 704916) e a sessão B, aberta depois, aterrissa em 704916 com o
+  17  |  * breadcrumb *Raiz &gt; Meus Documentos*. Não adianta forçar pela URL — `?app_ecm_navigation_doc=0`
+  18  |  * também foi medido e **é ignorado**: a resposta continua sendo `navigation/content/704916`.
+  19  |  * O único caminho que volta à Raiz é o link *Raiz* do breadcrumb (`voltarParaRaiz`).
+  20  |  *
+  21  |  * Consequência para quem escreve teste aqui: **nenhuma spec pode assumir que `goto()` aterrissa
+  22  |  * na Raiz**, nem que a listagem tem o conteúdo da Raiz, porque qualquer outro teste rodando em
+  23  |  * paralelo com a mesma conta muda essa pasta. Foi o que quebrou
+  24  |  * `deve alterar a quantidade de resultados por página` numa execução com 4 workers: o `goto()`
+  25  |  * caiu em "Meus Documentos" (50+ documentos, portanto paginado) em vez da Raiz, e a comparação
+  26  |  * das descrições antes/depois passou a comparar páginas diferentes do mesmo conjunto.
+  27  |  *
+  28  |  * ## Pasta inválida = página SEM grade (a origem do timeout de `columnheader`)
+  29  |  *
+  30  |  * Medido: `?app_ecm_navigation_doc=&lt;id inexistente&gt;` responde HTTP 200 e renderiza o breadcrumb,
+  31  |  * mas **não renderiza a grade** — nenhum `columnheader`, nenhuma linha. Como a pasta corrente é
+  32  |  * estado de conta e sobrevive entre execuções, um `goto()` pode cair num id que não vale mais
+  33  |  * para a conta e ficar 45s esperando por `getByRole('columnheader', ...)` que nunca vai existir.
+  34  |  * Por isso `expectCarregada` falha com mensagem que **cita a URL** (é ela que identifica a pasta
+  35  |  * culpada) e `irParaRaizGarantido` clica na Raiz **antes** de exigir a
+  36  |  * grade — o breadcrumb renderiza mesmo quando a grade não renderiza.
+  37  |  *
+  38  |  * Notas de locator observadas em campo:
+  39  |  * - As três colunas confirmadas (Descrição, Atualização, Código) resolvem por
+  40  |  *   `getByRole('columnheader', { name })` sem ambiguidade — o grid duplicado não repete
+  41  |  *   cabeçalho de coluna.
+  42  |  * - O seletor de paginação é um `&lt;select role="listbox"&gt;` sem nome acessível; é o único
+  43  |  *   `listbox` da página, então `getByRole('listbox')` resolve sem ambiguidade.
+  44  |  * - "Novo" e "Mais" carregam um `&lt;span class="caret"&gt;` que entra no nome acessível
+  45  |  *   (`"Novo "`, com espaço à direita) — resolvidos com `exact: false`. Os demais
+  46  |  *   (Copiar/Colar/Recortar/Remover/Filtrar) resolvem com `exact: true`.
+  47  |  * - Cada pasta é uma linha (`role="row"`) cujo texto é o nome da pasta, com uma célula
+  48  |  *   clicável (`cursor:pointer`) que dispara a navegação — `abrirPasta` clica nesse texto.
+  49  |  * - Toda navegação (entrar em pasta, voltar à Raiz, trocar página) dispara
+  50  |  *   `GET /ecm/api/rest/ecm/navigation/content/&lt;id&gt;`; os métodos aguardam essa resposta em
+  51  |  *   vez de tempo fixo.
+  52  |  * - O paginador do jqGrid não é botão nem link acessível: são `&lt;td&gt;` (`#next_ecm-navigation-page`,
+  53  |  *   `#prev_ecm-navigation-page`) e o estado desabilitado é a classe `ui-state-disabled` — não o
+  54  |  *   atributo `disabled`. `isEnabled()` **não** enxerga essa desabilitação; é preciso ler a classe.
+  55  |  */
+  56  | export class DocumentosPage {
+  57  |   /** @param {import('@playwright/test').Page} page */
+  58  |   constructor(page) {
+  59  |     this.page = page;
+  60  |     this.rota = '/portal/p/1/ecmnavigation';
+  61  | 
+  62  |     this.breadcrumb = page.getByRole('navigation', { name: 'Breadcrumb' });
+  63  |     this.linkRaiz = page.getByRole('link', { name: 'Raiz', exact: true });
+  64  | 
+  65  |     this.colunaDescricao = page.getByRole('columnheader', { name: 'Descrição' });
+  66  |     this.colunaAtualizacao = page.getByRole('columnheader', { name: 'Atualização' });
+  67  |     this.colunaCodigo = page.getByRole('columnheader', { name: 'Código' });
+  68  | 
+  69  |     this.seletorResultadosPorPagina = page.getByRole('listbox');
+  70  | 
+  71  |     // Paginador do jqGrid — ver nota no cabeçalho: `&lt;td&gt;` desabilitado por classe CSS.
+  72  |     this.paginaSeguinte = page.locator('#next_ecm-navigation-page');
+  73  | 
+  74  |     this.acoes = {
+  75  |       novo: page.getByRole('link', { name: 'Novo', exact: false }),
+  76  |       copiar: page.getByRole('link', { name: 'Copiar', exact: true }),
+  77  |       colar: page.getByRole('link', { name: 'Colar', exact: true }),
+  78  |       recortar: page.getByRole('link', { name: 'Recortar', exact: true }),
+  79  |       remover: page.getByRole('link', { name: 'Remover', exact: true }),
+  80  |       filtrar: page.getByRole('link', { name: 'Filtrar', exact: true }),
+  81  |       mais: page.getByRole('link', { name: 'Mais', exact: false }),
+  82  |     };
+  83  | 
+  84  |     this.grade = page.locator('table#ecm-navigation-grid');
+  85  |     // Linhas com conteúdo real (exclui a linha vazia de preenchimento do jqGrid).
+  86  |     this.linhasDeConteudo = this.grade
+  87  |       .locator('tbody tr[role="row"]')
+  88  |       .filter({ has: page.locator('.document-description') });
+  89  |   }
+  90  | 
+  91  |   async goto() {
+&gt; 92  |     await this.page.goto(this.rota, { waitUntil: 'domcontentloaded' });
+      |                     ^ Error: page.goto: net::ERR_NETWORK_CHANGED at https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation
+  93  |   }
+  94  | 
+  95  |   /**
+  96  |    * Pré-condição: a grade carregou as três colunas e ao menos uma linha de conteúdo.
+  97  |    *
+  98  |    * A mensagem cita a URL corrente de propósito: quando a grade não renderiza, a causa
+  99  |    * conhecida é a pasta corrente da conta (`app_ecm_navigation_doc`) não valer mais — e sem o
+  100 |    * id no relatório não há como saber qual pasta derrubou a execução. Ver cabeçalho da classe.
+  101 |    */
+  102 |   async expectCarregada() {
+  103 |     const ondeEstou = `URL: ${this.page.url()}`;
+  104 |     await expect(
+  105 |       this.colunaDescricao,
+  106 |       `a grade do ECM não renderizou (nenhum cabeçalho "Descrição"). Pasta corrente da conta ` +
+  107 |         `inválida ou sem permissão? ${ondeEstou}`,
+  108 |     ).toBeVisible({ timeout: 45_000 });
+  109 |     await expect(this.colunaAtualizacao, `coluna "Atualização" ausente. ${ondeEstou}`).toBeVisible();
+  110 |     await expect(this.colunaCodigo, `coluna "Código" ausente. ${ondeEstou}`).toBeVisible();
+  111 |     await expect(
+  112 |       this.linhasDeConteudo.first(),
+  113 |       `a grade renderizou sem nenhuma linha de conteúdo. ${ondeEstou}`,
+  114 |     ).toBeVisible();
+  115 |   }
+  116 | 
+  117 |   /**
+  118 |    * Enquanto o jqGrid carrega, ele cobre grade e paginador com `#lui_ecm-navigation-grid`
+  119 |    * (`ui-widget-overlay`), que intercepta o ponteiro: qualquer clique disparado nessa janela
+  120 |    * gasta os 45s de `actionTimeout` reclamando "intercepts pointer events" — inclusive marcar o
+  121 |    * checkbox de uma linha que já está visível. Esperar o overlay sair é condição observável.
+  122 |    */
+  123 |   async aguardarGradeOciosa() {
+  124 |     await expect(this.page.locator('#lui_ecm-navigation-grid')).toBeHidden();
+  125 |   }
+  126 | 
+  127 |   /**
+  128 |    * A página atual da grade é a última? Lê a classe do `&lt;td&gt;` do paginador — o jqGrid não usa
+  129 |    * o atributo `disabled` aqui, então `isEnabled()` responderia `true` mesmo no fim da lista.
+  130 |    */
+  131 |   async temProximaPagina() {
+  132 |     const classe = (await this.paginaSeguinte.getAttribute('class')) ?? '';
+  133 |     return !classe.includes('ui-state-disabled');
+  134 |   }
+  135 | 
+  136 |   /**
+  137 |    * Avança uma página da grade, aguardando a resposta de navegação do ECM.
+  138 |    *
+  139 |    * Dois detalhes medidos em campo, os dois já tendo custado um `locator.click: Timeout 45000ms`:
+  140 |    *  1. o alvo do clique é o `&lt;span class="ui-icon"&gt;` **dentro** do `&lt;td&gt;` — o `&lt;td&gt;` tem 46px de
+  141 |    *     altura contra 24px do ícone, e o centro dele cai fora do ícone, onde quem recebe o
+  142 |    *     ponteiro é a própria `table.ui-pg-table` (o Playwright reporta "intercepts pointer
+  143 |    *     events" e repete o clique até estourar);
+  144 |    *  2. durante a troca de página o jqGrid cobre grade e paginador com
+  145 |    *     `#lui_ecm-navigation-grid` (`ui-widget-overlay`), que também intercepta o ponteiro —
+  146 |    *     esperar o overlay sair é condição observável, não espera cega.
+  147 |    */
+  148 |   async irParaProximaPagina() {
+  149 |     await this.aguardarGradeOciosa();
+  150 |     const resposta = this.page.waitForResponse((r) =&gt;
+  151 |       r.url().includes('/ecm/api/rest/ecm/navigation/content/'),
+  152 |     );
+  153 |     await this.paginaSeguinte.locator('span.ui-icon').click();
+  154 |     await resposta;
+  155 |   }
+  156 | 
+  157 |   /** @returns {Promise&lt;number&gt;} */
+  158 |   async contarLinhasDeConteudo() {
+  159 |     return this.linhasDeConteudo.count();
+  160 |   }
+  161 | 
+  162 |   /** Nomes das pastas/documentos exibidos na página atual da grade. */
+  163 |   async lerDescricoes() {
+  164 |     return this.linhasDeConteudo.locator('.document-description').allTextContents();
+  165 |   }
+  166 | 
+  167 |   /**
+  168 |    * Localiza a linha pelo nome exibido e clica na célula de descrição (a única com
+  169 |    * `cursor:pointer`), aguardando a resposta do endpoint de navegação do ECM.
+  170 |    * @param {string} nomeDaPasta
+  171 |    */
+  172 |   async abrirPasta(nomeDaPasta) {
+  173 |     const resposta = this.page.waitForResponse((r) =&gt;
+  174 |       r.url().includes('/ecm/api/rest/ecm/navigation/content/'),
+  175 |     );
+  176 |     await this.page
+  177 |       .getByRole('row', { name: new RegExp(nomeDaPasta) })
+  178 |       .getByText(nomeDaPasta, { exact: true })
+  179 |       .click();
+  180 |     await resposta;
+  181 |     // A resposta de navegação já sincroniza a troca de pasta. Não se espera por linha aqui:
+  182 |     // pasta legitimamente vazia é estado válido, e engolir a falha da espera esconderia erro.
+  183 |     // As assertions do teste têm auto-wait próprio para o que cada caso precisa.
+  184 |   }
+  185 | 
+  186 |   /**
+  187 |    * Pré-condição de todo teste desta suíte: força a Raiz pelo breadcrumb, nunca confia que
+  188 |    * `goto()` aterrissou lá — a conta lembra a última pasta navegada, por usuário, no servidor.
+  189 |    *
+  190 |    * A ORDEM aqui é o que torna o método imune ao pior caso: espera-se o **link Raiz do
+  191 |    * breadcrumb**, não a grade. Medido em campo: quando a pasta corrente da conta não vale mais,
+  192 |    * a página renderiza o breadcrumb e **não** renderiza a grade — exigir `expectCarregada()`
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=474961 npx playwright test tests/e2e/documentos/bloqueio-extensoes.spec.js -g "CT-GED-02-S2 @destrutivo — script de lote (.bat) deveria ser rejeitado"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-30386-e-bat-deveria-ser-rejeitado-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-30386-e-bat-deveria-ser-rejeitado-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-30386-e-bat-deveria-ser-rejeitado-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-30386-e-bat-deveria-ser-rejeitado-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+<article class="falha" id="f47" data-classe="catalogado" data-area="documentos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — já catalogado no README</span>
+      <span class="ordem">#48</span>
+    </div>
+    <h2>CT-GED-02-S2 @destrutivo — shell script (.sh) deveria ser rejeitado</h2>
+    <p class="suite">e2e/documentos/bloqueio-extensoes.spec.js › GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/documentos/bloqueio-extensoes.spec.js:149</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>55.6s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>929833</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G5">G5</a> — GED aceita qualquer extensão e qualquer conteúdo (CT-GED-02-S1 / S2) · <b>Referência:</b> CT-GED-02-S2 (.sh)</p>
+    <p><b>O que acontece:</b> <code>qa-script-shell.sh</code> foi publicado no GED sem nenhuma mensagem de bloqueio.</p>
+    <p><b>Por que falha:</b> Não há allowlist de extensão: uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho.</p>
+    <p><b>Onde falha:</b> <code>expect(mensagemDeBloqueio).toBeVisible()</code> em <code>bloqueio-extensoes.spec.js:119</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/documentos/bloqueio-extensoes.spec.js:119</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: esperada uma mensagem de bloqueio ao publicar "qa-script-shell.sh": um .sh é executável e não pertence a uma allowlist de documentos. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele</p>
+    <pre class="detalhe">expect(locator).toBeVisible() failed
+
+Locator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">113</span>  await expect(</span>
+<span class="linha"><span class="num">114</span>    page.getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i),</span>
+<span class="linha"><span class="num">115</span>    `esperada uma mensagem de bloqueio ao publicar "${nomeDoArquivo}": ${porQue}. Nenhuma ` +</span>
+<span class="linha"><span class="num">116</span>      'mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que ' +</span>
+<span class="linha"><span class="num">117</span>      'CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista ' +</span>
+<span class="linha"><span class="num">118</span>      'negra deixa este caso vermelho, que é exatamente o ponto dele',</span>
+<span class="linha alvo"><span class="num">119</span>  ).toBeVisible();</span>
+<span class="linha"><span class="num">120</span></span>
+<span class="linha"><span class="num">121</span>  // Afirmado sobre a pasta INTEIRA: a grade pagina em 30 por Descrição e o documento pode</span>
+<span class="linha"><span class="num">122</span>  // estar numa página seguinte. `tentativas: 1` porque aqui não se espera nada aparecer.</span>
+<span class="linha"><span class="num">123</span>  await documentosPage.irParaPaginaComDocumento(documento.descricao, { tentativas: 1 });</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/documentos/bloqueio-extensoes.spec.js",
+    "GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)",
+    "CT-GED-02-S2 @destrutivo — shell script (.sh) deveria ser rejeitado"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation",
+  "fakerSeed": 929833,
+  "reproduzirCom": "FAKER_SEED=929833 npx playwright test",
+  "erro": "Error: esperada uma mensagem de bloqueio ao publicar \"qa-script-shell.sh\": um .sh é executável e não pertence a uma allowlist de documentos. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque \".exe\" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - esperada uma mensagem de bloqueio ao publicar \"qa-script-shell.sh\": um .sh é executável e não pertence a uma allowlist de documentos. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque \".exe\" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)\u001b[22m\n"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - esperada uma mensagem de bloqueio ao publicar "qa-script-shell.sh": um .sh é executável e não pertence a uma allowlist de documentos. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele with timeout 30000ms
+  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/documentos/bloqueio-extensoes.spec.js &gt;&gt; GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2) &gt;&gt; CT-GED-02-S2 @destrutivo — shell script (.sh) deveria ser rejeitado
+- Location: tests/e2e/documentos/bloqueio-extensoes.spec.js:149:3
+
+# Error details
+
+```
+Error: esperada uma mensagem de bloqueio ao publicar "qa-script-shell.sh": um .sh é executável e não pertence a uma allowlist de documentos. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele
+
+expect(locator).toBeVisible() failed
+
+Locator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+  - esperada uma mensagem de bloqueio ao publicar "qa-script-shell.sh": um .sh é executável e não pertence a uma allowlist de documentos. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele with timeout 30000ms
+  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+
+```
+
+```yaml
+- navigation:
+  - link "Logo da empresa":
+    - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+    - img "Logo da empresa"
+  - button "Abrir ajuda"
+  - button "Abrir notificações": 9+
+  - img "Usuário TBC (TOTVS)"
+- navigation
+- navigation "Menu de navegação principal responsivo":
+  - list:
+    - listitem:
+      - link "Home":
+        - /url: /portal/p/1/home
+    - listitem:
+      - link "Buscar":
+        - /url: "#"
+    - listitem:
+      - link "Favoritos":
+        - /url: /portal/p/1/principalfavorites
+  - list:
+    - listitem:
+      - link "Documentos":
+        - /url: /portal/p/1/ecmnavigation
+    - listitem:
+      - link "Processos":
+        - /url: /portal/p/1/principalprocess
+    - listitem:
+      - link "Central de Tarefas":
+        - /url: /portal/p/1/pagecentraltask
+    - listitem:
+      - link "Social":
+        - /url: /portal/p/1/social
+    - listitem:
+      - link "Comunidades":
+        - /url: /portal/p/1/communities
+    - listitem:
+      - link "Páginas":
+        - /url: "#"
+  - list:
+    - listitem:
+      - link "Store":
+        - /url: /portal/p/1/mysolutions
+    - listitem:
+      - link "Lixeira":
+        - /url: /portal/p/1/pagerecyclebin
+  - list:
+    - listitem:
+      - link "Fechar menu":
+        - /url: "#"
+- navigation "Breadcrumb":
+  - list:
+    - listitem:
+      - link "Raiz":
+        - /url: javascript:ECM.navigation.getContent(0, 0, 0, null)
+      - text: 
+    - listitem:
+      - link "Meus Documentos":
+        - /url: javascript:ECM.navigation.getContent(704916, 0, 0, null)
+- group:
+  - row "  30":
+    - rowgroup:
+      - row "  30":
+        - cell "  30":
+          - table:
+            - rowgroup:
+              - row "  30":
+                - cell ""
+                - cell
+                - cell ""
+                - cell "30":
+                  - listbox:
+                    - option "30" [selected]
+                    - option "50"
+                    - option "75"
+                    - option "100"
+        - cell
+- list:
+  - listitem:
+    - link "Novo ":
+      - /url: "#"
+  - listitem:
+    - button "Choose File"
+    - link "Carregar arquivos":
+      - /url: "#"
+  - listitem:
+    - link "Copiar":
+      - /url: "#"
+  - listitem:
+    - link "Colar":
+      - /url: "#"
+  - listitem:
+    - link "Recortar":
+      - /url: "#"
+  - listitem:
+    - link "Remover":
+      - /url: "#"
+  - listitem:
+    - link "Mais ":
+      - /url: "#"
+- grid:
+  - rowgroup:
+    - rowheader "Descrição  Atualização  Código ":
+      - columnheader:
+        - checkbox
+      - columnheader
+      - columnheader "Descrição "
+      - columnheader
+      - columnheader
+      - columnheader "Atualização "
+      - columnheader "Código "
+      - columnheader
+- grid:
+  - rowgroup:
+    - row:
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+    - row "Check-out 20/08/2026 705180  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "Check-out"
+      - gridcell
+      - gridcell
+      - gridcell "20/08/2026"
+      - gridcell "705180"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento 84a4ec9b 24/08/2026 705364  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento 84a4ec9b"
+      - gridcell
+      - gridcell
+      - gridcell "24/08/2026"
+      - gridcell "705364"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Impressionante de Algodão bfa6733f 25/08/2026 706146  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Impressionante de Algodão bfa6733f"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706146"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Incrível de Granito 0659e02c 02/09/2026 708136  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Incrível de Granito 0659e02c"
+      - gridcell
+      - gridcell
+      - gridcell "02/09/2026"
+      - gridcell "708136"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Inteligente de Granito f6335c05 28/08/2026 707532  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Inteligente de Granito f6335c05"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707532"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Lindo de Aço 07510375 28/08/2026 707361  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Lindo de Aço 07510375"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707361"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Lindo de Algodão 356866b8 25/08/2026 706414  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Lindo de Algodão 356866b8"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706414"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Lindo de Granito 10bf77fd 25/08/2026 706151  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Lindo de Granito 10bf77fd"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706151"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Sem marca de Madeira 4d5c7442 27/08/2026 707010  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Sem marca de Madeira 4d5c7442"
+      - gridcell
+      - gridcell
+      - gridcell "27/08/2026"
+      - gridcell "707010"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Ergonômico de Aço 8f72fe5b 25/08/2026 706141  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Ergonômico de Aço 8f72fe5b"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706141"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Genérico de Concreto 913b0680 01/09/2026 708027  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Genérico de Concreto 913b0680"
+      - gridcell
+      - gridcell
+      - gridcell "01/09/2026"
+      - gridcell "708027"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Licenciado de Borracha 16cf6823 28/08/2026 707365  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Licenciado de Borracha 16cf6823"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707365"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Refinado de Concreto b0226155 25/08/2026 706168  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Refinado de Concreto b0226155"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706168"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Fantástico de Borracha 73e6e9ba 25/08/2026 706280  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Fantástico de Borracha 73e6e9ba"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706280"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Genérico de Congelado 889024d8 25/08/2026 706167  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Genérico de Congelado 889024d8"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706167"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Gostoso de Aço 0963e83f 01/09/2026 707821  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Gostoso de Aço 0963e83f"
+      - gridcell
+      - gridcell
+      - gridcell "01/09/2026"
+      - gridcell "707821"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Gostoso de Algodão d32605a4 25/08/2026 706315  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Gostoso de Algodão d32605a4"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706315"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Licenciado de Concreto d4894fcb 25/08/2026 706353  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Licenciado de Concreto d4894fcb"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706353"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Lustroso de Borracha d0fd03c3 25/08/2026 706270  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Lustroso de Borracha d0fd03c3"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706270"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Pequeno de Algodão 4e885dfe 25/08/2026 706448  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Pequeno de Algodão 4e885dfe"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706448"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Pequeno de Granito fe5acfb9 25/08/2026 706321  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Pequeno de Granito fe5acfb9"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706321"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Rústico de Borracha 292d33fe 25/08/2026 706392  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Rústico de Borracha 292d33fe"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706392"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Sem marca de Metal 23aaec75 27/08/2026 707009  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Sem marca de Metal 23aaec75"
+      - gridcell
+      - gridcell
+      - gridcell "27/08/2026"
+      - gridcell "707009"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Feito à mão de Macio d1213f8f 25/08/2026 706139  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Feito à mão de Macio d1213f8f"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706139"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Inteligente de Aço 8b8d839f 25/08/2026 706156  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Inteligente de Aço 8b8d839f"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706156"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Lindo de Metal 263b0772 02/09/2026 708132  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Lindo de Metal 263b0772"
+      - gridcell
+      - gridcell
+      - gridcell "02/09/2026"
+      - gridcell "708132"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Prático de Borracha e23898b3 25/08/2026 706385  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Prático de Borracha e23898b3"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706385"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Refinado de Algodão c30bf96f 28/08/2026 707528  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Refinado de Algodão c30bf96f"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707528"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Cadeira Fantástico de Macio 8493d196 25/08/2026 706404  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Cadeira Fantástico de Macio 8493d196"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706404"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Cadeira Feito à mão de Concreto 6d8f3e92 25/08/2026 706318  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Cadeira Feito à mão de Concreto 6d8f3e92"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706318"
+      - gridcell " ":
+        - text: 
+        - button ""
+```
+
+# Test source
+
+```ts
+  19  |  * lista negra: a suíte ficaria verde e o GED continuaria aceitando `.bat`, `.sh`, `.pdf.exe` e
+  20  |  * o clássico executável renomeado para `.pdf`.
+  21  |  *
+  22  |  * Sem este caso, a correção é **declarada e não verificada**. Com ele, só fica verde quem
+  23  |  * implementar a regra certa: aceitar o que está na lista de permitidos, recusar o resto.
+  24  |  *
+  25  |  * ## Desenho
+  26  |  *
+  27  |  * Um teste por arquivo, cada um com massa própria (`factories/documento.js`: prefixo `QA` +
+  28  |  * sufixo único) — nada de um teste percorrendo quatro extensões, que esconderia qual delas
+  29  |  * passou. Os quatro afirmam a MESMA regra e por isso ficam vermelhos juntos hoje.
+  30  |  *
+  31  |  * O último caso é diferente dos outros três e por isso tem mensagem própria: um executável
+  32  |  * (magic bytes `MZ`) **renomeado para `.pdf`**. Se o produto validar só a extensão do nome, ele
+  33  |  * passa nesse caso mesmo com uma allowlist correta — e a mensagem da falha precisa dizer isso,
+  34  |  * para que quem lê o relatório saiba que a validação é **sintática**, não de conteúdo.
+  35  |  *
+  36  |  * ## Cuidados do ambiente (herdados de CT-GED-02-S1, não redescobertos)
+  37  |  *
+  38  |  * - `enviarDocumento` segura o lock `fluig-upload-staging` de `utils/exclusividade.js`: a área
+  39  |  *   de upload é um diretório **por usuário no servidor** (`/volume/wdk-data/upload/&lt;login&gt;/`),
+  40  |  *   compartilhado com o anexo da Solicitação de Compras. Nome de arquivo único não resolve — a
+  41  |  *   disputa é pelo diretório.
+  42  |  * - `esperaPublicacao: false`: o comportamento do publicador é parte do que se testa. Se o
+  43  |  *   Fluig passar a barrar a extensão, o modal pode legitimamente continuar aberto exibindo o
+  44  |  *   erro, e exigir que ele feche transformaria o conserto do produto num vermelho pelo motivo
+  45  |  *   errado.
+  46  |  * - "Nada foi gravado" é afirmado sobre a pasta INTEIRA (`irParaPaginaComDocumento` com
+  47  |  *   `tentativas: 1`): a grade pagina em 30 por Descrição e olhar só a página corrente daria um
+  48  |  *   falso verde justamente no caso negativo.
+  49  |  *
+  50  |  * ## Massa e resíduo
+  51  |  *
+  52  |  * Os arquivos são escritos em diretório temporário do sistema **no momento do teste**, em vez
+  53  |  * de virarem fixtures versionados: `.bat`, `.sh` e um binário com cabeçalho `MZ` no repositório
+  54  |  * são exatamente o que uma varredura de segurança sinaliza, e o conteúdo aqui é irrelevante
+  55  |  * para o caso — o que importa é o NOME e os magic bytes.
+  56  |  *
+  57  |  * ⚠️ **Resíduo**: enquanto o defeito existir, cada execução publica quatro documentos em "Meus
+  58  |  * Documentos". É o mesmo custo que `CT-GED-02-S1` já paga, e a limpeza pós-execução da suíte
+  59  |  * (`scripts/limpar-massa.mjs`) só cancela solicitação — não apaga documento do GED. A remoção é
+  60  |  * manual, pela dupla `navigation/removeDoc` → `recycleBin/removeDocument` documentada na skill
+  61  |  * `cassi-fluig-master`. Todos nascem com o carimbo `QA` da factory, que é o que os torna
+  62  |  * localizáveis depois.
+  63  |  */
+  64  | 
+  65  | /** Cabeçalho de executável PE/DOS — o que uma validação por CONTEÚDO reconheceria. */
+  66  | const MAGIC_BYTES_EXECUTAVEL = Buffer.from([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00]);
+  67  | 
+  68  | /**
+  69  |  * Escreve um arquivo de massa em diretório temporário e devolve o caminho.
+  70  |  *
+  71  |  * @param {string} nomeDoArquivo nome COM extensão — é ele que o caso investiga
+  72  |  * @param {Buffer | string} conteudo
+  73  |  * @returns {Promise&lt;string&gt;}
+  74  |  */
+  75  | async function arquivoTemporario(nomeDoArquivo, conteudo) {
+  76  |   const diretorio = await mkdtemp(join(tmpdir(), `cassi-e2e-ged-${randomUUID().slice(0, 8)}-`));
+  77  |   const caminho = join(diretorio, nomeDoArquivo);
+  78  |   await writeFile(caminho, conteudo);
+  79  |   return caminho;
+  80  | }
+  81  | 
+  82  | test.afterEach(async ({ page }) =&gt; {
+  83  |   // A pasta atual do GED é lembrada no SERVIDOR, por usuário — não por sessão de navegador.
+  84  |   // Sem este reset, a próxima spec da suíte aterrissa fora da Raiz ao chamar `goto()`.
+  85  |   // `irParaRaizGarantido()` clica na Raiz ANTES de exigir a grade: exigir a grade primeiro faz
+  86  |   // o afterEach gastar 45s esperando um `columnheader` inexistente quando a pasta corrente da
+  87  |   // conta não vale mais — e afterEach vermelho reprova o teste inteiro, mesmo com o corpo do
+  88  |   // teste verde (armadilha já paga em `gestao-documentos.spec.js`).
+  89  |   const documentosPage = new DocumentosGedPage(page);
+  90  |   await documentosPage.irParaRaizGarantido();
+  91  | });
+  92  | 
+  93  | /**
+  94  |  * Publica um arquivo em "Meus Documentos" e afirma a regra de allowlist: mensagem de bloqueio
+  95  |  * na tela e nada gravado na pasta.
+  96  |  *
+  97  |  * @param {import('@playwright/test').Page} page
+  98  |  * @param {{ caminhoArquivo: string, nomeDoArquivo: string, porQue: string }} caso
+  99  |  */
+  100 | async function expectPublicacaoBloqueada(page, { caminhoArquivo, nomeDoArquivo, porQue }) {
+  101 |   const documentosPage = new DocumentosGedPage(page);
+  102 |   const documento = criarDocumento();
+  103 | 
+  104 |   await documentosPage.irParaRaizGarantido();
+  105 |   await documentosPage.abrirPasta('Meus Documentos');
+  106 | 
+  107 |   await documentosPage.enviarDocumento({
+  108 |     descricao: documento.descricao,
+  109 |     caminhoArquivo,
+  110 |     esperaPublicacao: false,
+  111 |   });
+  112 | 
+  113 |   await expect(
+  114 |     page.getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i),
+  115 |     `esperada uma mensagem de bloqueio ao publicar "${nomeDoArquivo}": ${porQue}. Nenhuma ` +
+  116 |       'mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que ' +
+  117 |       'CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista ' +
+  118 |       'negra deixa este caso vermelho, que é exatamente o ponto dele',
+&gt; 119 |   ).toBeVisible();
+      |     ^ Error: esperada uma mensagem de bloqueio ao publicar "qa-script-shell.sh": um .sh é executável e não pertence a uma allowlist de documentos. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele
+  120 | 
+  121 |   // Afirmado sobre a pasta INTEIRA: a grade pagina em 30 por Descrição e o documento pode
+  122 |   // estar numa página seguinte. `tentativas: 1` porque aqui não se espera nada aparecer.
+  123 |   await documentosPage.irParaPaginaComDocumento(documento.descricao, { tentativas: 1 });
+  124 |   await expect(
+  125 |     documentosPage.localizarLinha(documento.descricao),
+  126 |     `esperado que nada fosse gravado ao publicar "${nomeDoArquivo}" — o documento foi publicado ` +
+  127 |       `normalmente em "Meus Documentos" como "${documento.descricao}", e precisa ser removido à ` +
+  128 |       'mão (navigation/removeDoc → recycleBin/removeDocument)',
+  129 |   ).toHaveCount(0);
+  130 | }
+  131 | 
+  132 | test.describe('GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)', () =&gt; {
+  133 |   test('CT-GED-02-S2 @destrutivo — script de lote (.bat) deveria ser rejeitado', async ({ page }) =&gt; {
+  134 |     const nomeDoArquivo = 'qa-script-lote.bat';
+  135 |     const caminhoArquivo = await arquivoTemporario(
+  136 |       nomeDoArquivo,
+  137 |       '@echo off\r\nREM QA — massa de teste de allowlist do GED\r\n',
+  138 |     );
+  139 | 
+  140 |     await expectPublicacaoBloqueada(page, {
+  141 |       caminhoArquivo,
+  142 |       nomeDoArquivo,
+  143 |       porQue:
+  144 |         'um .bat é executável no Windows e não pertence a nenhuma allowlist razoável de um GED ' +
+  145 |         'documental',
+  146 |     });
+  147 |   });
+  148 | 
+  149 |   test('CT-GED-02-S2 @destrutivo — shell script (.sh) deveria ser rejeitado', async ({ page }) =&gt; {
+  150 |     const nomeDoArquivo = 'qa-script-shell.sh';
+  151 |     const caminhoArquivo = await arquivoTemporario(
+  152 |       nomeDoArquivo,
+  153 |       '#!/bin/sh\n# QA — massa de teste de allowlist do GED\n',
+  154 |     );
+  155 | 
+  156 |     await expectPublicacaoBloqueada(page, {
+  157 |       caminhoArquivo,
+  158 |       nomeDoArquivo,
+  159 |       porQue: 'um .sh é executável e não pertence a uma allowlist de documentos',
+  160 |     });
+  161 |   });
+  162 | 
+  163 |   test('CT-GED-02-S2 @destrutivo — dupla extensão (.pdf.exe) deveria ser rejeitada', async ({ page }) =&gt; {
+  164 |     const nomeDoArquivo = 'qa-relatorio.pdf.exe';
+  165 |     const caminhoArquivo = await arquivoTemporario(nomeDoArquivo, MAGIC_BYTES_EXECUTAVEL);
+  166 | 
+  167 |     await expectPublicacaoBloqueada(page, {
+  168 |       caminhoArquivo,
+  169 |       nomeDoArquivo,
+  170 |       porQue:
+  171 |         'é o disfarce clássico — o nome sugere um PDF, a extensão REAL é .exe, e uma validação ' +
+  172 |         'que olhe só o começo do nome (ou que procure ".pdf" em qualquer posição) deixa passar',
+  173 |     });
+  174 |   });
+  175 | 
+  176 |   test('CT-GED-02-S2 @destrutivo — executável renomeado para .pdf deveria ser rejeitado pelo conteúdo', async ({
+  177 |     page,
+  178 |   }) =&gt; {
+  179 |     const nomeDoArquivo = 'qa-executavel-disfarcado.pdf';
+  180 |     const caminhoArquivo = await arquivoTemporario(nomeDoArquivo, MAGIC_BYTES_EXECUTAVEL);
+  181 | 
+  182 |     const documentosPage = new DocumentosGedPage(page);
+  183 |     const documento = criarDocumento();
+  184 | 
+  185 |     await documentosPage.irParaRaizGarantido();
+  186 |     await documentosPage.abrirPasta('Meus Documentos');
+  187 | 
+  188 |     await documentosPage.enviarDocumento({
+  189 |       descricao: documento.descricao,
+  190 |       caminhoArquivo,
+  191 |       esperaPublicacao: false,
+  192 |     });
+  193 | 
+  194 |     // Mensagem PRÓPRIA, diferente dos três casos acima: este é o único que uma allowlist
+  195 |     // correta, sozinha, NÃO pega. O arquivo se chama `.pdf` e o conteúdo é um executável
+  196 |     // (`MZ`). Se este caso continuar vermelho depois de os outros três ficarem verdes, a
+  197 |     // leitura é precisa: a validação implementada é SINTÁTICA (olha o nome) e o produto segue
+  198 |     // aceitando binário arbitrário com extensão permitida.
+  199 |     await expect(
+  200 |       page.getByText(
+  201 |         /extensão não permitida|tipo de arquivo não permitido|arquivo não permitido|conteúdo não corresponde|arquivo inválido/i,
+  202 |       ),
+  203 |       `esperada mensagem de bloqueio ao publicar "${nomeDoArquivo}": o nome diz ".pdf" mas o ` +
+  204 |         'conteúdo começa com os magic bytes "MZ" de um executável PE/DOS. Nenhuma mensagem foi ' +
+  205 |         'exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros três casos de CT-GED-02-S2 ' +
+  206 |         'estiverem VERDES e só este reprovar, a allowlist foi implementada mas valida apenas a ' +
+  207 |         'EXTENSÃO DO NOME — nunca o conteúdo —, e renomear o arquivo continua sendo suficiente ' +
+  208 |         'para subir um binário ao GED',
+  209 |     ).toBeVisible();
+  210 | 
+  211 |     await documentosPage.irParaPaginaComDocumento(documento.descricao, { tentativas: 1 });
+  212 |     await expect(
+  213 |       documentosPage.localizarLinha(documento.descricao),
+  214 |       `esperado que nada fosse gravado ao publicar "${nomeDoArquivo}" — o executável disfarçado ` +
+  215 |         `foi publicado em "Meus Documentos" como "${documento.descricao}"`,
+  216 |     ).toHaveCount(0);
+  217 |   });
+  218 | });
+  219 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=929833 npx playwright test tests/e2e/documentos/bloqueio-extensoes.spec.js -g "CT-GED-02-S2 @destrutivo — shell script (.sh) deveria ser rejeitado"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-d2ab4-pt-sh-deveria-ser-rejeitado-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-d2ab4-pt-sh-deveria-ser-rejeitado-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-d2ab4-pt-sh-deveria-ser-rejeitado-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-d2ab4-pt-sh-deveria-ser-rejeitado-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+<article class="falha" id="f48" data-classe="catalogado" data-area="documentos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — já catalogado no README</span>
+      <span class="ordem">#49</span>
+    </div>
+    <h2>CT-GED-02-S2 @destrutivo — dupla extensão (.pdf.exe) deveria ser rejeitada</h2>
+    <p class="suite">e2e/documentos/bloqueio-extensoes.spec.js › GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/documentos/bloqueio-extensoes.spec.js:163</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>47.9s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>471797</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G5">G5</a> — GED aceita qualquer extensão e qualquer conteúdo (CT-GED-02-S1 / S2) · <b>Referência:</b> CT-GED-02-S2 (.pdf.exe (dupla extensão))</p>
+    <p><b>O que acontece:</b> <code>qa-relatorio.pdf.exe</code> foi publicado no GED sem nenhuma mensagem de bloqueio.</p>
+    <p><b>Por que falha:</b> Não há allowlist de extensão: uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho.</p>
+    <p><b>Onde falha:</b> <code>expect(mensagemDeBloqueio).toBeVisible()</code> em <code>bloqueio-extensoes.spec.js:119</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/documentos/bloqueio-extensoes.spec.js:119</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: esperada uma mensagem de bloqueio ao publicar "qa-relatorio.pdf.exe": é o disfarce clássico — o nome sugere um PDF, a extensão REAL é .exe, e uma validação que olhe só o começo do nome (ou que procure ".pdf" em qualquer posição) deixa passar. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele</p>
+    <pre class="detalhe">expect(locator).toBeVisible() failed
+
+Locator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">113</span>  await expect(</span>
+<span class="linha"><span class="num">114</span>    page.getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i),</span>
+<span class="linha"><span class="num">115</span>    `esperada uma mensagem de bloqueio ao publicar "${nomeDoArquivo}": ${porQue}. Nenhuma ` +</span>
+<span class="linha"><span class="num">116</span>      'mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que ' +</span>
+<span class="linha"><span class="num">117</span>      'CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista ' +</span>
+<span class="linha"><span class="num">118</span>      'negra deixa este caso vermelho, que é exatamente o ponto dele',</span>
+<span class="linha alvo"><span class="num">119</span>  ).toBeVisible();</span>
+<span class="linha"><span class="num">120</span></span>
+<span class="linha"><span class="num">121</span>  // Afirmado sobre a pasta INTEIRA: a grade pagina em 30 por Descrição e o documento pode</span>
+<span class="linha"><span class="num">122</span>  // estar numa página seguinte. `tentativas: 1` porque aqui não se espera nada aparecer.</span>
+<span class="linha"><span class="num">123</span>  await documentosPage.irParaPaginaComDocumento(documento.descricao, { tentativas: 1 });</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/documentos/bloqueio-extensoes.spec.js",
+    "GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)",
+    "CT-GED-02-S2 @destrutivo — dupla extensão (.pdf.exe) deveria ser rejeitada"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation",
+  "fakerSeed": 471797,
+  "reproduzirCom": "FAKER_SEED=471797 npx playwright test",
+  "erro": "Error: esperada uma mensagem de bloqueio ao publicar \"qa-relatorio.pdf.exe\": é o disfarce clássico — o nome sugere um PDF, a extensão REAL é .exe, e uma validação que olhe só o começo do nome (ou que procure \".pdf\" em qualquer posição) deixa passar. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque \".exe\" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - esperada uma mensagem de bloqueio ao publicar \"qa-relatorio.pdf.exe\": é o disfarce clássico — o nome sugere um PDF, a extensão REAL é .exe, e uma validação que olhe só o começo do nome (ou que procure \".pdf\" em qualquer posição) deixa passar. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque \".exe\" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)\u001b[22m\n"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - esperada uma mensagem de bloqueio ao publicar "qa-relatorio.pdf.exe": é o disfarce clássico — o nome sugere um PDF, a extensão REAL é .exe, e uma validação que olhe só o começo do nome (ou que procure ".pdf" em qualquer posição) deixa passar. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele with timeout 30000ms
+  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/documentos/bloqueio-extensoes.spec.js &gt;&gt; GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2) &gt;&gt; CT-GED-02-S2 @destrutivo — dupla extensão (.pdf.exe) deveria ser rejeitada
+- Location: tests/e2e/documentos/bloqueio-extensoes.spec.js:163:3
+
+# Error details
+
+```
+Error: esperada uma mensagem de bloqueio ao publicar "qa-relatorio.pdf.exe": é o disfarce clássico — o nome sugere um PDF, a extensão REAL é .exe, e uma validação que olhe só o começo do nome (ou que procure ".pdf" em qualquer posição) deixa passar. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele
+
+expect(locator).toBeVisible() failed
+
+Locator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+  - esperada uma mensagem de bloqueio ao publicar "qa-relatorio.pdf.exe": é o disfarce clássico — o nome sugere um PDF, a extensão REAL é .exe, e uma validação que olhe só o começo do nome (ou que procure ".pdf" em qualquer posição) deixa passar. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele with timeout 30000ms
+  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+
+```
+
+```yaml
+- navigation:
+  - link "Logo da empresa":
+    - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+    - img "Logo da empresa"
+  - button "Abrir ajuda"
+  - button "Abrir notificações": 9+
+  - img "Usuário TBC (TOTVS)"
+- navigation
+- navigation "Menu de navegação principal responsivo":
+  - list:
+    - listitem:
+      - link "Home":
+        - /url: /portal/p/1/home
+    - listitem:
+      - link "Buscar":
+        - /url: "#"
+    - listitem:
+      - link "Favoritos":
+        - /url: /portal/p/1/principalfavorites
+  - list:
+    - listitem:
+      - link "Documentos":
+        - /url: /portal/p/1/ecmnavigation
+    - listitem:
+      - link "Processos":
+        - /url: /portal/p/1/principalprocess
+    - listitem:
+      - link "Central de Tarefas":
+        - /url: /portal/p/1/pagecentraltask
+    - listitem:
+      - link "Social":
+        - /url: /portal/p/1/social
+    - listitem:
+      - link "Comunidades":
+        - /url: /portal/p/1/communities
+    - listitem:
+      - link "Páginas":
+        - /url: "#"
+  - list:
+    - listitem:
+      - link "Store":
+        - /url: /portal/p/1/mysolutions
+    - listitem:
+      - link "Lixeira":
+        - /url: /portal/p/1/pagerecyclebin
+  - list:
+    - listitem:
+      - link "Fechar menu":
+        - /url: "#"
+- navigation "Breadcrumb":
+  - list:
+    - listitem:
+      - link "Raiz":
+        - /url: javascript:ECM.navigation.getContent(0, 0, 0, null)
+      - text: 
+    - listitem:
+      - link "Meus Documentos":
+        - /url: javascript:ECM.navigation.getContent(704916, 0, 0, null)
+- group:
+  - row "  30":
+    - rowgroup:
+      - row "  30":
+        - cell "  30":
+          - table:
+            - rowgroup:
+              - row "  30":
+                - cell ""
+                - cell
+                - cell ""
+                - cell "30":
+                  - listbox:
+                    - option "30" [selected]
+                    - option "50"
+                    - option "75"
+                    - option "100"
+        - cell
+- list:
+  - listitem:
+    - link "Novo ":
+      - /url: "#"
+  - listitem:
+    - button "Choose File"
+    - link "Carregar arquivos":
+      - /url: "#"
+  - listitem:
+    - link "Copiar":
+      - /url: "#"
+  - listitem:
+    - link "Colar":
+      - /url: "#"
+  - listitem:
+    - link "Recortar":
+      - /url: "#"
+  - listitem:
+    - link "Remover":
+      - /url: "#"
+  - listitem:
+    - link "Mais ":
+      - /url: "#"
+- grid:
+  - rowgroup:
+    - rowheader "Descrição  Atualização  Código ":
+      - columnheader:
+        - checkbox
+      - columnheader
+      - columnheader "Descrição "
+      - columnheader
+      - columnheader
+      - columnheader "Atualização "
+      - columnheader "Código "
+      - columnheader
+- grid:
+  - rowgroup:
+    - row:
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+    - row "Check-out 20/08/2026 705180  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "Check-out"
+      - gridcell
+      - gridcell
+      - gridcell "20/08/2026"
+      - gridcell "705180"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento 84a4ec9b 24/08/2026 705364  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento 84a4ec9b"
+      - gridcell
+      - gridcell
+      - gridcell "24/08/2026"
+      - gridcell "705364"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Impressionante de Algodão bfa6733f 25/08/2026 706146  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Impressionante de Algodão bfa6733f"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706146"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Incrível de Granito 0659e02c 02/09/2026 708136  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Incrível de Granito 0659e02c"
+      - gridcell
+      - gridcell
+      - gridcell "02/09/2026"
+      - gridcell "708136"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Inteligente de Granito f6335c05 28/08/2026 707532  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Inteligente de Granito f6335c05"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707532"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Lindo de Aço 07510375 28/08/2026 707361  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Lindo de Aço 07510375"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707361"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Lindo de Algodão 356866b8 25/08/2026 706414  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Lindo de Algodão 356866b8"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706414"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Lindo de Granito 10bf77fd 25/08/2026 706151  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Lindo de Granito 10bf77fd"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706151"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Sem marca de Madeira 4d5c7442 27/08/2026 707010  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Sem marca de Madeira 4d5c7442"
+      - gridcell
+      - gridcell
+      - gridcell "27/08/2026"
+      - gridcell "707010"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Ergonômico de Aço 8f72fe5b 25/08/2026 706141  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Ergonômico de Aço 8f72fe5b"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706141"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Genérico de Concreto 913b0680 01/09/2026 708027  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Genérico de Concreto 913b0680"
+      - gridcell
+      - gridcell
+      - gridcell "01/09/2026"
+      - gridcell "708027"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Licenciado de Borracha 16cf6823 28/08/2026 707365  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Licenciado de Borracha 16cf6823"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707365"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Refinado de Concreto b0226155 25/08/2026 706168  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Refinado de Concreto b0226155"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706168"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Fantástico de Borracha 73e6e9ba 25/08/2026 706280  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Fantástico de Borracha 73e6e9ba"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706280"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Genérico de Congelado 889024d8 25/08/2026 706167  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Genérico de Congelado 889024d8"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706167"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Gostoso de Aço 0963e83f 01/09/2026 707821  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Gostoso de Aço 0963e83f"
+      - gridcell
+      - gridcell
+      - gridcell "01/09/2026"
+      - gridcell "707821"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Gostoso de Algodão d32605a4 25/08/2026 706315  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Gostoso de Algodão d32605a4"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706315"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Licenciado de Concreto d4894fcb 25/08/2026 706353  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Licenciado de Concreto d4894fcb"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706353"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Lustroso de Borracha d0fd03c3 25/08/2026 706270  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Lustroso de Borracha d0fd03c3"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706270"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Pequeno de Algodão 4e885dfe 25/08/2026 706448  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Pequeno de Algodão 4e885dfe"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706448"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Pequeno de Granito fe5acfb9 25/08/2026 706321  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Pequeno de Granito fe5acfb9"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706321"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Rústico de Borracha 292d33fe 25/08/2026 706392  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Rústico de Borracha 292d33fe"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706392"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Sem marca de Metal 23aaec75 27/08/2026 707009  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Sem marca de Metal 23aaec75"
+      - gridcell
+      - gridcell
+      - gridcell "27/08/2026"
+      - gridcell "707009"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Feito à mão de Macio d1213f8f 25/08/2026 706139  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Feito à mão de Macio d1213f8f"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706139"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Inteligente de Aço 8b8d839f 25/08/2026 706156  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Inteligente de Aço 8b8d839f"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706156"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Lindo de Metal 263b0772 02/09/2026 708132  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Lindo de Metal 263b0772"
+      - gridcell
+      - gridcell
+      - gridcell "02/09/2026"
+      - gridcell "708132"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Prático de Borracha e23898b3 25/08/2026 706385  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Prático de Borracha e23898b3"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706385"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Refinado de Algodão c30bf96f 28/08/2026 707528  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Refinado de Algodão c30bf96f"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707528"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Cadeira Fantástico de Macio 8493d196 25/08/2026 706404  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Cadeira Fantástico de Macio 8493d196"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706404"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Cadeira Feito à mão de Concreto 6d8f3e92 25/08/2026 706318  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Cadeira Feito à mão de Concreto 6d8f3e92"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706318"
+      - gridcell " ":
+        - text: 
+        - button ""
+```
+
+# Test source
+
+```ts
+  19  |  * lista negra: a suíte ficaria verde e o GED continuaria aceitando `.bat`, `.sh`, `.pdf.exe` e
+  20  |  * o clássico executável renomeado para `.pdf`.
+  21  |  *
+  22  |  * Sem este caso, a correção é **declarada e não verificada**. Com ele, só fica verde quem
+  23  |  * implementar a regra certa: aceitar o que está na lista de permitidos, recusar o resto.
+  24  |  *
+  25  |  * ## Desenho
+  26  |  *
+  27  |  * Um teste por arquivo, cada um com massa própria (`factories/documento.js`: prefixo `QA` +
+  28  |  * sufixo único) — nada de um teste percorrendo quatro extensões, que esconderia qual delas
+  29  |  * passou. Os quatro afirmam a MESMA regra e por isso ficam vermelhos juntos hoje.
+  30  |  *
+  31  |  * O último caso é diferente dos outros três e por isso tem mensagem própria: um executável
+  32  |  * (magic bytes `MZ`) **renomeado para `.pdf`**. Se o produto validar só a extensão do nome, ele
+  33  |  * passa nesse caso mesmo com uma allowlist correta — e a mensagem da falha precisa dizer isso,
+  34  |  * para que quem lê o relatório saiba que a validação é **sintática**, não de conteúdo.
+  35  |  *
+  36  |  * ## Cuidados do ambiente (herdados de CT-GED-02-S1, não redescobertos)
+  37  |  *
+  38  |  * - `enviarDocumento` segura o lock `fluig-upload-staging` de `utils/exclusividade.js`: a área
+  39  |  *   de upload é um diretório **por usuário no servidor** (`/volume/wdk-data/upload/&lt;login&gt;/`),
+  40  |  *   compartilhado com o anexo da Solicitação de Compras. Nome de arquivo único não resolve — a
+  41  |  *   disputa é pelo diretório.
+  42  |  * - `esperaPublicacao: false`: o comportamento do publicador é parte do que se testa. Se o
+  43  |  *   Fluig passar a barrar a extensão, o modal pode legitimamente continuar aberto exibindo o
+  44  |  *   erro, e exigir que ele feche transformaria o conserto do produto num vermelho pelo motivo
+  45  |  *   errado.
+  46  |  * - "Nada foi gravado" é afirmado sobre a pasta INTEIRA (`irParaPaginaComDocumento` com
+  47  |  *   `tentativas: 1`): a grade pagina em 30 por Descrição e olhar só a página corrente daria um
+  48  |  *   falso verde justamente no caso negativo.
+  49  |  *
+  50  |  * ## Massa e resíduo
+  51  |  *
+  52  |  * Os arquivos são escritos em diretório temporário do sistema **no momento do teste**, em vez
+  53  |  * de virarem fixtures versionados: `.bat`, `.sh` e um binário com cabeçalho `MZ` no repositório
+  54  |  * são exatamente o que uma varredura de segurança sinaliza, e o conteúdo aqui é irrelevante
+  55  |  * para o caso — o que importa é o NOME e os magic bytes.
+  56  |  *
+  57  |  * ⚠️ **Resíduo**: enquanto o defeito existir, cada execução publica quatro documentos em "Meus
+  58  |  * Documentos". É o mesmo custo que `CT-GED-02-S1` já paga, e a limpeza pós-execução da suíte
+  59  |  * (`scripts/limpar-massa.mjs`) só cancela solicitação — não apaga documento do GED. A remoção é
+  60  |  * manual, pela dupla `navigation/removeDoc` → `recycleBin/removeDocument` documentada na skill
+  61  |  * `cassi-fluig-master`. Todos nascem com o carimbo `QA` da factory, que é o que os torna
+  62  |  * localizáveis depois.
+  63  |  */
+  64  | 
+  65  | /** Cabeçalho de executável PE/DOS — o que uma validação por CONTEÚDO reconheceria. */
+  66  | const MAGIC_BYTES_EXECUTAVEL = Buffer.from([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00]);
+  67  | 
+  68  | /**
+  69  |  * Escreve um arquivo de massa em diretório temporário e devolve o caminho.
+  70  |  *
+  71  |  * @param {string} nomeDoArquivo nome COM extensão — é ele que o caso investiga
+  72  |  * @param {Buffer | string} conteudo
+  73  |  * @returns {Promise&lt;string&gt;}
+  74  |  */
+  75  | async function arquivoTemporario(nomeDoArquivo, conteudo) {
+  76  |   const diretorio = await mkdtemp(join(tmpdir(), `cassi-e2e-ged-${randomUUID().slice(0, 8)}-`));
+  77  |   const caminho = join(diretorio, nomeDoArquivo);
+  78  |   await writeFile(caminho, conteudo);
+  79  |   return caminho;
+  80  | }
+  81  | 
+  82  | test.afterEach(async ({ page }) =&gt; {
+  83  |   // A pasta atual do GED é lembrada no SERVIDOR, por usuário — não por sessão de navegador.
+  84  |   // Sem este reset, a próxima spec da suíte aterrissa fora da Raiz ao chamar `goto()`.
+  85  |   // `irParaRaizGarantido()` clica na Raiz ANTES de exigir a grade: exigir a grade primeiro faz
+  86  |   // o afterEach gastar 45s esperando um `columnheader` inexistente quando a pasta corrente da
+  87  |   // conta não vale mais — e afterEach vermelho reprova o teste inteiro, mesmo com o corpo do
+  88  |   // teste verde (armadilha já paga em `gestao-documentos.spec.js`).
+  89  |   const documentosPage = new DocumentosGedPage(page);
+  90  |   await documentosPage.irParaRaizGarantido();
+  91  | });
+  92  | 
+  93  | /**
+  94  |  * Publica um arquivo em "Meus Documentos" e afirma a regra de allowlist: mensagem de bloqueio
+  95  |  * na tela e nada gravado na pasta.
+  96  |  *
+  97  |  * @param {import('@playwright/test').Page} page
+  98  |  * @param {{ caminhoArquivo: string, nomeDoArquivo: string, porQue: string }} caso
+  99  |  */
+  100 | async function expectPublicacaoBloqueada(page, { caminhoArquivo, nomeDoArquivo, porQue }) {
+  101 |   const documentosPage = new DocumentosGedPage(page);
+  102 |   const documento = criarDocumento();
+  103 | 
+  104 |   await documentosPage.irParaRaizGarantido();
+  105 |   await documentosPage.abrirPasta('Meus Documentos');
+  106 | 
+  107 |   await documentosPage.enviarDocumento({
+  108 |     descricao: documento.descricao,
+  109 |     caminhoArquivo,
+  110 |     esperaPublicacao: false,
+  111 |   });
+  112 | 
+  113 |   await expect(
+  114 |     page.getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i),
+  115 |     `esperada uma mensagem de bloqueio ao publicar "${nomeDoArquivo}": ${porQue}. Nenhuma ` +
+  116 |       'mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que ' +
+  117 |       'CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista ' +
+  118 |       'negra deixa este caso vermelho, que é exatamente o ponto dele',
+&gt; 119 |   ).toBeVisible();
+      |     ^ Error: esperada uma mensagem de bloqueio ao publicar "qa-relatorio.pdf.exe": é o disfarce clássico — o nome sugere um PDF, a extensão REAL é .exe, e uma validação que olhe só o começo do nome (ou que procure ".pdf" em qualquer posição) deixa passar. Nenhuma mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista negra deixa este caso vermelho, que é exatamente o ponto dele
+  120 | 
+  121 |   // Afirmado sobre a pasta INTEIRA: a grade pagina em 30 por Descrição e o documento pode
+  122 |   // estar numa página seguinte. `tentativas: 1` porque aqui não se espera nada aparecer.
+  123 |   await documentosPage.irParaPaginaComDocumento(documento.descricao, { tentativas: 1 });
+  124 |   await expect(
+  125 |     documentosPage.localizarLinha(documento.descricao),
+  126 |     `esperado que nada fosse gravado ao publicar "${nomeDoArquivo}" — o documento foi publicado ` +
+  127 |       `normalmente em "Meus Documentos" como "${documento.descricao}", e precisa ser removido à ` +
+  128 |       'mão (navigation/removeDoc → recycleBin/removeDocument)',
+  129 |   ).toHaveCount(0);
+  130 | }
+  131 | 
+  132 | test.describe('GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)', () =&gt; {
+  133 |   test('CT-GED-02-S2 @destrutivo — script de lote (.bat) deveria ser rejeitado', async ({ page }) =&gt; {
+  134 |     const nomeDoArquivo = 'qa-script-lote.bat';
+  135 |     const caminhoArquivo = await arquivoTemporario(
+  136 |       nomeDoArquivo,
+  137 |       '@echo off\r\nREM QA — massa de teste de allowlist do GED\r\n',
+  138 |     );
+  139 | 
+  140 |     await expectPublicacaoBloqueada(page, {
+  141 |       caminhoArquivo,
+  142 |       nomeDoArquivo,
+  143 |       porQue:
+  144 |         'um .bat é executável no Windows e não pertence a nenhuma allowlist razoável de um GED ' +
+  145 |         'documental',
+  146 |     });
+  147 |   });
+  148 | 
+  149 |   test('CT-GED-02-S2 @destrutivo — shell script (.sh) deveria ser rejeitado', async ({ page }) =&gt; {
+  150 |     const nomeDoArquivo = 'qa-script-shell.sh';
+  151 |     const caminhoArquivo = await arquivoTemporario(
+  152 |       nomeDoArquivo,
+  153 |       '#!/bin/sh\n# QA — massa de teste de allowlist do GED\n',
+  154 |     );
+  155 | 
+  156 |     await expectPublicacaoBloqueada(page, {
+  157 |       caminhoArquivo,
+  158 |       nomeDoArquivo,
+  159 |       porQue: 'um .sh é executável e não pertence a uma allowlist de documentos',
+  160 |     });
+  161 |   });
+  162 | 
+  163 |   test('CT-GED-02-S2 @destrutivo — dupla extensão (.pdf.exe) deveria ser rejeitada', async ({ page }) =&gt; {
+  164 |     const nomeDoArquivo = 'qa-relatorio.pdf.exe';
+  165 |     const caminhoArquivo = await arquivoTemporario(nomeDoArquivo, MAGIC_BYTES_EXECUTAVEL);
+  166 | 
+  167 |     await expectPublicacaoBloqueada(page, {
+  168 |       caminhoArquivo,
+  169 |       nomeDoArquivo,
+  170 |       porQue:
+  171 |         'é o disfarce clássico — o nome sugere um PDF, a extensão REAL é .exe, e uma validação ' +
+  172 |         'que olhe só o começo do nome (ou que procure ".pdf" em qualquer posição) deixa passar',
+  173 |     });
+  174 |   });
+  175 | 
+  176 |   test('CT-GED-02-S2 @destrutivo — executável renomeado para .pdf deveria ser rejeitado pelo conteúdo', async ({
+  177 |     page,
+  178 |   }) =&gt; {
+  179 |     const nomeDoArquivo = 'qa-executavel-disfarcado.pdf';
+  180 |     const caminhoArquivo = await arquivoTemporario(nomeDoArquivo, MAGIC_BYTES_EXECUTAVEL);
+  181 | 
+  182 |     const documentosPage = new DocumentosGedPage(page);
+  183 |     const documento = criarDocumento();
+  184 | 
+  185 |     await documentosPage.irParaRaizGarantido();
+  186 |     await documentosPage.abrirPasta('Meus Documentos');
+  187 | 
+  188 |     await documentosPage.enviarDocumento({
+  189 |       descricao: documento.descricao,
+  190 |       caminhoArquivo,
+  191 |       esperaPublicacao: false,
+  192 |     });
+  193 | 
+  194 |     // Mensagem PRÓPRIA, diferente dos três casos acima: este é o único que uma allowlist
+  195 |     // correta, sozinha, NÃO pega. O arquivo se chama `.pdf` e o conteúdo é um executável
+  196 |     // (`MZ`). Se este caso continuar vermelho depois de os outros três ficarem verdes, a
+  197 |     // leitura é precisa: a validação implementada é SINTÁTICA (olha o nome) e o produto segue
+  198 |     // aceitando binário arbitrário com extensão permitida.
+  199 |     await expect(
+  200 |       page.getByText(
+  201 |         /extensão não permitida|tipo de arquivo não permitido|arquivo não permitido|conteúdo não corresponde|arquivo inválido/i,
+  202 |       ),
+  203 |       `esperada mensagem de bloqueio ao publicar "${nomeDoArquivo}": o nome diz ".pdf" mas o ` +
+  204 |         'conteúdo começa com os magic bytes "MZ" de um executável PE/DOS. Nenhuma mensagem foi ' +
+  205 |         'exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros três casos de CT-GED-02-S2 ' +
+  206 |         'estiverem VERDES e só este reprovar, a allowlist foi implementada mas valida apenas a ' +
+  207 |         'EXTENSÃO DO NOME — nunca o conteúdo —, e renomear o arquivo continua sendo suficiente ' +
+  208 |         'para subir um binário ao GED',
+  209 |     ).toBeVisible();
+  210 | 
+  211 |     await documentosPage.irParaPaginaComDocumento(documento.descricao, { tentativas: 1 });
+  212 |     await expect(
+  213 |       documentosPage.localizarLinha(documento.descricao),
+  214 |       `esperado que nada fosse gravado ao publicar "${nomeDoArquivo}" — o executável disfarçado ` +
+  215 |         `foi publicado em "Meus Documentos" como "${documento.descricao}"`,
+  216 |     ).toHaveCount(0);
+  217 |   });
+  218 | });
+  219 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=471797 npx playwright test tests/e2e/documentos/bloqueio-extensoes.spec.js -g "CT-GED-02-S2 @destrutivo — dupla extensão (.pdf.exe) deveria ser rejeitada"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-f98c4-f-exe-deveria-ser-rejeitada-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-f98c4-f-exe-deveria-ser-rejeitada-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-f98c4-f-exe-deveria-ser-rejeitada-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-f98c4-f-exe-deveria-ser-rejeitada-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+<article class="falha" id="f49" data-classe="catalogado" data-area="documentos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — já catalogado no README</span>
+      <span class="ordem">#50</span>
+    </div>
+    <h2>CT-GED-02-S2 @destrutivo — executável renomeado para .pdf deveria ser rejeitado pelo conteúdo</h2>
+    <p class="suite">e2e/documentos/bloqueio-extensoes.spec.js › GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/documentos/bloqueio-extensoes.spec.js:176</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>46.0s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>943592</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G5">G5</a> — GED aceita qualquer extensão e qualquer conteúdo (CT-GED-02-S1 / S2) · <b>Referência:</b> CT-GED-02-S2 (conteúdo)</p>
+    <p><b>O que acontece:</b> <code>qa-executavel-disfarcado.pdf</code> — nome <code>.pdf</code>, conteúdo começa com os magic bytes <code>MZ</code> de um executável PE — foi publicado sem mensagem.</p>
+    <p><b>Por que falha:</b> Nem o nome nem o conteúdo são inspecionados. Este caso continuará vermelho mesmo se uma allowlist por extensão for implementada.</p>
+    <p><b>Onde falha:</b> <code>bloqueio-extensoes.spec.js:209</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/documentos/bloqueio-extensoes.spec.js:209</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: esperada mensagem de bloqueio ao publicar "qa-executavel-disfarcado.pdf": o nome diz ".pdf" mas o conteúdo começa com os magic bytes "MZ" de um executável PE/DOS. Nenhuma mensagem foi exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros três casos de CT-GED-02-S2 estiverem VERDES e só este reprovar, a allowlist foi implementada mas valida apenas a EXTENSÃO DO NOME — nunca o conteúdo —, e renomear o arquivo continua sendo suficiente para subir um binário ao GED</p>
+    <pre class="detalhe">expect(locator).toBeVisible() failed
+
+Locator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido|conteúdo não corresponde|arquivo inválido/i)
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">203</span>      `esperada mensagem de bloqueio ao publicar "${nomeDoArquivo}": o nome diz ".pdf" mas o ` +</span>
+<span class="linha"><span class="num">204</span>        'conteúdo começa com os magic bytes "MZ" de um executável PE/DOS. Nenhuma mensagem foi ' +</span>
+<span class="linha"><span class="num">205</span>        'exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros três casos de CT-GED-02-S2 ' +</span>
+<span class="linha"><span class="num">206</span>        'estiverem VERDES e só este reprovar, a allowlist foi implementada mas valida apenas a ' +</span>
+<span class="linha"><span class="num">207</span>        'EXTENSÃO DO NOME — nunca o conteúdo —, e renomear o arquivo continua sendo suficiente ' +</span>
+<span class="linha"><span class="num">208</span>        'para subir um binário ao GED',</span>
+<span class="linha alvo"><span class="num">209</span>    ).toBeVisible();</span>
+<span class="linha"><span class="num">210</span></span>
+<span class="linha"><span class="num">211</span>    await documentosPage.irParaPaginaComDocumento(documento.descricao, { tentativas: 1 });</span>
+<span class="linha"><span class="num">212</span>    await expect(</span>
+<span class="linha"><span class="num">213</span>      documentosPage.localizarLinha(documento.descricao),</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/documentos/bloqueio-extensoes.spec.js",
+    "GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)",
+    "CT-GED-02-S2 @destrutivo — executável renomeado para .pdf deveria ser rejeitado pelo conteúdo"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation",
+  "fakerSeed": 943592,
+  "reproduzirCom": "FAKER_SEED=943592 npx playwright test",
+  "erro": "Error: esperada mensagem de bloqueio ao publicar \"qa-executavel-disfarcado.pdf\": o nome diz \".pdf\" mas o conteúdo começa com os magic bytes \"MZ\" de um executável PE/DOS. Nenhuma mensagem foi exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros três casos de CT-GED-02-S2 estiverem VERDES e só este reprovar, a allowlist foi implementada mas valida apenas a EXTENSÃO DO NOME — nunca o conteúdo —, e renomear o arquivo continua sendo suficiente para subir um binário ao GED\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido|conteúdo não corresponde|arquivo inválido/i)\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - esperada mensagem de bloqueio ao publicar \"qa-executavel-disfarcado.pdf\": o nome diz \".pdf\" mas o conteúdo começa com os magic bytes \"MZ\" de um executável PE/DOS. Nenhuma mensagem foi exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros três casos de CT-GED-02-S2 estiverem VERDES e só este reprovar, a allowlist foi implementada mas valida apenas a EXTENSÃO DO NOME — nunca o conteúdo —, e renomear o arquivo continua sendo suficiente para subir um binário ao GED with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido|conteúdo não corresponde|arquivo inválido/i)\u001b[22m\n"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - esperada mensagem de bloqueio ao publicar "qa-executavel-disfarcado.pdf": o nome diz ".pdf" mas o conteúdo começa com os magic bytes "MZ" de um executável PE/DOS. Nenhuma mensagem foi exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros três casos de CT-GED-02-S2 estiverem VERDES e só este reprovar, a allowlist foi implementada mas valida apenas a EXTENSÃO DO NOME — nunca o conteúdo —, e renomear o arquivo continua sendo suficiente para subir um binário ao GED with timeout 30000ms
+  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido|conteúdo não corresponde|arquivo inválido/i)</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/documentos/bloqueio-extensoes.spec.js &gt;&gt; GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2) &gt;&gt; CT-GED-02-S2 @destrutivo — executável renomeado para .pdf deveria ser rejeitado pelo conteúdo
+- Location: tests/e2e/documentos/bloqueio-extensoes.spec.js:176:3
+
+# Error details
+
+```
+Error: esperada mensagem de bloqueio ao publicar "qa-executavel-disfarcado.pdf": o nome diz ".pdf" mas o conteúdo começa com os magic bytes "MZ" de um executável PE/DOS. Nenhuma mensagem foi exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros três casos de CT-GED-02-S2 estiverem VERDES e só este reprovar, a allowlist foi implementada mas valida apenas a EXTENSÃO DO NOME — nunca o conteúdo —, e renomear o arquivo continua sendo suficiente para subir um binário ao GED
+
+expect(locator).toBeVisible() failed
+
+Locator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido|conteúdo não corresponde|arquivo inválido/i)
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+  - esperada mensagem de bloqueio ao publicar "qa-executavel-disfarcado.pdf": o nome diz ".pdf" mas o conteúdo começa com os magic bytes "MZ" de um executável PE/DOS. Nenhuma mensagem foi exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros três casos de CT-GED-02-S2 estiverem VERDES e só este reprovar, a allowlist foi implementada mas valida apenas a EXTENSÃO DO NOME — nunca o conteúdo —, e renomear o arquivo continua sendo suficiente para subir um binário ao GED with timeout 30000ms
+  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido|conteúdo não corresponde|arquivo inválido/i)
+
+```
+
+```yaml
+- navigation:
+  - link "Logo da empresa":
+    - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+    - img "Logo da empresa"
+  - button "Abrir ajuda"
+  - button "Abrir notificações": 9+
+  - img "Usuário TBC (TOTVS)"
+- navigation
+- navigation "Menu de navegação principal responsivo":
+  - list:
+    - listitem:
+      - link "Home":
+        - /url: /portal/p/1/home
+    - listitem:
+      - link "Buscar":
+        - /url: "#"
+    - listitem:
+      - link "Favoritos":
+        - /url: /portal/p/1/principalfavorites
+  - list:
+    - listitem:
+      - link "Documentos":
+        - /url: /portal/p/1/ecmnavigation
+    - listitem:
+      - link "Processos":
+        - /url: /portal/p/1/principalprocess
+    - listitem:
+      - link "Central de Tarefas":
+        - /url: /portal/p/1/pagecentraltask
+    - listitem:
+      - link "Social":
+        - /url: /portal/p/1/social
+    - listitem:
+      - link "Comunidades":
+        - /url: /portal/p/1/communities
+    - listitem:
+      - link "Páginas":
+        - /url: "#"
+  - list:
+    - listitem:
+      - link "Store":
+        - /url: /portal/p/1/mysolutions
+    - listitem:
+      - link "Lixeira":
+        - /url: /portal/p/1/pagerecyclebin
+  - list:
+    - listitem:
+      - link "Fechar menu":
+        - /url: "#"
+- navigation "Breadcrumb":
+  - list:
+    - listitem:
+      - link "Raiz":
+        - /url: javascript:ECM.navigation.getContent(0, 0, 0, null)
+      - text: 
+    - listitem:
+      - link "Meus Documentos":
+        - /url: javascript:ECM.navigation.getContent(704916, 0, 0, null)
+- group:
+  - row "  30":
+    - rowgroup:
+      - row "  30":
+        - cell "  30":
+          - table:
+            - rowgroup:
+              - row "  30":
+                - cell ""
+                - cell
+                - cell ""
+                - cell "30":
+                  - listbox:
+                    - option "30" [selected]
+                    - option "50"
+                    - option "75"
+                    - option "100"
+        - cell
+- list:
+  - listitem:
+    - link "Novo ":
+      - /url: "#"
+  - listitem:
+    - button "Choose File"
+    - link "Carregar arquivos":
+      - /url: "#"
+  - listitem:
+    - link "Copiar":
+      - /url: "#"
+  - listitem:
+    - link "Colar":
+      - /url: "#"
+  - listitem:
+    - link "Recortar":
+      - /url: "#"
+  - listitem:
+    - link "Remover":
+      - /url: "#"
+  - listitem:
+    - link "Mais ":
+      - /url: "#"
+- grid:
+  - rowgroup:
+    - rowheader "Descrição  Atualização  Código ":
+      - columnheader:
+        - checkbox
+      - columnheader
+      - columnheader "Descrição "
+      - columnheader
+      - columnheader
+      - columnheader "Atualização "
+      - columnheader "Código "
+      - columnheader
+- grid:
+  - rowgroup:
+    - row:
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+    - row "Check-out 20/08/2026 705180  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "Check-out"
+      - gridcell
+      - gridcell
+      - gridcell "20/08/2026"
+      - gridcell "705180"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento 84a4ec9b 24/08/2026 705364  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento 84a4ec9b"
+      - gridcell
+      - gridcell
+      - gridcell "24/08/2026"
+      - gridcell "705364"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Impressionante de Algodão bfa6733f 25/08/2026 706146  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Impressionante de Algodão bfa6733f"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706146"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Incrível de Granito 0659e02c 02/09/2026 708136  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Incrível de Granito 0659e02c"
+      - gridcell
+      - gridcell
+      - gridcell "02/09/2026"
+      - gridcell "708136"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Inteligente de Granito f6335c05 28/08/2026 707532  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Inteligente de Granito f6335c05"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707532"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Lindo de Aço 07510375 28/08/2026 707361  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Lindo de Aço 07510375"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707361"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Lindo de Algodão 356866b8 25/08/2026 706414  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Lindo de Algodão 356866b8"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706414"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Lindo de Granito 10bf77fd 25/08/2026 706151  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Lindo de Granito 10bf77fd"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706151"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Sem marca de Madeira 4d5c7442 27/08/2026 707010  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Sem marca de Madeira 4d5c7442"
+      - gridcell
+      - gridcell
+      - gridcell "27/08/2026"
+      - gridcell "707010"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Ergonômico de Aço 8f72fe5b 25/08/2026 706141  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Ergonômico de Aço 8f72fe5b"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706141"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Genérico de Concreto 913b0680 01/09/2026 708027  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Genérico de Concreto 913b0680"
+      - gridcell
+      - gridcell
+      - gridcell "01/09/2026"
+      - gridcell "708027"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Licenciado de Borracha 16cf6823 28/08/2026 707365  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Licenciado de Borracha 16cf6823"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707365"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Refinado de Concreto b0226155 25/08/2026 706168  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Refinado de Concreto b0226155"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706168"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Fantástico de Borracha 73e6e9ba 25/08/2026 706280  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Fantástico de Borracha 73e6e9ba"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706280"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Genérico de Congelado 889024d8 25/08/2026 706167  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Genérico de Congelado 889024d8"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706167"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Gostoso de Aço 0963e83f 01/09/2026 707821  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Gostoso de Aço 0963e83f"
+      - gridcell
+      - gridcell
+      - gridcell "01/09/2026"
+      - gridcell "707821"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Gostoso de Algodão d32605a4 25/08/2026 706315  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Gostoso de Algodão d32605a4"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706315"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Licenciado de Concreto d4894fcb 25/08/2026 706353  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Licenciado de Concreto d4894fcb"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706353"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Lustroso de Borracha d0fd03c3 25/08/2026 706270  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Lustroso de Borracha d0fd03c3"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706270"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Pequeno de Algodão 4e885dfe 25/08/2026 706448  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Pequeno de Algodão 4e885dfe"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706448"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Pequeno de Granito fe5acfb9 25/08/2026 706321  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Pequeno de Granito fe5acfb9"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706321"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Rústico de Borracha 292d33fe 25/08/2026 706392  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Rústico de Borracha 292d33fe"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706392"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Sem marca de Metal 23aaec75 27/08/2026 707009  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Sem marca de Metal 23aaec75"
+      - gridcell
+      - gridcell
+      - gridcell "27/08/2026"
+      - gridcell "707009"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Feito à mão de Macio d1213f8f 25/08/2026 706139  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Feito à mão de Macio d1213f8f"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706139"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Inteligente de Aço 8b8d839f 25/08/2026 706156  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Inteligente de Aço 8b8d839f"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706156"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Lindo de Metal 263b0772 02/09/2026 708132  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Lindo de Metal 263b0772"
+      - gridcell
+      - gridcell
+      - gridcell "02/09/2026"
+      - gridcell "708132"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Prático de Borracha e23898b3 25/08/2026 706385  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Prático de Borracha e23898b3"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706385"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Refinado de Algodão c30bf96f 28/08/2026 707528  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Refinado de Algodão c30bf96f"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707528"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Cadeira Fantástico de Macio 8493d196 25/08/2026 706404  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Cadeira Fantástico de Macio 8493d196"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706404"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Cadeira Feito à mão de Concreto 6d8f3e92 25/08/2026 706318  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Cadeira Feito à mão de Concreto 6d8f3e92"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706318"
+      - gridcell " ":
+        - text: 
+        - button ""
+```
+
+# Test source
+
+```ts
+  109 |     caminhoArquivo,
+  110 |     esperaPublicacao: false,
+  111 |   });
+  112 | 
+  113 |   await expect(
+  114 |     page.getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i),
+  115 |     `esperada uma mensagem de bloqueio ao publicar "${nomeDoArquivo}": ${porQue}. Nenhuma ` +
+  116 |       'mensagem de bloqueio foi exibida — o GED não valida extensão (mesmo defeito que ' +
+  117 |       'CT-GED-02-S1 documenta para o .exe). Uma correção que só coloque ".exe" numa lista ' +
+  118 |       'negra deixa este caso vermelho, que é exatamente o ponto dele',
+  119 |   ).toBeVisible();
+  120 | 
+  121 |   // Afirmado sobre a pasta INTEIRA: a grade pagina em 30 por Descrição e o documento pode
+  122 |   // estar numa página seguinte. `tentativas: 1` porque aqui não se espera nada aparecer.
+  123 |   await documentosPage.irParaPaginaComDocumento(documento.descricao, { tentativas: 1 });
+  124 |   await expect(
+  125 |     documentosPage.localizarLinha(documento.descricao),
+  126 |     `esperado que nada fosse gravado ao publicar "${nomeDoArquivo}" — o documento foi publicado ` +
+  127 |       `normalmente em "Meus Documentos" como "${documento.descricao}", e precisa ser removido à ` +
+  128 |       'mão (navigation/removeDoc → recycleBin/removeDocument)',
+  129 |   ).toHaveCount(0);
+  130 | }
+  131 | 
+  132 | test.describe('GED — allowlist de extensão, não lista negra do .exe (CT-GED-02-S2)', () =&gt; {
+  133 |   test('CT-GED-02-S2 @destrutivo — script de lote (.bat) deveria ser rejeitado', async ({ page }) =&gt; {
+  134 |     const nomeDoArquivo = 'qa-script-lote.bat';
+  135 |     const caminhoArquivo = await arquivoTemporario(
+  136 |       nomeDoArquivo,
+  137 |       '@echo off\r\nREM QA — massa de teste de allowlist do GED\r\n',
+  138 |     );
+  139 | 
+  140 |     await expectPublicacaoBloqueada(page, {
+  141 |       caminhoArquivo,
+  142 |       nomeDoArquivo,
+  143 |       porQue:
+  144 |         'um .bat é executável no Windows e não pertence a nenhuma allowlist razoável de um GED ' +
+  145 |         'documental',
+  146 |     });
+  147 |   });
+  148 | 
+  149 |   test('CT-GED-02-S2 @destrutivo — shell script (.sh) deveria ser rejeitado', async ({ page }) =&gt; {
+  150 |     const nomeDoArquivo = 'qa-script-shell.sh';
+  151 |     const caminhoArquivo = await arquivoTemporario(
+  152 |       nomeDoArquivo,
+  153 |       '#!/bin/sh\n# QA — massa de teste de allowlist do GED\n',
+  154 |     );
+  155 | 
+  156 |     await expectPublicacaoBloqueada(page, {
+  157 |       caminhoArquivo,
+  158 |       nomeDoArquivo,
+  159 |       porQue: 'um .sh é executável e não pertence a uma allowlist de documentos',
+  160 |     });
+  161 |   });
+  162 | 
+  163 |   test('CT-GED-02-S2 @destrutivo — dupla extensão (.pdf.exe) deveria ser rejeitada', async ({ page }) =&gt; {
+  164 |     const nomeDoArquivo = 'qa-relatorio.pdf.exe';
+  165 |     const caminhoArquivo = await arquivoTemporario(nomeDoArquivo, MAGIC_BYTES_EXECUTAVEL);
+  166 | 
+  167 |     await expectPublicacaoBloqueada(page, {
+  168 |       caminhoArquivo,
+  169 |       nomeDoArquivo,
+  170 |       porQue:
+  171 |         'é o disfarce clássico — o nome sugere um PDF, a extensão REAL é .exe, e uma validação ' +
+  172 |         'que olhe só o começo do nome (ou que procure ".pdf" em qualquer posição) deixa passar',
+  173 |     });
+  174 |   });
+  175 | 
+  176 |   test('CT-GED-02-S2 @destrutivo — executável renomeado para .pdf deveria ser rejeitado pelo conteúdo', async ({
+  177 |     page,
+  178 |   }) =&gt; {
+  179 |     const nomeDoArquivo = 'qa-executavel-disfarcado.pdf';
+  180 |     const caminhoArquivo = await arquivoTemporario(nomeDoArquivo, MAGIC_BYTES_EXECUTAVEL);
+  181 | 
+  182 |     const documentosPage = new DocumentosGedPage(page);
+  183 |     const documento = criarDocumento();
+  184 | 
+  185 |     await documentosPage.irParaRaizGarantido();
+  186 |     await documentosPage.abrirPasta('Meus Documentos');
+  187 | 
+  188 |     await documentosPage.enviarDocumento({
+  189 |       descricao: documento.descricao,
+  190 |       caminhoArquivo,
+  191 |       esperaPublicacao: false,
+  192 |     });
+  193 | 
+  194 |     // Mensagem PRÓPRIA, diferente dos três casos acima: este é o único que uma allowlist
+  195 |     // correta, sozinha, NÃO pega. O arquivo se chama `.pdf` e o conteúdo é um executável
+  196 |     // (`MZ`). Se este caso continuar vermelho depois de os outros três ficarem verdes, a
+  197 |     // leitura é precisa: a validação implementada é SINTÁTICA (olha o nome) e o produto segue
+  198 |     // aceitando binário arbitrário com extensão permitida.
+  199 |     await expect(
+  200 |       page.getByText(
+  201 |         /extensão não permitida|tipo de arquivo não permitido|arquivo não permitido|conteúdo não corresponde|arquivo inválido/i,
+  202 |       ),
+  203 |       `esperada mensagem de bloqueio ao publicar "${nomeDoArquivo}": o nome diz ".pdf" mas o ` +
+  204 |         'conteúdo começa com os magic bytes "MZ" de um executável PE/DOS. Nenhuma mensagem foi ' +
+  205 |         'exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros três casos de CT-GED-02-S2 ' +
+  206 |         'estiverem VERDES e só este reprovar, a allowlist foi implementada mas valida apenas a ' +
+  207 |         'EXTENSÃO DO NOME — nunca o conteúdo —, e renomear o arquivo continua sendo suficiente ' +
+  208 |         'para subir um binário ao GED',
+&gt; 209 |     ).toBeVisible();
+      |       ^ Error: esperada mensagem de bloqueio ao publicar "qa-executavel-disfarcado.pdf": o nome diz ".pdf" mas o conteúdo começa com os magic bytes "MZ" de um executável PE/DOS. Nenhuma mensagem foi exibida. ⚠️ LEITURA CORRETA DESTE VERMELHO: se os outros três casos de CT-GED-02-S2 estiverem VERDES e só este reprovar, a allowlist foi implementada mas valida apenas a EXTENSÃO DO NOME — nunca o conteúdo —, e renomear o arquivo continua sendo suficiente para subir um binário ao GED
+  210 | 
+  211 |     await documentosPage.irParaPaginaComDocumento(documento.descricao, { tentativas: 1 });
+  212 |     await expect(
+  213 |       documentosPage.localizarLinha(documento.descricao),
+  214 |       `esperado que nada fosse gravado ao publicar "${nomeDoArquivo}" — o executável disfarçado ` +
+  215 |         `foi publicado em "Meus Documentos" como "${documento.descricao}"`,
+  216 |     ).toHaveCount(0);
+  217 |   });
+  218 | });
+  219 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=943592 npx playwright test tests/e2e/documentos/bloqueio-extensoes.spec.js -g "CT-GED-02-S2 @destrutivo — executável renomeado para .pdf deveria ser rejeitado pelo conteúdo"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-4fb72-ser-rejeitado-pelo-conteúdo-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-4fb72-ser-rejeitado-pelo-conteúdo-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-4fb72-ser-rejeitado-pelo-conteúdo-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-bloqueio-ex-4fb72-ser-rejeitado-pelo-conteúdo-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+
+<article class="falha" id="f50" data-classe="catalogado" data-area="documentos">
+  <header>
+    <div class="cabecalho">
+      <span class="badge produto">Defeito de produto — já catalogado no README</span>
+      <span class="ordem">#51</span>
+    </div>
+    <h2>CT-GED-02-S1 upload de extensão bloqueada é rejeitado e nada é gravado @destrutivo</h2>
+    <p class="suite">e2e/documentos/gestao-documentos.spec.js › Documentos — upload (CT-GED-02)</p>
+    <dl class="meta">
+      <div><dt>Arquivo</dt><dd><code>e2e/documentos/gestao-documentos.spec.js:66</code></dd></div>
+      <div><dt>Projeto</dt><dd>e2e</dd></div>
+      <div><dt>Duração</dt><dd>58.1s</dd></div>
+      <div><dt>Tags</dt><dd><code>destrutivo</code></dd></div>
+      <div><dt>Seed do faker</dt><dd><code>850318</code></dd></div>
+    </dl>
+  </header>
+  <section class="bloco analise">
+    <h3>Análise</h3>
+    <p class="g"><b>Causa raiz:</b> <a href="index.html#G5">G5</a> — GED aceita qualquer extensão e qualquer conteúdo (CT-GED-02-S1 / S2) · <b>Referência:</b> CT-GED-02-S1</p>
+    <p><b>O que acontece:</b> Upload de <code>.exe</code> aceito e publicado sem nenhuma mensagem de bloqueio.</p>
+    <p><b>Por que falha:</b> Ausência de validação de extensão no GED.</p>
+    <p><b>Onde falha:</b> <code>gestao-documentos.spec.js:93</code>. <span class="g">(local exato registrado pelo Playwright: <code>tests/e2e/documentos/gestao-documentos.spec.js:93</code>)</span></p>
+    
+  </section>
+
+  <section class="bloco">
+    <h3>A falha</h3>
+    <p class="resumo">Error: esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação)</p>
+    <pre class="detalhe">expect(locator).toBeVisible() failed
+
+Locator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found</pre>
+  </section>
+
+  <section class="bloco">
+    <h3>Onde falhou</h3>
+    <pre class="codigo"><span class="linha"><span class="num">87</span>    // .exe é aceito e publicado normalmente, com o mesmo toast de sucesso de um upload válido</span>
+<span class="linha"><span class="num">88</span>    // ("Novo documento publicado: ..."). Este teste fica vermelho de propósito, documentando o</span>
+<span class="linha"><span class="num">89</span>    // defeito — não ajuste a assertion para "passar".</span>
+<span class="linha"><span class="num">90</span>    await expect(</span>
+<span class="linha"><span class="num">91</span>      page.getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i),</span>
+<span class="linha"><span class="num">92</span>      'esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação)',</span>
+<span class="linha alvo"><span class="num">93</span>    ).toBeVisible();</span>
+<span class="linha"><span class="num">94</span></span>
+<span class="linha"><span class="num">95</span>    // "Nada foi gravado" precisa ser afirmado sobre a pasta INTEIRA: a grade pagina em 30 e o</span>
+<span class="linha"><span class="num">96</span>    // documento pode estar numa página seguinte — olhar só a página corrente daria um falso</span>
+<span class="linha"><span class="num">97</span>    // verde justamente no caso negativo. `tentativas: 1` porque aqui não se espera nada</span></pre>
+  </section>
+
+  
+
+  <section class="bloco">
+    <h3>Tela no momento da falha</h3>
+    <p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p><p class="dica">[screenshot removida nesta versão leve — ver o arquivo <code>test-failed-1.png</code> indicado em "Artefatos desta falha" ou a versão completa do HTML]</p>
+  </section>
+
+  <section class="bloco">
+    <h3>Contexto capturado pela suíte</h3>
+    <pre class="detalhe">{
+  "teste": [
+    "e2e/documentos/gestao-documentos.spec.js",
+    "Documentos — upload (CT-GED-02)",
+    "CT-GED-02-S1 upload de extensão bloqueada é rejeitado e nada é gravado @destrutivo"
+  ],
+  "status": "failed",
+  "url": "https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/ecmnavigation",
+  "fakerSeed": 850318,
+  "reproduzirCom": "FAKER_SEED=850318 npx playwright test",
+  "erro": "Error: esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação) with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)\u001b[22m\n"
+}</pre>
+  </section>
+
+  
+
+  <details class="bloco"><summary>Call log do Playwright — o que ele esperou, e por quanto tempo</summary>
+    <pre class="detalhe">Call log:
+  - esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação) with timeout 30000ms
+  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)</pre></details>
+
+  <details class="bloco"><summary>Estado da página em aria-snapshot (o que estava na tela)</summary>
+    <pre class="detalhe"># Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: e2e/documentos/gestao-documentos.spec.js &gt;&gt; Documentos — upload (CT-GED-02) &gt;&gt; CT-GED-02-S1 upload de extensão bloqueada é rejeitado e nada é gravado @destrutivo
+- Location: tests/e2e/documentos/gestao-documentos.spec.js:66:3
+
+# Error details
+
+```
+Error: esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação)
+
+expect(locator).toBeVisible() failed
+
+Locator: getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+  - esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação) with timeout 30000ms
+  - waiting for getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i)
+
+```
+
+```yaml
+- navigation:
+  - link "Logo da empresa":
+    - /url: https://caixade182374.fluig.cloudtotvs.com.br/portal/p/1/home
+    - img "Logo da empresa"
+  - button "Abrir ajuda"
+  - button "Abrir notificações": 9+
+  - img "Usuário TBC (TOTVS)"
+- navigation
+- navigation "Menu de navegação principal responsivo":
+  - list:
+    - listitem:
+      - link "Home":
+        - /url: /portal/p/1/home
+    - listitem:
+      - link "Buscar":
+        - /url: "#"
+    - listitem:
+      - link "Favoritos":
+        - /url: /portal/p/1/principalfavorites
+  - list:
+    - listitem:
+      - link "Documentos":
+        - /url: /portal/p/1/ecmnavigation
+    - listitem:
+      - link "Processos":
+        - /url: /portal/p/1/principalprocess
+    - listitem:
+      - link "Central de Tarefas":
+        - /url: /portal/p/1/pagecentraltask
+    - listitem:
+      - link "Social":
+        - /url: /portal/p/1/social
+    - listitem:
+      - link "Comunidades":
+        - /url: /portal/p/1/communities
+    - listitem:
+      - link "Páginas":
+        - /url: "#"
+  - list:
+    - listitem:
+      - link "Store":
+        - /url: /portal/p/1/mysolutions
+    - listitem:
+      - link "Lixeira":
+        - /url: /portal/p/1/pagerecyclebin
+  - list:
+    - listitem:
+      - link "Fechar menu":
+        - /url: "#"
+- navigation "Breadcrumb":
+  - list:
+    - listitem:
+      - link "Raiz":
+        - /url: javascript:ECM.navigation.getContent(0, 0, 0, null)
+      - text: 
+    - listitem:
+      - link "Meus Documentos":
+        - /url: javascript:ECM.navigation.getContent(704916, 0, 0, null)
+- group:
+  - row "  30":
+    - rowgroup:
+      - row "  30":
+        - cell "  30":
+          - table:
+            - rowgroup:
+              - row "  30":
+                - cell ""
+                - cell
+                - cell ""
+                - cell "30":
+                  - listbox:
+                    - option "30" [selected]
+                    - option "50"
+                    - option "75"
+                    - option "100"
+        - cell
+- list:
+  - listitem:
+    - link "Novo ":
+      - /url: "#"
+  - listitem:
+    - button "Choose File"
+    - link "Carregar arquivos":
+      - /url: "#"
+  - listitem:
+    - link "Copiar":
+      - /url: "#"
+  - listitem:
+    - link "Colar":
+      - /url: "#"
+  - listitem:
+    - link "Recortar":
+      - /url: "#"
+  - listitem:
+    - link "Remover":
+      - /url: "#"
+  - listitem:
+    - link "Mais ":
+      - /url: "#"
+- grid:
+  - rowgroup:
+    - rowheader "Descrição  Atualização  Código ":
+      - columnheader:
+        - checkbox
+      - columnheader
+      - columnheader "Descrição "
+      - columnheader
+      - columnheader
+      - columnheader "Atualização "
+      - columnheader "Código "
+      - columnheader
+- grid:
+  - rowgroup:
+    - row:
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell
+    - row "Check-out 20/08/2026 705180  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "Check-out"
+      - gridcell
+      - gridcell
+      - gridcell "20/08/2026"
+      - gridcell "705180"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento 84a4ec9b 24/08/2026 705364  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento 84a4ec9b"
+      - gridcell
+      - gridcell
+      - gridcell "24/08/2026"
+      - gridcell "705364"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Impressionante de Algodão bfa6733f 25/08/2026 706146  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Impressionante de Algodão bfa6733f"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706146"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Incrível de Granito 0659e02c 02/09/2026 708136  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Incrível de Granito 0659e02c"
+      - gridcell
+      - gridcell
+      - gridcell "02/09/2026"
+      - gridcell "708136"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Inteligente de Granito f6335c05 28/08/2026 707532  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Inteligente de Granito f6335c05"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707532"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Lindo de Aço 07510375 28/08/2026 707361  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Lindo de Aço 07510375"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707361"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Lindo de Algodão 356866b8 25/08/2026 706414  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Lindo de Algodão 356866b8"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706414"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Lindo de Granito 10bf77fd 25/08/2026 706151  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Lindo de Granito 10bf77fd"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706151"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Atum Sem marca de Madeira 4d5c7442 27/08/2026 707010  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Atum Sem marca de Madeira 4d5c7442"
+      - gridcell
+      - gridcell
+      - gridcell "27/08/2026"
+      - gridcell "707010"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Ergonômico de Aço 8f72fe5b 25/08/2026 706141  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Ergonômico de Aço 8f72fe5b"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706141"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Genérico de Concreto 913b0680 01/09/2026 708027  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Genérico de Concreto 913b0680"
+      - gridcell
+      - gridcell
+      - gridcell "01/09/2026"
+      - gridcell "708027"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Licenciado de Borracha 16cf6823 28/08/2026 707365  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Licenciado de Borracha 16cf6823"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707365"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bacon Refinado de Concreto b0226155 25/08/2026 706168  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bacon Refinado de Concreto b0226155"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706168"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Fantástico de Borracha 73e6e9ba 25/08/2026 706280  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Fantástico de Borracha 73e6e9ba"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706280"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Genérico de Congelado 889024d8 25/08/2026 706167  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Genérico de Congelado 889024d8"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706167"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Gostoso de Aço 0963e83f 01/09/2026 707821  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Gostoso de Aço 0963e83f"
+      - gridcell
+      - gridcell
+      - gridcell "01/09/2026"
+      - gridcell "707821"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Gostoso de Algodão d32605a4 25/08/2026 706315  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Gostoso de Algodão d32605a4"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706315"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Licenciado de Concreto d4894fcb 25/08/2026 706353  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Licenciado de Concreto d4894fcb"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706353"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Lustroso de Borracha d0fd03c3 25/08/2026 706270  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Lustroso de Borracha d0fd03c3"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706270"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Pequeno de Algodão 4e885dfe 25/08/2026 706448  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Pequeno de Algodão 4e885dfe"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706448"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Pequeno de Granito fe5acfb9 25/08/2026 706321  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Pequeno de Granito fe5acfb9"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706321"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Rústico de Borracha 292d33fe 25/08/2026 706392  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Rústico de Borracha 292d33fe"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706392"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bicicleta Sem marca de Metal 23aaec75 27/08/2026 707009  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bicicleta Sem marca de Metal 23aaec75"
+      - gridcell
+      - gridcell
+      - gridcell "27/08/2026"
+      - gridcell "707009"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Feito à mão de Macio d1213f8f 25/08/2026 706139  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Feito à mão de Macio d1213f8f"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706139"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Inteligente de Aço 8b8d839f 25/08/2026 706156  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Inteligente de Aço 8b8d839f"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706156"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Lindo de Metal 263b0772 02/09/2026 708132  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Lindo de Metal 263b0772"
+      - gridcell
+      - gridcell
+      - gridcell "02/09/2026"
+      - gridcell "708132"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Prático de Borracha e23898b3 25/08/2026 706385  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Prático de Borracha e23898b3"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706385"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Bola Refinado de Algodão c30bf96f 28/08/2026 707528  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Bola Refinado de Algodão c30bf96f"
+      - gridcell
+      - gridcell
+      - gridcell "28/08/2026"
+      - gridcell "707528"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Cadeira Fantástico de Macio 8493d196 25/08/2026 706404  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Cadeira Fantástico de Macio 8493d196"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706404"
+      - gridcell " ":
+        - text: 
+        - button ""
+    - row "QA documento Cadeira Feito à mão de Concreto 6d8f3e92 25/08/2026 706318  ":
+      - gridcell:
+        - checkbox
+      - gridcell:
+        - img
+      - gridcell "QA documento Cadeira Feito à mão de Concreto 6d8f3e92"
+      - gridcell
+      - gridcell
+      - gridcell "25/08/2026"
+      - gridcell "706318"
+      - gridcell " ":
+        - text: 
+        - button ""
+```
+
+# Test source
+
+```ts
+  1   | // @ts-check
+  2   | import { test, expect } from '../../../fixtures/fixtures.js';
+  3   | import { DocumentosGedPage } from '../../../pages/DocumentosGedPage.js';
+  4   | import { criarDocumento, criarNivelAprovacao } from '../../../factories/documento.js';
+  5   | import { envObrigatoria } from '../../../config/ambiente.js';
+  6   | 
+  7   | /**
+  8   |  * Documentos / GED — cenários que escrevem no ambiente (upload, aprovação).
+  9   |  *
+  10  |  * Escrita é autorizada nesta base de homologação (ver docs/politica-de-escrita.md): cada teste
+  11  |  * cria o próprio documento, com nome vindo de `factories/documento.js` (prefixo `QA` + sufixo
+  12  |  * único). Todo cenário aqui leva `@destrutivo` e fica fora da execução padrão — roda com
+  13  |  * `INCLUIR_DESTRUTIVOS=1 npx playwright test --grep @destrutivo`.
+  14  |  *
+  15  |  * CT-GED-03 (check-out/check-in) NÃO está aqui: investigado a fundo (ver
+  16  |  * `pages/DocumentosGedPage.js` e o relatório da suíte), o check-out real depende de um cliente
+  17  |  * WebDAV/Office nativo que o Chromium não aciona — nem em headless nem em headed, com uma
+  18  |  * sessão ou com duas. Não é um caso de "não tentei"; é uma integração fora do alcance de
+  19  |  * automação de navegador.
+  20  |  */
+  21  | 
+  22  | test.afterEach(async ({ page }) =&gt; {
+  23  |   // A pasta atual do GED é lembrada no SERVIDOR, por usuário — não por sessão de navegador
+  24  |   // (ver `DocumentosGedPage`). Sem este reset, um teste que navega para dentro de uma pasta
+  25  |   // deixa a próxima spec da suíte (ex.: `navegacao-documentos.spec.js`) aterrissando fora da
+  26  |   // Raiz ao chamar `goto()`. Roda mesmo se o teste falhou.
+  27  |   //
+  28  |   // Usa `irParaRaizGarantido()` (e não `goto` + `expectCarregada` + `voltarParaRaiz`) de
+  29  |   // propósito: ele clica na Raiz ANTES de exigir a grade. Exigir a grade primeiro fazia o
+  30  |   // afterEach gastar 45s esperando um `columnheader` inexistente quando a pasta corrente da
+  31  |   // conta não valia mais — e um afterEach vermelho reprova o teste inteiro, mesmo com o corpo
+  32  |   // do teste verde. Era assim que CT-GED-02-H e CT-GED-04-H apareciam como
+  33  |   // "TimeoutError: ... waiting for getByRole('columnheader')" sem que o cenário tivesse falhado.
+  34  |   const documentosPage = new DocumentosGedPage(page);
+  35  |   await documentosPage.irParaRaizGarantido();
+  36  | });
+  37  | 
+  38  | test.describe('Documentos — upload (CT-GED-02)', () =&gt; {
+  39  |   test('CT-GED-02-H upload de documento cria, versiona (v1000) e lista o documento @destrutivo', async ({
+  40  |     page,
+  41  |   }) =&gt; {
+  42  |     const documentosPage = new DocumentosGedPage(page);
+  43  |     const documento = criarDocumento();
+  44  | 
+  45  |     await documentosPage.irParaRaizGarantido();
+  46  |     await documentosPage.abrirPasta('Meus Documentos');
+  47  | 
+  48  |     await documentosPage.enviarDocumento({
+  49  |       descricao: documento.descricao,
+  50  |       caminhoArquivo: 'fixtures/anexos/documento-valido.pdf',
+  51  |     });
+  52  | 
+  53  |     // A grade pagina em 30 e "Meus Documentos" já passa de 50 documentos: o recém-publicado
+  54  |     // cai na página 1 ou na 2 conforme a inicial sorteada pelo faker. Posiciona a grade na
+  55  |     // página onde ele está antes de afirmar qualquer coisa (ver `irParaPaginaComDocumento`).
+  56  |     await documentosPage.irParaPaginaComDocumento(documento.descricao);
+  57  | 
+  58  |     const linha = documentosPage.localizarLinha(documento.descricao);
+  59  |     await expect(linha, 'documento não apareceu na listagem de "Meus Documentos" após o upload').toBeVisible();
+  60  |     await expect(
+  61  |       linha.locator('[aria-describedby="ecm-navigation-grid_version"]'),
+  62  |       'documento não nasceu na versão 1000',
+  63  |     ).toHaveText('1000');
+  64  |   });
+  65  | 
+  66  |   test('CT-GED-02-S1 upload de extensão bloqueada é rejeitado e nada é gravado @destrutivo', async ({
+  67  |     page,
+  68  |   }) =&gt; {
+  69  |     const documentosPage = new DocumentosGedPage(page);
+  70  |     const documento = criarDocumento();
+  71  | 
+  72  |     await documentosPage.irParaRaizGarantido();
+  73  |     await documentosPage.abrirPasta('Meus Documentos');
+  74  | 
+  75  |     // `esperaPublicacao: false`: aqui o comportamento do publicador é PARTE do que se testa. Se
+  76  |     // um dia o Fluig passar a barrar a extensão, o modal pode legitimamente continuar aberto
+  77  |     // exibindo o erro — exigir que ele feche transformaria o conserto do produto num vermelho
+  78  |     // pelo motivo errado.
+  79  |     await documentosPage.enviarDocumento({
+  80  |       descricao: documento.descricao,
+  81  |       caminhoArquivo: 'fixtures/anexos/arquivo-bloqueado.exe',
+  82  |       esperaPublicacao: false,
+  83  |     });
+  84  | 
+  85  |     // Comportamento esperado: o Fluig bloqueia a extensão não permitida com mensagem clara e
+  86  |     // nada é gravado. DEFEITO CONFIRMADO EM CAMPO: nenhuma validação de extensão ocorre — o
+  87  |     // .exe é aceito e publicado normalmente, com o mesmo toast de sucesso de um upload válido
+  88  |     // ("Novo documento publicado: ..."). Este teste fica vermelho de propósito, documentando o
+  89  |     // defeito — não ajuste a assertion para "passar".
+  90  |     await expect(
+  91  |       page.getByText(/extensão não permitida|tipo de arquivo não permitido|arquivo não permitido/i),
+  92  |       'esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação)',
+&gt; 93  |     ).toBeVisible();
+      |       ^ Error: esperada mensagem de bloqueio para extensão não permitida — nenhuma mensagem de bloqueio foi exibida (defeito confirmado: o upload de .exe é aceito sem validação)
+  94  | 
+  95  |     // "Nada foi gravado" precisa ser afirmado sobre a pasta INTEIRA: a grade pagina em 30 e o
+  96  |     // documento pode estar numa página seguinte — olhar só a página corrente daria um falso
+  97  |     // verde justamente no caso negativo. `tentativas: 1` porque aqui não se espera nada
+  98  |     // aparecer; a varredura só precisa cobrir todas as páginas uma vez.
+  99  |     await documentosPage.irParaPaginaComDocumento(documento.descricao, { tentativas: 1 });
+  100 |     await expect(
+  101 |       documentosPage.localizarLinha(documento.descricao),
+  102 |       'esperado que nada fosse gravado — o documento de extensão bloqueada foi publicado normalmente',
+  103 |     ).toHaveCount(0);
+  104 |   });
+  105 | });
+  106 | 
+  107 | test.describe('Documentos — aprovação (CT-GED-04)', () =&gt; {
+  108 |   test('CT-GED-04-H submeter documento com aprovação e aprovar como responsável @destrutivo', async ({
+  109 |     page,
+  110 |   }) =&gt; {
+  111 |     // A tarefa de aprovação recém-criada pode demorar a aparecer na Central de Tarefas —
+  112 |     // `aprovarDocumento` tenta por até 75s (ver o Page Object).
+  113 |     test.setTimeout(150_000);
+  114 | 
+  115 |     const documentosPage = new DocumentosGedPage(page);
+  116 |     const documento = criarDocumento();
+  117 |     const nivel = criarNivelAprovacao();
+  118 |     const usuarioAutomacao = envObrigatoria('QA_USERNAME');
+  119 | 
+  120 |     // "Compras e Contratação &gt; Parecer Técnico" é a pasta confirmada com o recurso de aprovação
+  121 |     // habilitado (a aba "Aprovação" só aparece no publicador dentro dela — "Meus Documentos" e
+  122 |     // a "Check-out" virtual não a oferecem).
+  123 |     await documentosPage.irParaRaizGarantido();
+  124 |     await documentosPage.abrirPasta('Compras e Contratação');
+  125 |     await documentosPage.abrirPasta('Parecer Técnico');
+  126 | 
+  127 |     await documentosPage.enviarDocumento({
+  128 |       descricao: documento.descricao,
+  129 |       caminhoArquivo: 'fixtures/anexos/documento-valido.pdf',
+  130 |       antesDeConfirmar: () =&gt;
+  131 |         documentosPage.configurarAprovacaoComResponsavel({
+  132 |           nomeNivel: nivel.nome,
+  133 |           loginAprovador: usuarioAutomacao,
+  134 |         }),
+  135 |     });
+  136 | 
+  137 |     // Enquanto pendente de aprovação, o documento ainda não aparece na listagem da pasta —
+  138 |     // afirmado sobre todas as páginas da pasta, não só sobre a corrente (a grade pagina em 30).
+  139 |     await documentosPage.irParaPaginaComDocumento(documento.descricao, { tentativas: 1 });
+  140 |     await expect(
+  141 |       documentosPage.localizarLinha(documento.descricao),
+  142 |       'documento com aprovação pendente não deveria aparecer na pasta antes de ser aprovado',
+  143 |     ).toHaveCount(0);
+  144 | 
+  145 |     await documentosPage.aprovarDocumento(documento.descricao);
+  146 | 
+  147 |     await documentosPage.irParaRaizGarantido();
+  148 |     await documentosPage.abrirPasta('Compras e Contratação');
+  149 |     await documentosPage.abrirPasta('Parecer Técnico');
+  150 |     await documentosPage.irParaPaginaComDocumento(documento.descricao);
+  151 |     await expect(
+  152 |       documentosPage.localizarLinha(documento.descricao),
+  153 |       'documento aprovado não apareceu na pasta de destino',
+  154 |     ).toBeVisible();
+  155 |   });
+  156 | });
+  157 | 
+```</pre></details>
+
+  
+
+  <section class="bloco reproduzir">
+    <h3>Reproduzir e aprofundar</h3>
+    <pre class="cmd">FAKER_SEED=850318 npx playwright test tests/e2e/documentos/gestao-documentos.spec.js -g "CT-GED-02-S1 upload de extensão bloqueada é rejeitado e nada é gravado @destrutivo"</pre>
+    <p class="dica"><b>Artefatos desta falha:</b> screenshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-gestao-docu-9bcb1-e-nada-é-gravado-destrutivo-e2e/test-failed-1.png</code> · trace <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-gestao-docu-9bcb1-e-nada-é-gravado-destrutivo-e2e/trace.zip</code> · vídeo <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-gestao-docu-9bcb1-e-nada-é-gravado-destrutivo-e2e/video.webm</code> · aria-snapshot <code>/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results/documentos/e2e-documentos-gestao-docu-9bcb1-e-nada-é-gravado-destrutivo-e2e/error-context.md</code></p>
+  </section>
+</article>
+
+</main>
+<footer>
+  <p>Relatório da execução de 02/09/2026 — gerado por <code>scripts/relatorio-falhas.mjs</code> (evidências) +
+  <code>relatorios/gerar-final.mjs</code> (análise). Screenshots e aria-snapshots estão embutidos; trace e vídeo de cada
+  falha ficam em <code>test-results/&lt;fatia&gt;/</code> nos caminhos indicados em cada cartão
+  (<code>npx playwright show-trace &lt;trace.zip&gt;</code>).</p>
+</footer>
+
+</body>
+</html>

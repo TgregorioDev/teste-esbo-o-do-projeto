@@ -1,0 +1,173 @@
+{
+  "config": {
+    "argv": [
+      "/usr/bin/node",
+      "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/node_modules/.bin/playwright",
+      "test",
+      "tests/e2e/compras/ciclo-solicitacao-compras.spec.js:346",
+      "--reporter=line,json",
+      "--output=test-results-0903/destrutivos/13"
+    ],
+    "configFile": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/playwright.config.js",
+    "rootDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/fixtures/global-setup.js",
+    "globalTeardown": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/fixtures/global-teardown.js",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results-0903/destrutivos/13",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "autenticacao",
+        "name": "autenticacao",
+        "testDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/tests\\/e2e\\/auth\\/.*\\.spec\\.js/"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results-0903/destrutivos/13",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "e2e",
+        "name": "e2e",
+        "testDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+        "testIgnore": [
+          "/tests\\/e2e\\/auth\\/.*\\.spec\\.js/"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 8,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "e2e/compras/ciclo-solicitacao-compras.spec.js",
+      "file": "e2e/compras/ciclo-solicitacao-compras.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Ciclo de criação da Solicitação de Compras (formulário clássico)",
+          "file": "e2e/compras/ciclo-solicitacao-compras.spec.js",
+          "line": 336,
+          "column": 6,
+          "specs": [
+            {
+              "title": "@destrutivo deve criar e enviar a Solicitação de Compras com todos os campos válidos",
+              "ok": true,
+              "tags": [
+                "destrutivo"
+              ],
+              "tests": [
+                {
+                  "timeout": 240000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "470339"
+                    },
+                    {
+                      "type": "solicitacao-criada",
+                      "description": "numero=113206 justificativa=\"QA Automated needs-based framework e85a2f1c\""
+                    },
+                    {
+                      "type": "minhas-solicitacoes",
+                      "description": "numeroProcesso=113206 presenteNoBlocoCarregado=false totalCartoesCarregados=15"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 39329,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-03T13:07:00.199Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "470339"
+                        },
+                        {
+                          "type": "solicitacao-criada",
+                          "description": "numero=113206 justificativa=\"QA Automated needs-based framework e85a2f1c\""
+                        },
+                        {
+                          "type": "minhas-solicitacoes",
+                          "description": "numeroProcesso=113206 presenteNoBlocoCarregado=false totalCartoesCarregados=15"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d5da270b42d4d3112635-7bf8115f8e4c254bf371",
+              "file": "e2e/compras/ciclo-solicitacao-compras.spec.js",
+              "line": 346,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-03T13:06:57.554Z",
+    "duration": 102084.326,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

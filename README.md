@@ -478,9 +478,11 @@ PULAR_DESTRUTIVOS=1 PLAYWRIGHT_JSON_OUTPUT_NAME=test-results/relatorio.json \
 node scripts/veredito-do-gate.mjs test-results/relatorio.json
 ```
 
-O que **não** vai para o repositório: HTML, PDF, `.zip` e JSON cru das execuções (regras em
-`.gitignore`). A análise de cada execução completa fica em `docs/execucoes/<data>.md`; a
-evidência pesada vai para um *release asset* por data (decisão D3, pendente com o dono).
+A evidência de cada execução (HTML autossuficiente, PDF, `.zip`, JSON do merge e fatias por
+área) **fica versionada** — decisão do dono do repositório em 03/09/2026 (D3): ele lê tudo pelo
+GitHub e precisa da evidência completa, não só da análise. Só o relatório HTML nativo com trace e
+vídeo (`relatorios/html/`) e os blobs intermediários ficam fora, porque são reproduzíveis a
+partir do resto. A análise em Markdown de cada execução fica em `docs/execucoes/`.
 
 ## Testabilidade e acessibilidade
 

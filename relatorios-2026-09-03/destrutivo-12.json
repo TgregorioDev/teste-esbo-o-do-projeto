@@ -1,0 +1,165 @@
+{
+  "config": {
+    "argv": [
+      "/usr/bin/node",
+      "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/node_modules/.bin/playwright",
+      "test",
+      "tests/e2e/compras/aprovacoes-solicitacao-compras.spec.js:498",
+      "--reporter=line,json",
+      "--output=test-results-0903/destrutivos/12"
+    ],
+    "configFile": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/playwright.config.js",
+    "rootDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/fixtures/global-setup.js",
+    "globalTeardown": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/fixtures/global-teardown.js",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results-0903/destrutivos/12",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "autenticacao",
+        "name": "autenticacao",
+        "testDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/tests\\/e2e\\/auth\\/.*\\.spec\\.js/"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results-0903/destrutivos/12",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "e2e",
+        "name": "e2e",
+        "testDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+        "testIgnore": [
+          "/tests\\/e2e\\/auth\\/.*\\.spec\\.js/"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 8,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "e2e/compras/aprovacoes-solicitacao-compras.spec.js",
+      "file": "e2e/compras/aprovacoes-solicitacao-compras.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Etapas designadas nominalmente (verificação de alcançabilidade)",
+          "file": "e2e/compras/aprovacoes-solicitacao-compras.spec.js",
+          "line": 453,
+          "column": 6,
+          "specs": [
+            {
+              "title": "@destrutivo deve assumir e movimentar uma tarefa do pool de Validação dos Compradores quando disponível",
+              "ok": true,
+              "tags": [
+                "destrutivo"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "375272"
+                    },
+                    {
+                      "type": "alcancabilidade-validacao-compradores",
+                      "description": "NÃO ALCANÇÁVEL agora: grupos de pool disponíveis são [nenhum]"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4827,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-03T13:05:39.436Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "375272"
+                        },
+                        {
+                          "type": "alcancabilidade-validacao-compradores",
+                          "description": "NÃO ALCANÇÁVEL agora: grupos de pool disponíveis são [nenhum]"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d32ae11f789e5de46081-275e225ed29e5e473034",
+              "file": "e2e/compras/aprovacoes-solicitacao-compras.spec.js",
+              "line": 498,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-03T13:05:37.125Z",
+    "duration": 7392.655,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

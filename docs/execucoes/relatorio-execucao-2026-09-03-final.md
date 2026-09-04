@@ -134,7 +134,7 @@ verdes na composição final).
 | # | Decisão | Bloqueia |
 |---|---|---|
 | D2 | U-16 (logo 404) não reproduziu em 24 medições — corrigido ou intermitente? | só o estado da linha no README (já "não reproduzido") |
-| D3 | Onde fica a evidência pesada de cada execução (release asset × pasta compartilhada)? `gh` não está instalado nesta máquina | publicação dos `.html`/`.zip` desta e das execuções anteriores (continuam em disco e no histórico do git) |
+| D3 | **Respondida em 03/09/2026:** a evidência fica **versionada no repositório**, completa ("preciso delas por completo"). A Etapa 3 do plano foi revertida nessa parte: os 173 arquivos voltaram ao índice, mais o JSON, o JUnit e o HTML de falhas desta execução. Fora só `relatorios/html/` (trace/vídeo, 553 MB, reproduzível) | — |
 | D4 | Aceita declarar as regras de concorrência/alçada como lacuna bloqueada? | **feito** na Etapa 8 — reverter se a resposta for não |
 | D5 | Job noturno com `--retries=0` (comunicado) | — |
 | Segregação | Os 6 processos de RH/Jurídico **devem** ser iniciáveis por um usuário de Compras? (pergunta 1 do README, agora visível na tela) | nada na suíte; é defeito de segregação a catalogar se a resposta for não |

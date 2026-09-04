@@ -28,13 +28,10 @@ limpeza-alvos.json
 
 .claude/
 
-# Relatório de execução: o `.md` da ANÁLISE fica versionado em `docs/execucoes/` (é o que se
-# lê); os artefatos derivados dele — HTML autossuficiente com screenshots embutidas, PDF, .zip
-# do pacote, fatias por área e os JSON crus do merge — saem do repositório e vão para o release
-# asset da execução (`gh release create execucao-<data>`), que é o equivalente permanente e por
-# data. Foram 173 arquivos / 277 MB versionados até 03/09/2026.
-relatorio-falhas*.html
-relatorio-falhas*.zip
-relatorio-falhas*.pdf
-relatorio-20*/
-relatorios*/
+# Evidência de execução (HTML, PDF, .zip, JSON do merge, fatias por área) FICA versionada:
+# decisão do dono do repositório em 03/09/2026 ("preciso delas por completo") — reverte a
+# Etapa 3 do plano de melhoria, que a tinha tirado do índice. O que continua fora é só o que
+# é reproduzível a partir dela: o relatório HTML nativo com trace/vídeo (relatorios/html/,
+# 553 MB) e blobs intermediários.
+relatorios/html/
+relatorios/blob-report-extra/

@@ -1,0 +1,157 @@
+{
+  "config": {
+    "argv": [
+      "/usr/bin/node",
+      "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/node_modules/.bin/playwright",
+      "test",
+      "tests/e2e/portais/atribuicao-comprador.spec.js:83",
+      "--reporter=line,json",
+      "--output=test-results-0903/destrutivos/37"
+    ],
+    "configFile": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/playwright.config.js",
+    "rootDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/fixtures/global-setup.js",
+    "globalTeardown": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/fixtures/global-teardown.js",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results-0903/destrutivos/37",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "autenticacao",
+        "name": "autenticacao",
+        "testDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/tests\\/e2e\\/auth\\/.*\\.spec\\.js/"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/test-results-0903/destrutivos/37",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "e2e",
+        "name": "e2e",
+        "testDir": "/home/dev1/emdash/worktrees/teste-esbo-o-do-projeto-a4e20f05/emdash-teste-2-jxzxn/tests",
+        "testIgnore": [
+          "/tests\\/e2e\\/auth\\/.*\\.spec\\.js/"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 8,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "e2e/portais/atribuicao-comprador.spec.js",
+      "file": "e2e/portais/atribuicao-comprador.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Gerência de Compras — Atribuir comprador (CT-E2E-05-H)",
+          "file": "e2e/portais/atribuicao-comprador.spec.js",
+          "line": 35,
+          "column": 6,
+          "specs": [
+            {
+              "title": "@destrutivo uma SC própria aprovada na Validação do Gestor para em Validação Orçamentária, sem nunca chegar à fila de Atribuir",
+              "ok": true,
+              "tags": [
+                "destrutivo"
+              ],
+              "tests": [
+                {
+                  "timeout": 300000,
+                  "annotations": [
+                    {
+                      "type": "faker-seed",
+                      "description": "382758"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e",
+                  "projectName": "e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 141296,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-03T14:12:40.077Z",
+                      "annotations": [
+                        {
+                          "type": "faker-seed",
+                          "description": "382758"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0cbe31ce386611ec20bf-a4a4848d0b302932d9b1",
+              "file": "e2e/portais/atribuicao-comprador.spec.js",
+              "line": 83,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-03T14:12:37.601Z",
+    "duration": 152658.707,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
