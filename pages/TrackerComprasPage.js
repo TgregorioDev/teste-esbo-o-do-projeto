@@ -57,4 +57,35 @@ export class TrackerComprasPage {
   getLinhasDoResultado() {
     return this.getTabelaResultado().locator('tbody tr');
   }
+
+  /** Rótulos das visões oferecidas em "Filtrar por:". @returns {Promise<string[]>} */
+  async listarVisoes() {
+    return (await this.comboFiltrarPor.locator('option').allInnerTexts()).map((o) => o.trim());
+  }
+
+  /**
+   * Linhas do resultado como mapas `cabeçalho → valor`.
+   *
+   * Por índice de coluna o teste quebra na primeira coluna nova — e esta grade tem 18. Mapear
+   * pelo cabeçalho é o que sobrevive à evolução da tela.
+   *
+   * @returns {Promise<Array<Record<string,string>>>}
+   */
+  async lerLinhasComoMapa() {
+    const tabela = this.getTabelaResultado();
+    const cabecalhos = (await tabela.locator('thead th').allInnerTexts()).map((c) => c.trim());
+    return tabela.locator('tbody tr').evaluateAll(
+      (linhas, cabs) =>
+        linhas.map((tr) => {
+          /** @type {Record<string,string>} */
+          const mapa = {};
+          const celulas = [...tr.querySelectorAll('td')];
+          cabs.forEach((h, i) => {
+            if (h) mapa[h] = (celulas[i]?.textContent ?? '').trim();
+          });
+          return mapa;
+        }),
+      cabecalhos,
+    );
+  }
 }
