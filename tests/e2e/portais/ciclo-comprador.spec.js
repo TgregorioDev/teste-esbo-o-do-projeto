@@ -158,7 +158,16 @@ test.describe('Ciclo do Comprador — filas delegadas (CT-E2E-07-H, CT-E2E-08-H,
 
     // Rastreabilidade até aqui: hoje, nenhuma SC chega — a mesma ausência medida no Controle de
     // Cotações, pela mesma causa (bloqueio na Validação Orçamentária).
-    expect(await ciclo.possuiDados()).toBe(false);
+    //
+    // Este teste afirma AS COLUNAS (acima), que é o que o título promete. A ausência de dados é
+    // registrada, não afirmada: antes daqui havia `expect(possuiDados()).toBe(false)`, que
+    // congelava o vazio como resultado esperado — no dia em que uma cotação chegasse à grade,
+    // o teste reprovaria por estar CERTO. Quem afirma essa ausência com a polaridade correta é
+    // `atribuicao-comprador.spec.js`, marcado `@achado` para exatamente isso.
+    test.info().annotations.push({
+      type: 'avaliacao-propostas-sem-dados',
+      description: `possuiDados=${await ciclo.possuiDados()} (esperado hoje: false, por bloqueio na Validação Orçamentária)`,
+    });
 
     expect(guarda.tentativas()).toBe(0);
   });
@@ -190,7 +199,12 @@ test.describe('Ciclo do Comprador — filas delegadas (CT-E2E-07-H, CT-E2E-08-H,
       'Dt. Validade',
       'Valor Final',
     ]);
-    expect(await ciclo.possuiDados()).toBe(false);
+    // Mesma razão do CT-E2E-08-H: a grade de colunas é a afirmação do teste; a ausência de
+    // cotação vencedora é registrada, não congelada como esperada.
+    test.info().annotations.push({
+      type: 'definir-vencedor-sem-dados',
+      description: `possuiDados=${await ciclo.possuiDados()} (esperado hoje: false — nenhuma cotação chega à etapa)`,
+    });
 
     expect(guarda.tentativas()).toBe(0);
   });

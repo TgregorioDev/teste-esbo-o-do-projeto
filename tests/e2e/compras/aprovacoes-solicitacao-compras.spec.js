@@ -465,7 +465,7 @@ test.describe('Etapas designadas nominalmente (verificação de alcançabilidade
    * Não é `@destrutivo`: só lê a Central de Tarefas para determinar alcançabilidade — não
    * assume nem movimenta nada.
    */
-  test('deve verificar se a Validação Orçamentária está alcançável por pool para o usuário de automação', async ({
+  test('@achado a Validação Orçamentária não é alcançável por pool para o usuário de automação', async ({
     page,
   }) => {
     const central = new CentralTarefasComprasPage(page);
@@ -482,10 +482,20 @@ test.describe('Etapas designadas nominalmente (verificação de alcançabilidade
         : `NÃO ALCANÇÁVEL agora: grupos de pool disponíveis são [${grupos.map((g) => g.nome).join(', ') || 'nenhum'}]`,
     });
 
-    // A ausência de grupo de pool para Validação Orçamentária no momento da execução é o
-    // resultado documentado — o teste passa reportando o achado (não falha, pois "não
-    // alcançável hoje" é informação válida sobre o ambiente, verificada e não presumida).
-    expect(true).toBe(true);
+    // A ausência de grupo de pool para Validação Orçamentária é o comportamento REAL medido,
+    // e é isso que o teste afirma — polaridade de `@achado`: fica vermelho no dia em que a
+    // etapa virar alcançável por pool, que é quando o assunto precisa ser reaberto.
+    //
+    // Antes daqui havia `expect(true).toBe(true)`: o teste anotava o achado e passava sem
+    // afirmar nada. Isso o fazia contar como cobertura de CT-CMP-05-H em `docs/cobertura.md`
+    // sem exercitar a etapa — verde por construção, imune a qualquer mudança do ambiente.
+    expect(
+      grupoOrcamentaria,
+      `esperado (comportamento medido): nenhum grupo de pool de Validação Orçamentária para a ` +
+        `conta de automação. Grupos vistos: [${grupos.map((g) => g.nome).join(', ') || 'nenhum'}]. ` +
+        `Se este teste reprovou, a etapa passou a ser alcançável por pool — reabra CT-CMP-05-H ` +
+        `e exercite a aprovação de verdade, em vez de apenas medir alcançabilidade.`,
+    ).toBeUndefined();
   });
 
   /**
@@ -511,8 +521,18 @@ test.describe('Etapas designadas nominalmente (verificação de alcançabilidade
         type: 'alcancabilidade-validacao-compradores',
         description: `NÃO ALCANÇÁVEL agora: grupos de pool disponíveis são [${grupos.map((g) => g.nome).join(', ') || 'nenhum'}]`,
       });
-      expect(true).toBe(true);
-      return;
+      // Este teste existe para ASSUMIR e MOVIMENTAR uma tarefa do pool. Sem tarefa, ele não
+      // exercitou nada — e antes daqui devolvia verde com `expect(true).toBe(true)`, o que o
+      // fazia contar como cobertura de CT-CMP-06-H sem ter tocado a etapa.
+      //
+      // `faltaPreCondicao` é o mecanismo do projeto para este caso: anota `pre-condicao-ausente`,
+      // que `scripts/veredito-do-gate.mjs` lê para classificar como AMBIENTE e não como
+      // regressão. O gate segue verde; a cobertura deixa de ser reivindicada indevidamente.
+      faltaPreCondicao(
+        `nenhuma tarefa no pool de Validação dos Compradores no momento da execução — ` +
+          `grupos disponíveis: [${grupos.map((g) => g.nome).join(', ') || 'nenhum'}]. ` +
+          `Destrava quem puder deixar uma SC parada nessa etapa antes da execução.`,
+      );
     }
 
     await central.abrirGrupo(grupo.link);
