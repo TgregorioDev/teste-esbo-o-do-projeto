@@ -155,4 +155,146 @@ export class AcompanhamentoContratosPage {
       });
     });
   }
+
+  // ───────────────────────────────────────────────────────────────────────────────────────
+  // Modais da coluna "Ação"
+  //
+  // Os três ícones abrem modais Bootstrap do style-guide do Fluig, e há duas armadilhas
+  // medidas em 08/09/2026, ambas capazes de produzir teste verde por acidente:
+  //
+  // 1. `Escape` NÃO fecha estes modais. Um modal aberto continua interceptando o clique do
+  //    ícone seguinte (`<div class="fluig-style-guide container-modal"> intercepts pointer
+  //    events`), então quem não fechar pelo botão "Fechar" testa a tela errada.
+  // 2. O modal de planilhas EMPILHA: abrir "Detalhes da Planilha" deixa "Informações da
+  //    Planilha" aberto atrás. Por isso o locator é sempre ancorado no TÍTULO do modal, nunca
+  //    em `.modal` genérico — que casaria com os dois em modo estrito.
+  // ───────────────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Modal visível cujo título contém o texto dado.
+   * @param {string|RegExp} titulo
+   * @returns {import('@playwright/test').Locator}
+   */
+  modal(titulo) {
+    return this.page.locator('.modal:visible').filter({ hasText: titulo }).last();
+  }
+
+  /**
+   * Espera o modal terminar a SEGUNDA fase de carga.
+   *
+   * Estes modais preenchem em duas etapas: o corpo vem com os campos do contrato e, logo
+   * depois, os campos que dependem de outra consulta (fiscal, CNPJ do fornecedor) aparecem
+   * como o literal `Buscando...` até resolverem. Medido em 08/09/2026: resolvem em ~1 s.
+   *
+   * Sem esta espera o teste lê `Buscando...` e reprova por corrida, não por defeito — foi
+   * exatamente o que aconteceu na primeira execução deste spec.
+   *
+   * @param {string} tituloParcial trecho do título do modal
+   */
+  async aguardarCargaCompleta(tituloParcial) {
+    await this.page.waitForFunction(
+      (t) => {
+        const alvo = [...document.querySelectorAll('.modal')]
+          .filter((m) => /** @type {HTMLElement} */ (m).offsetParent !== null)
+          .find((m) => (m.querySelector('.modal-title')?.textContent || '').includes(t));
+        return alvo ? !/Buscando\.\.\./.test(alvo.textContent || '') : false;
+      },
+      tituloParcial,
+      { timeout: 30_000 },
+    );
+  }
+
+  /**
+   * Abre "Informações Complementares do Contrato" (ícone `Informações do Contrato`).
+   *
+   * O modal aparece ANTES de os campos serem preenchidos: o corpo é montado depois da resposta
+   * do dataset. Esperar só por `visible` devolvia ficha vazia — medido, e é a mesma armadilha
+   * que o CLAUDE.md registra para a contagem de alertas. Por isso a espera é por uma ÂNCORA
+   * de conteúdo, não pelo contêiner nem por tempo fixo.
+   */
+  async abrirInformacoesDoContrato() {
+    await this.acoesDaLinha.informacoes.click();
+    const m = this.modal('Informações Complementares do Contrato');
+    await m.waitFor({ state: 'visible' });
+    await m.getByText('Número do Contrato:', { exact: false }).first().waitFor({ state: 'visible' });
+    await this.aguardarCargaCompleta('Informações Complementares do Contrato');
+    return m;
+  }
+
+  /**
+   * Abre "Informações da Planilha", que lista as planilhas do contrato.
+   * Espera o rodapé do DataTables ("Mostrando ... registros"), que só é escrito depois de a
+   * lista ter sido montada — inclusive quando ela vem vazia.
+   */
+  async abrirPlanilhas() {
+    await this.acoesDaLinha.planilha.click();
+    const m = this.modal('Informações da Planilha');
+    await m.waitFor({ state: 'visible' });
+    await m.getByText(/Mostrando|Nenhum registro/i).first().waitFor({ state: 'visible' });
+    return m;
+  }
+
+  /**
+   * Abre "Detalhes da Planilha" a partir da n-ésima linha de "Informações da Planilha".
+   * A ação da linha é uma âncora sem nome acessível — o gancho é o `title`, como nos ícones
+   * da grade.
+   * @param {number} [indice]
+   */
+  async abrirDetalhesDaPlanilha(indice = 0) {
+    await this.page.getByTitle('Detalhes da Planilha').nth(indice).click();
+    const m = this.modal('Detalhes da Planilha');
+    await m.waitFor({ state: 'visible' });
+    // Mesma razão de `abrirInformacoesDoContrato`: espera a ficha ter conteúdo, não só existir.
+    // Atenção ao rótulo — nesta tela é "Numero", sem acento, diferente da ficha do contrato.
+    await m.getByText('Numero do Contrato:', { exact: false }).first().waitFor({ state: 'visible' });
+    await this.aguardarCargaCompleta('Detalhes da Planilha');
+    return m;
+  }
+
+  /**
+   * Pares rótulo → valor de um modal de ficha (Informações Complementares / Detalhes da
+   * Planilha). Lidos do DOM porque os campos são `<label>` seguidos do valor no mesmo bloco,
+   * sem papel ARIA que os relacione.
+   *
+   * A chave devolvida é o rótulo SEM os dois-pontos finais e sem espaços — a tela escreve
+   * "Número do Contrato:" e comparar com o literal cru já quebrou teste aqui antes.
+   *
+   * @param {string} titulo título do modal
+   * @returns {Promise<Record<string,string>>}
+   */
+  async lerCamposDoModal(titulo) {
+    return this.page.evaluate((t) => {
+      const modais = [...document.querySelectorAll('.modal')].filter(
+        (m) => /** @type {HTMLElement} */ (m).offsetParent !== null,
+      );
+      const alvo = modais.find((m) =>
+        (m.querySelector('.modal-title, h1, h2, h3')?.textContent || '').includes(t),
+      );
+      if (!alvo) return {};
+      /** @type {Record<string,string>} */
+      const campos = {};
+      for (const lab of alvo.querySelectorAll('label, dt')) {
+        const chave = (lab.textContent || '').trim().replace(/:\s*$/, '');
+        if (!chave || chave.length > 45) continue;
+        const pai = lab.parentElement;
+        let valor = '';
+        if (pai) {
+          valor = (pai.textContent || '').replace(lab.textContent || '', '');
+        }
+        if (!valor.trim() && lab.nextElementSibling) {
+          valor = lab.nextElementSibling.textContent || '';
+        }
+        campos[chave] = valor.replace(/\s+/g, ' ').trim();
+      }
+      return campos;
+    }, titulo);
+  }
+
+  /**
+   * Fecha o modal mais acima da pilha pelo botão "Fechar".
+   * Não use `Escape`: medido em 08/09/2026, estes modais não respondem a ele.
+   */
+  async fecharModal() {
+    await this.page.getByRole('button', { name: 'Fechar' }).last().click();
+  }
 }
