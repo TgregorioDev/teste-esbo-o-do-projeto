@@ -187,6 +187,100 @@ export class CentralTarefasComprasPage {
     );
   }
 
+  /**
+   * Abre a aba **Formulário** do detalhe já aberto e devolve o frame do formulário.
+   *
+   * Três fatos medidos em 08/09/2026 que decidem esta implementação:
+   *
+   * - o formulário vive num iframe (`workflowView-cardViewer`), então nenhum locator da página
+   *   externa alcança os campos;
+   * - a aba precisa ser clicada: o Fluig guarda a sub-aba por sessão no servidor, e herdar o
+   *   estado faz o teste ler a aba que a execução anterior deixou aberta;
+   * - o formulário é legível em MODO CONSULTA mesmo sem a tarefa ser da conta — é o que torna
+   *   observável o painel orçamentário, cuja etapa a conta de QA não consegue assumir.
+   *
+   * @returns {Promise<import('@playwright/test').Frame>}
+   */
+  async abrirFormularioDaSolicitacao() {
+    // A aba não tem `role="tab"` NEM nome acessível: é `<a class="tab-option" href="#form-tab">`
+    // dentro de `ul.nav-tabs`, e o texto visível não vira accessible name. Medido em 08/09/2026:
+    // `getByRole('tab', …)` e `getByRole('link', { name: 'Formulário' })` resolvem para ZERO
+    // elemento e o clique morre em timeout de 45s.
+    //
+    // É o mesmo problema dos três ícones da coluna "Ação" já registrado no CLAUDE.md. Sem
+    // âncora semântica, o gancho estável é o alvo da aba (`href`), que faz parte do contrato da
+    // tela — não é classe de estilo nem posição no DOM.
+    //
+    // Recomendação ao time de desenvolvimento: `aria-label` (ou `role="tab"`) nas abas do
+    // detalhe da solicitação.
+    await this.page.locator('.nav-tabs a[href="#form-tab"]').click();
+
+    const frame = this.page.frameLocator('iframe#workflowView-cardViewer');
+    // Âncora de conteúdo: o formulário existe antes de estar montado. Esperar por um campo que
+    // só aparece depois da montagem é o que separa "o iframe carregou" de "o formulário está
+    // pronto para ser lido".
+    await frame.locator('#tbProdutos, [id^=tbprod_produto]').first().waitFor({ state: 'attached' });
+
+    const encontrado = this.page
+      .frames()
+      .find((f) => /cardViewer/i.test(f.name()) || /cardViewer/i.test(f.url()));
+    if (!encontrado) {
+      faltaPreCondicao(
+        '(infraestrutura): a aba Formulário abriu mas o iframe do formulário não foi encontrado',
+      );
+    }
+    return encontrado;
+  }
+
+  /**
+   * Lê a seção **Validação do Item Orçamentário** do formulário aberto.
+   *
+   * A grade `tbItemOrcamentario` é uma tabela-mãe do Fluig: a primeira linha é o TEMPLATE (ids
+   * sem sufixo, valores vazios) e as linhas reais recebem `___1`, `___2`… Ler sem descartar o
+   * template faz o teste afirmar sobre uma linha que não existe para o usuário.
+   *
+   * @param {import('@playwright/test').Frame} frame
+   * @returns {Promise<{ aprovadores: Array<{ responsavel: string, email: string, total: string,
+   *   dataValidacao: string, horaValidacao: string, justificativa: string }>,
+   *   itens: string[], temCampoJustificativa: boolean, temCamposDeTrilha: boolean }>}
+   */
+  async lerPainelOrcamentario(frame) {
+    return frame.evaluate(() => {
+      /** @param {string} id */
+      const valor = (id) => {
+        const e = /** @type {HTMLInputElement | null} */ (document.getElementById(id));
+        return e ? (e.value ?? e.textContent ?? '').toString().trim() : '';
+      };
+      /** @param {string} id */
+      const existe = (id) => document.getElementById(id) !== null;
+
+      // Sufixos das linhas REAIS (o template não tem sufixo e é descartado).
+      const sufixos = [...document.querySelectorAll('[id^="tbitorc_responsavelValid___"]')].map(
+        (e) => e.id.replace('tbitorc_responsavelValid', ''),
+      );
+
+      const aprovadores = sufixos.map((s) => ({
+        responsavel: valor(`tbitorc_responsavelValid${s}`),
+        email: valor(`tbitorc_emailRespValid${s}`),
+        total: valor(`tbitorc_vlrTotEstItem${s}`),
+        dataValidacao: valor(`tbitorc_dataValid${s}`),
+        horaValidacao: valor(`tbitorc_horaValid${s}`),
+        justificativa: valor(`tbitorc_justificativa${s}`),
+      }));
+
+      const itens = [...document.querySelectorAll('[id^="tbprod_valorTotal___"]')]
+        .map((e) => /** @type {HTMLInputElement} */ (e).value)
+        .filter((v) => v && v !== '0');
+
+      return {
+        aprovadores,
+        itens,
+        temCampoJustificativa: existe('tbitorc_justificativa'),
+        temCamposDeTrilha: existe('tbitorc_dataValid') && existe('tbitorc_horaValid'),
+      };
+    });
+  }
+
   botaoAssumirTarefaAtual() {
     return this.page.getByRole('button', { name: 'Assumir tarefa' });
   }

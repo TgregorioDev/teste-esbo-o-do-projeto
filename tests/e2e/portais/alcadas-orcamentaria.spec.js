@@ -87,6 +87,153 @@ test.describe('Validação Orçamentária e Alçadas', () => {
     await expect(painelConsenso.getByText('Você não possui tarefas em consenso')).toBeVisible();
   });
 
+  /**
+   * FSWTBC-622 e FSWTBC-4821 — a grade do gestor orçamentário e o total que ele aprova.
+   *
+   * Até aqui a suíte chegava na Validação Orçamentária e afirmava só a AUSÊNCIA de "Assumir
+   * tarefa". O painel que o gestor orçamentário usa para decidir nunca era aberto — e é dele
+   * que tratam 13 chamados.
+   *
+   * Medido em 08/09/2026: o formulário é legível em modo consulta mesmo sem a tarefa ser da
+   * conta, então a grade `tbItemOrcamentario` é observável sem credencial de aprovador.
+   *
+   * A assertion central é de **coerência interna**: o *Total Estimado a Aprovar (R$)* tem de
+   * bater com a soma dos itens lida da PRÓPRIA tela. Fixar o valor numa constante seria inútil
+   * — cada SC tem o seu — e é exatamente o que o `CLAUDE.md` proíbe para contrato.
+   *
+   * Regra de negócio (`cassi-fluig-master`): o Fluig não é dono de regra financeira — cálculo e
+   * arredondamento são do Protheus. Divergência aqui é sintoma de integração, e é isso que o
+   * FSWTBC-4821 relata ("valor estimado incorreto na exibição").
+   */
+  test('@destrutivo FSWTBC-622 FSWTBC-4821 — a grade do item orçamentário identifica o aprovador e o Total Estimado a Aprovar soma os itens com máscara pt-BR', async ({
+    page,
+  }) => {
+    test.setTimeout(300_000);
+
+    const { numeroProcesso } = await criarSolicitacaoCompraClassica(page, {
+      justificativa: `QA FSWTBC-622 painel orcamentario ${Date.now()}`,
+    });
+    await aprovarValidacaoDoGestor(
+      page,
+      numeroProcesso,
+      'QA aprovando Validação do Gestor — FSWTBC-622',
+    );
+    await aguardarAtividadeAtual(page, numeroProcesso, ['Validação Orçamentária'], {
+      timeout: 90_000,
+    });
+
+    const central = new CentralTarefasComprasPage(page);
+    await central.abrirDetalheDaSolicitacao(numeroProcesso);
+    const formulario = await central.abrirFormularioDaSolicitacao();
+    const painel = await central.lerPainelOrcamentario(formulario);
+
+    test.info().annotations.push({
+      type: 'painel-orcamentario',
+      description: `SC ${numeroProcesso}: ${painel.aprovadores.length} aprovador(es), ${painel.itens.length} item(ns) — ${JSON.stringify(painel.aprovadores.map((a) => ({ resp: a.responsavel, total: a.total })))}`,
+    });
+
+    // FSWTBC-622: "os itens da solicitação são carregados e listados na grade". Sem linha, o
+    // gestor decide sem ver o que aprova — que é o defeito relatado.
+    expect(
+      painel.aprovadores.length,
+      'a grade Validação do Item Orçamentário não trouxe nenhuma linha de aprovador — o gestor ' +
+        'orçamentário abriria a etapa sem ver o que está aprovando',
+    ).toBeGreaterThan(0);
+
+    for (const aprovador of painel.aprovadores) {
+      expect(aprovador.responsavel, 'linha da grade sem responsável identificado').not.toBe('');
+      expect(
+        aprovador.email,
+        `responsável "${aprovador.responsavel}" sem e-mail — a notificação da alçada não chega`,
+      ).toMatch(/^\S+@\S+\.\S+$/);
+      // FSWTBC-4821: máscara brasileira, não o número cru do ERP.
+      expect(
+        aprovador.total,
+        `Total Estimado a Aprovar veio "${aprovador.total}" — esperado no formato 1.234,56`,
+      ).toMatch(/^\d{1,3}(\.\d{3})*,\d{2}$/);
+    }
+
+    // Coerência: a soma dos itens da SC tem de bater com o total que o aprovador vê.
+    // Quando há um único aprovador, ele responde por todos os itens.
+    const paraNumero = (/** @type {string} */ v) => Number(v.replace(/\./g, '').replace(',', '.'));
+    const somaDosItens = painel.itens.reduce((acc, v) => acc + paraNumero(v), 0);
+
+    if (painel.aprovadores.length === 1) {
+      expect(
+        paraNumero(painel.aprovadores[0].total),
+        `o Total Estimado a Aprovar (${painel.aprovadores[0].total}) diverge da soma dos ` +
+          `${painel.itens.length} itens da SC (${somaDosItens.toFixed(2)}). O cálculo é do ` +
+          `Protheus — divergência aqui é sintoma de integração, não de tela`,
+      ).toBeCloseTo(somaDosItens, 2);
+    } else {
+      // Vários aprovadores: cada um responde por parte, e a soma das partes é o todo.
+      const somaDosAprovadores = painel.aprovadores.reduce(
+        (acc, a) => acc + paraNumero(a.total),
+        0,
+      );
+      expect(
+        somaDosAprovadores,
+        `a soma dos totais por aprovador (${somaDosAprovadores.toFixed(2)}) diverge da soma dos ` +
+          `itens da SC (${somaDosItens.toFixed(2)}) — item sem aprovador, ou item contado duas vezes`,
+      ).toBeCloseTo(somaDosItens, 2);
+    }
+  });
+
+  /**
+   * FSWTBC-3489 e FSWTBC-2737 — os campos que a etapa precisa ter para ser auditável.
+   *
+   * O 3489 relata que a **data da validação não era salva** (perda de trilha de auditoria) e
+   * que os itens não eram listados. O 2737 relata que **não aparecia o campo para o gestor
+   * orçamentário registrar o parecer**. Os dois foram corrigidos; este teste é a regressão.
+   *
+   * O que se afirma aqui é a EXISTÊNCIA dos campos na etapa, não o preenchimento: a SC recém
+   * chegada ainda não foi decidida, então data, hora e justificativa vazias são o estado
+   * correto. Afirmar preenchimento seria transformar um teste de regressão em falso vermelho.
+   */
+  test('@destrutivo FSWTBC-3489 FSWTBC-2737 — a etapa orçamentária expõe trilha de auditoria (data/hora) e campo de parecer do gestor', async ({
+    page,
+  }) => {
+    test.setTimeout(300_000);
+
+    const { numeroProcesso } = await criarSolicitacaoCompraClassica(page, {
+      justificativa: `QA FSWTBC-3489 trilha orcamentaria ${Date.now()}`,
+    });
+    await aprovarValidacaoDoGestor(
+      page,
+      numeroProcesso,
+      'QA aprovando Validação do Gestor — FSWTBC-3489',
+    );
+    await aguardarAtividadeAtual(page, numeroProcesso, ['Validação Orçamentária'], {
+      timeout: 90_000,
+    });
+
+    const central = new CentralTarefasComprasPage(page);
+    await central.abrirDetalheDaSolicitacao(numeroProcesso);
+    const formulario = await central.abrirFormularioDaSolicitacao();
+    const painel = await central.lerPainelOrcamentario(formulario);
+
+    expect(
+      painel.temCamposDeTrilha,
+      'a etapa não expõe Data e Hora da Validação — sem eles a aprovação orçamentária fica sem ' +
+        'trilha de auditoria, que é o defeito do FSWTBC-3489',
+    ).toBe(true);
+
+    expect(
+      painel.temCampoJustificativa,
+      'a etapa não expõe o campo de parecer do gestor orçamentário (FSWTBC-2737) — o aprovador ' +
+        'decide sem poder registrar o porquê',
+    ).toBe(true);
+
+    // Estado correto para uma SC que acabou de chegar: ainda não decidida.
+    for (const aprovador of painel.aprovadores) {
+      expect(
+        aprovador.dataValidacao,
+        `a SC acabou de chegar à etapa e já traz data de validação ("${aprovador.dataValidacao}") ` +
+          `— trilha de auditoria com data anterior à decisão não é rastro, é ruído`,
+      ).toBe('');
+    }
+  });
+
   test('@destrutivo CT-E2E-04-H — o histórico da SC permanece integralmente rastreável até o ponto em que a alçada bloqueia a conta autenticada', async ({
     page,
   }) => {
