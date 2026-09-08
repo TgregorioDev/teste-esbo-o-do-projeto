@@ -236,7 +236,7 @@ significa nada.
 | | |
 |---|---|
 | Casos executáveis no Fluig | **518** |
-| Com teste automatizado | **34** (7%) |
+| Com teste automatizado | **37** (7%) |
 | Registrados só para o Protheus (fora do escopo E2E) | 125 |
 
 A matriz caso a caso — incluindo os que **podem ser aprimorados** num teste existente e os que
@@ -256,6 +256,7 @@ arquivo. E a mesma trava: o script falha se um teste citar chamado que não exis
 | `FSWTBC-695` | `e2e/contratos/ciclo-faturamento.spec.js` |
 | `FSWTBC-1702` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
 | `FSWTBC-2022` | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
+| `FSWTBC-2681` | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `FSWTBC-2737` | `e2e/portais/alcadas-orcamentaria.spec.js` |
 | `FSWTBC-2886` | `e2e/contratos/ciclo-faturamento.spec.js` |
 | `FSWTBC-3489` | `e2e/portais/alcadas-orcamentaria.spec.js` |
@@ -271,6 +272,7 @@ arquivo. E a mesma trava: o script falha se um teste citar chamado que não exis
 | `FSWTBC-4229` | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
 | `FSWTBC-4266` | `e2e/contratos/ciclo-faturamento.spec.js` |
 | `FSWTBC-4357` | `e2e/portais/ciclo-comprador.spec.js` |
+| `FSWTBC-4527` | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `FSWTBC-4639` | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
 | `FSWTBC-4792` | `e2e/contratos/ciclo-faturamento.spec.js` |
 | `FSWTBC-4816` | `e2e/contratos/fila-faturamento-protheus.spec.js` |
@@ -282,3 +284,4 @@ arquivo. E a mesma trava: o script falha se um teste citar chamado que não exis
 | `FSWTBC-4983` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
 | `FSWTBC-4986` | `e2e/acompanhamento-contratos/grade-contratos.spec.js` |
 | `FSWTBC-4987` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
+| `FSWTBC-5035` | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |

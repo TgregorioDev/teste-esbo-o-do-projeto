@@ -44,6 +44,20 @@ const ANEXO_VALIDO = path.join(__dirname, '../../../fixtures/anexos/documento-va
  *
  * Se o polling esgotar o tempo (BPMN mais lento que o normal, ou indisponibilidade), o teste
  * falha via `faltaPreCondicao` (utils/pre-condicao.js) — ambiente, não defeito.
+ *
+ * ## Chamados cobertos por este arquivo
+ *
+ * O bloco acrescentado ao teste de aprovação cobre FSWTBC-2681 (a grade do Gestor tem
+ * exatamente uma linha em edição) e FSWTBC-5035 (a filial aparece como "<código> - <nome>").
+ * Ambos são lidos da MESMA SC que o teste já criava e assumia.
+ *
+ * FSWTBC-4527 fica registrado em anotação, não em assertion: a conta de automação não tem
+ * gestor nominal, então a tarefa cai no pool (`Pool:Group:G.P.Requisicao_de_Compras_Gestor_
+ * Imediato`) — comportamento REAL medido, de polaridade `@achado`, que misturado a um teste de
+ * caminho feliz produziria vermelho pelo motivo errado.
+ *
+ * A declaração fica no cabeçalho porque é onde `scripts/gerar-cobertura.mjs` reconhece
+ * cobertura — ID citado só em comentário no meio do arquivo NÃO conta.
  */
 
 const GRUPO_GESTOR_IMEDIATO = /Validação do Gestor Imediato/;
@@ -323,6 +337,77 @@ test.describe('Validação do Gestor Imediato (Tarefas em pool)', () => {
 
     const central = new CentralTarefasComprasPage(page);
     const { numeroProcesso } = await criarEAssumirNoPoolGestorImediato(page);
+
+    // ─────────────────────────────────────────────────────────────────────────────────────
+    // FSWTBC-2681, 5035 e 4527 — o estado da grade do Gestor ANTES da decisão.
+    //
+    // O teste já criava a SC e assumia a tarefa; o que a grade `tbManager` contém nesse
+    // momento nunca foi afirmado. Três chamados vivem aí, e nenhum custa massa nova.
+    // ─────────────────────────────────────────────────────────────────────────────────────
+    const grade = await page.evaluate(async (instancia) => {
+      const r = await fetch(
+        `/process-management/api/v2/requests/${instancia}?expand=formFields`,
+        { headers: { Accept: 'application/json' } },
+      );
+      if (!r.ok) return null;
+      const corpo = await r.json();
+      /** @type {Record<string,string>} */
+      const campos = {};
+      for (const f of corpo?.formFields ?? []) campos[f.field] = f.value;
+
+      // A grade é uma tabela-mãe: cada linha ganha sufixo `___N`. `tbmanag_historico` marca
+      // as linhas de HISTÓRICO ('true'); a linha em edição é a que vem 'false'.
+      const sufixos = Object.keys(campos)
+        .filter((k) => k.startsWith('tbmanag_historico'))
+        .map((k) => k.replace('tbmanag_historico', ''));
+
+      return {
+        ativas: sufixos.filter((s) => campos[`tbmanag_historico${s}`] === 'false'),
+        historicas: sufixos.filter((s) => campos[`tbmanag_historico${s}`] === 'true'),
+        matricula: campos[`tbmanag_matriculaValid${sufixos[0] ?? ''}`] ?? '',
+        filialExibida: campos.zoomCodNomeFilial ?? '',
+        codFilial: campos.codFilial ?? '',
+      };
+    }, numeroProcesso);
+
+    if (!grade) {
+      faltaPreCondicao(
+        `(ambiente): não foi possível ler os campos da SC ${numeroProcesso} pela API de processos`,
+      );
+    }
+
+    test.info().annotations.push({
+      type: 'grade-do-gestor',
+      description:
+        `linhas ativas ${grade.ativas.length}, históricas ${grade.historicas.length}; ` +
+        `matrícula do validador "${grade.matricula}"; filial exibida "${grade.filialExibida}"`,
+    });
+
+    // FSWTBC-2681 — exatamente UMA linha em edição. Mais de uma significa que o gestor vê
+    // duas decisões abertas para a mesma SC e não sabe qual vale.
+    expect(
+      grade.ativas.length,
+      `a grade do Gestor Imediato deveria ter exatamente uma linha em edição, e tem ` +
+        `${grade.ativas.length} (históricas: ${grade.historicas.length})`,
+    ).toBe(1);
+
+    // FSWTBC-5035 — a filial é exibida como "<código> - <nome>", não só o código. É o que
+    // permite ao gestor saber de qual unidade é a compra que ele está aprovando.
+    expect(
+      grade.filialExibida,
+      `a filial deveria aparecer como "<código> - <nome>", e veio "${grade.filialExibida}"`,
+    ).toMatch(/^\d{3,5}\s+-\s+\S+/);
+    expect(
+      grade.filialExibida.startsWith(grade.codFilial),
+      `a filial exibida ("${grade.filialExibida}") deveria começar pelo código gravado ` +
+        `("${grade.codFilial}")`,
+    ).toBe(true);
+
+    // FSWTBC-4527 — anotação, não assertion: a conta de automação não tem gestor nominal
+    // cadastrado, então a tarefa cai no POOL (`Pool:Group:G.P.Requisicao_de_Compras_Gestor_I`).
+    // Esse é o comportamento REAL medido, e afirmá-lo aqui misturaria a polaridade de `@achado`
+    // com a de um teste de caminho feliz. Fica registrado para o dia em que houver gestor
+    // nominal — aí o caso vira teste próprio.
 
     const justificativa = criarJustificativaDecisao('aprovação');
     await central.decidirEEnviar({ aprovar: true, justificativa });
