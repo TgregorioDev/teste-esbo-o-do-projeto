@@ -167,6 +167,85 @@ if (orfaos.length > 0) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// Segundo universo: os casos escritos a partir dos chamados (SDCASSI / SUPORTE CASSI).
+//
+// São OUTRA numeração, com outra origem: `docs/catalogo-casos.md` é o roteiro do projeto, e
+// `Casos de Testes - SDCASSI/` são os 643 defeitos reais reportados pelo cliente. Misturar os
+// dois num único número mediria uma coisa que não existe — por isso a seção é separada, com o
+// mesmo critério de auditabilidade: só conta ID DECLARADO em título de teste ou cabeçalho de
+// arquivo, nunca mencionado em prosa.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+const PASTA_CHAMADOS = 'Casos de Testes - SDCASSI';
+const RE_CHAMADO = /(?:CT-)?FSWTBC-\d+/g;
+
+/** Normaliza para a forma `FSWTBC-1234`, já que os casos usam o prefixo `CT-` e os testes não. */
+const semPrefixo = (/** @type {string} */ id) => id.replace(/^CT-/, '');
+
+/** @param {string} dir @returns {string[]} */
+function markdowns(dir) {
+  try {
+    return readdirSync(dir).flatMap((nome) => {
+      const caminho = join(dir, nome);
+      if (statSync(caminho).isDirectory()) return markdowns(caminho);
+      return nome.endsWith('.md') ? [caminho] : [];
+    });
+  } catch {
+    return [];
+  }
+}
+
+/** Universo dos chamados: um caso por cabeçalho `## CT-FSWTBC-####`. */
+const casosDeChamado = new Set();
+/** Casos que vivem em `Protheus/` — não são executáveis no Fluig, então não são cobráveis aqui. */
+const casosSoProtheus = new Set();
+
+for (const arquivo of markdowns(PASTA_CHAMADOS)) {
+  const ehProtheus = arquivo.includes(`${PASTA_CHAMADOS}/Protheus`);
+  for (const m of readFileSync(arquivo, 'utf8').matchAll(/^#+\s*(CT-FSWTBC-\d+)/gm)) {
+    const id = semPrefixo(m[1]);
+    casosDeChamado.add(id);
+    if (ehProtheus) casosSoProtheus.add(id);
+  }
+}
+
+/** @type {Map<string, Set<string>>} */
+const ondeChamado = new Map();
+
+for (const caminho of specs('tests')) {
+  const fonte = readFileSync(caminho, 'utf8');
+  const corte = fonte.search(RE_PRIMEIRO_TESTE);
+  const cabecalho = corte === -1 ? fonte : fonte.slice(0, corte);
+  const declarados = new Set(
+    [cabecalho, ...[...fonte.matchAll(RE_TITULO)].map((m) => m[2])]
+      .flatMap((t) => t.match(RE_CHAMADO) ?? [])
+      .map(semPrefixo),
+  );
+  for (const id of declarados) {
+    if (!ondeChamado.has(id)) ondeChamado.set(id, new Set());
+    ondeChamado.get(id)?.add(caminho.replace('tests/', ''));
+  }
+}
+
+// Mesma trava do catálogo: teste que cita chamado inexistente é erro de digitação ou caso que
+// nunca foi escrito. Sem esta checagem a seção envelheceria em silêncio.
+const chamadosOrfaos = [...ondeChamado.keys()].filter((id) => !casosDeChamado.has(id));
+if (casosDeChamado.size > 0 && chamadosOrfaos.length > 0) {
+  throw new Error(
+    `Testes citam chamados que não existem em "${PASTA_CHAMADOS}": ${chamadosOrfaos.join(', ')}.`,
+  );
+}
+
+const chamadosNoFluig = [...casosDeChamado].filter((id) => !casosSoProtheus.has(id));
+/** Ordena por número, não por texto: senão `FSWTBC-630` cai depois de `FSWTBC-4987`. */
+const porNumero = (/** @type {string} */ a, /** @type {string} */ b) =>
+  Number(a.split('-')[1]) - Number(b.split('-')[1]);
+
+const chamadosCobertos = [...ondeChamado.keys()]
+  .filter((id) => !casosSoProtheus.has(id))
+  .sort(porNumero);
+
 const faltantes = casos.filter((id) => !onde.has(id));
 const semMotivo = faltantes.filter((id) => !(id in MOTIVOS));
 if (semMotivo.length > 0) {
@@ -192,6 +271,52 @@ const avisoProsa = soEmProsa.length
     'do teste que o exercita, ou o caso é lacuna com motivo declarado.'
   : '> Nenhum ID é mencionado só em prosa: todo ID citado na suíte aparece em título de teste ou ' +
     'no cabeçalho do arquivo.';
+
+const secaoChamados = casosDeChamado.size
+  ? `
+---
+
+## Casos vindos dos chamados (SDCASSI / SUPORTE CASSI)
+
+Universo diferente do catálogo acima: são os **${casosDeChamado.size} defeitos reais** reportados
+pelo cliente, escritos como caso de teste em [\`${PASTA_CHAMADOS}/\`](<../${PASTA_CHAMADOS}/README.md>).
+Os dois números não se somam — medem coisas distintas, e juntá-los produziria um total que não
+significa nada.
+
+| | |
+|---|---|
+| Casos executáveis no Fluig | **${chamadosNoFluig.length}** |
+| Com teste automatizado | **${chamadosCobertos.length}** (${
+      chamadosNoFluig.length
+        ? Math.round((100 * chamadosCobertos.length) / chamadosNoFluig.length)
+        : 0
+    }%) |
+| Registrados só para o Protheus (fora do escopo E2E) | ${casosSoProtheus.size} |
+
+A matriz caso a caso — incluindo os que **podem ser aprimorados** num teste existente e os que
+**precisam nascer do zero** — está em [\`comparacao-por-modulo/\`](comparacao-por-modulo/), com o
+resumo em [\`comparacao-automacao-x-chamados.md\`](comparacao-automacao-x-chamados.md).
+
+Vale o mesmo critério do catálogo: só conta o ID **declarado** em título de teste ou cabeçalho de
+arquivo. E a mesma trava: o script falha se um teste citar chamado que não existe na pasta.
+
+| Chamado | Spec |
+|---|---|
+${
+  chamadosCobertos.length
+    ? chamadosCobertos
+        .map(
+          (id) =>
+            `| \`${id}\` | ${[...(ondeChamado.get(id) ?? [])]
+              .sort()
+              .map((a) => `\`${a}\``)
+              .join(' · ')} |`,
+        )
+        .join('\n')
+    : '| — | nenhum chamado declarado em título de teste ainda |'
+}
+`
+  : '';
 
 const doc = `# Cobertura por caso de teste
 
@@ -222,9 +347,12 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | ID | Caso | | Spec / motivo |
 |---|---|---|---|
 ${linhas.join('\n')}
-`;
+${secaoChamados}`;
 
 writeFileSync('docs/cobertura.md', doc);
 console.log(
-  `docs/cobertura.md · ${casos.length} casos · ${onde.size} cobertos · ${faltantes.length} sem teste`,
+  `docs/cobertura.md · ${casos.length} casos · ${onde.size} cobertos · ${faltantes.length} sem teste` +
+    (casosDeChamado.size
+      ? ` | chamados: ${chamadosNoFluig.length} no Fluig · ${chamadosCobertos.length} com teste`
+      : ''),
 );

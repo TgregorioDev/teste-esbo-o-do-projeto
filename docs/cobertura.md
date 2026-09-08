@@ -30,8 +30,8 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-ACC-01-H` | Acesso ao portal por usuário autorizado | ✅ | `e2e/acompanhamento-contratos/acesso-portal.spec.js` |
 | `CT-ACC-01-S1` | Acesso negado a usuário fora dos grupos | ✅ | `e2e/acompanhamento-contratos/acesso-portal.spec.js` |
 | `CT-ACC-01-S2` | Falha ao validar a permissão (dataset `colleagueGroup` indisponível) | ✅ | `e2e/acompanhamento-contratos/acesso-portal.spec.js` |
-| `CT-ACC-02-H` | Ações disponíveis na linha do contrato | ✅ | `e2e/acompanhamento-contratos/grade-contratos.spec.js` |
-| `CT-ACC-02-S1` | Status do contrato exibido de forma legível | ✅ | `e2e/acompanhamento-contratos/grade-contratos.spec.js` |
+| `CT-ACC-02-H` | Ações disponíveis na linha do contrato | ✅ | `e2e/acompanhamento-contratos/grade-contratos.spec.js` · `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
+| `CT-ACC-02-S1` | Status do contrato exibido de forma legível | ✅ | `e2e/acompanhamento-contratos/grade-contratos.spec.js` · `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
 | `CT-ACC-03-H` | Abrir o modal de SC a partir do contrato ⭐ **caso-âncora do pedido do dev** | ✅ | `e2e/acompanhamento-contratos/modal-solicitacao-compra.spec.js` |
 | `CT-ACC-03-S1` | Filial do contrato não encontrada | ⬜ | exige contrato com filial órfã (código sem cadastro); não existe na base |
 | `CT-ACC-03-S2` | Protheus indisponível ao abrir a SC | ✅ | `e2e/acompanhamento-contratos/indisponibilidade-protheus.spec.js` |
@@ -223,3 +223,39 @@ exercitar o fluxo no dia em que a pré-condição existir.
 | `CT-TSK-05-S1` | Cancelamento sem motivo derruba com NPE 500 | ✅ | `e2e/tarefas/cancelamento-solicitacao.spec.js` |
 | `CT-TSK-07-H` | "Somente salvar" — salvar sem movimentar | ✅ | `e2e/tarefas/acoes-da-tarefa.spec.js` |
 | `CT-TSK-08-H` | Transferir atividade | ✅ | `e2e/tarefas/acoes-da-tarefa.spec.js` |
+
+---
+
+## Casos vindos dos chamados (SDCASSI / SUPORTE CASSI)
+
+Universo diferente do catálogo acima: são os **643 defeitos reais** reportados
+pelo cliente, escritos como caso de teste em [`Casos de Testes - SDCASSI/`](<../Casos de Testes - SDCASSI/README.md>).
+Os dois números não se somam — medem coisas distintas, e juntá-los produziria um total que não
+significa nada.
+
+| | |
+|---|---|
+| Casos executáveis no Fluig | **518** |
+| Com teste automatizado | **11** (2%) |
+| Registrados só para o Protheus (fora do escopo E2E) | 125 |
+
+A matriz caso a caso — incluindo os que **podem ser aprimorados** num teste existente e os que
+**precisam nascer do zero** — está em [`comparacao-por-modulo/`](comparacao-por-modulo/), com o
+resumo em [`comparacao-automacao-x-chamados.md`](comparacao-automacao-x-chamados.md).
+
+Vale o mesmo critério do catálogo: só conta o ID **declarado** em título de teste ou cabeçalho de
+arquivo. E a mesma trava: o script falha se um teste citar chamado que não existe na pasta.
+
+| Chamado | Spec |
+|---|---|
+| `FSWTBC-630` | `e2e/rh/gestao-equipes.spec.js` |
+| `FSWTBC-648` | `api/arvore-hierarquica-demitidos.spec.js` |
+| `FSWTBC-1702` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
+| `FSWTBC-4068` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
+| `FSWTBC-4076` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
+| `FSWTBC-4078` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
+| `FSWTBC-4178` | `e2e/plataforma/desempenho-datasets.spec.js` |
+| `FSWTBC-4816` | `e2e/contratos/fila-faturamento-protheus.spec.js` |
+| `FSWTBC-4982` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
+| `FSWTBC-4983` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
+| `FSWTBC-4987` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
