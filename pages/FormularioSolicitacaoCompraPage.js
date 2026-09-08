@@ -118,6 +118,16 @@ export class FormularioSolicitacaoCompraPage {
     this.dialogAtencao = this.frame.getByRole('dialog').filter({ hasText: 'Atenção:' });
     this.botaoOkAtencao = this.dialogAtencao.getByRole('button', { name: 'OK', exact: true });
 
+    // Crítica de CAMPO, disparada no blur (não no Enviar). Também é um SweetAlert dentro do
+    // iframe, mas titulado **"Erro:"** — não "Atenção:". Medido em 08/09/2026 com a regra do
+    // mínimo de R$ 0,10: filtrar por 'Atenção:' não encontra este diálogo e o teste morre em
+    // timeout sem dizer por quê. Por isso o locator é o popup, sem depender do título.
+    this.dialogCriticaDeCampo = this.frame.locator('.swal2-popup');
+    this.botaoOkCriticaDeCampo = this.dialogCriticaDeCampo.getByRole('button', {
+      name: 'OK',
+      exact: true,
+    });
+
     /**
      * Resolvida por `goto()` com `true` quando a montagem do formulário terminou e `false`
      * quando o ambiente não a concluiu. Fica `undefined` enquanto não se navegou.
@@ -296,6 +306,47 @@ export class FormularioSolicitacaoCompraPage {
   /** @param {string} percentual ex.: "90" */
   async preencherRateio(percentual) {
     await this.campoRateio.fill(percentual);
+  }
+
+  /**
+   * Acrescenta MAIS uma linha de rateio ao item e espera por ela especificamente.
+   *
+   * `adicionarCentroCusto()` espera por `headingRateio`/`campoRateio`, que resolvem por nome
+   * acessível — com duas linhas na tela eles casam com as DUAS e a espera quebra. Aqui a
+   * âncora é o id da linha que acabou de nascer, que é único por construção.
+   *
+   * @param {number} linha 1-based, a linha esperada DEPOIS do clique
+   * @param {number} [item] 1-based
+   */
+  async adicionarOutroCentroDeCusto(linha, item = 1) {
+    await this.botaoAdicionarCentroCusto.click();
+    await this.frame.locator(`#tbRatCC_Rateio___${item}_${linha}`).waitFor({ state: 'visible' });
+  }
+
+  /**
+   * Preenche o percentual de UMA linha de rateio, quando o item tem mais de um centro de custo.
+   *
+   * Os ids seguem `tbRatCC_Rateio___<item>_<linha>` — medido em 08/09/2026. Com duas linhas,
+   * `campoRateio` (que resolve por nome acessível "Rateio *") casa com AS DUAS e quebra em modo
+   * estrito; por isso o acesso por índice existe, e é por id, não por posição no DOM.
+   *
+   * @param {number} linha 1-based, na ordem em que os centros de custo foram adicionados
+   * @param {string} percentual ex.: "60"
+   * @param {number} [item] 1-based; hoje todos os cenários usam o item 1
+   */
+  async preencherRateioDaLinha(linha, percentual, item = 1) {
+    await this.frame.locator(`#tbRatCC_Rateio___${item}_${linha}`).fill(percentual);
+  }
+
+  /**
+   * Percentuais atualmente informados nas linhas de rateio do item.
+   * @param {number} [item] 1-based
+   * @returns {Promise<string[]>}
+   */
+  async lerRateiosDoItem(item = 1) {
+    return this.frame
+      .locator(`[id^="tbRatCC_Rateio___${item}_"]`)
+      .evaluateAll((els) => els.map((e) => /** @type {HTMLInputElement} */ (e).value));
   }
 
   /**
