@@ -37,6 +37,14 @@ import { parseFornecedorDaGrade } from '../../../factories/medicao.js';
  * humana — sem nunca chegar a preencher quantidade/rateio, que ficam fora de alcance.
  * `tests/e2e/contratos/validacoes-faturamento.spec.js` documenta, com evidência ao vivo, por
  * que CT-FAT-02-S1/S3/S4 (que dependem desse painel) não são alcançáveis por este usuário.
+ *
+ * ## Chamados cobertos por este arquivo
+ *
+ * Além de CT-FAT-01-H, o bloco de verificação do que a medição CONTÉM cobre os chamados
+ * FSWTBC-629, FSWTBC-695, FSWTBC-2886, FSWTBC-4122, FSWTBC-4266 e FSWTBC-4792 — todos sobre o
+ * estado da medição depois de criada, e todos respondidos pela mesma massa. A declaração fica
+ * aqui, no cabeçalho, porque é onde `scripts/gerar-cobertura.mjs` reconhece cobertura: ID
+ * citado só em comentário no meio do arquivo NÃO conta, por decisão de 03/09/2026.
  */
 test.describe('Faturamento de Contratos — ciclo de medição', () => {
   test('CT-FAT-01-H @destrutivo: deve criar uma medição válida a partir de um contrato vigente e roteá-la para a próxima atividade do workflow', async ({
@@ -150,5 +158,114 @@ test.describe('Faturamento de Contratos — ciclo de medição', () => {
 
     expect(nomeAtividade, 'a medição deve ter avançado para além de "Início"').not.toBe('');
     expect(nomeAtividade.toLowerCase()).not.toContain('início');
+
+    // ─────────────────────────────────────────────────────────────────────────────────────
+    // FSWTBC-629, 695, 2886, 4122, 4266 e 4792 — o que a medição criada realmente CONTÉM.
+    //
+    // Até aqui o teste criava a medição e afirmava apenas que a atividade não era "Início".
+    // Isso passa mesmo que a medição tenha nascido para o contrato errado, sem competência,
+    // sem fornecedor e sem número — seis chamados vivem exatamente nesse vão.
+    //
+    // Nada aqui cria massa nova: é leitura da solicitação que o próprio teste acabou de criar.
+    // A API é chamada de dentro da página porque `page.request` leva 403 do WAF neste tenant.
+    // ─────────────────────────────────────────────────────────────────────────────────────
+    const gravado = await page.evaluate(async (instancia) => {
+      /** @param {string} url */
+      const json = async (url) => {
+        const r = await fetch(url, { headers: { Accept: 'application/json' } });
+        return r.ok ? r.json() : null;
+      };
+
+      const det = await json(`/process-management/api/v2/requests/${instancia}?expand=formFields`);
+      /** @type {Record<string,string>} */
+      const campos = {};
+      for (const f of det?.formFields ?? []) campos[f.field] = f.value;
+
+      // Logo após o Enviar a medição passa por etapas AUTOMÁTICAS ("Busca Informações do
+      // Contrato" foi a observada). Afirmar a atividade nesse instante mede o meio do caminho,
+      // não o roteamento. Espera pela atividade humana, com teto próprio.
+      const limite = Date.now() + 150_000;
+      /** @type {any} */
+      let aberta = null;
+      while (Date.now() < limite) {
+        const t = await json(`/process-management/api/v2/requests/${instancia}/tasks?pageSize=60`);
+        aberta = (t?.items ?? []).find((/** @type {any} */ x) => x.status === 'NOT_COMPLETED');
+        if (aberta?.state?.stateName === 'Realizar Medição do Contrato') break;
+        await new Promise((r) => setTimeout(r, 5_000));
+      }
+
+      return {
+        numMedicao: campos.numMedicao ?? '',
+        competencia: campos.medContrCompetencia ?? '',
+        contrato: campos.zoomNumContrato ?? '',
+        situacaoContrato: campos.descSituacaoContrato ?? '',
+        emailFornecedor: campos.emailFornecedor ?? '',
+        emailFornecedorPlanilha: campos.emailFornecedorPlanilha ?? '',
+        atividade: aberta?.state?.stateName ?? '',
+        responsavel: aberta?.assignee?.login ?? '',
+      };
+    }, numeroSolicitacao);
+
+    testInfo.annotations.push({
+      type: 'medicao-gravada',
+      description: JSON.stringify(gravado),
+    });
+
+    // FSWTBC-4792 — sem número de medição a solicitação não é rastreável no ERP.
+    expect(gravado.numMedicao, 'a medição criada deveria ter número').not.toBe('');
+
+    // FSWTBC-4122 — a competência gravada é a que foi escolhida no zoom. A comparação é por
+    // dígitos porque a tela guarda as duas formas: `zoomCompetencia` usa "09-2026" e
+    // `medContrCompetencia` usa "09/2026" — medido. Comparar texto cru reprovaria por causa do
+    // separador, que não é o que o chamado discute.
+    const soDigitos = (/** @type {string} */ v) => (v || '').replace(/\D/g, '');
+    expect(
+      soDigitos(gravado.competencia),
+      `a competência gravada ("${gravado.competencia}") deveria ser a escolhida no zoom ` +
+        `("${resultado.competencia}")`,
+    ).toBe(soDigitos(String(resultado.competencia)));
+
+    // FSWTBC-695 — a medição nasce sobre o contrato escolhido, e ele está Vigente.
+    // `resultado.contrato` é o RÓTULO do zoom, multilinha ("Nº CONTRATO\n00005-2025-3301\n
+    // FILIAL\n3301"), enquanto o formulário grava só o número. Comparar os dois crus reprova
+    // por formato, não por conteúdo — medido.
+    expect(
+      resultado.contrato,
+      `a medição foi gravada sobre o contrato ${gravado.contrato}, que não é o escolhido ` +
+        `(${JSON.stringify(resultado.contrato)})`,
+    ).toContain(gravado.contrato);
+    expect(
+      gravado.situacaoContrato,
+      'medição só pode ser aberta sobre contrato Vigente',
+    ).toBe('Vigente');
+
+    // FSWTBC-4266 — o e-mail do fornecedor é o canal de cobrança da medição. Os dois campos
+    // (do contrato e da planilha) precisam existir e concordar; divergência aí manda a
+    // notificação para o endereço errado.
+    expect(gravado.emailFornecedor, 'e-mail do fornecedor não gravado').not.toBe('');
+    expect(
+      gravado.emailFornecedorPlanilha,
+      'e-mail do fornecedor da planilha não gravado',
+    ).toBe(gravado.emailFornecedor);
+
+    // FSWTBC-629 e 2886 — a atividade seguinte é nominal, não um estado qualquer. Medido em
+    // 08/09/2026: a medição válida cai em "Realizar Medição do Contrato" (sequência 28).
+    expect(
+      gravado.atividade,
+      `a medição parou em "${gravado.atividade}" — o roteamento correto leva a "Realizar ` +
+        `Medição do Contrato"`,
+    ).toBe('Realizar Medição do Contrato');
+
+    // E tem dono humano: tarefa da fila que fica com a conta de integração é a assinatura da
+    // tarefa órfã que trava a fila do Faturamento (ver fila-faturamento-protheus.spec.js).
+    expect(
+      gravado.responsavel,
+      `a medição chegou a "${gravado.atividade}" sem responsável — tarefa órfã é a assinatura ` +
+        `do travamento da fila (ver fila-faturamento-protheus.spec.js)`,
+    ).not.toBe('');
+    expect(
+      gravado.responsavel,
+      'a medição ficou atribuída à conta de integração, não a um responsável humano',
+    ).not.toBe('consumerkeycompras');
   });
 });
