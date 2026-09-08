@@ -407,6 +407,223 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
   });
 
   /**
+   * FSWTBC-621, 2022, 4156, 4229 e 4639 — o desfecho da integração com o Protheus.
+   *
+   * A suíte já ESPERAVA a integração acontecer (`aguardarAtividadeAtual`), mas nunca afirmou
+   * nada sobre o resultado dela. Cinco chamados vivem exatamente aí, e todos se respondem com
+   * a mesma massa — uma SC criada e levada até depois de "Grava SC e Anexos":
+   *
+   * - **621 / 2022 / 4639** — a SC integrada precisa voltar com o número do ERP.
+   *   Medido em 08/09/2026: `numSolCompra` = "000059" na SC que integrou, e **vazio** na SC
+   *   113196, que caiu em *Correção*. É o oráculo direto do sucesso da integração.
+   * - **4639** — e o Histórico não pode trazer `Falha ao executar evento de serviço` nem
+   *   `C1_SIGLA` (campo que o chamado diz não existir no formulário da SC).
+   * - **4156** — a etapa tem SLA de **2 minutos**, limite que o próprio FSWTBC-3749 aceita.
+   *   A suíte tratava demora como ambiente; aqui ela vira assertion.
+   * - **4229** — cair em *Correção* é o DEFEITO do chamado. Este teste não pode classificá-lo
+   *   como pré-condição ausente, senão o defeito é lido como instabilidade e some do relatório.
+   *
+   * Sobre `erroIntegracao`: medido vazio TAMBÉM na SC que falhou (113196). O campo que existe
+   * para comunicar a falha não é preenchido — por isso ele não serve como oráculo de sucesso,
+   * e quem decide aqui é o `numSolCompra`. A observação fica anotada no relatório.
+   */
+  test('@destrutivo FSWTBC-4156 FSWTBC-4229 FSWTBC-4639 — a integração conclui dentro do SLA, sem desviar para Correção e sem registrar falha no Histórico', async ({
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(300_000);
+
+    const { massa, numeroProcesso } = await criarSolicitacaoCompletaEEnviar(page);
+
+    test.info().annotations.push({
+      type: 'solicitacao-criada',
+      description: `numero=${numeroProcesso} justificativa="${massa.justificativa}"`,
+    });
+
+    // A API de processos é consultada de dentro da página: `page.request` leva 403 do WAF neste
+    // tenant por falta de `User-Agent`/`Referer` de navegador.
+    const estado = await page.evaluate(async (instancia) => {
+      /** @param {string} url */
+      const json = async (url) => {
+        const r = await fetch(url, { headers: { Accept: 'application/json' } });
+        return r.ok ? r.json() : null;
+      };
+
+      // A integração é assíncrona: espera a etapa 233 concluir, com teto próprio para não
+      // depender do timeout do teste. Estado observável, nunca tempo fixo.
+      const limite = Date.now() + 200_000;
+      /** @type {any[]} */
+      let tarefas = [];
+      let gravaSC = null;
+      while (Date.now() < limite) {
+        const t = await json(`/process-management/api/v2/requests/${instancia}/tasks?pageSize=60`);
+        tarefas = t?.items ?? [];
+        gravaSC = tarefas.find(
+          (x) => x.state?.stateName === 'Grava SC e Anexos' && x.status === 'COMPLETED',
+        );
+        if (gravaSC) break;
+        await new Promise((r) => setTimeout(r, 5_000));
+      }
+
+      const det = await json(
+        `/process-management/api/v2/requests/${instancia}?expand=formFields`,
+      );
+      /** @type {Record<string,string>} */
+      const campos = {};
+      for (const f of det?.formFields ?? []) campos[f.field] = f.value;
+
+      const abertas = tarefas
+        .filter((x) => x.status === 'NOT_COMPLETED')
+        .map((x) => x.state?.stateName);
+
+      return {
+        gravaSC: gravaSC ? { inicio: gravaSC.startDate, fim: gravaSC.endDate } : null,
+        atividadesAbertas: abertas,
+        numSolCompra: campos.numSolCompra ?? '<campo ausente>',
+        erroIntegracao: campos.erroIntegracao ?? '<campo ausente>',
+        dtEmissao: campos.dtEmissaoSolCompra ?? '<campo ausente>',
+      };
+    }, numeroProcesso);
+
+    if (!estado.gravaSC) {
+      faltaPreCondicao(
+        `(ambiente): a atividade "Grava SC e Anexos" da SC ${numeroProcesso} não concluiu em 200s. ` +
+          `A integração com o Protheus está fora do ar — não é defeito do produto sob teste.`,
+      );
+    }
+
+    const segundos = Math.round(
+      (new Date(estado.gravaSC.fim).getTime() - new Date(estado.gravaSC.inicio).getTime()) / 1000,
+    );
+
+    test.info().annotations.push({
+      type: 'integracao-erp',
+      description:
+        `SC ${numeroProcesso}: numSolCompra="${estado.numSolCompra}" ` +
+        `erroIntegracao="${estado.erroIntegracao}" dtEmissao="${estado.dtEmissao}" ` +
+        `"Grava SC e Anexos" levou ${segundos}s · atividades abertas: ${JSON.stringify(estado.atividadesAbertas)}`,
+    });
+
+    // FSWTBC-4229 — o desvio para *Correção* é o defeito, e precisa reprovar como defeito.
+    // Já "Ajustar Informações" é o ramo intermitente do BPMN que a suíte mede há semanas
+    // (~1 em 6 SCs): esse sim é pré-condição, e distinguir os dois é o ponto deste bloco.
+    if (estado.atividadesAbertas.includes('Ajustar Informações')) {
+      faltaPreCondicao(
+        `a SC ${numeroProcesso} foi desviada para "Ajustar Informações" — ramo intermitente do ` +
+          `BPMN já confirmado em campo, do lado do Protheus. Reexecutar cria massa nova.`,
+      );
+    }
+    expect(
+      estado.atividadesAbertas,
+      `a SC caiu em "Correção" logo após a integração (FSWTBC-4229): a SC é aprovada e some do ` +
+        `fluxo normal sem que o solicitante saiba o motivo`,
+    ).not.toContain('Correção');
+
+    // O número do ERP tem teste PRÓPRIO, logo abaixo, marcado `@bug`: o defeito é intermitente
+    // (medido 08/09/2026: 3 de 14 SCs recentes voltaram sem número) e misturá-lo aqui tornaria
+    // este teste — que é determinístico — vermelho por sorteio.
+
+    // FSWTBC-4156 — SLA de 2 minutos, o mesmo limite que o FSWTBC-3749 considera aceitável.
+    expect(
+      segundos,
+      `"Grava SC e Anexos" levou ${segundos}s. O SLA da etapa é de 120s — acima disso o ` +
+        `solicitante fica sem retorno e a suíte vinha tratando a demora como instabilidade`,
+    ).toBeLessThanOrEqual(120);
+
+    // FSWTBC-4639 — o Histórico não pode registrar falha de evento nem citar campo inexistente.
+    await page.goto(
+      `/portal/p/1/pageworkflowview?app_ecm_workflowview_detailsProcessInstanceID=${numeroProcesso}`,
+      { waitUntil: 'domcontentloaded' },
+    );
+    const historico = await page.locator('body').innerText();
+
+    expect(
+      historico,
+      'o Histórico registra falha de evento de serviço na integração (FSWTBC-4639)',
+    ).not.toMatch(/Falha ao executar evento de servi[çc]o/i);
+    expect(
+      historico,
+      'o Histórico cita `C1_SIGLA` — campo que o formulário da SC não possui (FSWTBC-4639)',
+    ).not.toMatch(/C1_SIGLA/);
+  });
+
+  /**
+   * FSWTBC-621, 2022 e 4639 — a SC integrada tem de voltar com o número da SC no ERP.
+   *
+   * `@bug` porque o defeito é REAL e INTERMITENTE, não porque o teste seja instável. Medido em
+   * 08/09/2026 sobre as 14 SCs mais recentes desta conta: **11 voltaram com número**
+   * (001315–001320) e **3 voltaram vazias** (113408, 113409, 113422). Em todas as três,
+   * `erroIntegracao` estava **vazio** — ninguém é avisado.
+   *
+   * Consequência de negócio: a SC segue o fluxo, chega a ser aprovada, e não existe no
+   * Protheus. É o mesmo estado da SC 113196, que caiu em *Correção* sem número, e da 112830,
+   * que chegou à Validação do Gestor com `codERPSolicitante` vazio.
+   *
+   * Por que o oráculo é `numSolCompra` e não `erroIntegracao`: o campo que existe para
+   * comunicar a falha não é preenchido nem quando ela ocorre — medido nas três. Confiar nele
+   * seria confiar justamente no mecanismo quebrado.
+   *
+   * Este teste passa quando a integração funciona e reprova quando o defeito ocorre. Não
+   * ajuste a assertion para tolerar o vazio: seria documentar o defeito como regra.
+   */
+  test('@destrutivo @bug FSWTBC-621 FSWTBC-2022 FSWTBC-4639 — a SC que concluiu "Grava SC e Anexos" volta com o número da SC no ERP', async ({
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(300_000);
+
+    const { numeroProcesso } = await criarSolicitacaoCompletaEEnviar(page);
+
+    const estado = await page.evaluate(async (instancia) => {
+      /** @param {string} url */
+      const json = async (url) => {
+        const r = await fetch(url, { headers: { Accept: 'application/json' } });
+        return r.ok ? r.json() : null;
+      };
+
+      const limite = Date.now() + 200_000;
+      let concluiu = false;
+      while (Date.now() < limite && !concluiu) {
+        const t = await json(`/process-management/api/v2/requests/${instancia}/tasks?pageSize=60`);
+        concluiu = (t?.items ?? []).some(
+          (/** @type {any} */ x) =>
+            x.state?.stateName === 'Grava SC e Anexos' && x.status === 'COMPLETED',
+        );
+        if (!concluiu) await new Promise((r) => setTimeout(r, 5_000));
+      }
+
+      const det = await json(`/process-management/api/v2/requests/${instancia}?expand=formFields`);
+      /** @type {Record<string,string>} */
+      const campos = {};
+      for (const f of det?.formFields ?? []) campos[f.field] = f.value;
+
+      return {
+        concluiu,
+        numSolCompra: campos.numSolCompra ?? '<campo ausente>',
+        erroIntegracao: campos.erroIntegracao ?? '<campo ausente>',
+        codERPSolicitante: campos.codERPSolicitante ?? '<campo ausente>',
+      };
+    }, numeroProcesso);
+
+    if (!estado.concluiu) {
+      faltaPreCondicao(
+        `(ambiente): "Grava SC e Anexos" da SC ${numeroProcesso} não concluiu em 200s — a ` +
+          `integração com o Protheus está fora do ar.`,
+      );
+    }
+
+    test.info().annotations.push({
+      type: 'numero-erp',
+      description: `SC ${numeroProcesso}: numSolCompra="${estado.numSolCompra}" erroIntegracao="${estado.erroIntegracao}" codERPSolicitante="${estado.codERPSolicitante}"`,
+    });
+
+    expect(
+      estado.numSolCompra,
+      `a SC ${numeroProcesso} concluiu "Grava SC e Anexos" e voltou SEM número de SC no ERP — ` +
+        `ela não existe no Protheus. E o campo erroIntegracao ("${estado.erroIntegracao}") está ` +
+        `vazio: nada avisa o solicitante, que segue aprovando uma SC inexistente no ERP`,
+    ).not.toBe('');
+  });
+
+  /**
    * CT-CMP-02-S3 — upload de planilha de rateio INVÁLIDA deve ser rejeitado.
    *
    * O upload em si É uma escrita, e acontece de verdade — é a ação sob teste. O que precisa
