@@ -77,6 +77,35 @@ export function lerVereditoDeMedicao(corpo) {
 }
 
 /**
+ * Rótulos de competência que o zoom oferece para um contrato, **sem filtrar nada**.
+ *
+ * Existe separado de `descobrirCompetenciaBloqueada` de propósito: aquela função descarta o
+ * que não casa com `^\d{2}-\d{4}$` (o sentinela "Contrato não localizado" vem por ali), e é
+ * exatamente esse descarte silencioso que faz um rótulo malformado — `062025`, sem separador,
+ * a forma do FSWTBC-2143 — passar despercebido. Para auditar o formato é preciso ver o cru.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {{ contrato: string, filial: string }} alvo
+ * @returns {Promise<string[]>}
+ */
+export async function listarCompetenciasBrutas(page, alvo) {
+  const zoom = {
+    searchField: 'COMPETENCIA',
+    filterFields: ['CNA_CONTRA', alvo.contrato, 'FILIAL', codigoDaFilial(alvo.filial)],
+    resultFields: ['COMPETENCIA'],
+    datasetId: 'ds_fatcon_get_competencia',
+  };
+  const resposta = await page.request.get(
+    `/ecm/api/rest/ecm/dataset/datasetZoom/${encodeURIComponent(JSON.stringify(zoom))}` +
+      '?limit=300&offset=0&orderby=COMPETENCIA_ASC',
+  );
+  if (!resposta.ok()) return [];
+  return /** @type {any[]} */ ((await resposta.json())?.content ?? []).map((c) =>
+    String(c.COMPETENCIA ?? ''),
+  );
+}
+
+/**
  * Procura, por consulta direta, uma competência que o Protheus recusa medir.
  *
  * @param {import('@playwright/test').Page} page

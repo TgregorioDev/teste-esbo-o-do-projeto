@@ -10,7 +10,10 @@ import {
 } from '../../../utils/massa-contratos.js';
 import { parseFornecedorDaGrade } from '../../../factories/medicao.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
-import { descobrirCompetenciaBloqueada } from '../../../utils/massa-medicao.js';
+import {
+  descobrirCompetenciaBloqueada,
+  listarCompetenciasBrutas,
+} from '../../../utils/massa-medicao.js';
 
 /**
  * CT-FAT-02 — bloqueios e validações do ciclo de Faturamento de Contratos.
@@ -40,7 +43,12 @@ async function encontrarMedicaoComSaldo(contratosPage, medicao, maxContratos = 3
   /** @type {Awaited<ReturnType<MedicaoContratoPage['montarMedicaoComSaldoEmAberto']>> | undefined} */
   let resultado;
   /** Por que cada contrato/competência foi descartado — entra na mensagem de falha. */
-  const descartes = /** @type {string[]} */ ([]);
+  const descartes = /** @type {string[]} *
+ * ## Chamados cobertos por este arquivo
+ *
+ * FSWTBC-2143 — todo rótulo de competência do zoom traz separador entre mês e ano.
+ * Declarado aqui porque é onde `scripts/gerar-cobertura.mjs` reconhece cobertura.
+ */ ([]);
 
   for (let i = 0; i < maxContratos; i++) {
     // `medicao.goto()` (chamado no fim da iteração anterior) navega para fora do Portal de
@@ -339,6 +347,71 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
       'nenhum grupo de pool relacionado a Fiscal/CSE/Medição de Contrato deveria existir para ' +
         'este usuário — se existir, os cenários de validação passaram a ser alcançáveis e este ' +
         'teste deve ser revisto para exercitá-los de fato',
+    ).toEqual([]);
+  });
+  /**
+   * FSWTBC-2143 — todo rótulo de competência tem separador entre mês e ano.
+   *
+   * O defeito é um rótulo como `062025`: sem separador, o usuário não distingue mês de ano, e
+   * a competência escolhida vira outra. A origem é um `replace('/', '-')` no fonte que não
+   * valida o resultado.
+   *
+   * O que a medição de 08/09/2026 corrigiu na minha expectativa: o caso pedia para afirmar
+   * `\d{2}/\d{4}` (com BARRA), mas o dataset devolve nativamente **hífen** (`12-2021`,
+   * `01-2022`). Afirmar a barra criaria vermelho contra o comportamento normal do produto — o
+   * que caracteriza o defeito é a AUSÊNCIA de separador, e é isso que se afirma.
+   *
+   * Por que a lista tem de vir crua: `descobrirCompetenciaBloqueada` filtra por
+   * `^\d{2}-\d{4}$` e joga fora o que não casa. Esse descarte é justamente o que faria um
+   * rótulo malformado passar despercebido — daí `listarCompetenciasBrutas`.
+   *
+   * Leitura pura: nenhuma medição é criada.
+   */
+  test('FSWTBC-2143 — todo rótulo de competência do zoom traz separador entre mês e ano', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const contratosPage = new AcompanhamentoContratosPage(page);
+    await contratosPage.goto();
+    await contratosPage.expectCarregada();
+
+    const amostra = await descobrirContratosVigentes(contratosPage, 4);
+
+    /** Sentinela que o dataset devolve no lugar de uma competência quando o par não existe. */
+    const SENTINELA = /contrato n[ãa]o localizado/i;
+
+    /** @type {string[]} */
+    const malformados = [];
+    let totalLido = 0;
+
+    for (const linha of amostra) {
+      const rotulos = await listarCompetenciasBrutas(page, {
+        contrato: linha.contrato,
+        filial: linha.filial,
+      });
+      totalLido += rotulos.length;
+      for (const r of rotulos) {
+        if (SENTINELA.test(r)) continue;
+        if (!/^\d{2}[-/]\d{4}$/.test(r)) malformados.push(`${linha.contrato}: "${r}"`);
+      }
+    }
+
+    test.info().annotations.push({
+      type: 'competencias-lidas',
+      description: `${totalLido} rótulo(s) em ${amostra.length} contrato(s); ${malformados.length} malformado(s)`,
+    });
+
+    if (totalLido === 0) {
+      faltaPreCondicao(
+        '(ambiente): nenhum dos contratos amostrados devolveu competência para auditar o formato',
+      );
+    }
+
+    expect(
+      malformados,
+      'rótulo de competência sem separador entre mês e ano — o usuário não distingue 06/2025 ' +
+        'de 2025-06 e pode medir a competência errada',
     ).toEqual([]);
   });
 });
