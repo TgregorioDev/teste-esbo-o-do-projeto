@@ -179,6 +179,65 @@ export class CicloCompradorPage {
   async expandirDetalhe(linha) {
     await linha.locator('td.po-table-column-detail-toggle po-icon').click();
   }
+
+  /**
+   * Lê a linha da grade como um mapa `cabeçalho → valor`.
+   *
+   * Por posição de coluna o teste quebra na primeira vez que o produto acrescentar uma coluna —
+   * e a grade do Portal do Comprador tem 10. Mapear pelo cabeçalho é o que sobrevive.
+   *
+   * @param {import('@playwright/test').Locator} linha
+   * @returns {Promise<Record<string,string>>}
+   */
+  async lerCelulasDaLinha(linha) {
+    const cabecalhos = (await this.page.locator('thead th').allInnerTexts()).map((c) => c.trim());
+    const celulas = (await linha.locator('td').allInnerTexts()).map((c) => c.trim());
+
+    /** @type {Record<string,string>} */
+    const mapa = {};
+    // A grade tem uma coluna a mais que os cabeçalhos: a do ícone de expandir, que vem primeiro
+    // e não tem `th` correspondente. O desencontro é absorvido alinhando pelo FIM.
+    const desloc = celulas.length - cabecalhos.length;
+    cabecalhos.forEach((h, i) => {
+      if (h) mapa[h] = celulas[i + desloc] ?? '';
+    });
+    return mapa;
+  }
+
+  /**
+   * Lê os campos do item no detalhe expandido da linha.
+   *
+   * Medido em 08/09/2026: o detalhe é uma linha extra na tbody, com `input` nomeados
+   * (`qtd`, `prcUniEst`, `vlrTotEst`, `obs`…) e **todos `disabled`** — o comprador não edita a
+   * estimativa do solicitante. Os valores vêm com SEIS casas decimais (`35,123456`), diferente
+   * das duas casas do formulário de origem: comparar como texto reprova por formato.
+   *
+   * @param {import('@playwright/test').Locator} linha linha JÁ expandida
+   * @returns {Promise<{ campos: Record<string,string>, desabilitados: string[], editaveis: string[] }>}
+   */
+  async lerDetalheDoItem(linha) {
+    const detalhe = linha.locator('xpath=following-sibling::tr[1]');
+    // O detalhe é inserido no DOM antes de os campos serem montados: ler no mesmo instante do
+    // clique devolve a linha vazia e o teste reprova com `undefined`, que parece divergência de
+    // valor e não é — medido. A âncora é o campo de quantidade, que só existe montado.
+    await detalhe.locator('input[name="qtd"]').waitFor({ state: 'attached', timeout: 30_000 });
+    return detalhe.evaluate((tr) => {
+      /** @type {Record<string,string>} */
+      const campos = {};
+      /** @type {string[]} */
+      const desabilitados = [];
+      /** @type {string[]} */
+      const editaveis = [];
+      for (const el of tr.querySelectorAll('input, textarea')) {
+        const campo = /** @type {HTMLInputElement} */ (el);
+        const nome = campo.getAttribute('name') || campo.id;
+        if (!nome) continue;
+        campos[nome] = campo.value;
+        (campo.disabled || campo.readOnly ? desabilitados : editaveis).push(nome);
+      }
+      return { campos, desabilitados, editaveis };
+    });
+  }
 }
 
 /**

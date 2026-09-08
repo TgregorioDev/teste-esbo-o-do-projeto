@@ -23,6 +23,16 @@ import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
  * - **Retorno ao ERP** (CT-E2E-10-H) e **Tracker** (CT-E2E-11-H): o pedido no Protheus não
  *   existe porque a SC nunca passa da alçada — mas a rastreabilidade em si (Tracker, trilha do
  *   processo) funciona perfeitamente para o trecho que a SC de fato percorre.
+ *
+ * ## Chamados cobertos por este arquivo
+ *
+ * O bloco acrescentado ao CT-E2E-06-H cobre FSWTBC-3896 (a célula Justificativa traz o texto
+ * integral da SC), FSWTBC-4357 (Preço Unit. e Vlr. Total exibidos ao comprador são os que o
+ * solicitante informou) e FSWTBC-3732 (nenhum campo do detalhe é editável nesta etapa). Os três
+ * são respondidos pela mesma massa que o teste já criava.
+ *
+ * A declaração fica aqui, no cabeçalho, porque é onde `scripts/gerar-cobertura.mjs` reconhece
+ * cobertura — ID citado só em comentário no meio do arquivo NÃO conta.
  */
 test.describe('Ciclo do Comprador — Validação Inicial (CT-E2E-06-H)', () => {
   test('deve listar SCs reais em Validação Inicial, com dados do item visíveis ao expandir a linha, sem exigir delegação', async ({
@@ -62,7 +72,7 @@ test.describe('Ciclo do Comprador — Validação Inicial (CT-E2E-06-H)', () => 
   }) => {
     test.setTimeout(300_000);
 
-    const { numeroProcesso } = await criarSolicitacaoCompraClassica(page, {
+    const { numeroProcesso, item } = await criarSolicitacaoCompraClassica(page, {
       justificativa: `QA CT-E2E-06-H validacao inicial avanca ${Date.now()}`,
     });
 
@@ -89,6 +99,60 @@ test.describe('Ciclo do Comprador — Validação Inicial (CT-E2E-06-H)', () => 
         },
       )
       .toContain('Validação Orçamentária');
+
+    // ─────────────────────────────────────────────────────────────────────────────────────
+    // FSWTBC-3896, 4357 e 3732 — o que o comprador VÊ da SC, e o que ele não pode mexer.
+    //
+    // Até aqui o teste afirmava só que a linha continha "Validação Orçamentária". Três
+    // chamados vivem no conteúdo dessa linha e do seu detalhe, e todos são respondidos pela
+    // mesma massa que o teste já criou.
+    // ─────────────────────────────────────────────────────────────────────────────────────
+    const linha = ciclo.localizarLinhaPorNumero(numeroProcesso).first();
+    const celulas = await ciclo.lerCelulasDaLinha(linha);
+
+    // FSWTBC-3896 — a justificativa é o que o comprador lê para decidir. Truncada ou vazia,
+    // ele decide sem saber o motivo da compra.
+    expect(
+      celulas['Justificativa'],
+      `a célula Justificativa deveria trazer o texto integral da SC ` +
+        `("${item.justificativa}"), e veio "${celulas['Justificativa']}"`,
+    ).toBe(item.justificativa);
+
+    await ciclo.expandirDetalhe(linha);
+    const detalhe = await ciclo.lerDetalheDoItem(linha);
+
+    test.info().annotations.push({
+      type: 'detalhe-validacao-inicial',
+      description:
+        `qtd=${detalhe.campos.qtd} preço=${detalhe.campos.prcUniEst} ` +
+        `total=${detalhe.campos.vlrTotEst} · editáveis: ${JSON.stringify(detalhe.editaveis)}`,
+    });
+
+    // FSWTBC-4357 — os valores exibidos ao comprador são os que o solicitante informou.
+    // A comparação é NUMÉRICA: o detalhe usa seis casas ("35,123456") e o formulário de origem
+    // usa duas ("100,00"). Comparar texto reprovaria por formato, não por divergência de valor.
+    const paraNumero = (/** @type {string} */ v) =>
+      Number(String(v ?? '').replace(/\./g, '').replace(',', '.'));
+
+    expect(
+      paraNumero(detalhe.campos.prcUniEst),
+      `o Preço Unit. Estimado mostrado ao comprador (${detalhe.campos.prcUniEst}) diverge do ` +
+        `informado pelo solicitante (${item.precoUnitario})`,
+    ).toBeCloseTo(paraNumero(item.precoUnitario), 2);
+
+    expect(
+      paraNumero(detalhe.campos.vlrTotEst),
+      `o Vlr. Total Estimado mostrado ao comprador (${detalhe.campos.vlrTotEst}) diverge do ` +
+        `valor da SC (${item.valorTotalEsperado})`,
+    ).toBeCloseTo(paraNumero(item.valorTotalEsperado), 2);
+
+    // FSWTBC-3732 — nesta etapa o comprador CONSULTA; a estimativa do solicitante não é dele
+    // para alterar. Campo editável aqui é alteração de valor de compra sem trilha.
+    expect(
+      detalhe.editaveis,
+      'o detalhe do item na Validação Inicial não pode ter campo editável — a estimativa é do ' +
+        'solicitante, e alterá-la aqui mudaria o valor da compra sem registro',
+    ).toEqual([]);
   });
 });
 
