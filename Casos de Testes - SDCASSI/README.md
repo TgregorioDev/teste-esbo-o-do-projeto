@@ -13,6 +13,17 @@ homologação do Fluig em 08/09/2026.
 
 Dos casos de Fluig: **26** verificados integralmente em tela, **473** parcialmente, **15** não verificados, **4** sem o campo declarado.
 
+
+## De onde estes casos vieram
+
+Os casos são derivados de uma análise dos 643 chamados, feita antes de qualquer caso ser escrito:
+
+- [`docs/analise-chamados-sdcassi.md`](../docs/analise-chamados-sdcassi.md) — consolidação:
+  retrato quantitativo, as famílias de defeito que se repetem, passivos de dado que patch nenhum
+  desfaz, e o que funciona bem e vale preservar.
+- [`docs/achados-novos-sdcassi.md`](../docs/achados-novos-sdcassi.md) — 31 defeitos encontrados
+  durante a análise que **não tinham chamado aberto**.
+
 ---
 
 ## Fluig — executáveis no ambiente de homologação
