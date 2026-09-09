@@ -19,12 +19,20 @@ export default defineConfig({
   // Teste que passa no retry vai para investigação, e continua VISÍVEL: o Playwright o reporta
   // como `flaky`, não como `passed`.
   //
-  // Local segue em 0 de propósito. As intermitências de rede medidas em 09/09/2026
-  // (`net::ERR_NETWORK_CHANGED` em `page.goto`) são tratadas na origem, por uma segunda
-  // tentativa de NAVEGAÇÃO na fixture `page` — ver `fixtures/fixtures.js`. Repetir o teste
-  // inteiro resolveria também, mas dobraria o tempo das ~120 pré-condições declaradas desta
-  // suíte sem melhorar o diagnóstico.
-  retries: process.env.CI ? 2 : 0,
+  // Local em 1 desde 09/09/2026, e a decisão foi tomada em duas etapas, medindo.
+  //
+  // Primeiro tratei a causa mais comum na origem: `page.goto` ganhou uma segunda tentativa para
+  // erros de rede do cliente, na fixture `page` (ver `fixtures/fixtures.js`). Isso resolveu os
+  // `net::ERR_NETWORK_CHANGED` da navegação — mas a execução seguinte mostrou a mesma
+  // instabilidade batendo onde aquela correção não alcança: `Failed to fetch` dentro de
+  // `page.evaluate` e esperas de elemento estourando no meio do teste.
+  //
+  // O retry é a ferramenta certa para isso, e não esconde nada: o Playwright reporta como
+  // `flaky`, não como `passed`. Continua valendo a regra — teste que passa no retry vai para
+  // investigação, e nenhum vermelho consistente é absorvido por ele.
+  //
+  // Custo conhecido: as ~110 pré-condições declaradas deste ambiente passam a rodar duas vezes.
+  retries: process.env.CI ? 2 : 1,
 
   // Concorrência DELIBERADAMENTE baixa, e o motivo é medido, não preferência.
   //
