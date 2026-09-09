@@ -144,6 +144,37 @@ export function generateCpf() {
 }
 
 /**
+ * CNPJ numérico fictício com dígitos verificadores válidos, sem máscara.
+ *
+ * Existe separado de `generateCpf` porque os pesos são outros (12 posições + 2 DVs, pesos
+ * começando em 5 e reiniciando em 9), e reaproveitar o `checkDigit` do CPF produziria um número
+ * que a validação do formulário recusaria por motivo errado.
+ *
+ * ⚠️ **Não** gera CNPJ no formato alfanumérico da Receita (12 posições alfanuméricas + 2 DVs):
+ * o DV alfanumérico usa o valor ASCII−48 de cada caractere, e implementá-lo "de cabeça" traria
+ * um número que só pareceria válido. Onde um CNPJ alfanumérico é necessário, o teste declara o
+ * valor e diz explicitamente que a validação de DV não é o que ele exercita.
+ *
+ * @returns {string} 14 dígitos, sem máscara
+ */
+export function generateCnpj() {
+  /** @type {number[]} */
+  const digitos = Array.from({ length: 12 }, () => faker.number.int({ min: 0, max: 9 }));
+
+  /** @param {number[]} base @param {number[]} pesos */
+  const dv = (base, pesos) => {
+    const soma = base.reduce((total, digito, i) => total + digito * pesos[i], 0);
+    const resto = soma % 11;
+    return resto < 2 ? 0 : 11 - resto;
+  };
+
+  digitos.push(dv(digitos, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]));
+  digitos.push(dv(digitos, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]));
+
+  return digitos.join('');
+}
+
+/**
  * @param {number[]} digits
  * @param {number} startWeight
  * @returns {number}
