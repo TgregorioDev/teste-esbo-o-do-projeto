@@ -78,6 +78,9 @@ test.describe('Portal do Comprador', () => {
     await portalComprador.irParaEtapa('Controle de Cotações');
     await expect(page).toHaveURL(/controleCotacao/);
 
+    // O seletor é configuração do ambiente: onde ele não existe, não há delegação a exercitar
+    // e o cenário simplesmente não se aplica — declarar isso é diferente de reprovar.
+    await portalComprador.expectSeletorAtuarComoDisponivel();
     await expect(portalComprador.comboAtuarComo).toBeVisible();
     const opcoes = await portalComprador.comboAtuarComo.locator('option').allInnerTexts();
     expect(opcoes.length).toBeGreaterThan(1);

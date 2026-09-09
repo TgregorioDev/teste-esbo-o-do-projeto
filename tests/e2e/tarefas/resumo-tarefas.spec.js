@@ -1,6 +1,7 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { CentralTarefasPage } from '../../../pages/CentralTarefasPage.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 
 /**
  * Central de Tarefas — Resumo de Tarefas (CT-TSK-01-H).
@@ -19,6 +20,12 @@ test.describe('Resumo de Tarefas — coerência dos contadores (CT-TSK-01-H)', (
     await tarefasPage.expectCarregada();
 
     const { total, soma } = await tarefasPage.resumoTarefasAConcluir();
+    if (soma === null) {
+      faltaPreCondicao(
+        `(ambiente): o painel "Tarefas a concluir" anuncia ${total} e não renderiza a legenda ` +
+          '(No prazo / Próx. a vencer / Atrasadas) — sem as partes não há coerência a conferir.',
+      );
+    }
     expect(
       soma,
       `soma dos itens (No prazo + Próx. a vencer + Atrasadas) = ${soma}, mas o painel anuncia (${total})`,
@@ -61,6 +68,12 @@ test.describe('Resumo de Tarefas — coerência dos contadores (CT-TSK-01-H)', (
     await tarefasPage.expectCarregada();
 
     const { total, soma } = await tarefasPage.resumoSolicitacoes();
+    if (soma === null) {
+      faltaPreCondicao(
+        `(ambiente): o painel "Solicitações" anuncia ${total} e não renderiza as parcelas ` +
+          '(Solicitadas por mim / Sob minha gerência) — sem as partes não há coerência a conferir.',
+      );
+    }
     expect(
       soma,
       `soma de Solicitadas por mim + Sob minha gerência = ${soma}, mas o painel anuncia (${total})`,

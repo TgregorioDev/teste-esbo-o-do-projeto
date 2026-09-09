@@ -1,4 +1,5 @@
 // @ts-check
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 
 /** Rota do Portal do Comprador. */
 const ROTA_PORTAL_COMPRADOR = '/portal/p/1/portal-do-comprador';
@@ -40,6 +41,25 @@ export class PortalCompradorPage {
 
   async expectCarregada() {
     await this.titulo.waitFor({ state: 'visible' });
+  }
+
+  /**
+   * Declara pré-condição quando o seletor "Atuar como" não existe na tela.
+   *
+   * O mecanismo de delegação é configuração do AMBIENTE, não do produto: no tenant
+   * `caixade182374` as três sub-telas de cotação expunham o `<select>`; no `caixade213859`
+   * (medido em 09/09/2026) ele não é renderizado em nenhuma delas. Sem esta verificação, todo
+   * teste que passa por delegação espera 45s por um elemento inexistente e reprova como
+   * timeout — indistinguível de regressão do produto.
+   */
+  async expectSeletorAtuarComoDisponivel() {
+    if ((await this.comboAtuarComo.count()) === 0) {
+      faltaPreCondicao(
+        '(ambiente): o seletor "Atuar como" não é renderizado no Portal do Comprador deste ' +
+          'ambiente. A operação por delegação — e as filas que dependem dela (Controle de ' +
+          'Cotações, Avaliação de Propostas, Definir Vencedor Cotação) — não é exercitável aqui.',
+      );
+    }
   }
 
   /**

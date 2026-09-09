@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { CicloCompradorPage, criarSolicitacaoCompraClassica, aprovarValidacaoDoGestor, aguardarAtividadeAtual } from '../../../pages/CicloCompradorPage.js';
 import { TrackerComprasPage } from '../../../pages/TrackerComprasPage.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
@@ -51,9 +52,23 @@ test.describe('Ciclo do Comprador — Validação Inicial (CT-E2E-06-H)', () => 
     await expect(ciclo.portal.comboAtuarComo).toHaveCount(0);
 
     await expect(ciclo.getTabelaAtiva()).toBeVisible();
-    await expect
-      .poll(() => ciclo.getLinhas().count(), { timeout: 30_000 })
-      .toBeGreaterThan(0);
+    // A grade lista o que o ambiente tiver. Sem SC nenhuma na base não há linha para expandir,
+    // e o que este teste afirma — que os dados do item aparecem ao expandir — deixa de ser
+    // exercitável; é ausência de massa, não defeito.
+    // ⚠️ A grade sempre tem pelo menos UMA linha: a do estado vazio. Contar linhas não
+    // distingue "tem SC" de "não tem" — e neste ambiente o texto do estado vazio está em
+    // INGLÊS ("No data found"), diferente do "Nenhum dado encontrado" do ambiente anterior.
+    // Por isso o critério é o conteúdo da primeira linha, com os dois idiomas cobertos.
+    const linhasNaFila = await ciclo.getLinhas().count();
+    const primeiroTexto =
+      linhasNaFila > 0 ? await ciclo.getLinhas().first().innerText() : '';
+    const filaVazia = linhasNaFila === 0 || /No data found|Nenhum dado encontrado/i.test(primeiroTexto);
+    if (filaVazia) {
+      faltaPreCondicao(
+        '(ambiente): a Validação Inicial não trouxe nenhuma solicitação para esta conta — sem ' +
+          'SC na fila não há linha a expandir nem item a conferir.',
+      );
+    }
 
     const primeiraLinha = ciclo.getLinhas().first();
     await ciclo.expandirDetalhe(primeiraLinha);
@@ -169,6 +184,8 @@ test.describe('Ciclo do Comprador — filas delegadas (CT-E2E-07-H, CT-E2E-08-H,
     await ciclo.portal.irParaEtapa('Controle de Cotações');
     await expect(page).toHaveURL(/controleCotacao/);
 
+    // Onde a delegação não é renderizada, não há o que trocar — declarar isso é o correto.
+    await ciclo.portal.expectSeletorAtuarComoDisponivel();
     await expect(ciclo.portal.comboAtuarComo).toBeVisible();
     const substituto = await ciclo.atuarComoSubstituto();
     expect(substituto.valor).toBeTruthy();

@@ -6,7 +6,19 @@ import { PortalFornecedorPage } from './PortalFornecedorPage.js';
 const ROTA_REDEFINIR_SENHA = '/portal/p/1/portal_fornecedores_senha';
 
 /** Endpoint de autenticação do formulário "Acesso Normal"/"Acesso Administrador". */
-const ROTA_LOGIN = '/cassi_rest/api/rest/cassi/administrador/1/login';
+/**
+ * Endpoint de autenticação do fornecedor.
+ *
+ * MUDOU neste ambiente (medido em 09/09/2026): a landing agora chama
+ * `/java_gestao_contrato/rest-acesso/request/loginV2`. O caminho antigo
+ * (`/cassi_rest/api/rest/cassi/administrador/1/login`) fica na lista porque o que identifica a
+ * chamada é o que ela FAZ — e um teste que espera por um caminho que a tela não usa mais fica
+ * pendurado até o timeout, sem dizer o motivo.
+ */
+const ROTAS_LOGIN = [
+  '/java_gestao_contrato/rest-acesso/request/loginV2',
+  '/cassi_rest/api/rest/cassi/administrador/1/login',
+];
 
 /** Endpoint que efetiva a troca de senha a partir do link de redefinição. */
 const ROTA_REDEFINIR_SENHA_PUT = '/cassi_rest/api/rest/cassi/compras/1/redefinirPassPUT';
@@ -78,27 +90,28 @@ export class AcessoFornecedorPage {
   }
 
   /**
-   * Preenche e envia o formulário "Acesso Normal" com a credencial informada, aguardando a
-   * resposta REAL do endpoint de autenticação — nunca tempo fixo.
+   * Preenche e envia o login do fornecedor, aguardando a resposta REAL do endpoint de
+   * autenticação — nunca tempo fixo.
    *
-   * @param {{ cnpj: string, cpf: string, senha: string }} credencial
+   * A tela mudou: não há mais "Acesso Normal" com CNPJ da empresa **e** CPF do usuário em
+   * campos separados. A landing tem um login único de documento (`CPF/CNPJ`) + senha — ver
+   * `PortalFornecedorPage`. Por isso o parâmetro é um `documento` só, e não o par.
+   *
+   * @param {{ documento: string, senha: string }} credencial
    * @returns {Promise<import('@playwright/test').Response>}
    */
-  async tentarAcessoNormal({ cnpj, cpf, senha }) {
+  async tentarAcesso({ documento, senha }) {
     await this.portal.goto();
     await this.portal.expectCarregada();
-    await this.portal.botaoAcessoNormal.click();
 
-    const form = this.portal.getFormularioAcessoNormal();
-    await form.cnpjEmpresa.fill(cnpj);
-    await form.cpfUsuario.fill(cpf);
-    await form.senha.fill(senha);
+    await this.portal.campoCpfCnpj.fill(documento);
+    await this.portal.campoSenha.fill(senha);
 
     const [resposta] = await Promise.all([
       this.page.waitForResponse(
-        (r) => r.request().method() === 'POST' && r.url().includes(ROTA_LOGIN),
+        (r) => r.request().method() === 'POST' && ROTAS_LOGIN.some((rota) => r.url().includes(rota)),
       ),
-      form.botaoEntrar.click(),
+      this.portal.botaoEntrar.click(),
     ]);
 
     return resposta;
@@ -108,12 +121,28 @@ export class AcessoFornecedorPage {
    * Acessa a tela de redefinição de senha com um token (fabricado ou adulterado) na URL —
    * o mesmo formato do link que o Portal envia por e-mail.
    *
+   * NÃO espera pelo heading: neste ambiente a página renderiza vazia (ver o `@bug` em
+   * `acesso-fornecedor.spec.js`), e esperar por um elemento que não vem transformaria o
+   * defeito num timeout de 45s sem explicação. Quem chama decide o que afirmar sobre o que
+   * encontrou.
+   *
+   * @param {string} token
+   * @param {string} identificador CPF/CNPJ associado ao pedido de redefinição
+   */
+  async irParaRedefinicaoComToken(token, identificador) {
+    const url = `${ROTA_REDEFINIR_SENHA}?token=${encodeURIComponent(token)}&user=${encodeURIComponent(identificador)}`;
+    await this.page.goto(url, { waitUntil: 'domcontentloaded' });
+    await this.page.waitForLoadState('load').catch(() => {});
+  }
+
+  /**
+   * Como `irParaRedefinicaoComToken`, mas exigindo que a tela tenha montado.
+   *
    * @param {string} token
    * @param {string} identificador CPF/CNPJ associado ao pedido de redefinição
    */
   async abrirRedefinicaoComToken(token, identificador) {
-    const url = `${ROTA_REDEFINIR_SENHA}?token=${encodeURIComponent(token)}&user=${encodeURIComponent(identificador)}`;
-    await this.page.goto(url, { waitUntil: 'domcontentloaded' });
+    await this.irParaRedefinicaoComToken(token, identificador);
     await this.headingRedefinirSenha.waitFor({ state: 'visible' });
   }
 

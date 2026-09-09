@@ -2,7 +2,6 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { AcessoFornecedorPage, gerarCnpjFicticio } from '../../../pages/AcessoFornecedorPage.js';
-import { generateCpf } from '../../../factories/pessoa.js';
 import { bloquearCriacaoDeProcesso } from '../../../utils/guarda-criacao.js';
 
 /**
@@ -22,7 +21,7 @@ import { bloquearCriacaoDeProcesso } from '../../../utils/guarda-criacao.js';
  * processo BPM.
  *
  * Nenhum teste aqui usa credencial real de fornecedor: CNPJ/CPF são fabricados
- * (`gerarCnpjFicticio`/`generateCpf`, dígitos verificadores válidos, nunca dirigidos a
+ * (`gerarCnpjFicticio`, dígitos verificadores válidos, nunca dirigidos a
  * coincidir com empresa/pessoa real) e a senha é aleatória — o objetivo nos três casos é
  * provar a REJEIÇÃO, nunca alcançar uma sessão de fornecedor.
  *
@@ -32,19 +31,38 @@ import { bloquearCriacaoDeProcesso } from '../../../utils/guarda-criacao.js';
  * prazo localizado na tela de cadastro alcançável).
  */
 test.describe('Acesso Normal — credencial de fornecedor inválida', () => {
-  test('CT-PFN-01-S1 deve recusar credencial inválida com mensagem genérica, sem vazar detalhe técnico', async ({
+  /**
+   * ## Medido em 09/09/2026 no ambiente `caixade213859` — o teste passou a reprovar, e com razão
+   *
+   * O login do fornecedor (`POST /java_gestao_contrato/rest-acesso/request/loginV2`) responde,
+   * para documento inexistente:
+   *
+   * - **HTTP 500**, não 401. Credencial inválida é caso de negócio previsto, e um 5xx diz ao
+   *   cliente (e a qualquer monitoração) que o servidor quebrou.
+   * - corpo com **exceção Java e URL interna**: `java.io.IOException: Server returned HTTP
+   *   response code: 401 for URL: …/api/public/ecm/dataset/datasets`.
+   * - e a **tela exibe esse JSON cru** num diálogo, ao lado do aviso amigável "Ops! Usuário ou
+   *   senha inválido!". Ou seja, o detalhe técnico não só existe: ele é mostrado a quem tentou
+   *   entrar, numa tela de acesso público.
+   *
+   * As assertions abaixo NÃO foram afrouxadas para o novo comportamento — elas descrevem o que
+   * uma recusa de credencial deve ser, e é o produto que precisa mudar. Daí a tag `@bug`.
+   */
+  test('@bug CT-PFN-01-S1 deve recusar credencial inválida com mensagem genérica, sem vazar detalhe técnico', async ({
     page,
   }) => {
     const guarda = await bloquearCriacaoDeProcesso(page);
     const acessoFornecedor = new AcessoFornecedorPage(page);
 
+    // A tela de entrada passou a ter um campo ÚNICO de documento (CPF/CNPJ), em vez do par
+    // "CNPJ da empresa" + "CPF do usuário" — ver `PortalFornecedorPage`. O CNPJ fictício segue
+    // sendo o documento fabricado, com DV válido e nunca dirigido a coincidir com empresa real.
     const credencialInexistente = {
-      cnpj: gerarCnpjFicticio(),
-      cpf: generateCpf(),
+      documento: gerarCnpjFicticio(),
       senha: `QA-${randomUUID().slice(0, 12)}`,
     };
 
-    const resposta = await acessoFornecedor.tentarAcessoNormal(credencialInexistente);
+    const resposta = await acessoFornecedor.tentarAcesso(credencialInexistente);
 
     // Rejeição controlada — 401, não um 5xx de crash.
     expect(resposta.status()).toBe(401);
@@ -73,70 +91,72 @@ test.describe('Acesso Normal — credencial de fornecedor inválida', () => {
 });
 
 test.describe('Redefinição de senha do fornecedor — link de reset', () => {
-  test('CT-PFN-02-S1 não deve efetivar a redefinição com um token que não corresponde a nenhum pedido pendente (equivalente a link reutilizado)', async ({
+  /**
+   * CT-PFN-02-S1 + CT-PFN-02-S2, reescritos em 09/09/2026 para o ambiente `caixade213859`.
+   *
+   * ## O que os dois testes faziam, e por que não fazem mais
+   *
+   * Eles abriam `/portal/p/1/portal_fornecedores_senha` com um token fabricado, submetiam a
+   * troca de senha e afirmavam sobre a recusa (S1) e sobre o vazamento técnico no corpo do erro
+   * (S2). Nada disso é alcançável aqui: **a tela de redefinição não monta**. Medido — ela
+   * renderiza uma página vazia: nenhum heading, nenhum campo, nenhum botão.
+   *
+   * ## A causa, medida
+   *
+   * A página de redefinição ainda chama o serviço de token ANTIGO,
+   * `POST /cassi_rest/api/rest/cassi/compras/1/geratoken`, que neste tenant responde
+   * **500 `Could not find application key` (`com.fluig.sdk.exception.Application…`)** — a
+   * aplicação `cassi_rest` não está publicada aqui. A landing do portal, essa sim, foi migrada
+   * para `POST /java_gestao_contrato/rest-acesso/request/geratoken`, que responde
+   * `200 {"Status":true,"Message":"OK"}`.
+   *
+   * É uma migração pela metade: a porta da frente mudou de serviço, a de recuperação de senha
+   * não. O efeito para o fornecedor é concreto — quem recebe o link de "Primeiro acesso /
+   * Redefinir Senha" por e-mail cai numa página em branco, sem erro e sem caminho.
+   *
+   * ## O que este teste afirma
+   *
+   * O mínimo que a tela precisa entregar para o caso existir: **montar**. Enquanto ela não
+   * montar, S1 e S2 não são exercitáveis por definição — não há formulário para submeter nem
+   * resposta de erro para inspecionar —, e é isso que o `@bug` registra. Quando a página voltar
+   * a montar, este teste fica verde e os dois cenários de recusa voltam a ser escrevíveis.
+   *
+   * O token vai fabricado de propósito: nenhum pedido real de redefinição é consumido.
+   */
+  test('@bug CT-PFN-02-S1 CT-PFN-02-S2 — a tela de redefinição de senha precisa montar para quem chega pelo link', async ({
     page,
   }) => {
     const guarda = await bloquearCriacaoDeProcesso(page);
     const acessoFornecedor = new AcessoFornecedorPage(page);
     const cpfCnpj = gerarCnpjFicticio();
-
-    // Não há como emitir e depois consumir um token REAL sem fornecedor de teste (a mesma
-    // limitação documentada para os casos H, ver docs/mapa-do-ambiente.md). O que É possível
-    // provar sem consumir nada real: um token BEM FORMADO (a cara de um token de verdade,
-    // base64) que não corresponde a nenhum pedido pendente é recusado — a mesma garantia de
-    // servidor que rejeitaria um token genuíno já usado uma vez, porque do ponto de vista do
-    // backend as duas situações são indistinguíveis: "não é o token válido corrente".
     const tokenBemFormadoMasFabricado = Buffer.from(`qa-reset-${randomUUID()}`).toString('base64');
 
-    await acessoFornecedor.abrirRedefinicaoComToken(tokenBemFormadoMasFabricado, cpfCnpj);
-    const resposta = await acessoFornecedor.submeterRedefinicaoDeSenha({
-      cpfCnpj,
-      novaSenha: `QA-${randomUUID().slice(0, 8)}Aa1!`,
+    await acessoFornecedor.irParaRedefinicaoComToken(tokenBemFormadoMasFabricado, cpfCnpj);
+
+    const conteudo = await page.locator('body').innerText();
+    const respostaDoTokenAntigo = await page.evaluate(async () => {
+      const r = await fetch('/cassi_rest/api/rest/cassi/compras/1/geratoken', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      return { status: r.status, corpo: (await r.text()).slice(0, 160) };
     });
 
-    // Rejeitado — nunca 2xx.
-    expect(resposta.ok()).toBe(false);
-    await expect(acessoFornecedor.alertaSenhaNaoAtualizada).toBeVisible();
-
-    expect(
-      guarda.tentativas(),
-      `tentativa(s) de escrita de processo bloqueada(s): ${JSON.stringify(guarda.urls())}`,
-    ).toBe(0);
-  });
-
-  test('CT-PFN-02-S2 @bug deve recusar um token de redefinição expirado/adulterado sem efetivar a troca', async ({
-    page,
-  }) => {
-    const guarda = await bloquearCriacaoDeProcesso(page);
-    const acessoFornecedor = new AcessoFornecedorPage(page);
-    const cpfCnpj = gerarCnpjFicticio();
-    const tokenAdulterado = `qa-token-adulterado-${randomUUID().slice(0, 8)}`;
-
-    await acessoFornecedor.abrirRedefinicaoComToken(tokenAdulterado, cpfCnpj);
-    const resposta = await acessoFornecedor.submeterRedefinicaoDeSenha({
-      cpfCnpj,
-      novaSenha: `QA-${randomUUID().slice(0, 8)}Aa1!`,
+    test.info().annotations.push({
+      type: 'redefinicao-senha-fornecedor',
+      description:
+        `conteúdo da página: ${JSON.stringify(conteudo.replace(/\s+/g, ' ').slice(0, 120))} · ` +
+        `serviço de token antigo: ${respostaDoTokenAntigo.status} ${respostaDoTokenAntigo.corpo}`,
     });
 
-    expect(resposta.ok()).toBe(false);
-    await expect(acessoFornecedor.alertaSenhaNaoAtualizada).toBeVisible();
-
-    // Defeito real encontrado nesta investigação (não existia caso escrito antes): o
-    // endpoint de redefinição responde 500 com o corpo
-    // `{"message": "...", "exception": "java.lang...."}` — vazamento técnico na CAMADA DE
-    // REDE (visível em qualquer DevTools) mesmo a TELA absorvendo isso e mostrando só o
-    // aviso genérico "Senha não foi atualizada!". Escrito contra o comportamento CORRETO
-    // (erro controlado, sem detalhe de implementação) — REPROVA hoje de propósito; não
-    // "consertar" este teste para ele passar, ver CLAUDE.md.
     expect(
-      resposta.status(),
-      'endpoint deveria devolver um erro controlado (4xx), não crashar com 500',
-    ).toBeLessThan(500);
-    const corpoResposta = await resposta.text();
-    expect(
-      corpoResposta,
-      'a resposta do endpoint não deveria expor classe de exceção/stack trace',
-    ).not.toMatch(/exception|java\.lang|stacktrace/i);
+      conteudo.replace(/\s+/g, ' ').trim(),
+      'a tela de redefinição de senha do fornecedor renderiza VAZIA — quem chega pelo link ' +
+        'recebido por e-mail não encontra formulário, erro nem caminho. A página ainda chama o ' +
+        'serviço de token antigo (`cassi_rest`), que não está publicado neste ambiente, ' +
+        'enquanto a landing do portal já usa o serviço novo (`java_gestao_contrato`)',
+    ).not.toBe('');
 
     expect(
       guarda.tentativas(),

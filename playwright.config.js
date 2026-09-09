@@ -19,7 +19,19 @@ export default defineConfig({
   // Nunca é solução para flakiness — teste que passa no retry vai para investigação.
   retries: process.env.CI ? 2 : 0,
 
-  workers: process.env.CI ? '50%' : undefined,
+  // Concorrência DELIBERADAMENTE baixa, e o motivo é medido, não preferência.
+  //
+  // Este tenant (`caixade213859`) responde bem mais devagar que o anterior: o Portal do
+  // Comprador leva ~14s para montar o "Acesso Rápido", o Portal do Fornecedor ~16s e a Central
+  // de Tarefas ~18s quando são o ÚNICO acesso. Com os 8 workers que o default do Playwright
+  // escolhe nesta máquina, essas mesmas telas estouram os 45s de espera e a suíte reporta 79
+  // timeouts — medido em 09/09/2026. Baixando para 3, o mesmo arquivo que dava 6 vermelhos
+  // passou a dar 2, e os 2 restantes são diferenças reais de ambiente.
+  //
+  // Isto NÃO é aumentar timeout para mascarar flakiness: os testes não estão instáveis, o
+  // servidor é que degrada sob carga concorrente. Subir o número de volta reintroduz o
+  // problema; medir de novo é o caminho se o ambiente melhorar.
+  workers: process.env.PW_WORKERS ? Number(process.env.PW_WORKERS) : 3,
 
   // O portal carrega 800+ contratos e o modal encadeia sete datasets no Protheus:
   // o ambiente é legitimamente lento, e o timeout reflete isso — não mascara flakiness.

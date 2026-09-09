@@ -121,6 +121,7 @@ export class CicloCompradorPage {
    * @returns {Promise<{ valor: string, rotulo: string }>}
    */
   async atuarComoSubstituto() {
+    await this.portal.expectSeletorAtuarComoDisponivel();
     const valorProprio = await this.portal.comboAtuarComo.inputValue();
     const opcoes = await this.listarOpcoesAtuarComo();
     const substituto = opcoes.find((o) => o.valor && o.valor !== valorProprio && o.rotulo !== valorProprio);

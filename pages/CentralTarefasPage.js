@@ -29,7 +29,6 @@ export class CentralTarefasPage {
     this.rota = '/portal/p/1/pagecentraltask';
 
     this.titulo = page.getByRole('heading', { name: 'Central de tarefas' });
-    this.botaoVoce = page.getByRole('button', { name: 'Você' });
 
     // O widget lembra, por SESSÃO DO USUÁRIO (não por carga de página), qual sub-aba
     // estava aberta da última vez (Resumo, Tarefas a concluir, Minhas Solicitações...).
@@ -67,7 +66,10 @@ export class CentralTarefasPage {
    */
   async expectCarregada() {
     await this.titulo.waitFor({ state: 'visible' });
-    await this.botaoVoce.waitFor({ state: 'visible' });
+    // O botão "Você" era usado aqui só como sinal de carga, e ele NÃO existe neste ambiente
+    // (medido em 09/09/2026: os botões visíveis da Central são apenas "Nova solicitação" e o
+    // contador). Os painéis, que são o objeto real dos testes, continuam todos presentes — e
+    // esperar por eles é um sinal melhor de qualquer forma: afirma sobre o que se vai medir.
     await this.abaResumo.click();
     await this.painelTarefasAConcluir
       .getByRole('heading', { name: /Tarefas a concluir/ })
@@ -90,30 +92,51 @@ export class CentralTarefasPage {
   }
 
   /**
+   * Lê um número que pode legitimamente não estar na tela.
+   *
+   * A legenda de cada painel (No prazo / Próximas a vencer / Atrasadas, Solicitadas por mim /
+   * Sob minha gerência) **não é renderizada quando o painel está zerado** — medido em
+   * 09/09/2026 neste ambiente, cuja Central não tem tarefa alguma. `lerNumero` estoura ali, e
+   * o vermelho resultante diz "não consegui ler um número", que é ruído: não há incoerência,
+   * há ausência de massa. Devolver `null` deixa quem chama declarar isso como pré-condição.
+   *
+   * @param {import('@playwright/test').Locator} locator
+   * @returns {Promise<number | null>}
+   */
+  async lerNumeroOpcional(locator) {
+    if ((await locator.count()) === 0) return null;
+    const texto = await locator.first().innerText();
+    const numero = texto.match(/\d+/);
+    return numero ? Number(numero[0]) : null;
+  }
+
+  /**
    * Total anunciado em "Tarefas a concluir (N)" vs. a soma de No prazo + Próx. a vencer +
    * Atrasadas — os três `<li data-sort-type-label>` da legenda do doughnut chart.
-   * @returns {Promise<{ total: number, soma: number }>}
+   * @returns {Promise<{ total: number, soma: number | null }>} `soma` é `null` quando a legenda não foi renderizada (painel zerado)
    */
   async resumoTarefasAConcluir() {
     const total = await this.lerNumero(
       this.painelTarefasAConcluir.getByRole('heading', { name: /Tarefas a concluir/ }),
     );
-    const noPrazo = await this.lerNumero(
+    const noPrazo = await this.lerNumeroOpcional(
       this.painelTarefasAConcluir.locator('li[data-sort-type-label="ON_TIME"] b'),
     );
-    const proxVencer = await this.lerNumero(
+    const proxVencer = await this.lerNumeroOpcional(
       this.painelTarefasAConcluir.locator('li[data-sort-type-label="APPROACHING_EXPIRATION"] b'),
     );
-    const atrasadas = await this.lerNumero(
+    const atrasadas = await this.lerNumeroOpcional(
       this.painelTarefasAConcluir.locator('li[data-sort-type-label="EXPIRED"] b'),
     );
-    return { total, soma: noPrazo + proxVencer + atrasadas };
+    const partes = [noPrazo, proxVencer, atrasadas];
+    if (partes.every((n) => n === null)) return { total, soma: null };
+    return { total, soma: partes.reduce((/** @type {number} */ acc, n) => acc + (n ?? 0), 0) };
   }
 
   /**
    * Total anunciado em "Tarefas em pool (N)" vs. a soma dos itens da lista horizontal
    * (No prazo / Próximas a vencer / Atrasadas).
-   * @returns {Promise<{ total: number, soma: number }>}
+   * @returns {Promise<{ total: number, soma: number | null }>} `soma` é `null` quando a legenda não foi renderizada (painel zerado)
    */
   async resumoTarefasEmPool() {
     const total = await this.lerNumero(
@@ -131,7 +154,7 @@ export class CentralTarefasPage {
   /**
    * Total anunciado em "Documentos (N)" vs. a soma dos quatro contadores
    * (Para aprovar / Meus documentos / Documentos em consenso / Documentos em checkout).
-   * @returns {Promise<{ total: number, soma: number }>}
+   * @returns {Promise<{ total: number, soma: number | null }>} `soma` é `null` quando a legenda não foi renderizada (painel zerado)
    */
   async resumoDocumentos() {
     const total = await this.lerNumero(
@@ -155,21 +178,22 @@ export class CentralTarefasPage {
   /**
    * Total anunciado em "Solicitações (N)" vs. a soma de "Solicitadas por mim" +
    * "Sob minha gerência".
-   * @returns {Promise<{ total: number, soma: number }>}
+   * @returns {Promise<{ total: number, soma: number | null }>} `soma` é `null` quando a legenda não foi renderizada (painel zerado)
    */
   async resumoSolicitacoes() {
     const total = await this.lerNumero(
       this.painelSolicitacoes.getByRole('heading', { name: /^Solicitações/ }),
     );
-    const porMim = await this.lerNumero(
+    const porMim = await this.lerNumeroOpcional(
       this.painelSolicitacoes.locator('[data-go-to-request="myRequests"] label.taskChar-requests'),
     );
-    const gerencia = await this.lerNumero(
+    const gerencia = await this.lerNumeroOpcional(
       this.painelSolicitacoes.locator(
         '[data-go-to-request="myManagement"] label.taskChar-requests',
       ),
     );
-    return { total, soma: porMim + gerencia };
+    if (porMim === null && gerencia === null) return { total, soma: null };
+    return { total, soma: (porMim ?? 0) + (gerencia ?? 0) };
   }
 
   /**

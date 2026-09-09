@@ -40,8 +40,20 @@ const ROTAS_DE_LEITURA = [
   // Autenticação de sessão do Portal do Fornecedor. São POST, mas emitem/validam token de
   // sessão para a tela RENDERIZAR — não criam registro de negócio. Bloqueá-los fazia a landing
   // do portal nunca montar, derrubando testes que estavam corretos.
+  //
+  // O serviço MUDOU DE CAMINHO no ambiente `caixade213859` (medido em 09/09/2026): saiu de
+  // `/cassi_rest/api/rest/cassi/compras/1/…` para `/java_gestao_contrato/rest-acesso/request/…`.
+  // Com só o caminho antigo na lista, a guarda abortava `geratoken` e a landing do portal nunca
+  // montava — seis testes reprovavam por timeout esperando um heading que o próprio teste tinha
+  // impedido de aparecer. Os dois caminhos ficam aqui porque a lista é sobre O QUE o endpoint
+  // faz, não sobre onde ele mora.
+  //
+  // O login em si (`loginV2`, antes `loginNormal`) NÃO entra: é ele que os cenários negativos
+  // de credencial precisam ver sair e ser recusado pelo servidor.
   '/cassi_rest/api/rest/cassi/compras/1/geratoken',
   '/cassi_rest/api/rest/cassi/compras/1/verifyAutenticateToken',
+  '/java_gestao_contrato/rest-acesso/request/geratoken',
+  '/java_gestao_contrato/rest-acesso/request/verifyAutenticateToken',
 ];
 
 /**

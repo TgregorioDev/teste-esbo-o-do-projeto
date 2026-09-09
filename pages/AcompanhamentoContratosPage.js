@@ -1,5 +1,6 @@
 // @ts-check
 import { ROTA_PORTAL_CONTRATOS } from '../config/ambiente.js';
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 
 /**
  * Portal de Acompanhamento de Contratos (`/portal/p/1/acompanhamentoContrato`).
@@ -40,6 +41,37 @@ export class AcompanhamentoContratosPage {
 
   async goto() {
     await this.page.goto(ROTA_PORTAL_CONTRATOS, { waitUntil: 'domcontentloaded' });
+    await this.expectPaginaPublicada();
+  }
+
+  /**
+   * Falha CEDO, e com o motivo certo, quando a página não existe no ambiente.
+   *
+   * Medido em 09/09/2026 no tenant `caixade213859`: `/portal/p/1/acompanhamentoContrato`
+   * responde a página de erro do Fluig — *"Recurso não foi encontrado"* — com título
+   * "Error page". A widget não está publicada aqui; não é rota renomeada (12 variações do
+   * código da página foram tentadas, todas Error page) nem falta de permissão (esta devolve
+   * "Acesso negado", que a classe já modela logo acima).
+   *
+   * Sem esta verificação, cada um dos 54 testes que dependem do portal esperava 45s por um
+   * heading que nunca vem e reprovava como TIMEOUT — indistinguível de regressão no relatório,
+   * e ~40 minutos de espera por execução. Com ela, o veredito é imediato e o gate classifica
+   * como ambiente, que é o que de fato é.
+   */
+  async expectPaginaPublicada() {
+    const naoPublicada = await this.page
+      .getByText(/Recurso não foi encontrado/i)
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    if (naoPublicada) {
+      faltaPreCondicao(
+        `(ambiente): a página ${ROTA_PORTAL_CONTRATOS} não está publicada neste ambiente — o ` +
+          'Fluig responde "Recurso não foi encontrado". Sem o Acompanhamento de Contratos não ' +
+          'há grade de contratos, e todo cenário que parte dela fica sem massa.',
+      );
+    }
   }
 
   /**
