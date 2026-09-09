@@ -181,6 +181,20 @@ export class FormularioSolicitacaoCompraPage {
         () => false,
       );
 
+    // Corrida com o veredito NEGATIVO: quando o ERP está fora, o formulário renderiza a faixa
+    // "Não foi possível estabelecer comunicação com o ERP" em ~8s e a inicialização nunca
+    // chega. Sem esta corrida, cada teste bloqueado gastava os 60s inteiros esperando uma
+    // resposta que não vem — com ~20 testes assim neste ambiente, são minutos por execução
+    // gastos para chegar à mesma conclusão que a tela já deu.
+    this.falhaDeErpNaCarga = this.frame
+      .getByText(/comunica[çc][ãa]o com o ERP/i)
+      .first()
+      .waitFor({ state: 'visible', timeout: 60_000 })
+      .then(
+        () => true,
+        () => false,
+      );
+
     await this.page.goto(ROTA_SOLICITACAO_COMPRAS, { waitUntil: 'domcontentloaded' });
   }
 
@@ -197,6 +211,27 @@ export class FormularioSolicitacaoCompraPage {
       () => this.headingInicio.waitFor({ state: 'visible' }),
       'a página "Movimentar Solicitação" não renderizou o heading "Início"',
     );
+    // Corrida DESDE O INÍCIO entre o veredito negativo e o positivo. A faixa "Não foi possível
+    // estabelecer comunicação com o ERP" aparece em ~8s; o heading de uma tela sadia, também em
+    // segundos. Deixar a espera do heading correr sozinha até os 45s custava, neste ambiente,
+    // 45s por teste bloqueado — para chegar à mesma conclusão que a tela já tinha dado.
+    const desfechoInicial = await Promise.race([
+      this.falhaDeErpNaCarga?.then((erro) => (erro ? 'erp-fora' : 'sem-erro')) ??
+        Promise.resolve('sem-erro'),
+      this.headingFormulario.waitFor({ state: 'visible' }).then(
+        () => 'montou',
+        () => 'sem-heading',
+      ),
+    ]);
+
+    if (desfechoInicial === 'erp-fora') {
+      faltaPreCondicao(
+        '(ambiente): o formulário de Solicitação de Compras abriu com a falha de integração do ' +
+          'ERP ("Não foi possível estabelecer comunicação com o ERP"). Nenhum campo é montado e ' +
+          'a validação do cliente não roda — não há o que medir do produto aqui.',
+      );
+    }
+
     await this.esperarComVeredito(
       () => this.headingFormulario.waitFor({ state: 'visible' }),
       'o iframe do formulário não renderizou o heading "Solicitação de Compras"',
@@ -240,6 +275,21 @@ export class FormularioSolicitacaoCompraPage {
         'expectAberto()/expectMontagemConcluida() exigem que a navegação tenha sido feita por ' +
           'goto() — é lá que a escuta do fim da inicialização é registrada, e registrá-la ' +
           'depois da carga perderia a resposta.',
+      );
+    }
+
+    // Quem responder primeiro decide: a faixa de erro do ERP (veredito negativo, ~8s) ou a
+    // resposta que fecha a montagem (veredito positivo, 4–13s numa tela sadia).
+    const desfecho = await Promise.race([
+      this.inicializacaoConcluida.then((ok) => (ok ? 'montou' : 'sem-resposta')),
+      this.falhaDeErpNaCarga?.then((erro) => (erro ? 'erp-fora' : 'sem-erro')) ?? Promise.resolve('sem-erro'),
+    ]);
+
+    if (desfecho === 'erp-fora') {
+      faltaPreCondicao(
+        '(ambiente): o formulário de Solicitação de Compras abriu com a falha de integração do ' +
+          'ERP ("Não foi possível estabelecer comunicação com o ERP"). Nenhum campo é montado e ' +
+          'a validação do cliente não roda — não há o que medir do produto aqui.',
       );
     }
 
