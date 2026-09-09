@@ -1,4 +1,5 @@
 // @ts-check
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 import { localizarNaListagemPaginada } from '../utils/central-tarefas-paginacao.js';
 
 /** Rota da Central de Tarefas. */
@@ -53,6 +54,22 @@ export class MinhasSolicitacoesPage {
     await this.tituloCentral.waitFor({ state: 'visible' });
   }
 
+
+  /**
+   * Clica em "Mais opções" apenas se ele existir.
+   *
+   * O flyout é a forma ANTIGA de chegar às abas de segundo nível da Central. Medido em
+   * 09/09/2026 no ambiente `caixade213859`: não há elemento algum com esse rótulo — as
+   * categorias (Solicitações, Minhas solicitações, Tarefas em pool…) já aparecem como abas
+   * diretas. Clicar incondicionalmente esperava 45s por um link inexistente e reprovava como
+   * timeout; a navegação em si funciona sem ele.
+   */
+  async abrirMaisOpcoesSePresente() {
+    if ((await this.linkMaisOpcoes.count()) > 0) {
+      await this.linkMaisOpcoes.click();
+    }
+  }
+
   /**
    * Abre "Minhas Solicitações" pela UI e devolve a resposta da PRIMEIRA página — a mesma
    * chamada que `CentralTarefasPage.abrirMinhasSolicitacoes` aguarda, mas aqui o corpo da
@@ -60,13 +77,26 @@ export class MinhasSolicitacoesPage {
    * @returns {Promise<import('@playwright/test').Response>}
    */
   async abrir() {
-    await this.linkMaisOpcoes.click();
+    await this.abrirMaisOpcoesSePresente();
     await this.linkAbaSolicitacoes.click();
-    const respostaPromise = this.page.waitForResponse((r) =>
-      r.url().includes('/ecm/api/rest/ecm/centralTasks/getTasks/requests/'),
-    );
+    const respostaPromise = this.page
+      .waitForResponse(
+        (r) => r.url().includes('/ecm/api/rest/ecm/centralTasks/getTasks/requests/'),
+        { timeout: 20_000 },
+      )
+      .catch(() => null);
     await this.linkMinhasSolicitacoes.click();
-    return respostaPromise;
+    const resposta = await respostaPromise;
+
+    if (!resposta) {
+      faltaPreCondicao(
+        '(ambiente): abrir "Minhas solicitações" não disparou ' +
+          '`/ecm/api/rest/ecm/centralTasks/getTasks/requests/` nesta versão da Central. Este ' +
+          'Page Object localiza a solicitação pelo CORPO dessa resposta; sem ela, a busca por ' +
+          'API não é possível aqui.',
+      );
+    }
+    return /** @type {import('@playwright/test').Response} */ (resposta);
   }
 
   /**

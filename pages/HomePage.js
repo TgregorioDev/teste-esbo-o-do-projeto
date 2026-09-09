@@ -17,9 +17,16 @@ export class HomePage {
     this.page = page;
 
     this.headingMeusApps = page.getByRole('heading', { name: 'Meus Apps', exact: true });
+    /**
+     * O widget de processos favoritos, em QUALQUER um dos seus dois estados.
+     *
+     * Com favoritos, o heading é "Processos favoritos"; sem nenhum, o widget troca o próprio
+     * heading por "Nenhum processo favorito" — medido em 09/09/2026. Esperar só pelo primeiro
+     * fazia `expectCarregada()` estourar 45s numa conta sem favorito, derrubando testes que não
+     * têm nada a ver com favoritos (o catálogo de processos, por exemplo).
+     */
     this.headingProcessosFavoritos = page.getByRole('heading', {
-      name: 'Processos favoritos',
-      exact: true,
+      name: /Processos favoritos|Nenhum processo favorito/,
     });
 
     // DEFEITO REAL CONFIRMADO EM CAMPO (novo — ainda não catalogado): o `<a role="tab">`

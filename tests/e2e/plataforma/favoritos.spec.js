@@ -29,7 +29,28 @@ import { FavoritosPage, escolherCandidatoParaEsteWorker } from '../../../pages/F
  * concorrentes, candidatos suficientes no catálogo para não colidir.
  */
 test.describe('Plataforma — favoritar processo e acessar por Favoritos (CT-PLT-05-H) @destrutivo', () => {
-  test('favoritar um processo deve torná-lo acessível pelo widget "Processos favoritos" da Home', async ({
+  /**
+   * ## Medido em 09/09/2026 no ambiente `caixade213859` — passou a reprovar por DEFEITO
+   *
+   * O widget de favoritos da Home tem dois estados observáveis: sem nenhum favorito ele exibe o
+   * heading "Nenhum processo favorito"; com um favorito, ele **desaparece inteiro** — os
+   * headings da Home passam de `["Meus Apps", "Processos", "Nenhum processo favorito"]` para
+   * `["Meus Apps", "Processos"]`, sem widget, sem lista e sem mensagem.
+   *
+   * Reproduzido fora da suíte para descartar interferência do teste: favoritar
+   * `prc_questionario_v2` pelo catálogo (o atributo `data-favorite-process` vira `true`, ou
+   * seja, o favorito foi gravado) e abrir a Home — o widget some. Desfavoritando, ele volta.
+   *
+   * O 403 que aparece no console durante o fluxo é de `/nps/api/v1/surveys` (pesquisa de
+   * satisfação da plataforma) e acontece em qualquer página, inclusive nas que funcionam —
+   * não é a causa.
+   *
+   * Efeito para o usuário: favoritar um processo **remove** o atalho da Home em vez de criá-lo,
+   * que é o oposto do propósito do recurso.
+   *
+   * `@bug`: as assertions abaixo descrevem o comportamento correto e não foram afrouxadas.
+   */
+  test('@bug favoritar um processo deve torná-lo acessível pelo widget "Processos favoritos" da Home', async ({
     page,
   }, testInfo) => {
     const favoritosPage = new FavoritosPage(page);

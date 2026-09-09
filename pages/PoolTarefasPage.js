@@ -90,12 +90,28 @@ export class PoolTarefasPage {
     this.abaTarefasAConcluir = page.getByRole('tab', { name: /^Tarefas a concluir/ });
   }
 
+
+  /**
+   * Clica em "Mais opções" apenas se ele existir.
+   *
+   * O flyout é a forma ANTIGA de chegar às abas de segundo nível da Central. Medido em
+   * 09/09/2026 no ambiente `caixade213859`: não há elemento algum com esse rótulo — as
+   * categorias (Solicitações, Minhas solicitações, Tarefas em pool…) já aparecem como abas
+   * diretas. Clicar incondicionalmente esperava 45s por um link inexistente e reprovava como
+   * timeout; a navegação em si funciona sem ele.
+   */
+  async abrirMaisOpcoesSePresente() {
+    if ((await this.linkMaisOpcoes.count()) > 0) {
+      await this.linkMaisOpcoes.click();
+    }
+  }
+
   /**
    * Abre o flyout "Mais opções" e a categoria "Tarefas em pool", esperando os links de
    * grupo terminarem de renderizar. Pré-condição: já está na Central de Tarefas.
    */
   async abrirGruposDoPool() {
-    await this.linkMaisOpcoes.click();
+    await this.abrirMaisOpcoesSePresente();
     await this.linkCategoriaTarefasEmPool.click();
     await this.linksDeGrupo.first().waitFor({ state: 'visible' });
   }
@@ -226,7 +242,7 @@ export class PoolTarefasPage {
     if (await this.abaTarefasAConcluir.isVisible().catch(() => false)) {
       await this.abaTarefasAConcluir.click();
     } else {
-      await this.linkMaisOpcoes.click();
+      await this.abrirMaisOpcoesSePresente();
       await this.page.getByRole('link', { name: /^Tarefas a concluir/ }).click();
     }
     return resposta;

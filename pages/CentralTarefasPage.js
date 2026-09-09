@@ -1,4 +1,5 @@
 // @ts-check
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 
 /**
  * Central de Tarefas (`/portal/p/1/pagecentraltask`).
@@ -207,16 +208,61 @@ export class CentralTarefasPage {
     return { total };
   }
 
-  /** Abre Mais opções → Solicitações → Minhas solicitações e espera a lista carregar. */
+  /**
+   * Clica em "Mais opções" apenas se ele existir.
+   *
+   * O flyout é a forma ANTIGA de chegar às abas de segundo nível. Medido em 09/09/2026 no
+   * ambiente `caixade213859`: não existe elemento algum com esse rótulo — as categorias já
+   * aparecem como abas diretas. Clicar incondicionalmente esperava 45s por um link inexistente
+   * e reprovava como timeout, embora a navegação funcione sem ele.
+   */
+  async abrirMaisOpcoesSePresente() {
+    if ((await this.linkMaisOpcoes.count()) > 0) {
+      await this.linkMaisOpcoes.click();
+    }
+  }
+
+  /** Abre (Mais opções →) Solicitações → Minhas solicitações e espera a lista carregar. */
   async abrirMinhasSolicitacoes() {
-    await this.linkMaisOpcoes.click();
+    await this.abrirMaisOpcoesSePresente();
     await this.linkAbaSolicitacoes.click();
-    const resposta = this.page.waitForResponse((r) =>
-      r.url().includes('/ecm/api/rest/ecm/centralTasks/getTasks/requests/'),
-    );
+    // O endpoint que alimenta a lista pode não ser chamado nesta versão da Central (medido:
+    // neste ambiente o clique não dispara `/centralTasks/getTasks/requests/`). Como isto é
+    // sinal de CARGA e não o objeto do teste, a espera é opcional — o que decide é o conteúdo
+    // da lista logo abaixo.
+    const resposta = this.page
+      .waitForResponse(
+        (r) => r.url().includes('/ecm/api/rest/ecm/centralTasks/getTasks/requests/'),
+        { timeout: 20_000 },
+      )
+      .catch(() => null);
     await this.linkMinhasSolicitacoes.click();
     await resposta;
-    await this.cartoesDeSolicitacao.first().waitFor({ state: 'visible' });
+
+    // A lista pode legitimamente vir VAZIA — conta sem solicitação alguma é o estado deste
+    // ambiente. Esperar pelo primeiro cartão nesse caso gastava 45s e reprovava como timeout,
+    // escondendo que o motivo é ausência de massa. Quem chama decide: `expectComSolicitacoes()`
+    // declara a pré-condição quando a lista está vazia.
+    await this.cartoesDeSolicitacao
+      .first()
+      .waitFor({ state: 'visible', timeout: 20_000 })
+      .catch(() => {});
+  }
+
+  /**
+   * Declara pré-condição quando "Minhas solicitações" não tem nenhum cartão.
+   *
+   * Separado de `abrirMinhasSolicitacoes` de propósito: abrir a lista vazia é resultado válido
+   * (há teste que afirma justamente sobre o filtro de uma lista), e só quem precisa de massa
+   * chama isto.
+   */
+  async expectComSolicitacoes() {
+    if ((await this.cartoesDeSolicitacao.count()) === 0) {
+      faltaPreCondicao(
+        '(ambiente): "Minhas solicitações" não tem nenhum cartão para esta conta — sem ' +
+          'solicitação aberta não há o que ler nem sinalização de atraso a conferir.',
+      );
+    }
   }
 
   /** Identificadores (número da solicitação) exibidos nos cartões atualmente visíveis. */

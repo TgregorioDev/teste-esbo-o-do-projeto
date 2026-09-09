@@ -18,6 +18,7 @@ test.describe('Minhas Solicitações — sinalização de atraso (CT-TSK-03-H)',
     await tarefasPage.goto();
     await tarefasPage.expectCarregada();
     await tarefasPage.abrirMinhasSolicitacoes();
+    await tarefasPage.expectComSolicitacoes();
 
     await expect(tarefasPage.cartoesAtrasados.first()).toBeVisible();
     await expect(tarefasPage.cartoesAtrasados.first()).toContainText(/Atrasada há/);
@@ -30,6 +31,7 @@ test.describe('Minhas Solicitações — filtro por status (CT-TSK-04-H)', () =>
     await tarefasPage.goto();
     await tarefasPage.expectCarregada();
     await tarefasPage.abrirMinhasSolicitacoes();
+    await tarefasPage.expectComSolicitacoes();
 
     const idsAbertas = await tarefasPage.lerIdentificadoresSolicitacoes();
     expect(

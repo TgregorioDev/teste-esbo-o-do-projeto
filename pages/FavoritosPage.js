@@ -80,7 +80,17 @@ export class FavoritosPage {
 
   async abrirHome() {
     await this.page.goto(ROTA_HOME, { waitUntil: 'domcontentloaded' });
-    await this.page.getByRole('heading', { name: 'Processos favoritos', exact: true }).waitFor({ state: 'visible' });
+    // Confirma que a navegação de fato aconteceu antes de esperar pelo widget. Medido: vindo do
+    // catálogo logo após favoritar, a página seguia exibindo "Todos os processos" enquanto o
+    // teste esperava — e o vermelho saía como "widget não apareceu", que é diagnóstico errado.
+    await this.page.waitForURL(/\/portal\/p\/1\/home/, { timeout: 30_000 });
+    // Âncora de CARGA tolerante aos dois estados do widget: com favoritos o heading é
+    // "Processos favoritos"; sem nenhum, ele vira "Nenhum processo favorito" (medido em
+    // 09/09/2026). Exigir só o primeiro aqui transformava "o favorito não apareceu" — que é a
+    // assertion do teste, com mensagem própria — num timeout de carga sem explicação.
+    await this.page
+      .getByRole('heading', { name: /Processos favoritos|Nenhum processo favorito/ })
+      .waitFor({ state: 'visible' });
   }
 
   /**
