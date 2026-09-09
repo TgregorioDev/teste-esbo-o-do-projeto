@@ -5,6 +5,102 @@ precise redescobrir e para que ninguém escreva teste sobre suposição.
 
 > Regra: se algo neste mapa divergir do ambiente, **o ambiente ganha** — corrija o mapa.
 
+---
+
+## ⚠️ TROCA DE AMBIENTE — 09/09/2026
+
+**O ambiente passou a ser `https://caixade213859.fluig.cloudtotvs.com.br`, e somente ele.** Tudo
+que este documento afirmava foi levantado no `caixade182374`; o que segue é o que MUDA, medido
+com Playwright MCP e sondas diretas no mesmo dia. O restante do mapa continua valendo até que
+alguém meça o contrário.
+
+### O que não existe mais
+
+| Item | Situação medida |
+|---|---|
+| `/portal/p/1/acompanhamentoContrato` | **não publicada** — o Fluig responde *"Recurso não foi encontrado"*. Não é rota renomeada: 12 variações do código foram tentadas, todas Error page. Não é permissão: essa devolveria "Acesso negado". |
+| `/portal/p/1/gestao_ferias` | idem, embora o menu lateral ofereça o link |
+| Seletor **"Atuar como"** | não é renderizado em nenhuma sub-tela do Portal do Comprador |
+| Link **"Mais opções"** (Central de Tarefas) | não existe — as categorias já são abas diretas |
+| Botão **"Você"** (Central de Tarefas) | não existe; era usado só como sinal de carga |
+
+### Massa: cadastro-mestre sim, transacional não
+
+`dsProtheus_getBranches_restGetAll` devolve **71 filiais**, `dsProtheus_getProdutos_restGetAll`
+**3.100 produtos** e `ds_protheus_getFuncionarios_restGetAll` **72.369 funcionários** — a
+integração com o Protheus está no ar.
+
+Mas `dsProtheus_getContratos_restGetAll` e `dsProtheus_getFornecedores_restGetAll` devolvem
+**zero linhas**, o zoom de Fornecedor do Faturamento abre vazio, não há SC nem tarefa para a
+conta (`TOTVS-FS` tem 6 tarefas, todas em *Acompanhamento Status*). O `dsProtheus_getCompradores_restGetAll`
+segue respondendo com `error: "undefined"` — a conta continua sem matrícula de comprador.
+
+**Consequência para a suíte:** todo cenário que parte de contrato, fornecedor, SC ou tarefa
+declara `PRÉ-CONDIÇÃO AUSENTE`. Não é regressão, e o gate classifica como ambiente.
+
+### Portal do Fornecedor — a tela mudou de verdade
+
+O modelo de três acessos (*Acesso Normal* = CNPJ da empresa + CPF do usuário; *Acesso
+Administrador*; *Representatividade*), atrás do heading "Selecione o tipo de acesso.", **não
+existe mais**. Hoje há um **login único**: alerta *"Informe o seu CPF/CNPJ e senha."*, campos
+`#txt_login` e `#txt_senha`, botão **Entrar**, link **Cadastrar** e dois botões que abrem
+diálogo — **Primeiro acesso / Redefinir Senha** (*"Informe seu CPF ou CNPJ"* + Enviar link) e
+**Acesso via Representatividade** (único sobrevivente da forma antiga).
+
+A distinção empresa × usuário sumiu da porta de entrada: onde um caso do catálogo falar em
+"Acesso Normal" ou "Acesso Administrador", é este login único que ele encontra.
+
+### Serviços que mudaram de caminho
+
+| Função | Antes (`182374`) | Agora (`213859`) |
+|---|---|---|
+| Token da landing do fornecedor | `/cassi_rest/api/rest/cassi/compras/1/geratoken` | `/java_gestao_contrato/rest-acesso/request/geratoken` |
+| Validação de token | `…/verifyAutenticateToken` | `/java_gestao_contrato/rest-acesso/request/verifyAutenticateToken` |
+| Login do fornecedor | `/cassi_rest/api/rest/cassi/administrador/1/login` | `/java_gestao_contrato/rest-acesso/request/loginV2` |
+
+A aplicação `cassi_rest` **não está publicada** aqui: chamá-la responde
+`500 "Could not find application key"`. Os dois primeiros entraram na allowlist de
+`utils/guarda-criacao.js` — sem isso a guarda aborta `geratoken` e a landing do portal nunca
+monta, derrubando testes corretos por um timeout que eles mesmos causam.
+
+### Detalhes de tela que quebram locator
+
+- **Estado vazio das grades em INGLÊS**: `No data found`, não "Nenhum dado encontrado". Contar
+  linhas não distingue "tem dado" de "não tem" — a linha do estado vazio conta como linha.
+- **Widget de favoritos da Home** troca o próprio heading: "Processos favoritos" com favoritos,
+  **"Nenhum processo favorito"** sem nenhum.
+- A mensagem de erro do **reCAPTCHA sai no idioma do navegador** — a suíte roda em `pt-BR`, e
+  procurar só o texto em inglês faz o teste passar contra um captcha quebrado.
+
+### Desempenho — e por que a concorrência caiu para 3
+
+O tenant é mais lento: acessado sozinho, o Portal do Comprador monta o "Acesso Rápido" em ~14s,
+o Portal do Fornecedor em ~16s e a Central de Tarefas em ~18s. Com os 8 workers que o Playwright
+escolhe por padrão nesta máquina, essas telas estouram os 45s de espera: a suíte reportou **79
+timeouts**. Com `workers: 3`, o mesmo arquivo que dava 6 vermelhos passou a dar 2 — e os 2 são
+diferenças reais de ambiente. `PW_WORKERS` ajusta sem editar o config.
+
+Isto não é "aumentar timeout para mascarar flakiness": os testes não oscilam, o servidor degrada
+sob carga concorrente. Medir de novo é o caminho se o ambiente melhorar.
+
+### Defeitos deste ambiente (testes `@bug` escritos contra o esperado)
+
+1. **Login do fornecedor devolve 500 para credencial inexistente** — não 401 — com
+   `java.io.IOException` e URL interna no corpo, **e a tela exibe esse JSON cru** ao usuário,
+   ao lado do aviso "Ops! Usuário ou senha inválido!".
+2. **A tela de redefinição de senha renderiza vazia**: ela ainda chama o `geratoken` antigo, que
+   responde 500 neste tenant. Quem recebe o link por e-mail cai numa página em branco.
+3. **O reCAPTCHA da entrada recusa o domínio** (*"domínio inválido para a chave do site"*) — sem
+   captcha válido o fornecedor não autentica.
+4. **Favoritar um processo faz o widget da Home sumir**: sem favoritos o widget mostra "Nenhum
+   processo favorito"; com um favorito ele desaparece inteiro. Favoritar remove o atalho em vez
+   de criá-lo. Reproduzido fora da suíte.
+5. **`dsProtheus_getFiscaisPorTipoContrato` responde 500** — o dataset não está publicado, que é
+   exatamente o defeito do FSWTBC-4503.
+6. **Alçada atribuída a pool**, não a aprovador nominal (FSWTBC-5118).
+
+---
+
 ## Plataforma
 
 - TOTVS Fluig **Voyager 2.0.0-260901** (`GET /api/public/wcm/version`, medido em 03/09/2026 —

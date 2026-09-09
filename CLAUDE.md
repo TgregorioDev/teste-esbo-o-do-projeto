@@ -5,6 +5,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Suíte de testes E2E do **TOTVS Fluig da Cassi** (Playwright + JavaScript). A suíte é software de
 produção: arquitetura, isolamento, paralelismo e observabilidade valem aqui como valem na aplicação.
 
+> ## ⚠️ Ambiente: `caixade213859`, e somente ele (desde 09/09/2026)
+>
+> A base mudou. **Não há mais dois ambientes** — o `caixade182374`, onde esta suíte foi
+> construída, saiu de cena. `docs/mapa-do-ambiente.md` abre com o que mudou, medido; leia essa
+> seção antes de investigar qualquer vermelho, porque três coisas mudam a leitura de um relatório:
+>
+> 1. **Não há massa transacional.** Cadastro-mestre responde (71 filiais, 3.100 produtos, 72 mil
+>    funcionários), mas contrato, fornecedor, SC e tarefa são zero. Todo cenário que parte deles
+>    declara `PRÉ-CONDIÇÃO AUSENTE` — é ambiente, não regressão.
+> 2. **O portal de Acompanhamento de Contratos não está publicado.** São 54 testes que não têm
+>    como rodar aqui, e eles dizem isso em 13 segundos em vez de esperar 45s cada.
+> 3. **A concorrência é 3, e é medida.** O tenant degrada sob carga: com os 8 workers do default
+>    a suíte reportava 79 timeouts que não eram defeito de nada. `PW_WORKERS` ajusta.
+>
+> Ao escrever teste novo: o estado vazio das grades aqui está em **inglês** (`No data found`), e
+> a linha do estado vazio **conta como linha** — contar linhas não distingue "tem dado" de "não
+> tem".
+
 ---
 
 ## Comandos
