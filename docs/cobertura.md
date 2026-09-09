@@ -236,7 +236,7 @@ significa nada.
 | | |
 |---|---|
 | Casos executáveis no Fluig | **518** |
-| Com teste automatizado | **67** (13%) |
+| Com teste automatizado | **71** (14%) |
 | Registrados só para o Protheus (fora do escopo E2E) | 125 |
 
 A matriz caso a caso — incluindo os que **podem ser aprimorados** num teste existente e os que
@@ -270,6 +270,7 @@ arquivo. E a mesma trava: o script falha se um teste citar chamado que não exis
 | `FSWTBC-2752` | `e2e/contratos/cadastro-fornecedor.spec.js` |
 | `FSWTBC-2886` | `e2e/contratos/ciclo-faturamento.spec.js` |
 | `FSWTBC-3489` | `e2e/portais/alcadas-orcamentaria.spec.js` |
+| `FSWTBC-3617` | `api/etapa-automatica-distribuicao.spec.js` |
 | `FSWTBC-3715` | `e2e/portais/portal-comprador.spec.js` |
 | `FSWTBC-3732` | `e2e/portais/ciclo-comprador.spec.js` |
 | `FSWTBC-3749` | `e2e/portais/tracker-compras.spec.js` |
@@ -293,10 +294,12 @@ arquivo. E a mesma trava: o script falha se um teste citar chamado que não exis
 | `FSWTBC-4317` | `e2e/portais/portal-comprador.spec.js` |
 | `FSWTBC-4357` | `e2e/portais/ciclo-comprador.spec.js` |
 | `FSWTBC-4420` | `e2e/contratos/delegacao-fiscais.spec.js` |
+| `FSWTBC-4459` | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
 | `FSWTBC-4503` | `api/datasets-contratos-fiscais.spec.js` |
 | `FSWTBC-4527` | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `FSWTBC-4537` | `e2e/portais/gerencia-compras.spec.js` |
 | `FSWTBC-4581` | `e2e/acompanhamento-contratos/criacao-solicitacao.spec.js` |
+| `FSWTBC-4632` | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
 | `FSWTBC-4639` | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
 | `FSWTBC-4669` | `api/datasets-parecer-tecnico.spec.js` |
 | `FSWTBC-4792` | `e2e/contratos/ciclo-faturamento.spec.js` |
@@ -305,6 +308,7 @@ arquivo. E a mesma trava: o script falha se um teste citar chamado que não exis
 | `FSWTBC-4819` | `e2e/compras/validacoes-solicitacao-compras.spec.js` |
 | `FSWTBC-4820` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
 | `FSWTBC-4821` | `e2e/portais/alcadas-orcamentaria.spec.js` |
+| `FSWTBC-4828` | `e2e/compras/ciclo-solicitacao-compras.spec.js` |
 | `FSWTBC-4898` | `e2e/acompanhamento-contratos/grade-contratos.spec.js` |
 | `FSWTBC-4941` | `e2e/compras/validacoes-solicitacao-compras.spec.js` |
 | `FSWTBC-4952` | `e2e/compras/validacoes-solicitacao-compras.spec.js` |

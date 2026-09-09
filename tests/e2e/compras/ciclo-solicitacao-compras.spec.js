@@ -4,7 +4,7 @@ import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { FormularioSolicitacaoCompraPage } from '../../../pages/FormularioSolicitacaoCompraPage.js';
 import { CentralTarefasPage } from '../../../pages/CentralTarefasPage.js';
 import { bloquearCriacaoDeSolicitacao, bloquearCriacaoDeProcesso } from '../../../utils/guarda-criacao.js';
-import { criarProdutoCompra } from '../../../factories/produto-compra.js';
+import { criarProdutoCompra, FILIAL_PADRAO } from '../../../factories/produto-compra.js';
 import { aguardarAtividadeAtual } from '../../../pages/CicloCompradorPage.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -426,8 +426,21 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
    * Sobre `erroIntegracao`: medido vazio TAMBÉM na SC que falhou (113196). O campo que existe
    * para comunicar a falha não é preenchido — por isso ele não serve como oráculo de sucesso,
    * e quem decide aqui é o `numSolCompra`. A observação fica anotada no relatório.
+   *
+   * Mais dois chamados se respondem com esta mesma massa, e por isso são citados no título:
+   *
+   * - **4459** — fontes não publicados nas pastas corretas faziam o número da SC não ser gravado,
+   *   a API do comprador falhar e o processo ser desviado para *Correção* sem ação do usuário. É
+   *   exatamente o par de assertions daqui (`numSolCompra` preenchido + não estar em Correção),
+   *   e o caso pede que este cenário seja rodado como smoke depois de todo deploy de artefatos.
+   *   Fica fora a coluna do Portal do Comprador, que exige comprador real.
+   * - **4828** — processos parados por *servidor de schedule* derrubado. O caso dá como
+   *   referência de fila viva justamente o SLA desta etapa (*Grava SC e Anexos*, seq 233, ≤ 2
+   *   min), que é o que a assertion de SLA mede. As esperas seguintes (328 *Aguarda Geração da
+   *   Cotação*, 309 *Aguarda Geração Alçadas*, 323 *Aguarda Geração do Pedido/Contrato*) só se
+   *   alcançam com perfil de comprador/gestor e ficam fora — o próprio caso registra isso.
    */
-  test('@destrutivo FSWTBC-4156 FSWTBC-4229 FSWTBC-4639 — a integração conclui dentro do SLA, sem desviar para Correção e sem registrar falha no Histórico', async ({
+  test('@destrutivo FSWTBC-4156 FSWTBC-4229 FSWTBC-4639 FSWTBC-4459 FSWTBC-4828 — a integração conclui dentro do SLA, sem desviar para Correção e sem registrar falha no Histórico', async ({
     page,
   }, testInfo) => {
     testInfo.setTimeout(300_000);
@@ -1210,5 +1223,77 @@ test.describe('Anexo da Solicitação de Compras chega íntegro ao GED (CT-ACC-0
         'o arquivo foi gravado — e mesmo assim não chega a quem precisa aprovar a compra. É ' +
         `exatamente o cenário do anexo órfão em \`parentDocumentId: -1\` (registro ${controle})`,
     ).toHaveCount(1, { timeout: 30_000 });
+  });
+});
+
+test.describe('Propagação da filial na Solicitação de Compras', () => {
+  /**
+   * FSWTBC-4632 — escolher a filial pelo zoom preenche os campos que dependem dela.
+   *
+   * O chamado ("a SC 98223 não estava trazendo a filial da solicitação") foi encerrado como
+   * **não reproduzível** depois de tentativas em TST e em produção com o cliente — família de
+   * intermitências sem log correlacionado por processo. Caso assim não se prova nem se refuta
+   * com uma execução; o que dá para fazer é **guardar o caminho**, para que a próxima
+   * ocorrência tenha onde bater.
+   *
+   * O que este teste guarda é a primeira perna, e a que a tela decide sozinha: escolher a filial
+   * no zoom **Nome da Filial** tem de preencher, como efeito, o **Código da Filial** e o CNPJ da
+   * filial. Se o efeito não acontece, a SC nasce sem filial e o resto do chamado (Tracker,
+   * Portal do Comprador, ERP) não tem nem de onde partir.
+   *
+   * O código esperado vem de `FILIAL_PADRAO` na factory, não de um literal solto: o dia em que a
+   * massa padrão mudar, muda num lugar só.
+   *
+   * A outra metade do caso — a filial chegar ao ERP, ao Tracker e ao Portal do Comprador — exige
+   * criar a SC e ter comprador; a criação já é exercitada pelos cenários `@destrutivo` deste
+   * arquivo, e a coluna do Portal continua fora do alcance desta conta.
+   *
+   * Nada é enviado: a guarda prova.
+   */
+  test('FSWTBC-4632 — escolher a filial no zoom preenche código e CNPJ da filial', async ({
+    page,
+  }) => {
+    const guarda = await bloquearCriacaoDeSolicitacao(page);
+    const formulario = new FormularioSolicitacaoCompraPage(page);
+    const massa = criarProdutoCompra();
+
+    await formulario.goto();
+    await formulario.expectAberto();
+
+    // Antes de escolher, os dependentes estão vazios — sem isto, um campo já preenchido de
+    // fábrica faria a assertion seguinte passar sem que a escolha tivesse efeito nenhum.
+    await expect(formulario.campoCodigoFilial).toHaveValue('');
+
+    await selecionarNoComboDeBusca(
+      page,
+      formulario.frame,
+      'Nome',
+      massa.filialTermoBusca,
+      massa.filialOpcaoEsperada,
+      formulario.campoCodigoFilial,
+    );
+
+    await expect(
+      formulario.campoCodigoFilial,
+      'escolher a filial no zoom deveria preencher o "Código da Filial" — sem ele a SC nasce ' +
+        'sem filial, que é o sintoma do FSWTBC-4632',
+    ).toHaveValue(FILIAL_PADRAO.codigo);
+
+    // O CNPJ da filial é o outro dependente que a escolha resolve, e é ele que identifica a
+    // filial no ERP.
+    const cnpjFilial = formulario.frame.locator('#cgcFilial');
+    await expect(
+      cnpjFilial,
+      'o CNPJ da filial deveria vir junto com o código — é por ele que o ERP identifica a filial',
+    ).not.toHaveValue('');
+
+    test.info().annotations.push({
+      type: 'filial-propagada',
+      description:
+        `termo "${massa.filialTermoBusca}" → código ${await formulario.campoCodigoFilial.inputValue()} ` +
+        `· CNPJ ${await cnpjFilial.inputValue()}`,
+    });
+
+    expect(guarda.tentativas(), 'o teste é de preenchimento — nada deveria ser enviado').toBe(0);
   });
 });
