@@ -15,9 +15,16 @@ export default defineConfig({
   // Impede que test.only chegue ao CI e mascare a suíte completa
   forbidOnly: !!process.env.CI,
 
-  // Retry é rede de segurança para instabilidade de INFRA em CI.
-  // Nunca é solução para flakiness — teste que passa no retry vai para investigação.
-  retries: process.env.CI ? 2 : 0,
+  // Retry é rede de segurança para instabilidade de INFRA — nunca solução para flakiness.
+  // Teste que passa no retry vai para investigação, e continua VISÍVEL: o Playwright o reporta
+  // como `flaky`, não como `passed`.
+  //
+  // O retry local passou de 0 para 1 em 09/09/2026, e o motivo é medido: numa execução completa
+  // contra o `caixade213859`, 11 de 22 falhas foram `net::ERR_NETWORK_CHANGED` — erro de rede
+  // do lado do cliente, não da aplicação. Minutos depois, cinco `curl` seguidos ao mesmo host
+  // respondiam 200 em ~80ms. São intermitências de infra, e sem retry elas entram no relatório
+  // como se fossem defeito do produto.
+  retries: process.env.CI ? 2 : 1,
 
   // Concorrência DELIBERADAMENTE baixa, e o motivo é medido, não preferência.
   //
