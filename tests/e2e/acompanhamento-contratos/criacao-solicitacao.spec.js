@@ -6,6 +6,7 @@ import { criarSolicitacaoCompra, QUALQUER_TIPO_VALIDO } from '../../../factories
 import { capturarEnvioSolicitacao, extrairItens } from '../../../utils/captura-payload.js';
 import { MinhasSolicitacoesPage } from '../../../pages/MinhasSolicitacoesPage.js';
 import { esperarStartDaSolicitacao } from '../../../utils/espera-start.js';
+import { CancelamentoCentralTarefasPage } from '../../../pages/CancelamentoCentralTarefasPage.js';
 
 /**
  * Casos destrutivos do Portal de Acompanhamento de Contratos que só existem CRIANDO de
@@ -38,6 +39,34 @@ import { esperarStartDaSolicitacao } from '../../../utils/espera-start.js';
  * clique “vence” a corrida real, qualquer teste fiel ao cenário descrito fica flaky por
  * construção — o que a suíte não aceita. Ver relatório final para detalhe completo.
  */
+
+/**
+ * Situação de uma solicitação lida do SERVIDOR: se ainda está ativa e em que etapas ela está.
+ *
+ * Sempre por `page.evaluate` + `fetch`: o WAF devolve 403 para `/process-management/api/v2/**`
+ * quando a chamada sai do contexto de requisição do Playwright (falta `User-Agent` de navegador
+ * e `Referer` do portal). Mesma técnica de `cancelamento-solicitacao.spec.js`, duplicada aqui
+ * pela razão de sempre: importar de outro `.spec.js` faria o Playwright registrar aqueles testes
+ * duas vezes.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {number} processInstanceId
+ * @returns {Promise<{ active: boolean, etapas: string[] }>}
+ */
+async function lerSituacaoDaSolicitacao(page, processInstanceId) {
+  return page.evaluate(async (id) => {
+    const r = await fetch(`/process-management/api/v2/requests/${id}?expand=currentMovements`, {
+      credentials: 'include',
+      headers: { Accept: 'application/json', Referer: `${location.origin}/portal/p/1/home` },
+    });
+    const j = await r.json().catch(() => ({}));
+    const movimentos = Array.isArray(j.currentMovements) ? j.currentMovements : [];
+    return {
+      active: Boolean(j.active),
+      etapas: movimentos.map((/** @type {any} */ m) => String(m.state?.stateName ?? '?')),
+    };
+  }, processInstanceId);
+}
 
 /** Acima disso, o contrato é tratado como arriscado (ver D-03) e descartado do candidato. */
 const LIMITE_ITENS_SEGURO = 50;
@@ -592,4 +621,101 @@ test.describe('Quantidade e valor em contrato de serviço sem CNB_QUANT (CT-ACC-
    * catalogado de `revisaContrato` sair vazio no payload. Enquanto não houver resposta da Cassi,
    * afirmar qualquer um dos dois seria inventar oráculo.
    */
+});
+
+test.describe('Cancelamento da SC recém-criada em Início', () => {
+  /**
+   * FSWTBC-4581 — o solicitante cancela a própria SC ainda na etapa *Início*.
+   *
+   * O chamado é o **quinto defeito distinto no caminho de cancelamento em três meses** (SCs
+   * 97836 e 97844 não cancelavam em Início; corrigido pelo PR67859, sem causa documentada). Esse
+   * histórico é o motivo de o cenário virar teste em vez de nota: é o caminho de saída de que a
+   * higienização de massa da suíte inteira depende.
+   *
+   * O caso pede SC **própria** e em **Início** — nunca as SCs de terceiros paradas nessa etapa.
+   * As duas condições são satisfeitas de graça pelo D-01: a SC criada por este arquivo nasce
+   * presa em *Início*, e o teste **verifica** isso no servidor antes de cancelar, em vez de
+   * supor. Se um dia a SC passar a nascer em "Validação do Gestor", este teste avisa que o
+   * cenário do chamado deixou de ser reproduzível por aqui.
+   *
+   * O que difere de `CT-TSK-05-H` (cancelamento pela Central): lá a massa é um Questionário
+   * Clinicassi, um processo simples; aqui é uma Solicitação de Compras presa no marco de início
+   * com a conta de integração como responsável — que é exatamente o estado em que o cancelamento
+   * falhava.
+   *
+   * A confirmação vem do SERVIDOR, não do toast: `successCount` é o que o endpoint diz ter
+   * feito; `active: false` é o que aconteceu.
+   */
+  test('@destrutivo FSWTBC-4581 — cancelar pela Central a própria SC parada em Início deve levá-la a CANCELED', async ({
+    page,
+    contratosPage,
+    solicitacaoModal,
+  }, testInfo) => {
+    test.setTimeout(240_000);
+
+    await contratosPage.goto();
+    await contratosPage.expectCarregada();
+
+    const { contrato } = await descobrirContratoVigentePequeno(page, contratosPage);
+    await contratosPage.filtrarPorContrato(contrato.contrato);
+    await contratosPage.abrirSolicitacaoCompra();
+    await solicitacaoModal.expectAberto();
+    await solicitacaoModal.preencher(criarSolicitacaoCompra({ tipo: QUALQUER_TIPO_VALIDO }));
+
+    const resposta = await esperarStartDaSolicitacao(page, () => solicitacaoModal.confirmar());
+    expect(resposta.status(), 'o start deveria responder 200').toBe(200);
+    const processInstanceId = (await resposta.json()).processInstanceId;
+    expect(processInstanceId, 'a resposta deveria trazer processInstanceId').toBeTruthy();
+    testInfo.annotations.push({ type: 'sc-criada', description: String(processInstanceId) });
+
+    // Pré-condição do caso, VERIFICADA no servidor: aberta e parada em "Início".
+    const antes = await lerSituacaoDaSolicitacao(page, processInstanceId);
+    testInfo.annotations.push({
+      type: 'sc-antes-do-cancelamento',
+      description: `${processInstanceId}: active=${antes.active} etapas=[${antes.etapas.join(', ')}]`,
+    });
+    expect(antes.active, `a SC ${processInstanceId} recém-criada deveria estar ativa`).toBe(true);
+    expect(
+      antes.etapas,
+      `a SC ${processInstanceId} não está em "Início" — o cenário do FSWTBC-4581 é o ` +
+        'cancelamento NESSA etapa, e sem ela o teste mediria outro caminho',
+    ).toContain('Início');
+
+    const cancelamento = new CancelamentoCentralTarefasPage(page);
+    await cancelamento.abrirMinhasSolicitacoes();
+    // A listagem nasce crescente e traz 15 por vez: sem inverter, a SC recém-criada (maior id)
+    // fica dezenas de rolagens adiante.
+    await cancelamento.ordenarPorSolicitacaoDecrescente();
+
+    await expect(
+      cancelamento.cartao(processInstanceId),
+      `a SC ${processInstanceId}, criada por este teste, deveria aparecer em "Minhas ` +
+        'solicitações" — ela nasce com a conta de integração como responsável (D-01), e é ' +
+        'justamente por isso que vê-la aqui importa: sem o cartão não há botão de cancelar',
+    ).toBeVisible();
+
+    const motivo = `QA cancelamento etapa Inicio - regressao SDCASSI-416 ${processInstanceId}`;
+    const respostaCancelamento = await cancelamento.cancelarPeloCartao(processInstanceId, motivo);
+    expect(respostaCancelamento.status(), 'o cancelamento deveria responder 200').toBe(200);
+
+    const conteudo = (await respostaCancelamento.json()).content ?? {};
+    expect(
+      conteudo,
+      `o endpoint aceitou o cancelamento da SC ${processInstanceId} mas relatou falha — é a ` +
+        'forma que o defeito do FSWTBC-4581 assumia: nenhum erro visível e a SC continuava em ' +
+        'Início',
+    ).toMatchObject({ successCount: 1, failCount: 0 });
+
+    // A prova real: o estado no servidor, relido.
+    const depois = await lerSituacaoDaSolicitacao(page, processInstanceId);
+    testInfo.annotations.push({
+      type: 'sc-depois-do-cancelamento',
+      description: `${processInstanceId}: active=${depois.active} etapas=[${depois.etapas.join(', ')}]`,
+    });
+    expect(
+      depois.active,
+      `a SC ${processInstanceId} continua ATIVA depois de um cancelamento que respondeu ` +
+        'successCount=1 — o endpoint disse ter feito, o servidor diz que não',
+    ).toBe(false);
+  });
 });
