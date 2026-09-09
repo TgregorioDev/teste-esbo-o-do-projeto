@@ -19,12 +19,12 @@ export default defineConfig({
   // Teste que passa no retry vai para investigação, e continua VISÍVEL: o Playwright o reporta
   // como `flaky`, não como `passed`.
   //
-  // O retry local passou de 0 para 1 em 09/09/2026, e o motivo é medido: numa execução completa
-  // contra o `caixade213859`, 11 de 22 falhas foram `net::ERR_NETWORK_CHANGED` — erro de rede
-  // do lado do cliente, não da aplicação. Minutos depois, cinco `curl` seguidos ao mesmo host
-  // respondiam 200 em ~80ms. São intermitências de infra, e sem retry elas entram no relatório
-  // como se fossem defeito do produto.
-  retries: process.env.CI ? 2 : 1,
+  // Local segue em 0 de propósito. As intermitências de rede medidas em 09/09/2026
+  // (`net::ERR_NETWORK_CHANGED` em `page.goto`) são tratadas na origem, por uma segunda
+  // tentativa de NAVEGAÇÃO na fixture `page` — ver `fixtures/fixtures.js`. Repetir o teste
+  // inteiro resolveria também, mas dobraria o tempo das ~120 pré-condições declaradas desta
+  // suíte sem melhorar o diagnóstico.
+  retries: process.env.CI ? 2 : 0,
 
   // Concorrência DELIBERADAMENTE baixa, e o motivo é medido, não preferência.
   //

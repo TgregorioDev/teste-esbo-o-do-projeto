@@ -46,6 +46,40 @@ faker.seed(FAKER_SEED);
 
 export const test = /** @type {import('@playwright/test').TestType<import('@playwright/test').PlaywrightTestArgs & import('@playwright/test').PlaywrightTestOptions & Fixtures, import('@playwright/test').PlaywrightWorkerArgs & import('@playwright/test').PlaywrightWorkerOptions>} */ (
   base.extend({
+    /**
+     * Uma segunda tentativa de NAVEGAÇÃO quando a rede do cliente falha.
+     *
+     * Medido em 09/09/2026: numa execução completa contra o `caixade213859`, 11 de 22 falhas
+     * foram `net::ERR_NETWORK_CHANGED` em `page.goto` — erro do lado do cliente, não da
+     * aplicação. Minutos depois, cinco `curl` seguidos ao mesmo host respondiam 200 em ~80ms.
+     *
+     * A alternativa considerada e descartada foi `retries: 1` no config: ela funciona, mas
+     * repete TODO teste que falha, e como esta suíte tem ~120 pré-condições declaradas (massa
+     * que não existe neste ambiente), o custo é dobrar o tempo delas — a fatia de
+     * Acompanhamento de Contratos foi de 1,5 para 4,2 minutos. Aqui a segunda tentativa é
+     * cirúrgica: só na navegação, e só para o punhado de erros que são reconhecidamente de
+     * rede.
+     *
+     * O que NÃO é retentado: qualquer outro erro de `goto` (404, timeout do servidor, redirect
+     * para login) sobe como sempre. Falha de produto continua falhando na primeira.
+     */
+    page: async ({ page }, use) => {
+      const ERROS_DE_REDE_DO_CLIENTE =
+        /ERR_NETWORK_CHANGED|ERR_CONNECTION_RESET|ERR_CONNECTION_CLOSED|ERR_EMPTY_RESPONSE|ERR_NETWORK_IO_SUSPENDED/;
+      const navegar = page.goto.bind(page);
+
+      page.goto = async (url, opcoes) => {
+        try {
+          return await navegar(url, opcoes);
+        } catch (erro) {
+          if (!ERROS_DE_REDE_DO_CLIENTE.test(String(erro))) throw erro;
+          return navegar(url, opcoes);
+        }
+      };
+
+      await use(page);
+    },
+
     loginPage: async ({ page }, use) => {
       await use(new LoginPage(page));
     },
