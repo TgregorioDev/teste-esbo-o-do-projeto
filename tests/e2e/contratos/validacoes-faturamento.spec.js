@@ -26,6 +26,22 @@ import {
  * investigação uma ASSERTION verificável a cada execução, em vez de uma nota estática: se um
  * dia a Cassi conceder essa role à automação, ou o formulário mudar, estes testes reprovam
  * primeiro — sinalizando que os cenários completos passaram a ser alcançáveis.
+ *
+ * ## FSWTBC-1760 — a metade legível
+ *
+ * O chamado "Erro na geração dos itens para medição de contrato" foi encerrado como falso
+ * defeito: já havia medição para a competência testada, e com outra competência a medição abriu
+ * normalmente. O problema que sobrou, e que o próprio chamado nomeia, é a **mensagem
+ * inadequada** para uma regra de negócio válida — o usuário não é informado do motivo.
+ *
+ * É exatamente o que `CT-FAT-02-S2` mede e reprova: o Protheus recusa a competência com uma
+ * mensagem de negócio no corpo (`STATUS: ERROR`), e a tela não exibe aviso nenhum. O que aquele
+ * teste NÃO garante é o motivo específico da recusa: ele aceita qualquer recusa de negócio
+ * (saldo, medições em aberto, revisão pendente), porque amostra as competências que o ambiente
+ * oferece no momento — fixar "já medida" transformaria disponibilidade de massa em vermelho.
+ *
+ * A outra metade do caso (confirmar no ERP que a CND recusa a segunda medição) exige credencial
+ * de Protheus e fica fora.
  */
 
 /**

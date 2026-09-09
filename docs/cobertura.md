@@ -236,7 +236,7 @@ significa nada.
 | | |
 |---|---|
 | Casos executáveis no Fluig | **518** |
-| Com teste automatizado | **58** (11%) |
+| Com teste automatizado | **62** (12%) |
 | Registrados só para o Protheus (fora do escopo E2E) | 125 |
 
 A matriz caso a caso — incluindo os que **podem ser aprimorados** num teste existente e os que
@@ -255,6 +255,7 @@ arquivo. E a mesma trava: o script falha se um teste citar chamado que não exis
 | `FSWTBC-648` | `api/arvore-hierarquica-demitidos.spec.js` |
 | `FSWTBC-695` | `e2e/contratos/ciclo-faturamento.spec.js` |
 | `FSWTBC-1702` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
+| `FSWTBC-1760` | `e2e/contratos/validacoes-faturamento.spec.js` |
 | `FSWTBC-1792` | `api/soap-portal-fornecedor.spec.js` |
 | `FSWTBC-1906` | `e2e/compras/validacoes-solicitacao-compras.spec.js` |
 | `FSWTBC-1934` | `e2e/portais/tracker-compras.spec.js` |
@@ -265,6 +266,7 @@ arquivo. E a mesma trava: o script falha se um teste citar chamado que não exis
 | `FSWTBC-2158` | `e2e/portais/tracker-compras.spec.js` |
 | `FSWTBC-2681` | `e2e/compras/aprovacoes-solicitacao-compras.spec.js` |
 | `FSWTBC-2737` | `e2e/portais/alcadas-orcamentaria.spec.js` |
+| `FSWTBC-2752` | `e2e/contratos/cadastro-fornecedor.spec.js` |
 | `FSWTBC-2886` | `e2e/contratos/ciclo-faturamento.spec.js` |
 | `FSWTBC-3489` | `e2e/portais/alcadas-orcamentaria.spec.js` |
 | `FSWTBC-3715` | `e2e/portais/portal-comprador.spec.js` |
@@ -272,6 +274,7 @@ arquivo. E a mesma trava: o script falha se um teste citar chamado que não exis
 | `FSWTBC-3749` | `e2e/portais/tracker-compras.spec.js` |
 | `FSWTBC-3884` | `e2e/portais/portal-comprador.spec.js` |
 | `FSWTBC-3896` | `e2e/portais/ciclo-comprador.spec.js` |
+| `FSWTBC-3918` | `e2e/rh/delegacao-tarefas.spec.js` |
 | `FSWTBC-4068` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
 | `FSWTBC-4073` | `e2e/acompanhamento-contratos/grade-contratos.spec.js` |
 | `FSWTBC-4076` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
@@ -296,6 +299,7 @@ arquivo. E a mesma trava: o script falha se um teste citar chamado que não exis
 | `FSWTBC-4804` | `e2e/portais/tracker-compras.spec.js` |
 | `FSWTBC-4816` | `e2e/contratos/fila-faturamento-protheus.spec.js` |
 | `FSWTBC-4819` | `e2e/compras/validacoes-solicitacao-compras.spec.js` |
+| `FSWTBC-4820` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
 | `FSWTBC-4821` | `e2e/portais/alcadas-orcamentaria.spec.js` |
 | `FSWTBC-4898` | `e2e/acompanhamento-contratos/grade-contratos.spec.js` |
 | `FSWTBC-4941` | `e2e/compras/validacoes-solicitacao-compras.spec.js` |

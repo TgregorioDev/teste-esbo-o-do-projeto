@@ -277,4 +277,71 @@ test.describe('Planilhas do contrato — modais "Informações da Planilha" e "D
       description: `planilha ${numeroNaLista}: Valor Total="${campos['Valor Total']}" Saldo="${campos['Saldo da Planilha']}"`,
     });
   });
+
+  /**
+   * FSWTBC-4820 — os dados da planilha CARREGAM, não só as caixas aparecem.
+   *
+   * O chamado é "dados da planilha não são carregados na rotina de Acompanhamento de Contratos":
+   * a planilha vinculada abria, mas vazia, e a consulta durante o acompanhamento ficava
+   * inviável. O modo de falhar importa — o modal abre igual nos dois casos, com os mesmos
+   * rótulos; o que muda é haver ou não valor atrás deles.
+   *
+   * Daí o oráculo desta suíte, registrado no cabeçalho: a ficha usa `-` para vazio, então
+   * `toBeVisible()` num campo não prova nada. Aqui se afirma sobre os campos de IDENTIFICAÇÃO
+   * da planilha — os que não podem estar vazios em planilha nenhuma, porque são a chave dela no
+   * ERP. Valores de negócio (saldo, condição de pagamento) podem legitimamente vir `-`, e por
+   * isso ficam fora da assertion e vão para a anotação.
+   */
+  test('FSWTBC-4820 — o detalhe da planilha vem com valor nos campos de identificação, não em branco', async ({
+    contratosPage,
+  }) => {
+    const linha = await abrirContrato(contratosPage);
+    const lista = await contratosPage.abrirPlanilhas();
+
+    if ((await lista.locator('table tbody tr').count()) === 0) {
+      faltaPreCondicao(
+        `o contrato ${linha.contrato} não tem planilha cadastrada — sem planilha não há dado a ` +
+          'carregar. Destrava usar um contrato com ao menos uma planilha no Protheus.',
+      );
+    }
+
+    await contratosPage.abrirDetalhesDaPlanilha(0);
+    const campos = await contratosPage.lerCamposDoModal('Detalhes da Planilha');
+
+    // Os campos que identificam a planilha e o fornecedor dela. Vazio ou `-` em qualquer um
+    // deles é o sintoma do chamado: o modal abriu sem os dados.
+    const IDENTIFICACAO = [
+      'Filial do Sistema',
+      'Numero do Contrato',
+      'Numero da Planilha',
+      'Tipo da Planilha',
+      'Codigo do Fornecedor',
+      'CNPJ Fornecedor',
+      'Nome Fornecedor',
+    ];
+
+    const semValor = IDENTIFICACAO.filter((campo) => {
+      const valor = (campos[campo] ?? '').trim();
+      return valor === '' || valor === '-';
+    });
+
+    test.info().annotations.push({
+      type: 'detalhe-da-planilha',
+      description:
+        `${Object.keys(campos).length} campos lidos · sem valor na identificação: ` +
+        `${semValor.join(', ') || 'nenhum'} · ` +
+        IDENTIFICACAO.map((c) => `${c}="${campos[c] ?? '(ausente)'}"`).join(' '),
+    });
+
+    expect(
+      semValor,
+      'o modal "Detalhes da Planilha" abriu sem os dados de identificação da planilha — é ' +
+        'exatamente o sintoma do FSWTBC-4820, e a tela não distingue isso de "planilha sem ' +
+        'movimento", porque usa o mesmo `-` para os dois',
+    ).toEqual([]);
+
+    // O CNPJ do fornecedor vem mascarado, como no resto do portal — mesma convenção já guardada
+    // na ficha do contrato.
+    expect(campos['CNPJ Fornecedor']).toMatch(CNPJ_MASCARADO);
+  });
 });

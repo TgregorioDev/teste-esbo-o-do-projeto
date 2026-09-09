@@ -104,4 +104,78 @@ test.describe('Delegação de Tarefas (CT-SUB-02-H)', () => {
       `abrir e ler o formulário não deveria escrever nada — tentou: ${JSON.stringify(guarda.urls())}`,
     ).toBe(0);
   });
+
+  /**
+   * FSWTBC-3918 — delegação não deveria poder ser enviada com período em aberto.
+   *
+   * O chamado é literal: a tela do ato de delegação estava incompleta e faltava, nominalmente, a
+   * **data final** — sem ela o período fica em aberto, e o que era para ser delegação temporária
+   * vira transferência permanente de responsabilidade. Corrigido em 26/02 e homologado pela área
+   * em 18/03/2026.
+   *
+   * O teste acima já afirma que o campo existe e é editável. O que este cobra é o efeito
+   * prático: que ele seja **exigido**.
+   *
+   * ## O que foi medido em 09/09/2026
+   *
+   * Com apenas a Data Inicial preenchida e a Data Final vazia, o formulário **não exibe crítica
+   * nenhuma** — nem no host, nem dentro do iframe — e dispara
+   * `POST /ecm/api/rest/ecm/workflowView/send`. Quem impediu a delegação de nascer foi a guarda
+   * de escrita desta suíte, não a tela.
+   *
+   * ## O limite desta medição, declarado em vez de escondido
+   *
+   * Não se sabe se o **servidor** recusaria esse envio: descobrir exigiria deixar a requisição
+   * passar, e uma delegação criada por engano redireciona tarefas de um colaborador real — não é
+   * massa `QA` descartável como uma SC. O que o teste afirma é o que o caso pede e o que a
+   * medição sustenta: a tela deixa sair um envio sem período de fim.
+   *
+   * `@bug`: escrito contra o comportamento esperado, reprova hoje. Se um dia passar, ou a
+   * validação de campo obrigatório voltou, ou o botão parou de submeter — nos dois casos alguém
+   * precisa olhar.
+   */
+  test('@bug FSWTBC-3918 — o envio deveria ser recusado na tela com "Data Final" em branco', async ({
+    page,
+  }) => {
+    const guarda = await bloquearCriacaoDeSolicitacao(page);
+    const delegacao = new DelegacaoTarefasPage(page);
+
+    await delegacao.goto();
+    await delegacao.expectAberto();
+
+    // Só o início do período. É `<input type="date">`: aceita exclusivamente ISO.
+    const hoje = new Date().toISOString().slice(0, 10);
+    await delegacao.campoDataInicial.fill(hoje);
+    await expect(delegacao.campoDataFinal).toHaveValue('');
+
+    await delegacao.botaoEnviar.click();
+
+    // Espera pelo desfecho em vez de afirmar de imediato: ou uma crítica aparece (o que o caso
+    // espera), ou uma escrita é tentada (o que foi medido). Sem esta espera, a assertion abaixo
+    // leria a guarda antes de o clique produzir qualquer efeito e passaria por acidente.
+    await expect
+      .poll(async () => guarda.tentativas() > 0 || (await delegacao.dialogErro.count()) > 0, {
+        timeout: 30_000,
+      })
+      .toBe(true);
+
+    const critica = await delegacao.dialogErro
+      .first()
+      .innerText()
+      .catch(() => '(nenhuma crítica em tela)');
+
+    test.info().annotations.push({
+      type: 'delegacao-sem-data-final',
+      description:
+        `crítica em tela: ${critica.replace(/\s+/g, ' ').slice(0, 160)} · ` +
+        `escritas tentadas: ${JSON.stringify(guarda.urls())}`,
+    });
+
+    expect(
+      guarda.tentativas(),
+      'o formulário deixou sair um envio de delegação SEM data final — período em aberto é ' +
+        'transferência permanente de responsabilidade, e é isso que o FSWTBC-3918 corrigiu. ' +
+        'A escrita foi impedida pela guarda desta suíte, não pela tela',
+    ).toBe(0);
+  });
 });
