@@ -263,4 +263,130 @@ test.describe('Validações do formulário clássico de Solicitação de Compras
 
     expect(guarda.tentativas(), 'nada foi enviado — o teste é de preenchimento').toBe(0);
   });
+
+  /**
+   * FSWTBC-1906 / FSWTBC-1954 — rateio de 100% escrito com casas decimais terminadas em zero.
+   *
+   * Os dois chamados são o mesmo defeito visto de dois lugares (SC nº 28314): o rateio somava
+   * 100 e a crítica de "diferente de 100%" disparava assim mesmo, porque o zero à direita
+   * quebrava a comparação. É o terceiro defeito de rateio por precisão numérica em JavaScript
+   * na mesma quinzena — daí o cuidado de guardar a forma exata que quebrava.
+   *
+   * O oráculo é o **Enviar**, não o preenchimento. Medido em 09/09/2026: com uma única linha de
+   * rateio, nenhuma crítica dispara ao sair do campo — nem com 99,90. Uma versão anterior deste
+   * teste afirmava sobre a crítica logo após digitar e passava por acidente, inclusive com
+   * valor inválido. Quem avalia a soma é a validação do envio, como já faz o CT-CMP-02-S2 aqui
+   * ao lado.
+   *
+   * Nada é criado: o Enviar é recusado antes de qualquer escrita pelos demais obrigatórios (o
+   * item não tem produto nem preço), e a guarda prova. O que se afirma é preciso: seja qual for
+   * a crítica que aparecer, ela **não** é sobre a soma do rateio.
+   *
+   * Fica em UMA linha de propósito: com duas, o defeito de agregação medido no FSWTBC-4941
+   * critica antes e este teste mediria aquele defeito, não este. A alimentação por planilha
+   * (Download/Upload do modelo) não é exercitada — depende de contrato com itens.
+   */
+  test('FSWTBC-1906 FSWTBC-1954 — rateio de "100,00" fecha os 100% sem crítica de soma', async ({
+    page,
+  }) => {
+    const guarda = await bloquearCriacaoDeSolicitacao(page);
+    const formulario = new FormularioSolicitacaoCompraPage(page);
+
+    await formulario.goto();
+    await formulario.expectAberto();
+    await formulario.adicionarProduto();
+    await formulario.adicionarCentroCusto();
+
+    // A forma exata do chamado: 100 escrito com casas decimais que terminam em zero.
+    await formulario.preencherRateioDaLinha(1, '100,00');
+    expect(await formulario.lerRateiosDoItem()).toEqual(['100,00']);
+
+    await formulario.enviar();
+    await expect(formulario.dialogErro).toBeVisible();
+
+    const critica = [
+      await formulario.dialogErro.innerText().catch(() => ''),
+      await formulario.dialogAtencao.innerText().catch(() => ''),
+    ]
+      .join(' | ')
+      .replace(/\s+/g, ' ');
+
+    test.info().annotations.push({
+      type: 'rateio-zeros-a-direita',
+      description: `crítica devolvida pelo Enviar: ${critica.slice(0, 240)}`,
+    });
+
+    expect(
+      critica,
+      'rateio de 100 escrito com zeros à direita ("100,00") soma exatamente 100% — criticar a ' +
+        'soma aqui é o defeito de precisão numérica dos chamados 1906/1954',
+    ).not.toMatch(/soma dos percentuais de rateio/i);
+
+    // E a prova de que a checagem de soma foi ALCANÇADA e passada, não pulada: a crítica que
+    // volta é a seguinte da fila, sobre os zooms do rateio (Classe de Valor e Centro de Custo)
+    // ainda vazios. Com 90% em vez de 100,00 o formulário para antes disso, na própria soma —
+    // é o que o CT-CMP-02-S2 afirma aqui ao lado. Sem esta segunda assertion, "não criticou a
+    // soma" também seria verdade se o validador nem tivesse chegado ao rateio.
+    expect(
+      critica,
+      'a validação deveria ter passado da soma e chegado à completude do rateio',
+    ).toMatch(/rateio sem preenchimento/i);
+
+    expect(guarda.tentativas(), 'nada deveria ter sido enviado ao servidor').toBe(0);
+  });
+
+  /**
+   * FSWTBC-4819 — a seleção de filiais lista a CASSI inteira, não uma filial só.
+   *
+   * O chamado é literal: "Sistema exibe apenas a filial 1101 na seleção de filiais", o que
+   * inviabilizava abrir solicitação para as demais unidades. O oráculo, portanto, é o tamanho
+   * e a diversidade da lista — não uma filial específica, que mudaria com o cadastro do ERP.
+   *
+   * Nada é enviado: abrir o zoom é leitura, e a guarda prova.
+   */
+  test('FSWTBC-4819 — o zoom "Nome da Filial" lista várias filiais, não só a 1101', async ({
+    page,
+  }) => {
+    const guarda = await bloquearCriacaoDeSolicitacao(page);
+    const formulario = new FormularioSolicitacaoCompraPage(page);
+
+    await formulario.goto();
+    await formulario.expectAberto();
+
+    const busca = formulario.frame.getByRole('searchbox', { name: 'Nome' }).first();
+    await busca.click();
+    const opcoes = formulario.frame.getByRole('option');
+    const lerRotulos = async () =>
+      (await opcoes.allInnerTexts()).map((r) => r.replace(/\s+/g, ' ').trim());
+
+    // A lista nasce com a opção-placeholder "Buscando…" enquanto o zoom consulta o ERP. Contar
+    // antes disso mede o placeholder e acusa "uma filial só" — que é justamente o sintoma do
+    // chamado, e daria um vermelho que é artefato de sincronização, não defeito.
+    await expect
+      .poll(async () => (await lerRotulos()).filter((r) => !/^Buscando/i.test(r)).length, {
+        timeout: 45_000,
+      })
+      .toBeGreaterThan(0);
+
+    const rotulos = (await lerRotulos()).filter((r) => !/^Buscando/i.test(r));
+
+    // O que o chamado mede é a variedade de FILIAIS, não o número de linhas: a lista traz uma
+    // entrada de serviço ("Filtrar colunas") que contaria como opção sem ser filial nenhuma.
+    const codigos = [...new Set(rotulos.flatMap((r) => r.match(/FILIAL (\d{3,})/)?.[1] ?? []))];
+
+    test.info().annotations.push({
+      type: 'zoom-filiais',
+      description:
+        `${rotulos.length} opções, ${codigos.length} filiais distintas; ` +
+        `primeiras: ${codigos.slice(0, 6).join(', ')}`,
+    });
+
+    expect(
+      codigos.length,
+      'o zoom de filial ofereceu uma única filial — é exatamente o sintoma do FSWTBC-4819, que ' +
+        'impedia abrir solicitação para as demais unidades da CASSI',
+    ).toBeGreaterThan(1);
+
+    expect(guarda.tentativas()).toBe(0);
+  });
 });
