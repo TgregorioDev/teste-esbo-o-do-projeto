@@ -35,3 +35,4 @@ limpeza-alvos.json
 # 553 MB) e blobs intermediários.
 relatorios/html/
 relatorios/blob-report-extra/
+.playwright-mcp/
