@@ -163,6 +163,24 @@ export class PortalCompradorPage {
     await this.page.locator('po-lookup-modal').waitFor({ state: 'detached' });
   }
 
+  /**
+   * Ação "Filtrar" das grades de cotação (Avaliação de Propostas / Definir Vencedor Cotação).
+   *
+   * Abre um painel INLINE, não uma modal — procurar por `[role="dialog"]` aqui não acha nada.
+   * Depois de aberto existem DOIS botões "Filtrar" (o que abre e o que submete): o primeiro é
+   * sempre o de abrir.
+   */
+  get botaoFiltrar() {
+    return this.page.getByRole('button', { name: 'Filtrar' }).first();
+  }
+
+  /** Rótulos dos campos visíveis do painel de filtro aberto. @returns {Promise<string[]>} */
+  async lerRotulosDoFiltro() {
+    return (await this.page.locator('label:visible').allInnerTexts())
+      .map((r) => r.trim())
+      .filter(Boolean);
+  }
+
   /** Cabeçalhos da grade da etapa aberta. @returns {Promise<string[]>} */
   async lerCabecalhosDaGrade() {
     return (await this.getTabelaAtiva().locator('thead th').allInnerTexts())

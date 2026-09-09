@@ -123,4 +123,47 @@ test.describe('Abertura da Solicitação de Compra a partir do contrato', () => 
     await expect(solicitacaoModal.getDialog()).toBeHidden();
     expect(guarda.tentativas(), `houve tentativa de escrita: ${guarda.urls().join(', ')}`).toBe(0);
   });
+
+  /**
+   * FSWTBC-5233 — o modal explica o que cada tipo de solicitação faz.
+   *
+   * O chamado trocou "Renovação Contratual" por "Nova Contratação" **e** exigiu a descrição de
+   * cada opção na tela, porque foi a ambiguidade entre as duas que produziu o SDCASSI-548: sem
+   * o texto, escolher o tipo errado só é percebido no Protheus, um contrato novo depois.
+   *
+   * A composição do combo já é guardada pelo teste do catálogo, acima. O que este acrescenta é
+   * a parte que faltava: os dois textos explicativos, e a ausência da nomenclatura antiga.
+   * Medido em 09/09/2026 — os dois textos estão na tela, e é isso que o teste protege.
+   *
+   * A metade Protheus do caso (Aditivo abre revisão em `CNTA300`, Nova Contratação gera
+   * contrato novo) exige credencial do ERP e fica fora.
+   */
+  test('FSWTBC-5233 — o modal descreve Aditivo Contratual e Nova Contratação, sem a nomenclatura antiga', async ({
+    contratosPage,
+    solicitacaoModal,
+  }) => {
+    await contratosPage.goto();
+    await contratosPage.expectCarregada();
+    await contratosPage.filtrarPorContrato((await descobrirContratoVigente(contratosPage)).contrato);
+    await contratosPage.abrirSolicitacaoCompra();
+    await solicitacaoModal.expectAberto();
+
+    const dialog = solicitacaoModal.getDialog();
+
+    // Trechos, não o parágrafo inteiro: o que precisa estar na tela é a consequência de cada
+    // escolha ("revisão aberta" × "novo contrato"), que é o que desfaz a ambiguidade. Fixar a
+    // redação completa faria o teste reprovar por vírgula.
+    await expect(dialog).toContainText('Continuidade do contrato existente');
+    await expect(dialog).toContainText('abre revisão aberta');
+    await expect(dialog).toContainText('Geração de um novo contrato');
+    await expect(dialog).toContainText('gera novo contrato igual quando vem de SC');
+
+    // A nomenclatura substituída não pode ter voltado — nem no combo, nem nos textos.
+    const texto = (await dialog.innerText()).replace(/\s+/g, ' ');
+    expect(
+      texto,
+      'a nomenclatura "Renovação Contratual" foi substituída por "Nova Contratação" ' +
+        '(FSWTBC-5233) — reaparecer significa regressão do widget',
+    ).not.toMatch(/Renova[çc][ãa]o Contratual/i);
+  });
 });

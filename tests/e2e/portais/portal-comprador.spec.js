@@ -226,4 +226,53 @@ test.describe('Portal do Comprador', () => {
 
     expect(guarda.tentativas()).toBe(0);
   });
+
+  /**
+   * FSWTBC-3715 — dá para procurar a cotação pelo número do processo do Fluig.
+   *
+   * O pedido do cliente foi um filtro pelo número do Fluig nos portais de cotação, porque até
+   * então só existia o número do ERP — e é o número do Fluig que a pessoa tem em mãos, vindo
+   * da tarefa ou do Tracker. O par que resolve o pedido é o campo de filtro **e** a coluna de
+   * mesmo conteúdo na grade: filtrar por um número que a grade não mostra não ajuda ninguém.
+   *
+   * O efeito do filtro sobre o resultado não é verificável com esta conta: as duas grades
+   * dependem de delegação em "Atuar como" e vêm com "Nenhum dado encontrado" — limitação
+   * conhecida da conta, registrada em `PortalCompradorPage`, não defeito. Trocar a delegação
+   * seria operar a fila em nome de um colaborador real.
+   */
+  for (const etapa of /** @type {const} */ (['Avaliação de Propostas', 'Definir Vencedor Cotação'])) {
+    test(`FSWTBC-3715 — ${etapa} filtra por Nº do Processo Fluig, a mesma coluna que a grade mostra`, async ({
+      page,
+    }) => {
+      const guarda = await bloquearCriacaoDeSolicitacao(page);
+      const portalComprador = new PortalCompradorPage(page);
+
+      await portalComprador.goto();
+      await portalComprador.expectCarregada();
+      await portalComprador.abrirEtapa(etapa);
+
+      const cabecalhos = await portalComprador.lerCabecalhosDaGrade();
+      expect(
+        cabecalhos,
+        'a grade precisa exibir o número do processo Fluig — é por ele que o filtro pedido ' +
+          'no chamado busca',
+      ).toContain('Nº. Proc. Fluig');
+
+      await portalComprador.botaoFiltrar.click();
+      const rotulos = await portalComprador.lerRotulosDoFiltro();
+
+      expect(rotulos, `campos de filtro de ${etapa}`).toEqual([
+        'Nº do Processo Fluig',
+        'Nº da Cotação ERP',
+        'Filial',
+        'Tipo Documento',
+        'Parecer Técnico',
+        'Em Alçada',
+        'Data Validade',
+      ]);
+      await expect(page.getByRole('button', { name: 'Limpar Filtros' })).toBeVisible();
+
+      expect(guarda.tentativas()).toBe(0);
+    });
+  }
 });
