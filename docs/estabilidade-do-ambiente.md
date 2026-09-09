@@ -42,6 +42,37 @@ exercitar o cenário.
 
 ---
 
+## Como executar neste ambiente (09/09/2026 em diante)
+
+O `caixade213859` tem **duas** instabilidades distintas, e confundi-las leva a conclusão errada.
+
+**1. Degradação sob carga.** O tenant é lento: acessado sozinho, o Portal do Comprador monta em
+~14s, o Portal do Fornecedor em ~16s e a Central de Tarefas em ~18s. Com os 8 workers do padrão
+do Playwright, essas telas estouram os 45s de espera — uma execução completa reportou **79
+timeouts** que não eram defeito de nada. Por isso `workers: 3` no config. Não suba esse número
+sem medir de novo.
+
+**2. Quedas de rede em ondas.** Numa execução, 11 de 22 falhas foram `net::ERR_NETWORK_CHANGED`
+ou `Failed to fetch`; minutos depois, cinco `curl` seguidos ao mesmo host respondiam 200 em
+~80ms. Duas defesas estão no lugar:
+
+- `page.goto` tenta uma segunda vez para erros de rede do cliente (fixture `page`);
+- `globalSetup` tenta autenticar duas vezes — antes, uma queda de segundos abortava a execução
+  inteira e produzia "nenhum teste rodou", que não diz nada sobre o produto.
+
+Para o que sobra (`fetch` dentro de `page.evaluate`, esperas estourando no meio do teste), a
+saída é `PW_RETRIES=1`. Fica **desligado por padrão**, e a razão é medida: a suíte tem ~117
+pré-condições declaradas neste ambiente, e repetir cada uma dobra o tempo — com retry,
+`tests/e2e/compras` deixou de caber em 9 minutos.
+
+**Como ler um vermelho, então:** repita o teste isolado antes de investigar. Se ele passa ou
+declara `PRÉ-CONDIÇÃO AUSENTE` sozinho, era rede. Se reprova de novo com a mesma mensagem, é
+sinal de verdade.
+
+**Execução fatiada.** Uma execução completa não cabe num único comando aqui — rode por
+diretório (`tests/api`, `tests/e2e/auth`, `tests/e2e/compras`, …). É o que o CLAUDE.md já manda
+fazer quando o tempo estoura, e neste ambiente é a regra, não a exceção.
+
 ## O histórico medido
 
 **Importante: são três ocorrências observadas em quatro dias (31/08, 01/09 e 03/09/2026), não
