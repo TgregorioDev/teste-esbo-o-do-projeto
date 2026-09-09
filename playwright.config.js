@@ -19,20 +19,23 @@ export default defineConfig({
   // Teste que passa no retry vai para investigação, e continua VISÍVEL: o Playwright o reporta
   // como `flaky`, não como `passed`.
   //
-  // Local em 1 desde 09/09/2026, e a decisão foi tomada em duas etapas, medindo.
+  // Retry é rede de segurança para instabilidade de INFRA — nunca solução para flakiness.
+  // Teste que passa no retry vai para investigação, e continua VISÍVEL: o Playwright reporta
+  // como `flaky`, não como `passed`.
   //
-  // Primeiro tratei a causa mais comum na origem: `page.goto` ganhou uma segunda tentativa para
-  // erros de rede do cliente, na fixture `page` (ver `fixtures/fixtures.js`). Isso resolveu os
-  // `net::ERR_NETWORK_CHANGED` da navegação — mas a execução seguinte mostrou a mesma
-  // instabilidade batendo onde aquela correção não alcança: `Failed to fetch` dentro de
-  // `page.evaluate` e esperas de elemento estourando no meio do teste.
+  // Local fica em 0 por PADRÃO, e a decisão foi medida em 09/09/2026 contra o `caixade213859`:
   //
-  // O retry é a ferramenta certa para isso, e não esconde nada: o Playwright reporta como
-  // `flaky`, não como `passed`. Continua valendo a regra — teste que passa no retry vai para
-  // investigação, e nenhum vermelho consistente é absorvido por ele.
+  // - o problema é real — numa execução completa, 11 de 22 falhas foram
+  //   `net::ERR_NETWORK_CHANGED` e `Failed to fetch`, erros de rede do cliente. Minutos depois,
+  //   cinco `curl` ao mesmo host respondiam 200 em ~80ms;
+  // - a causa mais comum foi tratada na origem: `page.goto` tem uma segunda tentativa para
+  //   esses erros, na fixture `page` (ver `fixtures/fixtures.js`);
+  // - ligar `retries: 1` resolveria o resto, mas **inviabiliza a execução**: esta suíte tem
+  //   ~110 pré-condições declaradas neste ambiente, e repetir cada uma dobra o tempo. Medido: o
+  //   diretório `tests/e2e/compras` deixou de caber em 9 minutos.
   //
-  // Custo conhecido: as ~110 pré-condições declaradas deste ambiente passam a rodar duas vezes.
-  retries: process.env.CI ? 2 : 1,
+  // `PW_RETRIES=1` liga quando a rede estiver ruim, sem editar este arquivo.
+  retries: process.env.CI ? 2 : Number(process.env.PW_RETRIES ?? 0),
 
   // Concorrência DELIBERADAMENTE baixa, e o motivo é medido, não preferência.
   //
