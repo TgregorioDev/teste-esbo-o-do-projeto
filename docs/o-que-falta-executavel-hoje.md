@@ -1,7 +1,7 @@
 # O que falta — e o que dá para fazer com a conta atual
 
 Medido em 08–09/09/2026, sobre `Casos de Testes - SDCASSI/` (518 casos de Fluig) e a suíte
-(`tests/**`, 225 testes). Companheiro de `comparacao-automacao-x-chamados.md`, que é a matriz
+(`tests/**`, 246 testes em 09/09/2026). Companheiro de `comparacao-automacao-x-chamados.md`, que é a matriz
 caso a caso; este documento responde a pergunta seguinte: **o que dá para fazer agora?**
 
 ## Onde estamos
@@ -9,8 +9,8 @@ caso a caso; este documento responde a pergunta seguinte: **o que dá para fazer
 | | |
 |---|---|
 | Casos de Fluig escritos | 498 |
-| Com teste automatizado | **40** |
-| Restantes | 458 |
+| Com teste automatizado | **62** *(era 40 em 08/09; +22 no lote de 09/09)* |
+| Restantes | 436 |
 
 ## Por que os 458 não estão feitos
 
@@ -92,6 +92,57 @@ Abaixo, uma seleção dos que já foram lidos e confirmados.
 | FSWTBC-5233 | textos explicativos do modal de Solicitação de Compra | `modal-solicitacao-compra.spec.js` |
 | FSWTBC-637 | matrícula não resolvida é comunicada como erro | `rh/gestao-equipes.spec.js` |
 | FSWTBC-5257 | CNPJ alfanumérico no auto-cadastro público (`@bug`) | `contratos/` (novo) |
+
+## Lote de 09/09/2026 — o que saiu da fila dos 40
+
+Fechados (cada um com reprovação provada, `npm run cobertura` regenerado e execução em primeiro
+plano):
+
+| Chamado | Onde | Cor |
+|---|---|---|
+| 2158, 4804 | `tracker-compras.spec.js` — grade paginada, zero duplicata na chave | verde |
+| 1934 | `tracker-compras.spec.js` — medições do disparo nascem utilizáveis | verde |
+| 4317 | `portal-comprador.spec.js` — Filial e Produto sem ordenação | **`@bug`** |
+| 3884 | `portal-comprador.spec.js` — colunas + crítica de centralização vazia | verde |
+| 3715 | `portal-comprador.spec.js` — filtro por Nº do Processo Fluig | verde |
+| 5233 | `modal-solicitacao-compra.spec.js` — descrições dos tipos | verde |
+| 1906, 1954 | `validacoes-solicitacao-compras.spec.js` — rateio com zeros à direita | verde |
+| 4819 | `validacoes-solicitacao-compras.spec.js` — 71 filiais no zoom | verde |
+| 4503, 4176 | `datasets-contratos-fiscais.spec.js` — smoke com controle 500 | verde |
+| 4537 | `gerencia-compras.spec.js` — colunas das duas abas | verde |
+| 4420 | `delegacao-fiscais.spec.js` — "Amarração" não voltou | verde |
+| 4820 | `modais-do-contrato.spec.js` — identificação da planilha preenchida | verde |
+| 3918 | `delegacao-tarefas.spec.js` — envio sem Data Final não é criticado | **`@bug`** |
+| 2752 | `cadastro-fornecedor.spec.js` — telefone cru preservado | verde |
+| 1760 | citado em `validacoes-faturamento.spec.js` (metade legível) | — |
+
+### O que foi tentado e NÃO virou teste, com o motivo
+
+- **FSWTBC-2131** (upload de rateio da medição com duas casas decimais) — exige uma medição
+  aberta **atribuída ao executor**, e esta conta não é Fiscal nem CSE de contrato nenhum. O
+  bloqueio não é suposição: `validacoes-faturamento.spec.js :: CT-FAT-02-S1` já afirma, a cada
+  execução, que `#panel_MeasurementItens` permanece inacessível, e `ciclo-faturamento.spec.js ::
+  CT-FAT-01-H` cria uma medição de verdade e prova que ela cai para um responsável humano que
+  não é esta conta. No dia em que a Cassi conceder a role, esses dois testes reprovam primeiro —
+  é o sinal de que o 2131 passou a ser executável.
+- **FSWTBC-4300, 692, 4505** (Portal do Comprador) — dependem de matrícula de comprador no ERP,
+  de uma segunda conta de comprador e de alterar a composição de um grupo de segurança. Nenhum
+  dos três se contorna com este usuário.
+- **FSWTBC-4453** — o coração do chamado é a comparação DES × TST; só há acesso a um ambiente.
+- **FSWTBC-1932** — as duas visões de negociação do Tracker não devolvem linha para esta conta;
+  afirmar sobre grade vazia congelaria ausência de dado como se fosse regra.
+
+### Três erros de oráculo que a exigência de reprovação pegou
+
+Registrados porque a lição vale mais que o teste: **teste verde que nunca foi visto vermelho não
+prova nada**.
+
+1. O `@bug` do 4317 **absolvia** a lista mais desordenada das quatro — a lookup de Filial tem uma
+   coluna vazia, e coluna vazia é trivialmente "ordenada".
+2. O teste do 1906 passava com `99,90` no rateio, isto é, não afirmava nada: com uma linha só, a
+   crítica de soma não dispara ao sair do campo. Quem avalia a soma é a validação do **envio**.
+3. O do 4819 acusava "uma filial só" porque contava a opção-placeholder `Buscando…` — vermelho de
+   sincronização, não defeito.
 
 ## O que destrava mais, por ordem de retorno
 
