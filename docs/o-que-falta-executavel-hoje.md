@@ -25,14 +25,36 @@ Não é fila de trabalho — é cadastro. A classificação abaixo sai do campo 
 | Credencial de **fornecedor** | 15 | 3% |
 | Módulo **ausente** do ambiente (Corretagens) | 5 | 1% |
 | Schedule/evento não provocável | 2 | — |
-| **Sem bloqueio de perfil** | **70** | 15% |
 
-**Quatro perfis represam 329 casos (72%).** Nenhuma linha de código destrava isso.
+**Quatro perfis represam a maior parte dos casos.** Nenhuma linha de código destrava isso.
+
+> ⚠️ **Correção de 09/09/2026.** A primeira versão desta tabela trazia uma linha
+> "sem bloqueio de perfil — 70 casos". O número estava errado e a categoria também: ele saía de
+> um filtro por palavra-chave sobre o resumo da comparação, não sobre o campo **Bloqueio** de
+> cada caso, e "sem bloqueio de perfil" não é o mesmo que "executável" — havia ali casos que
+> exigem Protheus, massa ou segunda conta. Os números abaixo saem do campo Bloqueio do próprio
+> caso, que é a fonte certa.
 
 ## O que dá para implementar HOJE, com a conta `TOTVS-FS`
 
-Vinte casos cujo próprio levantamento declara viabilidade com esta conta. Todos de leitura ou de
-crítica de tela — nenhum exige perfil novo.
+Dois sinais independentes, e a união deles é a fila real:
+
+| Sinal | Casos |
+|---|---:|
+| O caso declara **`Bloqueio: nenhum`** | 23 |
+| O levantamento diz **"viável hoje"** | 18 |
+| **União — fila real** | **40** |
+| *(campo Bloqueio ausente — estado desconhecido)* | *6* |
+
+Os 6 sem o campo preenchido **não** entram na conta: ausência de declaração não é declaração de
+ausência. Precisam ser lidos um a um antes de virarem trabalho.
+
+Atenção à leitura de vários desses 23: o texto diz *"nenhum **para a leitura**"* ou *"nenhum
+**para a parte de tela**"*. São **metades executáveis** de casos cuja outra metade continua
+bloqueada — o teste nasce cobrindo o que dá, com a lacuna declarada, como já foi feito em
+`modais-do-contrato.spec.js` e `fila-faturamento-protheus.spec.js`.
+
+Abaixo, uma seleção dos que já foram lidos e confirmados.
 
 ### Leitura de API — nascem rápido, sem UI
 
