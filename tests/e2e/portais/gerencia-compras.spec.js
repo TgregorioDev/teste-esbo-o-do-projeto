@@ -86,4 +86,50 @@ test.describe('Gerência de Compras', () => {
     // O ponto do caso: leitura, não escrita — nenhuma transferência foi disparada.
     expect(guarda.tentativas()).toBe(0);
   });
+
+  /**
+   * FSWTBC-4537 — as colunas da Gerência de Compras, nas duas abas.
+   *
+   * A causa registrada pelo cliente no incidente SD810592 não foi lógica de negócio: foi
+   * *"divergência entre o código-fonte e a versão atualmente aplicada no ambiente"* — sexta
+   * ocorrência de widget desatualizada nesta base. Uma widget de outra versão muda o conjunto
+   * de colunas, e é por isso que o conjunto é o oráculo aqui: ele detecta a troca de versão
+   * ainda que a grade continue listando alguma coisa.
+   *
+   * Que a aba Atribuir venha vazia e a Transferir venha cheia é assunto dos dois testes acima —
+   * este afirma sobre a estrutura, que existe nas duas independentemente de haver linha.
+   *
+   * Leitura pura: nenhum comprador é selecionado, nenhuma transferência é disparada.
+   */
+  test('FSWTBC-4537 — as duas abas expõem as colunas de distribuição da SC', async ({ page }) => {
+    const guarda = await bloquearCriacaoDeSolicitacao(page);
+    const gerenciaCompras = new GerenciaComprasPage(page);
+
+    const COLUNAS = ['Processo', 'Filial', 'Comprador', 'Solicitante', 'Num SC', 'Grupos de Produto'];
+
+    await gerenciaCompras.goto();
+    await gerenciaCompras.expectCarregada();
+
+    // A sub-aba é herdada da sessão no servidor (particularidade registrada em CLAUDE.md), por
+    // isso cada aba é clicada explicitamente em vez de se confiar no estado inicial.
+    await gerenciaCompras.abrirAbaAtribuir();
+    await expect(gerenciaCompras.getTabelaAtiva()).toBeVisible();
+    expect(
+      (await gerenciaCompras.getTabelaAtiva().locator('thead th').allInnerTexts())
+        .map((c) => c.trim())
+        .filter(Boolean),
+      'colunas da aba Atribuir',
+    ).toEqual(COLUNAS);
+
+    await gerenciaCompras.abrirAbaTransferir();
+    await expect(gerenciaCompras.getTabelaAtiva()).toBeVisible();
+    expect(
+      (await gerenciaCompras.getTabelaAtiva().locator('thead th').allInnerTexts())
+        .map((c) => c.trim())
+        .filter(Boolean),
+      'colunas da aba Transferir',
+    ).toEqual(COLUNAS);
+
+    expect(guarda.tentativas()).toBe(0);
+  });
 });

@@ -56,4 +56,38 @@ test.describe('Delegação de Fiscais de Contrato/Serviço — abertura do formu
     // Nenhuma ação de escrita foi tentada: o teste só abriu e leu o formulário.
     expect(guarda.tentativas(), `tentativas bloqueadas: ${guarda.urls().join(', ')}`).toBe(0);
   });
+
+  /**
+   * FSWTBC-4420 — a filial em que o fiscal mede se chama "Filial Medição", não "Filial Amarração".
+   *
+   * O chamado é de vocabulário, e por isso é fácil de reverter sem ninguém perceber: "Amarração"
+   * é jargão do dicionário do Protheus, e foi trocado pelo termo de negócio para que o mesmo
+   * conceito se chame igual no formulário, no Tracker (filtro *Filial Medição*) e no Faturamento
+   * (*Filial da Medição*). Entregue em 22/04 e homologado em 23/04/2026.
+   *
+   * O teste vizinho já afirma que o campo **existe**; o que falta, e é o objeto do chamado, é
+   * que o termo antigo **não voltou** — em rótulo, tooltip, placeholder ou texto de ajuda.
+   */
+  test('FSWTBC-4420 — o formulário usa "Filial Medição" e não reintroduz "Amarração"', async ({
+    page,
+  }) => {
+    const guarda = await bloquearCriacaoDeSolicitacao(page);
+    const formulario = new FormularioDelegacaoFiscaisPage(page);
+
+    await formulario.goto();
+    await formulario.expectAberto();
+
+    await expect(formulario.campoFilialMedicao).toBeVisible();
+
+    // Varredura no formulário inteiro, não só no rótulo: o termo antigo pode reaparecer em
+    // tooltip, placeholder ou texto de ajuda, e o chamado pede que ele suma da tela.
+    const textoDoFormulario = await formulario.frame.locator('body').innerText();
+    expect(
+      textoDoFormulario.replace(/\s+/g, ' '),
+      'o jargão "Amarração" voltou ao formulário de Delegação de Fiscais — o termo de negócio ' +
+        'acordado no FSWTBC-4420 é "Filial Medição", o mesmo que o Tracker e o Faturamento usam',
+    ).not.toMatch(/Amarra[çc][ãa]o/i);
+
+    expect(guarda.tentativas()).toBe(0);
+  });
 });
