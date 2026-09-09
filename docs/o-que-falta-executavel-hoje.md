@@ -9,8 +9,8 @@ caso a caso; este documento responde a pergunta seguinte: **o que dá para fazer
 | | |
 |---|---|
 | Casos de Fluig escritos | 498 |
-| Com teste automatizado | **62** *(era 40 em 08/09; +22 no lote de 09/09)* |
-| Restantes | 436 |
+| Com teste automatizado | **72** *(era 40 em 08/09; +32 nos dois lotes de 09/09)* |
+| Restantes | 426 |
 
 ## Por que os 458 não estão feitos
 
@@ -143,6 +143,49 @@ prova nada**.
    crítica de soma não dispara ao sair do campo. Quem avalia a soma é a validação do **envio**.
 3. O do 4819 acusava "uma filial só" porque contava a opção-placeholder `Buscando…` — vermelho de
    sincronização, não defeito.
+
+### Segundo lote de 09/09 — a fila dos 40 fechada
+
+| Chamado | Onde | Cor |
+|---|---|---|
+| 5118 | `alcada-solicitacao-compras.spec.js` — alçada nominal, nunca pool | verde |
+| 4153 | citado no `CT-ACC-04-S3`, que já segurava a requisição em voo | verde |
+| 4581 | `criacao-solicitacao.spec.js` — cancelar a própria SC em Início | verde |
+| 1985 | `smoke-integracao-erp.spec.js` — três portais trazendo dados do ERP | verde |
+| 3617 | `etapa-automatica-distribuicao.spec.js` — nada parado há mais de 30 min | verde |
+| 4632 | `ciclo-solicitacao-compras.spec.js` — filial propaga código e CNPJ | verde |
+| 4459, 4828 | citados no teste de integração da SC, que já os media | verde |
+| 5257 | `cadastro-publico-fornecedor.spec.js` — o campo CNPJ não guarda nada | **`@bug`** |
+
+### O que sobrou bloqueado, e por quê
+
+Nenhum destes se contorna com a conta `TOTVS-FS`:
+
+| Chamado | Bloqueio |
+|---|---|
+| 4300, 692, 4505 | matrícula de comprador no ERP, segunda conta de comprador, admin de grupo |
+| 3957 | exige forçar a falha do `mc_aprovadoresPorAlcadas` — indisponibilizar o ERP do cliente |
+| 2131 | medição aberta **atribuída ao executor**; a conta não é Fiscal nem CSE |
+| 3030, 4460, 4626 | dependem do ciclo completo de aprovação (gestor, alçada, fiscal) |
+| 637 | gestor cujo e-mail no Fluig case com a matrícula no ERP, **e** três bases |
+| 4453 | o coração do caso é a comparação DES × TST; só há um ambiente |
+| 1932 | as visões de negociação do Tracker não devolvem linha para esta conta |
+| 2636 | resolvido como *"Não será feito"*; a única coisa afirmável é a ausência de um recurso, e num formulário recém-aberto "zero anexos" é verdade trivial |
+
+### O achado do lote
+
+**FSWTBC-5257** já estava aberto com severidade Alta e prazo regulatório vencido, relatando que o
+Portal recusa CNPJ alfanumérico. A medição mostrou algo maior: com a máscara aplicada, o campo
+`#txt_cnpj` do cadastro público **não guarda entrada nenhuma** — nem CNPJ numérico. Nenhum
+fornecedor se cadastra por aquela página hoje.
+
+Dois cuidados que sustentam esse vermelho, e que valem como método:
+
+1. **Controle na mesma página** — `#txt_cep` recebe e formata com a mesma digitação. Sem ele, o
+   vermelho seria indistinguível de "o teclado do teste não chega ao formulário".
+2. **Espera pela máscara** — sem ela o teste reprovava por motivos **opostos** conforme a corrida:
+   com a máscara ainda não aplicada, o campo preserva tudo, inclusive o alfanumérico. Foi esse
+   contraste que localizou o defeito na máscara, e não na página.
 
 ## O que destrava mais, por ordem de retorno
 
