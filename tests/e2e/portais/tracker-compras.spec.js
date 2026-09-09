@@ -190,4 +190,135 @@ test.describe('Tracker de Processos Compras/Contratos', () => {
 
     expect(guarda.tentativas()).toBe(0);
   });
+  /**
+   * FSWTBC-2158 e FSWTBC-4804 — o disparo automático de Faturamento não pode duplicar.
+   *
+   * O contrato com medição automática deve gerar **um** processo de Faturamento por competência.
+   * Duplicata significa medição em dobro, e o cliente só percebe no pagamento.
+   *
+   * ## O que a medição impôs a este teste
+   *
+   * A chave NÃO é (contrato, competência). O disparo abre **um processo por FILIAL** do
+   * contrato — 50 filiais, 50 processos, e isso é o desenho, não defeito (`cassi-fluig-master`).
+   * Além disso, um levantamento anterior já quase reportou duplicidade falsa aqui: 60 processos
+   * para 7 contratos num único lote pareciam duplicata, e o diff campo a campo mostrou que
+   * diferiam em planilha e medição. A chave real é
+   * **(Nº Contrato, Competência, Filial da Medição, Nº Planilha)**.
+   *
+   * Só entram as FCs abertas pelo **Usuário Integrador** — as manuais e as criadas por esta
+   * suíte não são o objeto do chamado — e as canceladas ficam de fora.
+   *
+   * ## O que este teste NÃO cobre, e fica declarado
+   *
+   * O caso pede conferir contra a **lista de contratos vigentes com medição automática** do
+   * cliente (`CN1_MEDAUT`), para provar que nenhum contrato ficou SEM FC. Essa lista não está
+   * disponível e o campo não é exposto ao Fluig; sem ela só dá para afirmar a ausência de
+   * duplicata, não a completude. O disparo em si é schedule do Protheus, fora de alcance.
+   *
+   * Leitura pura.
+   */
+  test('FSWTBC-2158 FSWTBC-4804 — o disparo automático não abre Faturamento duplicado no período', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    const guarda = await bloquearCriacaoDeSolicitacao(page);
+    const tracker = new TrackerComprasPage(page);
+
+    await tracker.goto();
+    await tracker.expectCarregada();
+    await tracker.selecionarVisao('Faturamento de Contratos');
+
+    // A busca é por MÊS-CALENDÁRIO, e não por uma janela larga de dias, por uma razão medida:
+    // a grade pagina de 10 em 10 sem seletor de tamanho, e 40 dias passam de 600 linhas — mais
+    // de 60 cliques de paginação. Um mês fica em ~170 linhas / 18 páginas. Como o disparo é
+    // MENSAL (skill: 01:00, um processo por filial do contrato), o mês corrente basta; nos
+    // primeiros dias do mês, antes de ele rodar, o mês anterior é quem tem a massa.
+    const hoje = new Date();
+    const iso = (/** @type {Date} */ d) => d.toISOString().slice(0, 10);
+    /** @type {Array<{de: string, ate: string}>} */
+    const janelas = [0, -1].map((deslocamento) => {
+      const primeiro = new Date(hoje.getFullYear(), hoje.getMonth() + deslocamento, 1);
+      const ultimo = new Date(hoje.getFullYear(), hoje.getMonth() + deslocamento + 1, 0);
+      return { de: iso(primeiro), ate: iso(ultimo < hoje ? ultimo : hoje) };
+    });
+
+    /** @type {Array<Record<string,string>>} */
+    let automaticas = [];
+    /** @type {{de: string, ate: string}} */
+    let janelaUsada = janelas[0];
+    for (const janela of janelas) {
+      await tracker.filtrarPeriodoDeFaturamento(janela.de, janela.ate);
+      await tracker.pesquisar();
+      await expect(tracker.alertaFiltroObrigatorio).toBeHidden();
+
+      // Paginado: o disparo de 03/09/2026 sozinho abriu 151 FCs, e a página 1 mostra 10.
+      const linhas = await tracker.lerTodasAsLinhasComoMapa();
+      const doDisparo = linhas.filter(
+        (l) => /integrador/i.test(l['Solicitante'] ?? '') && !/CANCELAD/i.test(l['Status'] ?? ''),
+      );
+
+      test.info().annotations.push({
+        type: 'faturamento-no-periodo',
+        description:
+          `${janela.de}..${janela.ate}: ${linhas.length} FC no período, ` +
+          `${doDisparo.length} abertas pelo Usuário Integrador e não canceladas`,
+      });
+
+      if (doDisparo.length > 0) {
+        automaticas = doDisparo;
+        janelaUsada = janela;
+        break;
+      }
+    }
+
+    if (automaticas.length === 0) {
+      faltaPreCondicao(
+        '(ambiente): nenhuma FC aberta pelo Usuário Integrador nos meses ' +
+          `${janelas.map((j) => `${j.de}..${j.ate}`).join(' e ')} — sem massa do disparo ` +
+          'automático não há duplicata a procurar.',
+      );
+    }
+
+    const chave = (/** @type {Record<string,string>} */ l) =>
+      [
+        l['Nº Contrato'],
+        l['Competência do Contrato'],
+        l['Código da Filial Medição'],
+        l['Nº Planilha'],
+      ].join(' | ');
+
+    const vistas = new Map();
+    /** @type {string[]} */
+    const duplicadas = [];
+    for (const l of automaticas) {
+      const k = chave(l);
+      if (vistas.has(k)) {
+        duplicadas.push(`${k} → processos ${vistas.get(k)} e ${l['Nº do Processo Fluig']}`);
+      } else {
+        vistas.set(k, l['Nº do Processo Fluig']);
+      }
+    }
+
+    expect(
+      duplicadas,
+      `em ${janelaUsada.de}..${janelaUsada.ate}, o disparo automático abriu mais de um ` +
+        'Faturamento para o mesmo contrato/competência/filial/planilha — medição em dobro, ' +
+        'percebida só no pagamento',
+    ).toEqual([]);
+
+    // FSWTBC-4804, metade verificável: a FC do disparo nasce identificada. Sem contrato ou sem
+    // competência, ninguém sabe o que ela mede — e foi assim que uma FC apareceu no Tracker
+    // com Competência e Nº Medição em branco durante o levantamento.
+    const semIdentificacao = automaticas
+      .filter((l) => !l['Nº Contrato'] || !l['Competência do Contrato'])
+      .map((l) => `processo ${l['Nº do Processo Fluig']}`);
+
+    expect(
+      semIdentificacao,
+      'FC aberta pelo disparo automático sem Nº Contrato ou sem Competência — não dá para ' +
+        'saber o que ela mede',
+    ).toEqual([]);
+
+    expect(guarda.tentativas()).toBe(0);
+  });
 });
