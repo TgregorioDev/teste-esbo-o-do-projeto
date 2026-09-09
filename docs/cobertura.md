@@ -236,7 +236,7 @@ significa nada.
 | | |
 |---|---|
 | Casos executáveis no Fluig | **518** |
-| Com teste automatizado | **57** (11%) |
+| Com teste automatizado | **58** (11%) |
 | Registrados só para o Protheus (fora do escopo E2E) | 125 |
 
 A matriz caso a caso — incluindo os que **podem ser aprimorados** num teste existente e os que
@@ -257,6 +257,7 @@ arquivo. E a mesma trava: o script falha se um teste citar chamado que não exis
 | `FSWTBC-1702` | `e2e/acompanhamento-contratos/modais-do-contrato.spec.js` |
 | `FSWTBC-1792` | `api/soap-portal-fornecedor.spec.js` |
 | `FSWTBC-1906` | `e2e/compras/validacoes-solicitacao-compras.spec.js` |
+| `FSWTBC-1934` | `e2e/portais/tracker-compras.spec.js` |
 | `FSWTBC-1942` | `e2e/portais/tracker-compras.spec.js` |
 | `FSWTBC-1954` | `e2e/compras/validacoes-solicitacao-compras.spec.js` |
 | `FSWTBC-2022` | `e2e/compras/ciclo-solicitacao-compras.spec.js` |

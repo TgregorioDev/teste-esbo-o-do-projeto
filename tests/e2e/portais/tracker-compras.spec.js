@@ -321,4 +321,101 @@ test.describe('Tracker de Processos Compras/Contratos', () => {
 
     expect(guarda.tentativas()).toBe(0);
   });
+
+  /**
+   * FSWTBC-1934 — o disparo automático da madrugada abre medições sadias, não resíduo.
+   *
+   * O chamado ("Erro no disparo automático de medições") não tem descrição além do título: é
+   * caso de caracterização. O que se pode afirmar sobre o disparo, sem ser fiscal e sem
+   * movimentar nada, é o **estado em que as instâncias nascem** — e é justamente aí que o
+   * defeito aparecia: instância em *Correção*, ou presa sem responsável, ou sem número de
+   * medição, é resíduo que ninguém consegue tocar e que só é notado no fechamento do mês.
+   *
+   * Complementar ao teste de duplicidade acima: aquele afirma que o disparo não abre a mesma
+   * medição duas vezes; este, que as que ele abre estão utilizáveis.
+   *
+   * Medido em 09/09/2026 — as 151 FCs do disparo de 03/09 nasceram todas às 03h, em *Realizar
+   * Medição do Contrato*, com responsável, Nº Medição e Fiscal de Contrato preenchidos.
+   */
+  test('FSWTBC-1934 — as medições do disparo automático nascem na etapa do fiscal, com responsável e número', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    const guarda = await bloquearCriacaoDeSolicitacao(page);
+    const tracker = new TrackerComprasPage(page);
+
+    await tracker.goto();
+    await tracker.expectCarregada();
+    await tracker.selecionarVisao('Faturamento de Contratos');
+
+    const hoje = new Date();
+    const iso = (/** @type {Date} */ d) => d.toISOString().slice(0, 10);
+    /** @type {Array<Record<string,string>>} */
+    let automaticas = [];
+    for (const deslocamento of [0, -1]) {
+      const primeiro = new Date(hoje.getFullYear(), hoje.getMonth() + deslocamento, 1);
+      const ultimoDoMes = new Date(hoje.getFullYear(), hoje.getMonth() + deslocamento + 1, 0);
+      await tracker.filtrarPeriodoDeFaturamento(
+        iso(primeiro),
+        iso(ultimoDoMes < hoje ? ultimoDoMes : hoje),
+      );
+      await tracker.pesquisar();
+      await expect(tracker.alertaFiltroObrigatorio).toBeHidden();
+
+      automaticas = (await tracker.lerTodasAsLinhasComoMapa()).filter(
+        (l) => /integrador/i.test(l['Solicitante'] ?? '') && !/CANCELAD/i.test(l['Status'] ?? ''),
+      );
+      if (automaticas.length > 0) break;
+    }
+
+    if (automaticas.length === 0) {
+      faltaPreCondicao(
+        '(ambiente): nenhuma FC aberta pelo Usuário Integrador no mês corrente nem no anterior ' +
+          '— sem massa do disparo automático não há o que caracterizar.',
+      );
+    }
+
+    /** @param {Record<string,string>} l */
+    const identificar = (l) => `processo ${l['Nº do Processo Fluig']} (${l['Nº Contrato']})`;
+
+    // Nascer na etapa do fiscal é o desfecho são. Correção — ou qualquer atividade de
+    // tratamento de erro — é o resíduo que o chamado descreve.
+    const foraDaEtapaDoFiscal = automaticas
+      .filter((l) => !/Realizar Medição do Contrato/i.test(l['Atividade Atual'] ?? ''))
+      .map((l) => `${identificar(l)} em "${l['Atividade Atual']}"`);
+
+    const semResponsavel = automaticas
+      .filter((l) => !(l['Responsável Atual'] ?? '').trim())
+      .map(identificar);
+
+    const semNumeroDeMedicao = automaticas
+      .filter((l) => !(l['Nº Medição'] ?? '').trim())
+      .map(identificar);
+
+    test.info().annotations.push({
+      type: 'disparo-automatico',
+      description:
+        `${automaticas.length} FCs do disparo · fora da etapa do fiscal: ` +
+        `${foraDaEtapaDoFiscal.length} · sem responsável: ${semResponsavel.length} · ` +
+        `sem Nº Medição: ${semNumeroDeMedicao.length}`,
+    });
+
+    expect(
+      foraDaEtapaDoFiscal,
+      'medição aberta pelo disparo automático que não está em "Realizar Medição do Contrato" ' +
+        '— instância em correção ou desviada é o sintoma do FSWTBC-1934',
+    ).toEqual([]);
+
+    expect(
+      semResponsavel,
+      'medição do disparo sem responsável atual — ninguém consegue movimentá-la',
+    ).toEqual([]);
+
+    expect(
+      semNumeroDeMedicao,
+      'medição do disparo sem Nº Medição — não dá para conciliar com o Protheus',
+    ).toEqual([]);
+
+    expect(guarda.tentativas()).toBe(0);
+  });
 });
