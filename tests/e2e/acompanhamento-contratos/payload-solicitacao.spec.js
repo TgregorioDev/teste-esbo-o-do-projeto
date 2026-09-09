@@ -411,7 +411,7 @@ test.describe('Payload de start — integridade dos valores e do rateio (CT-ACC-
 });
 
 test.describe('Payload de start — duplo clique (CT-ACC-04-S3)', () => {
-  test('duplo clique em Confirmar não deve disparar duas requisições de start', async ({
+  test('FSWTBC-4153 — duplo clique em Confirmar não deve disparar duas requisições de start', async ({
     page,
     contratosPage,
     solicitacaoModal,
