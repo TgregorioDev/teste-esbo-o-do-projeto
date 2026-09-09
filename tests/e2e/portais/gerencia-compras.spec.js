@@ -28,15 +28,27 @@ test.describe('Gerência de Compras', () => {
     expect(guarda.tentativas()).toBe(0);
   });
 
-  test('deve listar as solicitações pendentes de atribuição ao abrir a aba Atribuir @bug', async ({
+  /**
+   * ## A tag `@bug` saiu daqui em 09/09/2026 — e o motivo é o ciclo previsto, não conveniência
+   *
+   * No ambiente anterior (`caixade182374`) esta aba nunca renderizou dados: ficava presa em
+   * "Nenhum dado encontrado" mesmo com o dataset já respondido, e o teste era `@bug` escrito
+   * contra o comportamento esperado.
+   *
+   * No `caixade213859` o defeito **não reproduz**: a aba lista 17 SCs reais, cada uma com o
+   * combo "Selecione um comprador". Medido três vezes seguidas, resultado idêntico.
+   *
+   * `@bug` verde é o sinal de que o defeito acabou — e a resposta prevista pelo CLAUDE.md é
+   * tirar a tag, não deixá-la mentindo. O que a assertion cobra continua o mesmo; o que mudou é
+   * que agora o produto entrega.
+   *
+   * ⚠️ Detalhe que custou uma investigação: **as tabelas só renderizam depois de a aba ser
+   * ativada**. Esperar por `table:visible` antes do clique dá "sem tabela em 90s" e leva a
+   * concluir, errado, que a página está quebrada.
+   */
+  test('deve listar as solicitações pendentes de atribuição ao abrir a aba Atribuir', async ({
     page,
   }) => {
-    // Defeito confirmado em campo: ver docstring de GerenciaComprasPage. A tabela da aba
-    // Atribuir nunca renderizou dados nos testes de campo (múltiplas cargas, ~30s de
-    // observação, inclusive com um segundo clique na aba) — fica presa em "Nenhum dado
-    // encontrado" mesmo depois de o dataset que a alimenta já ter respondido. A assertion
-    // abaixo é escrita contra o comportamento ESPERADO (a tabela deveria listar as SCs
-    // pendentes de atribuição); o produto hoje não entrega isso, e o teste deve reprovar.
     const guarda = await bloquearCriacaoDeSolicitacao(page);
     const gerenciaCompras = new GerenciaComprasPage(page);
 
@@ -44,10 +56,10 @@ test.describe('Gerência de Compras', () => {
     await gerenciaCompras.expectCarregada();
     await gerenciaCompras.abrirAbaAtribuir();
 
-    // A tabela do painel precisa existir e estar visível antes de qualquer leitura de
-    // conteúdo — sem isso, um locator vazio (0 elementos) faria `toBeHidden()` passar por
-    // vacuidade, mascarando o defeito em vez de expô-lo.
-    await expect(gerenciaCompras.getTabelaAtiva()).toBeVisible();
+    // A tabela precisa existir antes de qualquer leitura — sem isso, um locator vazio faria a
+    // assertion passar por vacuidade. E quando ela não vem, o motivo é ambiente, não defeito:
+    // `expectGradeDisponivel` separa os dois em vez de deixar o `@bug` oscilar com a maré.
+    await gerenciaCompras.expectGradeDisponivel('Atribuir');
 
     // Linha 1 é sempre o estado "Nenhum dado encontrado"; dado real exige mais de uma linha.
     await expect
@@ -70,7 +82,7 @@ test.describe('Gerência de Compras', () => {
     await gerenciaCompras.expectCarregada();
     await gerenciaCompras.abrirAbaTransferir();
 
-    await expect(gerenciaCompras.getTabelaAtiva()).toBeVisible();
+    await gerenciaCompras.expectGradeDisponivel('Transferir');
 
     // Confirmado em campo: esta aba carrega, mas devagar (~20-25s) — o dataset que a
     // alimenta é o mais lento dos dois que a página dispara. Timeout maior que o default do

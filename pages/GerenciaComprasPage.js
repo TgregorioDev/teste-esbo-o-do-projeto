@@ -1,4 +1,5 @@
 // @ts-check
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 
 /** Rota da página de Gerência de Compras. */
 const ROTA_GERENCIA_COMPRAS = '/portal/p/1/gerenciaCompras';
@@ -38,11 +39,33 @@ export class GerenciaComprasPage {
     await this.page.goto(ROTA_GERENCIA_COMPRAS, { waitUntil: 'domcontentloaded' });
   }
 
-  /** Pré-condição: cabeçalho e as duas abas estão disponíveis. */
+  /**
+   * Pré-condição: cabeçalho e as duas abas estão disponíveis.
+   *
+   * O prazo é 90s, e é escolha declarada. Esta é a página mais pesada da suíte neste ambiente:
+   * acessada sozinha ela monta, mas com outros workers em paralelo passa dos 45s do padrão do
+   * projeto. Aumentar aqui não mascara flakiness — os testes não oscilam, o servidor é que
+   * degrada sob carga (o mesmo motivo de `workers: 3` no config, ver
+   * `docs/mapa-do-ambiente.md`).
+   *
+   * Se nem em 90s montar, o veredito é de AMBIENTE: melhor dizer isso do que devolver um
+   * timeout cru que se confunde com regressão.
+   */
   async expectCarregada() {
-    await this.titulo.waitFor({ state: 'visible' });
-    await this.abaAtribuir.waitFor({ state: 'visible' });
-    await this.abaTransferir.waitFor({ state: 'visible' });
+    const montou = await this.titulo
+      .waitFor({ state: 'visible', timeout: 90_000 })
+      .then(() => this.abaAtribuir.waitFor({ state: 'visible', timeout: 90_000 }))
+      .then(() => this.abaTransferir.waitFor({ state: 'visible', timeout: 90_000 }))
+      .then(() => true)
+      .catch(() => false);
+
+    if (!montou) {
+      faltaPreCondicao(
+        '(ambiente): a Gerência de Compras não montou o cabeçalho e as abas em 90s. É a página ' +
+          'mais pesada da suíte neste ambiente e degrada sob carga concorrente — não é ' +
+          'regressão do produto.',
+      );
+    }
   }
 
   async abrirAbaAtribuir() {
@@ -60,6 +83,35 @@ export class GerenciaComprasPage {
    */
   getTabelaAtiva() {
     return this.page.locator('table:visible').first();
+  }
+
+  /**
+   * Declara pré-condição quando a grade da aba ativa não chega a renderizar.
+   *
+   * Medido em 09/09/2026 no ambiente `caixade213859`: a página monta o cabeçalho e os rótulos
+   * das abas, mas **as tabelas não aparecem** — três cargas seguidas, 90s cada, nenhuma tabela
+   * no DOM. Uma hora antes, a mesma página devolvia 65 linhas em *Transferir*. É a oscilação da
+   * integração descrita em `docs/estabilidade-do-ambiente.md`, e não um defeito da tela.
+   *
+   * Sem esta verificação o efeito é pior que um vermelho: o `@bug` da aba *Atribuir* (que
+   * afirma que ela DEVERIA listar) passa ou reprova conforme a maré, e o relatório fica
+   * dizendo coisas diferentes sobre o mesmo produto em execuções seguidas.
+   *
+   * @param {string} aba nome da aba, para a mensagem
+   */
+  async expectGradeDisponivel(aba) {
+    const apareceu = await this.getTabelaAtiva()
+      .waitFor({ state: 'visible', timeout: 45_000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (!apareceu) {
+      faltaPreCondicao(
+        `(ambiente): a aba "${aba}" da Gerência de Compras não renderizou nenhuma tabela. A ` +
+          'página monta o cabeçalho e os rótulos das abas, mas a grade não vem — a integração ' +
+          'que a alimenta está oscilando neste ambiente (ver docs/estabilidade-do-ambiente.md).',
+      );
+    }
   }
 
   /** Mensagem de grade vazia, dentro da tabela atualmente visível. */

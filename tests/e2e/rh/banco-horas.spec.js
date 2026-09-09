@@ -12,14 +12,21 @@ import { BancoHorasPage } from '../../../pages/BancoHorasPage.js';
  */
 test.describe('Portal de Autorização de Horas Extras', () => {
   test(
-    'CT-BH-01-S1 @bug — não deve alertar o usuário final com erro de configuração de servidor ao abrir o Banco de Horas',
+    'CT-BH-01-S1 — não deve alertar o usuário final com erro de configuração de servidor ao abrir o Banco de Horas',
     async ({ page }) => {
-      // Defeito U-02, em aberto. Este teste está escrito contra o comportamento ESPERADO:
-      // uma falha de configuração de servidor (parâmetro não informado) é um problema de
-      // administração do ambiente e não deveria ser jogada na tela do usuário final como
-      // um alert() nativo do navegador. Hoje o widget faz exatamente isso, então este
-      // teste REPROVA — de propósito. Ajustá-lo para passar documentaria o defeito como
-      // se fosse comportamento correto.
+      // Defeito U-02: uma falha de configuração de servidor não deveria ser jogada na tela do
+      // usuário final como `alert()` NATIVO do navegador. No ambiente anterior o widget fazia
+      // exatamente isso, e este teste era `@bug`.
+      //
+      // A tag saiu em 09/09/2026: no `caixade213859` nenhum diálogo nativo é disparado — o
+      // aviso de indisponibilidade vem num modal estilizado ("Ops! Não foi possível se
+      // comunicar com o Protheus, base offline"), que é justamente o que o chamado pedia.
+      // Medido duas vezes seguidas. `@bug` verde é o sinal de que o defeito acabou, e a
+      // resposta prevista é tirar a tag — não deixá-la mentindo.
+      //
+      // O que a assertion cobra segue igual, e é específica: diálogo NATIVO. A
+      // indisponibilidade da integração, que continua acontecendo, tem assertion própria em
+      // CT-BH-01-S2 logo abaixo — uma coisa não absorve a outra.
       //
       // Detalhe técnico que decide o teste: o Playwright dispensa diálogos automaticamente.
       // Só é possível observar o alert() registrando `page.on('dialog', ...)` ANTES da

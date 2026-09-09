@@ -1,4 +1,5 @@
 // @ts-check
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 
 /**
  * Formulário clássico de Cotação de Produtos e Serviços, iniciado direto por URL
@@ -62,5 +63,47 @@ export class FormularioCotacaoPage {
     await this.headingFormulario.waitFor({ state: 'visible' });
     await this.headingFornecedor.waitFor({ state: 'visible' });
     await this.headingProdutos.waitFor({ state: 'visible' });
+    await this.expectSemFalhaDeErp();
+  }
+
+  /**
+   * Declara pré-condição quando o formulário abre com a falha de integração do ERP.
+   *
+   * Medido em 09/09/2026 no ambiente `caixade213859`: o formulário renderiza a faixa
+   * *"Não foi possível estabelecer comunicação com o ERP. Por favor verifique os serviços de
+   * API e tente novamente."* e, como consequência, **todos** os campos de total (Sub Total,
+   * IPI, Frete, Descontos, Valor total do Pedido) ficam vazios em vez de "0,00".
+   *
+   * Sem esta verificação o sintoma vira um vermelho enganoso — `toHaveValue('0,00')` recebendo
+   * `""` parece defeito de cálculo da tela, quando a causa é a integração fora do ar. O mesmo
+   * acontece com "Sub Total deveria ser readonly": readonly é o estado normal, e o teste
+   * reprovava por um efeito colateral da falha, não pelo que se propôs a medir.
+   */
+  async expectSemFalhaDeErp() {
+    // A faixa NÃO vem junto com os headings: medido, ela aparece ~8s depois deles, quando a
+    // chamada ao ERP finalmente falha. Checar uma vez só (como a primeira versão fazia) lia a
+    // tela antes do veredito e deixava o teste seguir para reprovar pelo sintoma — Sub Total
+    // vazio em vez de "0,00".
+    //
+    // O padrão é FROUXO de propósito: casar a frase inteira não funciona porque o texto vem com
+    // espaços não separáveis entre as palavras. `/comunica…/` basta e foi medido casando.
+    //
+    // Custo: até 15s a mais quando o formulário está saudável. É o preço de distinguir
+    // "integração fora do ar" de "a tela calcula errado", que é a diferença entre ambiente e
+    // defeito neste relatório.
+    const falhou = await this.frame
+      .getByText(/comunica[çc][ãa]o com o ERP/i)
+      .first()
+      .waitFor({ state: 'visible', timeout: 15_000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (falhou) {
+      faltaPreCondicao(
+        '(ambiente): o formulário de Cotação abriu com a falha de integração do ERP ("Não foi ' +
+          'possível estabelecer comunicação com o ERP"). Com ela, os oito campos de total ' +
+          'nascem vazios e nada do que este formulário calcula é observável.',
+      );
+    }
   }
 }

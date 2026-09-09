@@ -1,4 +1,5 @@
 // @ts-check
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 import { expect } from '@playwright/test';
 
 /**
@@ -79,6 +80,35 @@ export class CotacaoPage {
   async expectAberto() {
     await this.headingInicio.waitFor({ state: 'visible' });
     await this.headingFormulario.waitFor({ state: 'visible' });
+    await this.expectSemFalhaDeErp();
+  }
+
+  /**
+   * Declara pré-condição quando o formulário abre com a falha de integração do ERP.
+   *
+   * Mesma verificação de `FormularioCotacaoPage` e pela mesma razão: neste ambiente a faixa
+   * *"Não foi possível estabelecer comunicação com o ERP"* aparece ~8s DEPOIS dos headings, e
+   * com ela os oito campos de total nascem vazios. Sem esperar por ela, o teste segue e reprova
+   * pelo sintoma — "Sub Total deveria ser readonly" recebendo um campo vazio —, apontando
+   * defeito de tela onde a causa é a integração fora do ar.
+   *
+   * O padrão é frouxo porque o texto vem com espaços não separáveis: casar a frase inteira
+   * não funciona.
+   */
+  async expectSemFalhaDeErp() {
+    const falhou = await this.frame
+      .getByText(/comunica[çc][ãa]o com o ERP/i)
+      .first()
+      .waitFor({ state: 'visible', timeout: 15_000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (falhou) {
+      faltaPreCondicao(
+        '(ambiente): o formulário de Cotação abriu com a falha de integração do ERP. Com ela, ' +
+          'os campos de total nascem vazios e o estado dos campos de negócio não é observável.',
+      );
+    }
   }
 
   /**
