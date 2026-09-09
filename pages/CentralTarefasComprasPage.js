@@ -47,6 +47,21 @@ export class CentralTarefasComprasPage {
     this.botaoEnviar = page.getByRole('button', { name: 'Enviar' });
   }
 
+
+  /**
+   * Clica em "Mais opções" apenas se ele existir.
+   *
+   * O flyout é a forma ANTIGA de revelar as categorias de segundo nível da Central. Medido em
+   * 09/09/2026 no ambiente `caixade213859`: ele não existe — as categorias já são abas diretas.
+   * Clicar incondicionalmente custava 45s de espera por um elemento inexistente.
+   */
+  async abrirMaisOpcoesSePresente() {
+    const link = this.page.getByRole('link', { name: 'Mais opções' });
+    if ((await link.count()) > 0) {
+      await link.click();
+    }
+  }
+
   async goto() {
     await this.page.goto(this.rota, { waitUntil: 'domcontentloaded' });
   }

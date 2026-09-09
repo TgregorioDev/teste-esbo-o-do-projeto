@@ -287,11 +287,20 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     // visível depois de abrir o menu "Mais opções" ao lado dela (confirmado nesta
     // investigação). Reproduz aqui a navegação real antes de reusar `listarGrupos()`.
     await tarefas.abaResumo.click();
-    await page.getByRole('link', { name: 'Mais opções' }).click();
+    // "Mais opções" é a forma ANTIGA de revelar as categorias de segundo nível. Neste ambiente
+    // ele não existe — elas já são abas diretas (medido em 09/09/2026). Clicar
+    // incondicionalmente esperava 45s por um link inexistente e reprovava como timeout.
+    await tarefas.abrirMaisOpcoesSePresente();
 
     // O menu abre de forma assíncrona: espera por uma entrada que existe sempre antes de
     // concluir qualquer coisa sobre as que podem faltar.
-    await page.getByRole('link', { name: /^Tarefas a concluir/ }).waitFor({ state: 'visible' });
+    // Sem o flyout, "Tarefas a concluir" é o HEADING do painel, não um link do menu. A espera
+    // aceita as duas formas: o que importa é a categoria estar na tela antes de concluir
+    // qualquer coisa sobre as que podem faltar.
+    await page
+      .getByText(/Tarefas a concluir/)
+      .first()
+      .waitFor({ state: 'visible' });
 
     // "Tarefas em pool" só é renderizada quando o usuário TEM ao menos uma tarefa em pool.
     // Sem essa entrada o teste não consegue LER o pool — e "não consegui ler" é diferente de
