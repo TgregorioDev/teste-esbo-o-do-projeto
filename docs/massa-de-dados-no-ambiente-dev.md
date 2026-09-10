@@ -14,7 +14,7 @@ Medido em 10/09/2026, com a conta `TOTVS-FS`.
 
 | | |
 |---|---|
-| Criar Solicitação de Compras por API | **funciona** — SCs 96363, 96369 e 96370 |
+| Criar Solicitação de Compras por API | **funciona** — 8 SCs criadas, ver seção 6 |
 | A SC criada percorre o BPMN sozinha | **sim** — *Início* → *Compra Centralizada?* → *Grava SC e Anexos* |
 | A conta participa dos pools do fluxo | **sim** — todos, ver seção 3 |
 | Assumir tarefa de pool e movimentar | **funciona** — assumido e enviado na SC 96363 |
@@ -117,14 +117,14 @@ Protheus.
 ## 4. Onde trava, exatamente
 
 **Atividade 233 — "Grava SC e Anexos"**. É a integração que abre a SC no Protheus e cria a
-pasta de anexos no GED. Nas três SCs semeadas hoje ela não concluiu:
+pasta de anexos no GED. Em nenhuma das 8 SCs semeadas hoje ela concluiu:
 
 | SC | 233 começou | desfecho |
 |---|---|---|
 | 96363 | 10:18:19 | 10:30:06 → **236 Correção** |
 | 96363 (reenviada da Correção) | 10:40 | ~10:59 → **236 Correção** de novo |
-| 96369, 96370 | 11:03 | ~11:20 → **236 Correção** |
-| 96376 … 96380 | 11:2x | ainda em 233 no fechamento desta medição |
+| 96369, 96370 | 11:03 | já em **236 Correção** quando medido, às 11:28 |
+| 96376 … 96380 | ~11:26 | ainda em 233 às 11:28, no fechamento desta medição |
 
 A SC fica com `numSolCompra` vazio, `pastaAnexo` vazio e `statusSolicitacao: "Iniciado"`. O
 ciclo leva de 12 a 19 minutos até cair na Correção — não é instantâneo, e quem for medir
