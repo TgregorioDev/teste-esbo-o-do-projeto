@@ -12,6 +12,7 @@
     "canario": "node scripts/canario-do-ambiente.mjs",
     "cobertura": "node scripts/gerar-cobertura.mjs",
     "limpar": "node scripts/limpar-massa.mjs",
+    "semear": "node scripts/semear-massa.mjs",
     "limpar:simular": "node scripts/limpar-massa.mjs --simular"
   },
   "repository": {

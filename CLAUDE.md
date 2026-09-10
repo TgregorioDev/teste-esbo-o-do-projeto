@@ -91,6 +91,35 @@ barrados e, medindo, cinco de seis abrem normalmente.
 
 ---
 
+## Semeadura de massa (base de DEV)
+
+Quando o vermelho é **fila vazia** — Gerência de Compras sem SC na atividade 257, Portal do
+Comprador sem cotação —, a resposta neste ambiente é criar a massa, e o dono do ambiente
+autorizou. `node scripts/semear-massa.mjs --quantidade=N` cria Solicitações de Compras por API
+(`POST /processes/wf_solicitacao_compras/start` com `targetState: 0` — com `6` a SC nasce presa
+em "Início"), e `--acompanhar` diz em que atividade cada uma parou.
+
+Três coisas a saber antes de usar:
+
+- **A massa semeada fica viva de propósito**, marcada `QA-MASSA-<uuid>` na justificativa e na
+  observação do item. Não passa pelo `global-teardown`. Para higienizar,
+  `node scripts/limpar-massa.mjs --descobrir`.
+- **A conta está em TODOS os pools do fluxo da SC** (Correções, Gestor Imediato, Validação
+  Orçamentária, Validação Compradores, Validação Alçadas) e nos grupos `_Inicio` de Cotação e
+  Negociação. O pool é um caminho alternativo ao Portal do Comprador, e não depende de
+  matrícula no ERP.
+- **Hoje a SC não passa da atividade 233 ("Grava SC e Anexos")** e cai em 236 "Correção" após
+  12–19 minutos. É ambiente, não script. O sintoma preciso a levar ao desenvolvedor é
+  `ds_protheus_getMatriculaTitular_rest` → HTTP 500 `WFLYEJB0054: Failed to marshal EJB
+  parameters`, que é erro de EJB do lado Fluig e não mudou quando o Protheus foi
+  restabelecido.
+
+`docs/massa-de-dados-no-ambiente-dev.md` é a fonte da verdade: o fluxo completo com os números
+das atividades, o contrato do `/start`, como assumir e movimentar tarefa de pool, e a resposta
+medida a cada um dos cinco pontos levantados pelo desenvolvedor. **`expand=formFields` em
+`/requests/{id}` devolve o formulário inteiro de qualquer solicitação existente** — é o molde
+para qualquer massa futura, sem depender de a tela abrir.
+
 ## Limpeza da massa
 
 `fixtures/global-teardown.js` cancela, ao fim de QUALQUER invocação, as solicitações que ela
