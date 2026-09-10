@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { ESTADO_VAZIO_DA_GRADE } from '../../../utils/grade.js';
 import { PortalCompradorPage } from '../../../pages/PortalCompradorPage.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
 import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
@@ -88,7 +89,7 @@ test.describe('Portal do Comprador', () => {
     // Confirmado em campo: nesta sub-tela a mensagem de grade vazia é texto solto da
     // página (não uma linha de <table>) — por isso a leitura aqui não passa por
     // getTabelaAtiva().
-    await expect(page.getByText('Nenhum dado encontrado')).toBeVisible();
+    await expect(page.getByText(ESTADO_VAZIO_DA_GRADE).first()).toBeVisible();
 
     expect(guarda.tentativas()).toBe(0);
   });

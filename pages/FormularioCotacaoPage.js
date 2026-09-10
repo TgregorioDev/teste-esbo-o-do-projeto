@@ -94,7 +94,7 @@ export class FormularioCotacaoPage {
     const falhou = await this.frame
       .getByText(/comunica[çc][ãa]o com o ERP/i)
       .first()
-      .waitFor({ state: 'visible', timeout: 15_000 })
+      .waitFor({ state: 'visible', timeout: 30_000 })
       .then(() => true)
       .catch(() => false);
 

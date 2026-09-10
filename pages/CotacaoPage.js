@@ -94,12 +94,17 @@ export class CotacaoPage {
    *
    * O padrão é frouxo porque o texto vem com espaços não separáveis: casar a frase inteira
    * não funciona.
+   *
+   * O prazo é 30s, e não 15s como na primeira versão: medido em 10/09/2026, a faixa às vezes
+   * demora mais que isso para aparecer, e nessas execuções o teste seguia e reprovava pelo
+   * sintoma ("Sub Total deveria ser readonly"). Enquanto o ERP estiver fora, esses 30s nunca
+   * são pagos por inteiro — a faixa vem em ~8s.
    */
   async expectSemFalhaDeErp() {
     const falhou = await this.frame
       .getByText(/comunica[çc][ãa]o com o ERP/i)
       .first()
-      .waitFor({ state: 'visible', timeout: 15_000 })
+      .waitFor({ state: 'visible', timeout: 30_000 })
       .then(() => true)
       .catch(() => false);
 

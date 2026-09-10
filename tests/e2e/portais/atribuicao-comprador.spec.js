@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { ESTADO_VAZIO_DA_GRADE } from '../../../utils/grade.js';
 import { AtribuicaoCompradorPage } from '../../../pages/AtribuicaoCompradorPage.js';
 import { criarSolicitacaoCompraClassica, aprovarValidacaoDoGestor, aguardarAtividadeAtual } from '../../../pages/CicloCompradorPage.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
@@ -83,7 +84,7 @@ test.describe('Gerência de Compras — Atribuir comprador (CT-E2E-05-H)', () =>
     // no carregamento da página — a essa altura (já esperamos a Transferir acima) a resposta de
     // etapa=257 já chegou; a assertion abaixo só confirma o estado final renderizado.
     await expect(
-      atribuicao.getTabelaAtiva().getByText('Nenhum dado encontrado'),
+      atribuicao.getTabelaAtiva().getByText(ESTADO_VAZIO_DA_GRADE).first(),
       'defeito: a aba Atribuir deveria listar as SCs pendentes de atribuição, e o esperado hoje ' +
         'é o vazio ("Nenhum dado encontrado"). Se nem esse aviso aparece, a aba está num terceiro ' +
         'estado — nem com dado, nem com vazio declarado',

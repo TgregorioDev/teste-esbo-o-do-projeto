@@ -1,5 +1,6 @@
 // @ts-check
 import { expect } from '@playwright/test';
+import { ESTADO_VAZIO_DA_GRADE } from '../utils/grade.js';
 import { faltaPreCondicao } from '../utils/pre-condicao.js';
 import { PortalCompradorPage } from './PortalCompradorPage.js';
 import { FormularioSolicitacaoCompraPage } from './FormularioSolicitacaoCompraPage.js';
@@ -68,7 +69,8 @@ export class CicloCompradorPage {
     this.portal = new PortalCompradorPage(page);
 
     /** Painel de resultado das sub-telas do ciclo (Validação Inicial / Cotações / Avaliação / Vencedor). */
-    this.mensagemSemDados = page.getByText('Nenhum dado encontrado');
+    // Os dois idiomas já vistos em campo — ver `utils/grade.js`.
+    this.mensagemSemDados = page.getByText(ESTADO_VAZIO_DA_GRADE);
   }
 
   async goto() {

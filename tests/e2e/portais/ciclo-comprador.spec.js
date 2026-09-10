@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { esperarLinhasReais, ESTADO_VAZIO_DA_GRADE } from '../../../utils/grade.js';
 import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { CicloCompradorPage, criarSolicitacaoCompraClassica, aprovarValidacaoDoGestor, aguardarAtividadeAtual } from '../../../pages/CicloCompradorPage.js';
 import { TrackerComprasPage } from '../../../pages/TrackerComprasPage.js';
@@ -55,15 +56,12 @@ test.describe('Ciclo do Comprador — Validação Inicial (CT-E2E-06-H)', () => 
     // A grade lista o que o ambiente tiver. Sem SC nenhuma na base não há linha para expandir,
     // e o que este teste afirma — que os dados do item aparecem ao expandir — deixa de ser
     // exercitável; é ausência de massa, não defeito.
-    // ⚠️ A grade sempre tem pelo menos UMA linha: a do estado vazio. Contar linhas não
-    // distingue "tem SC" de "não tem" — e neste ambiente o texto do estado vazio está em
-    // INGLÊS ("No data found"), diferente do "Nenhum dado encontrado" do ambiente anterior.
-    // Por isso o critério é o conteúdo da primeira linha, com os dois idiomas cobertos.
-    const linhasNaFila = await ciclo.getLinhas().count();
-    const primeiroTexto =
-      linhasNaFila > 0 ? await ciclo.getLinhas().first().innerText() : '';
-    const filaVazia = linhasNaFila === 0 || /No data found|Nenhum dado encontrado/i.test(primeiroTexto);
-    if (filaVazia) {
+    // ⚠️ A grade sempre tem pelo menos UMA linha: a do estado vazio, que fica na tela ENQUANTO
+    // ela carrega. Contar linhas não distingue "tem SC", "não tem" e "ainda está carregando" —
+    // `esperarLinhasReais` resolve os três, e cobre as duas formas da mensagem (pt e en).
+    // Ver `utils/grade.js`.
+    const linhasNaFila = await esperarLinhasReais(ciclo.getLinhas());
+    if (linhasNaFila === 0) {
       faltaPreCondicao(
         '(ambiente): a Validação Inicial não trouxe nenhuma solicitação para esta conta — sem ' +
           'SC na fila não há linha a expandir nem item a conferir.',
@@ -204,7 +202,7 @@ test.describe('Ciclo do Comprador — filas delegadas (CT-E2E-07-H, CT-E2E-08-H,
     // Medido, não presumido: mesmo delegado para o comprador substituído, não há cotação
     // gerada hoje — nenhuma SC atravessou a Validação Orçamentária até aqui (ver
     // `alcadas-orcamentaria.spec.js`). "Atuar como" destrava a visão, não cria massa.
-    await expect(page.getByText('Nenhum dado encontrado')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(ESTADO_VAZIO_DA_GRADE).first()).toBeVisible({ timeout: 30_000 });
 
     expect(guarda.tentativas()).toBe(0);
   });

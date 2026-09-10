@@ -145,7 +145,11 @@ export class PortalCompradorPage {
       .waitForFunction(
         () => {
           const linha = document.querySelector('po-lookup-modal tbody tr');
-          return Boolean(linha) && !/Nenhum dado encontrado|Carregando/i.test(linha?.textContent ?? '');
+          // As duas formas do estado vazio (pt e en) e o texto de carga — ver `utils/grade.js`.
+          return (
+            Boolean(linha) &&
+            !/Nenhum dado encontrado|No data found|Carregando|Buscando/i.test(linha?.textContent ?? '')
+          );
         },
         null,
         { timeout: 45_000 },

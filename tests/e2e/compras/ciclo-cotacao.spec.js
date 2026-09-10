@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { ESTADO_VAZIO_DA_GRADE } from '../../../utils/grade.js';
 import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { CotacaoPage } from '../../../pages/CotacaoPage.js';
 import { PortalCompradorPage } from '../../../pages/PortalCompradorPage.js';
@@ -181,8 +182,9 @@ test.describe('Cotação de Produtos e Serviços — ponto de entrada real (Port
     // tentar antes de concluir que a fila está vazia.
     await expect(portalComprador.comboAtuarComo).toHaveCount(0);
 
-    const semDados = page.getByText('Nenhum dado encontrado');
-    await expect(semDados).toBeVisible();
+    // As duas formas do estado vazio: no `caixade182374` a mensagem é em português; no
+    // `caixade213859`, em inglês. Procurar só uma delas dá falso verde no outro ambiente.
+    await expect(page.getByText(ESTADO_VAZIO_DA_GRADE).first()).toBeVisible();
 
     expect(guarda.tentativas(), 'esta investigação é só leitura').toBe(0);
 

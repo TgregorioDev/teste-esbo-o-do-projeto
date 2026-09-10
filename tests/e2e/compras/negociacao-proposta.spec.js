@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { ESTADO_VAZIO_DA_GRADE } from '../../../utils/grade.js';
 import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { NegociacaoPage } from '../../../pages/NegociacaoPage.js';
 import { PortalCompradorPage } from '../../../pages/PortalCompradorPage.js';
@@ -144,7 +145,8 @@ test.describe('Negociação de Cotação — ponto de entrada real (Portal do Co
 
     const tabela = portalComprador.getTabelaAtiva();
     await expect(tabela).toBeVisible();
-    await expect(tabela.getByText('Nenhum dado encontrado')).toBeVisible();
+    // Ver `utils/grade.js`: a mensagem sai em português num ambiente e em inglês no outro.
+    await expect(tabela.getByText(ESTADO_VAZIO_DA_GRADE).first()).toBeVisible();
 
     expect(guarda.tentativas(), 'esta investigação é só leitura').toBe(0);
 
