@@ -11,9 +11,13 @@ produção: arquitetura, isolamento, paralelismo e observabilidade valem aqui co
 > construída, saiu de cena. `docs/mapa-do-ambiente.md` abre com o que mudou, medido; leia essa
 > seção antes de investigar qualquer vermelho, porque três coisas mudam a leitura de um relatório:
 >
-> 1. **Não há massa transacional.** Cadastro-mestre responde (71 filiais, 3.100 produtos, 72 mil
->    funcionários), mas contrato, fornecedor, SC e tarefa são zero. Todo cenário que parte deles
->    declara `PRÉ-CONDIÇÃO AUSENTE` — é ambiente, não regressão.
+> 1. **Havia massa; a leitura é que estava errada.** ⚠️ **Corrigido em 10/09/2026** — este item
+>    dizia "contrato, fornecedor, SC e tarefa são zero", e isso é **falso**. Os datasets de
+>    contrato são **escopados por filial**: sem `CorporateId` + `BranchId` respondem pela filial
+>    default (1101), que tem 20 contratos, e foi essa leitura que virou "base vazia". Medido: a
+>    filial **5303 (CASSI SEDE) tem 868 contratos**, e a varredura das 71 filiais dá **861
+>    distintos, 564 vigentes** — o mesmo volume do ambiente antigo. Fornecedores: **300**.
+>    Antes de declarar "não há massa de X", **passe o escopo de filial** e confira em mais de uma.
 > 2. **O portal de Acompanhamento de Contratos não está publicado.** São 54 testes que não têm
 >    como rodar aqui, e eles dizem isso em 13 segundos em vez de esperar 45s cada.
 > 3. **A concorrência é 3, e é medida.** O tenant degrada sob carga: com os 8 workers do default

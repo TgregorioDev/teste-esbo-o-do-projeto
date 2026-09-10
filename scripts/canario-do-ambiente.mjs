@@ -120,7 +120,15 @@ async function lerTextoCompleto(pagina) {
  */
 const DATASETS = [
   { nome: 'Filiais', id: 'dsProtheus_getBranches_restGetAll' },
-  { nome: 'Contratos', id: 'dsProtheus_getContratos_restGetAll' },
+  { nome: 'Contratos (filial default)', id: 'dsProtheus_getContratos_restGetAll' },
+  {
+    nome: 'Contratos (CASSI SEDE 5303)',
+    id: 'dsProtheus_getContratos_restGetAll',
+    constraints: [
+      { _field: 'CorporateId', _initialValue: '01', _finalValue: '01', _type: 1, fieldType: 'MUST' },
+      { _field: 'BranchId', _initialValue: '5303', _finalValue: '5303', _type: 1, fieldType: 'MUST' },
+    ],
+  },
   { nome: 'Fornecedores', id: 'dsProtheus_getFornecedores_restGetAll' },
   { nome: 'Compradores', id: 'dsProtheus_getCompradores_restGetAll' },
 ];
@@ -203,11 +211,11 @@ async function main() {
   console.log(`${'-'.repeat(72)}\nMassa de negócio (datasets do ERP)`);
   await pagina.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
   for (const dataset of DATASETS) {
-    const resposta = await pagina.evaluate(async (nome) => {
+    const resposta = await pagina.evaluate(async ({ nome, constraints }) => {
       const r = await fetch('/api/public/ecm/dataset/datasets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: nome, fields: [], constraints: [], order: [] }),
+        body: JSON.stringify({ name: nome, fields: [], constraints: constraints ?? [], order: [] }),
       });
       const corpo = await r.text();
       try {
@@ -223,7 +231,7 @@ async function main() {
       } catch {
         return { status: r.status, linhas: -1, erro: 'resposta não é JSON' };
       }
-    }, dataset.id);
+    }, { nome: dataset.id, constraints: dataset.constraints });
 
     const ok = resposta.status === 200 && resposta.linhas > 0;
     console.log(

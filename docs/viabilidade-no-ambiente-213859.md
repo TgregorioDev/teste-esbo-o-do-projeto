@@ -11,6 +11,22 @@ Medido em 09/09/2026, com Playwright MCP e sondas diretas, sobre os 518 casos de
 
 ---
 
+> ## ⚠️ Correção de 10/09/2026 — este documento superestima o bloqueio
+>
+> Duas afirmações centrais daqui foram medidas de novo e **não se sustentam**:
+>
+> 1. **"Não há contrato: `dsProtheus_getContratos_restGetAll` devolve zero linhas"** (seção 5).
+>    O dataset é escopado por filial. Sem `CorporateId` + `BranchId` ele responde pela filial
+>    default; com escopo, a filial 5303 sozinha devolve **868 contratos**, e as 71 filiais somam
+>    **861 distintos, 564 vigentes**. Fornecedores: **300**, não zero.
+> 2. **"O formulário da SC não abre"** (seção 2). Era queda do serviço do ERP, não impedimento
+>    de desenho. Com o serviço no ar, a SC é criada, grava no Protheus e percorre o fluxo — oito
+>    foram semeadas por API e aprovadas na Validação do Gestor no mesmo dia.
+>
+> O que segue de pé: a página de Acompanhamento de Contratos não está publicada (e os **seis
+> datasets** do widget também não), e a conta não tem matrícula de comprador no ERP. Ver
+> `docs/investigacoes/contratos-rota-alternativa.md` e `docs/massa-de-dados-no-ambiente-dev.md`.
+
 ## Como os 518 casos se distribuem por bloqueio declarado
 
 | Bloqueio | Casos | Situação no `caixade213859` |
