@@ -183,16 +183,29 @@ test.describe('Gerência de Compras', () => {
     await gerenciaCompras.expectGradeDisponivel('Atribuir');
 
     const linhas = await gerenciaCompras.esperarLinhasReais();
+
+    // ⚠️ Ter linha na grade NÃO é ter massa. Medido em 10/09/2026: a aba listou 17 solicitações
+    // e todas as verificadas estavam CANCELADAS, encerradas em bloco às 10:25 de 09/09 — o
+    // dataset `ds_getSolicsGerenciaCompras` devolve instância com `END_DATE` preenchido. Sem
+    // conferir no servidor, este teste se apoiaria em massa que não existe mais e passaria
+    // contando uma história falsa (foi o que a primeira versão dele fez).
+    const processos = await gerenciaCompras.lerNumerosDeProcesso();
+    const { ativos, encerrados } = await gerenciaCompras.separarProcessosAtivos(processos);
+
     test.info().annotations.push({
       type: 'atribuir-massa',
-      description: `${linhas} solicitação(ões) aguardando distribuição de comprador`,
+      description:
+        `${linhas} linha(s) na grade · ${ativos.length} processo(s) ABERTO(s) · ` +
+        `${encerrados.length} encerrado(s)${encerrados.length ? ': ' + encerrados.slice(0, 5).join(', ') : ''}`,
     });
 
-    if (linhas === 0) {
+    if (ativos.length === 0) {
       faltaPreCondicao(
-        '(ambiente): a aba Atribuir não trouxe nenhuma solicitação parada na atividade ' +
-          '"257 - Gerência de Compras". Sem SC aguardando distribuição não há atribuição a ' +
-          'oferecer — é a massa que falta, não o caminho.',
+        `(ambiente): a aba Atribuir listou ${linhas} linha(s), mas nenhuma corresponde a uma ` +
+          'solicitação ABERTA na atividade "257 - Gerência de Compras" — as listadas estão ' +
+          `encerradas (${encerrados.slice(0, 3).join(', ')}). Sem SC viva aguardando ` +
+          'distribuição não há atribuição a oferecer. Vale avisar quem cuida do widget: a grade ' +
+          'exibe processo cancelado como se estivesse pendente.',
       );
     }
 

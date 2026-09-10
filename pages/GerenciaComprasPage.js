@@ -115,6 +115,60 @@ export class GerenciaComprasPage {
     }
   }
 
+  /**
+   * Números de processo listados na aba ativa, na ordem da grade.
+   *
+   * A coluna "Processo" é a primeira com número — as outras duas numéricas da linha são
+   * "Num SC" e "Grupos de Produto".
+   *
+   * @returns {Promise<string[]>}
+   */
+  async lerNumerosDeProcesso() {
+    return this.getLinhasDaTabelaAtiva().evaluateAll((linhas) =>
+      linhas
+        .map((tr) => {
+          const celulas = [...tr.querySelectorAll('td')].map((td) => (td.textContent ?? '').trim());
+          return celulas.find((c) => /^\d{4,6}$/.test(c)) ?? '';
+        })
+        .filter(Boolean),
+    );
+  }
+
+  /**
+   * Quais dos processos listados estão de fato ABERTOS no servidor.
+   *
+   * ⚠️ Medido em 10/09/2026: a aba Atribuir listou 17 solicitações e **todas as 9 verificadas
+   * estavam CANCELADAS** — encerradas em bloco às 10:25 de 09/09. O dataset que alimenta a
+   * grade (`ds_getSolicsGerenciaCompras`, filtro `etapa,257`) devolve linhas com `END_DATE`
+   * preenchido, ou seja, **não filtra instância encerrada**.
+   *
+   * Consequência para quem escreve teste aqui: "a grade tem linhas" NÃO significa "há SC
+   * aguardando distribuição". Sem esta conferência, um teste se apoia em massa que não existe
+   * mais e passa contando uma história falsa.
+   *
+   * A leitura é por `fetch` de dentro da página: `/process-management/**` leva 403 do WAF
+   * quando chamado pelo contexto de requisição do Playwright.
+   *
+   * @param {string[]} processos
+   * @returns {Promise<{ ativos: string[], encerrados: string[] }>}
+   */
+  async separarProcessosAtivos(processos) {
+    return this.page.evaluate(async (ids) => {
+      /** @type {{ ativos: string[], encerrados: string[] }} */
+      const resultado = { ativos: [], encerrados: [] };
+      for (const id of ids) {
+        const resposta = await fetch(`/process-management/api/v2/requests/${id}`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!resposta.ok) continue;
+        const corpo = await resposta.json();
+        if (corpo.active) resultado.ativos.push(id);
+        else resultado.encerrados.push(`${id} (${corpo.status})`);
+      }
+      return resultado;
+    }, processos);
+  }
+
   /** Mensagem de grade vazia, dentro da tabela atualmente visível. */
   getMensagemSemDados() {
     return this.getTabelaAtiva().getByText(ESTADO_VAZIO_DA_GRADE);
