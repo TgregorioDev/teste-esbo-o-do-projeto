@@ -123,7 +123,8 @@ pasta de anexos no GED. Nas três SCs semeadas hoje ela não concluiu:
 |---|---|---|
 | 96363 | 10:18:19 | 10:30:06 → **236 Correção** |
 | 96363 (reenviada da Correção) | 10:40 | ~10:59 → **236 Correção** de novo |
-| 96369, 96370 | 11:03 | ainda em 233 no fechamento desta medição |
+| 96369, 96370 | 11:03 | ~11:20 → **236 Correção** |
+| 96376 … 96380 | 11:2x | ainda em 233 no fechamento desta medição |
 
 A SC fica com `numSolCompra` vazio, `pastaAnexo` vazio e `statusSolicitacao: "Iniciado"`. O
 ciclo leva de 12 a 19 minutos até cair na Correção — não é instantâneo, e quem for medir
@@ -173,7 +174,17 @@ node scripts/semear-massa.mjs --quantidade=3   # cria N SCs marcadas QA-MASSA-<u
 node scripts/semear-massa.mjs --acompanhar     # diz em que atividade cada uma parou
 ```
 
-O livro fica em `test-results/massa-semeada.jsonl`.
+O livro fica em `test-results/massa-semeada.jsonl` — que é **ignorado pelo git e apagado por
+qualquer execução da suíte**. Por isso o que semeamos em 10/09/2026 fica registrado aqui, e é
+esta lista que sobrevive:
+
+```
+96363  96369  96370  96376  96377  96378  96379  96380
+```
+
+Oito solicitações, todas ABERTAS no fim do dia, esperando a atividade 233 gravar. Se o livro
+sumir, `node scripts/limpar-massa.mjs --descobrir` continua achando todas pela marca `QA` no
+formulário — é para isso que a marca existe.
 
 **A massa fica viva de propósito.** Ela não passa pelo `global-teardown` e não é cancelada ao
 fim da execução — foi a decisão do dono do ambiente ("sem se preocupar em apagar no final,
