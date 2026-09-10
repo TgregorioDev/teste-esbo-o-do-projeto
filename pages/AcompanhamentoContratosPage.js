@@ -59,13 +59,32 @@ export class AcompanhamentoContratosPage {
    * como ambiente, que é o que de fato é.
    */
   async expectPaginaPublicada() {
-    const naoPublicada = await this.page
-      .getByText(/Recurso não foi encontrado/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
+    // ⚠️ `isVisible()` NÃO espera: devolve o estado do instante. A primeira versão desta função
+    // usava isso e criava uma CORRIDA — quando a página de erro ainda não tinha pintado no
+    // milissegundo da leitura, o teste seguia adiante e estourava 45s esperando um heading que
+    // nunca vem, reprovando como TIMEOUT em vez de PRÉ-CONDIÇÃO. Na execução de 10/09/2026, 62
+    // dos 64 testes desta família declararam pré-condição corretamente e os outros dois
+    // perderam a corrida — o mesmo ambiente produzindo duas classificações diferentes.
+    //
+    // A correção é esperar por CONDIÇÃO: o que vier primeiro, a página de erro ou o título da
+    // grade. Se nenhum dos dois vier, também é pré-condição — a página não montou, e não há
+    // cenário a exercitar de qualquer forma.
+    const erroDoFluig = this.page.getByText(/Recurso não foi encontrado/i).first();
 
-    if (naoPublicada) {
+    const veredito = await Promise.race([
+      erroDoFluig.waitFor({ state: 'visible', timeout: 30_000 }).then(() => 'nao-publicada'),
+      this.titulo.waitFor({ state: 'visible', timeout: 30_000 }).then(() => 'publicada'),
+    ]).catch(() => 'nao-montou');
+
+    if (veredito === 'nao-montou') {
+      faltaPreCondicao(
+        `(ambiente): a página ${ROTA_PORTAL_CONTRATOS} não montou em 30s — nem o título da ` +
+          'grade nem a página de erro do Fluig apareceram. Sem a tela não há cenário a ' +
+          'exercitar; repita quando o tenant estiver respondendo.',
+      );
+    }
+
+    if (veredito === 'nao-publicada') {
       faltaPreCondicao(
         `(ambiente): a página ${ROTA_PORTAL_CONTRATOS} não está publicada neste ambiente — o ` +
           'Fluig responde "Recurso não foi encontrado". Sem o Acompanhamento de Contratos não ' +
