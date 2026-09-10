@@ -492,3 +492,49 @@ nascer nominal para `TOTVS-FS`.
 ⚠️ Ao marcar o rádio: `#tbmanag_aprovadoValidSim` existe **duas vezes** no formulário
 (linha-modelo `name="tbmanag_aprovadoValid"` e linha real `name="tbmanag_aprovadoValid___1"`);
 o seletor estável é `input[name="tbmanag_aprovadoValid___1"][value="Aprovado"]`.
+
+---
+
+## 8. Dá para assumir a Validação Orçamentária (14) com a conta de automação? — medido em 10/09/2026, fim da tarde
+
+**Não, hoje não.** Todos os caminhos foram medidos e todos terminam em "a conta não existe no
+Protheus" ou "precisa de uma ação do Erlon/administrador":
+
+| Caminho | Resultado medido |
+|---|---|
+| Pool | a 14 **não é pool**: as 6 SCs (96380, 96435, 96438, 96445, 96446, 96447) têm tarefa nominal de `erlon.dengo.cassi.com.br.1` |
+| Substituição nativa do Fluig | `colleagueReplacement` devolve 0 linhas; `centralTasks/getValidReplacedUsers` devolve `{}` — a conta não substitui ninguém |
+| Gestor do processo (`managerMode`) | `managerAssignmentConfiguration: null` — o processo não tem gestor |
+| Processo da Cassi "Substituição de Cargos" (`wf_substituicaocargos`) | abre, mas trava na identificação de **quem pede**: `ds_protheus_getMatriculaTitular_rest` com `email=fabricasoftware@totvs.com.br` → `"Erro 401 --> Funcionario não localizado atraves do email ..."` |
+
+### Como a SC real 95753 foi aprovada, então
+
+O formulário dela registra a aprovação orçamentária por **Paulo Calixto - TOTVS como substituto
+de Erlon** (`tbitorc_mailSubstitute___1 = paulocalixto@totvs.com.br`,
+`tbitorc_mailSubstituted___1 = erlon.dengo@cassi.com.br`,
+`tbitorc_matriculaValid___1 = <código do Erlon>`).
+
+A mesma consulta que o formulário de substituição faz, para os três e-mails:
+
+| e-mail | `ds_protheus_getMatriculaTitular_rest` |
+|---|---|
+| `erlon.dengo@cassi.com.br` | **registro SRA completo** (funcionário, CC 9421) |
+| `paulocalixto@totvs.com.br` | `Erro 401 --> Funcionario não localizado` |
+| `fabricasoftware@totvs.com.br` | `Erro 401 --> Funcionario não localizado` |
+
+Ou seja: **o substituto não precisa ser funcionário** — o Paulo não é, e aprovou pelo Erlon. Quem
+precisa ser funcionário é **quem abre a substituição**. A leitura mais provável (inferida da
+95753, não executada) é que o próprio Erlon cadastrou o Paulo como substituto.
+
+### O que destrava
+
+- **Para as 6 SCs que já estão na 14:** o Erlon aprovar, ou **transferir** as 6 tarefas para
+  `TOTVS-FS` pela Central de Tarefas dele. Uma substituição cadastrada agora provavelmente não
+  reatribui tarefa já distribuída — a resolução do gestor acontece na atividade 280, antes da 14.
+  **Não medido.**
+- **Para as próximas SCs:** o Erlon abrir "Substituição de Cargos" e cadastrar `TOTVS-FS` como
+  substituto — o mesmo que aconteceu com o Paulo. Daí em diante a conta aprovaria a 14 sozinha.
+
+Nota: de manhã, a chamada do formulário a `ds_protheus_getMatriculaTitular_rest` devolvia HTTP
+500 `WFLYEJB0054: Failed to marshal EJB parameters`. À tarde, a mesma chamada devolve 200 com a
+resposta de negócio acima. O erro de EJB não existe mais.
