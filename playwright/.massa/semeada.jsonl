@@ -12,3 +12,7 @@
 {"processInstanceId":96439,"marca":"QA-MASSA-COT-a366d9ab","semeadaEm":"2026-09-10T17:37:44.364Z","proximoEstado":32,"processo":"wf_cotacao_produtos_servicos","nota":"sonda: iniciar cotação/negociação por API"}
 {"processInstanceId":96440,"marca":"QA-MASSA-NEG-effccf89","semeadaEm":"2026-09-10T17:37:46.052Z","proximoEstado":6,"processo":"wf_negociacao_cotacao_prod_serv","nota":"sonda: iniciar cotação/negociação por API"}
 {"processInstanceId":96442,"marca":"QA-MASSA-NEG-8ef8abc8","semeadaEm":"2026-09-10T17:41:47.068Z","proximoEstado":6,"processo":"wf_negociacao_cotacao_prod_serv","nota":"sonda: hd_atribuicao=TOTVS-FS"}
+{"processInstanceId":96445,"marca":"QA-MASSA-67c96e3d","semeadaEm":"2026-09-10T17:59:53.528Z","proximoEstado":233,"nota":"sonda rota 257: V1 CC 0100 UNIDADE CASSI PARA"}
+{"processInstanceId":96446,"marca":"QA-MASSA-7c6909d6","semeadaEm":"2026-09-10T18:00:05.253Z","proximoEstado":233,"nota":"sonda rota 257: V2 CC 0131 CLINICASSI MANAUS"}
+{"processInstanceId":96447,"marca":"QA-MASSA-6ec03694","semeadaEm":"2026-09-10T18:00:18.768Z","proximoEstado":233,"nota":"sonda rota 257: V3 CC 9423 + itensGestOrcamentario=Nao"}
+{"processInstanceId":96448,"marca":"QA-MASSA-71c3a514","semeadaEm":"2026-09-10T18:00:28.629Z","proximoEstado":233,"nota":"sonda rota 257: V4 rateio vazio"}

@@ -133,15 +133,20 @@ Três coisas a saber antes de usar:
 - **A massa semeada fica viva de propósito**, marcada `QA-MASSA-<uuid>` na justificativa e na
   observação do item. Não passa pelo `global-teardown`. Para higienizar,
   `node scripts/limpar-massa.mjs --descobrir`.
-- **A conta está em TODOS os pools do fluxo da SC** (Correções, Gestor Imediato, Validação
-  Orçamentária, Validação Compradores, Validação Alçadas) e nos grupos `_Inicio` de Cotação e
-  Negociação. O pool é um caminho alternativo ao Portal do Comprador, e não depende de
-  matrícula no ERP.
-- **Hoje a SC não passa da atividade 233 ("Grava SC e Anexos")** e cai em 236 "Correção" após
-  12–19 minutos. É ambiente, não script. O sintoma preciso a levar ao desenvolvedor é
-  `ds_protheus_getMatriculaTitular_rest` → HTTP 500 `WFLYEJB0054: Failed to marshal EJB
-  parameters`, que é erro de EJB do lado Fluig e não mudou quando o Protheus foi
-  restabelecido.
+- **A conta está nos grupos de pool do fluxo da SC** (Correções, Gestor Imediato, Validação
+  Compradores, Validação Alçadas) e nos grupos `_Inicio` de Cotação e Negociação. Pertencer ao
+  grupo `Validacao_Orcamentaria` **não basta**: a atividade 14 nunca vai para o pool (0 tarefas
+  em 4.100 movimentos) — vira tarefa **nominal** do gestor do centro de custo, resolvido no ERP
+  pela atividade 280. Com a conta atual a massa **para na 14**; para chegar à 257 é preciso que
+  esse gestor aprove, ou que `TOTVS-FS` seja titular de um CC no Protheus.
+- **Com o ERP no ar, a SC passa da 233 em 10–27 s** (mediana 14 s, medido em 10/09/2026) e cai
+  no pool da Validação do Gestor. Quando cai em 236 "Correção", é o serviço do ERP fora — o
+  portão do `globalSetup` e `scripts/empurrar-massa.mjs` já checam isso.
+- **Aprovar na atividade 7 exige esperar o formulário montar.** O rádio fica clicável antes do
+  `beforeSendValidate` existir; enviar nessa janela grava `managerAprovadoValidacao` vazio e o
+  gateway 9 desvia a SC para 11 "Ajustar Informações" com `send` 200. Espere o campo
+  "Aprovador" (`tbmanag_nomeRespValid___N`) ter valor. Detalhe em
+  `docs/investigacoes/bpmn-desvio-ajustar-informacoes.md`.
 
 `docs/massa-de-dados-no-ambiente-dev.md` é a fonte da verdade: o fluxo completo com os números
 das atividades, o contrato do `/start`, como assumir e movimentar tarefa de pool, e a resposta

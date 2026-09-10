@@ -19,7 +19,7 @@ Massa criada nesta investigação (fica viva, marcada `QA-MASSA`): ver seção 6
 | 2 | SIGAJURI, combo UF vazio | **não é massa** — corrida de leitura no page object | ajuste em `SigajuriPage.listarOpcoesReais` (esperar o combo antes de `evaluateAll`) |
 | 3 | Minhas solicitações sem atrasada | **VIÁVEL com espera** (SLA 24 h em 233/236/124; 96 h em 7/14) | `/start` recusa `deadlineDate`; alterar prazo exige gestor do processo |
 | 4 | Portal do Comprador / Controle de Cotações | **INVIÁVEL do nosso lado** (premissa "202 troca de senha" obsoleta: hoje o ERP nem é consultado; chamado direto, `/java_portal_comprador_v1/…/genericQuery` responde **401**) | `Y1_USER` para a conta (e-mail `fabricasoftware@totvs.com.br` no SY1) e cotação na SC8 — administrador do Protheus |
-| 5 | Gerência de Compras (257) | 7 **VIÁVEL e provado**; 14 **INVIÁVEL** com a conta (tarefa nominal do gestor do CC) | aprovação de Erlon Cesar Dengo (CC 9423) ou matrícula no ERP para a conta |
+| 5 | Gerência de Compras (257) | 7 **VIÁVEL e provado**; 14 **INVIÁVEL** com a conta (tarefa nominal do gestor do CC); rota "sem gestor" **não existe** (seção 7) | aprovação de Erlon Cesar Dengo nas 6 SCs paradas na 14, ou titularidade de CC no ERP para a conta |
 
 ---
 
@@ -377,3 +377,118 @@ acima com `POST /api/public/2.0/workflows/cancelInstances`).
 - **O bloqueio comum a 1, 4 e 5 é um só: a conta não existe no Protheus** (`dsProtheus_getUser_restGetByEmail`
   → `error: "undefined"`). Com `Y1_USER` (comprador) e um centro de custo cujo gestor seja a
   conta, o resto do caminho já está aberto pelos pools.
+
+---
+
+## 7. Rota até a 257 sem gestor orçamentário
+
+Pergunta do coordenador: o ramo **267 "Itens sem Gestor?"** pula a 14 Validação Orçamentária?
+Se sim, um item cujo gestor não resolva cairia direto na 257.
+
+### 7.1 O que o histórico diz sobre 277/267
+
+Varridas **41 páginas × 100 movimentos** de
+`GET /processes/wf_solicitacao_compras/activities` (tudo que o endpoint devolve). Contagem
+por atividade:
+
+```
+280 Distribuição Gestor Orçamentario  171
+265 Paralelo                          171
+277 Itens com Gestor?                 171
+267 Itens sem Gestor?                 171   ← as MESMAS 171 instâncias
+14  Validação Orçamentária            171
+271 Join                              139
+```
+
+**265 é gateway paralelo: 277 e 267 são ramos simultâneos, não alternativos.** Toda
+instância que chegou à 280 passou pelos dois e **toda** entrou na 14. Nenhuma instância do
+histórico tem tarefa no pool `G.P.Requisicao_de_Compras_Validacao_Orcamentaria` (0 em 4.100
+movimentos). Ou seja: no que a base mostra, o ramo 267 nunca levou ninguém a lugar nenhum
+diferente do Join.
+
+### 7.2 O que a 280 grava (comparação de formulários)
+
+`expand=formFields` de 96380 (`aprovResp = 004445`) e 96438 (`aprovResp = ""`), ambas após a
+280, contra a 95753 real:
+
+| campo | 95753 | 96380 | 96438 (`aprovResp` vazio) |
+|---|---|---|---|
+| `itensGestOrcamentario` | Sim | Sim | **Sim** |
+| `tbitorc_codERPUserValid___1` | 004445 | 004445 | **004445** |
+| `tbitorc_responsavelValid___1` | Paulo Calixto – TOTVS | Erlon Cesar Dengo | Erlon Cesar Dengo |
+| `tbitorc_matriculaValid___1` | 7ed9f502… | 7ed9f502… | 7ed9f502… |
+| `tbitorc_codERPValid___1` | 00011757 | 00011757 | 00011757 |
+| rateio `tbRatCC_codCCusto` | 9423 | 9423 | 9423 |
+
+A 280 **reescreve** o gestor a partir do centro de custo do rateio (9423 → matrícula ERP
+`004445` → usuário Fluig `7ed9f502…`), ignorando `tbprod_aprovResp___1`. `itensGestOrcamentario`
+é saída da 280, não entrada. O que pode mudar o resultado é o **centro de custo**.
+
+(Datasets de apoio, hoje: `ds_protheus_getMatriculaTitular_rest` → `Erro 401 Funcionario não
+localizado atraves do email matricula` para a conta; `dsProtheus_getSQB_restGetAll` →
+`error: "Unexpected token: c"`; `dsProtheus_getGestorCentroCusto_restGetAll` → `content: {}`;
+`dsProtheus_getCentroCusto_restGetAll` → 347 CCs, colunas `CTT_CUSTO, CTT_DESC01, CTT_RES, CTT_BLOQ…`.)
+
+### 7.3 O gestor varia com o CC — formulários históricos
+
+| SC | CC do rateio | `tbprod_aprovResp___1` | gestor gravado pela 280 (`codERPUserValid` / usuário Fluig) |
+|---|---|---|---|
+| 95753 | 9423 | 004445 | 004445 / 7ed9f502… (Erlon) |
+| 95648 | 7003 | 004445 | 004445 / 7ed9f502… |
+| 95605 | 1000 | 004445 | 004445 / 7ed9f502… |
+| 95572 | 1145 | 000187 | 000187 / euzeliane.alves |
+| **95585** | 0950 | **(vazio)** | 000187 / euzeliane.alves |
+| 95274 | 9422 | 000187 | 000187 / euzeliane.alves |
+
+Dois gestores distintos na base, escolhidos pelo CC; `aprovResp` vazio (95585) não impede a
+resolução. Nenhum item da história ficou "sem gestor".
+
+### 7.4 Semeadura das variantes (10/09/2026, 15:0x)
+
+Quatro SCs por `/start` (mesma factory, `QA-MASSA`, registradas no livro), aprovadas na 7
+**esperando `#tbmanag_nomeRespValid___1` ter valor** antes de marcar o rádio (montou em 2,7 s,
+4,7 s e 8,6 s nas três primeiras) — `managerAprovadoValidacao = "Aprovado"` conferido no
+formulário após o envio, nenhuma foi para 11:
+
+| SC | variante | resultado após a 280 |
+|---|---|---|
+| 96445 | CC **0100** (UNIDADE CASSI PARÁ) | 265 → 277 → **14 nominal, Erlon (004445)** |
+| 96446 | CC **0131** (CLINICASSI MANAUS) | 265 → 277 → **14 nominal, Erlon (004445)** |
+| 96447 | CC 9423 + `itensGestOrcamentario = "Não"` no `/start` | a 280 sobrescreve para `"Sim"` → **14 nominal, Erlon** |
+| 96448 | `tbprod_jsonrateio___1 = "[]"` (sem rateio) | **não sai da 233 "Grava SC e Anexos"** (System:Auto, >10 min no fechamento) — a integração com o ERP não conclui sem rateio; destino esperado é 236 Correção, nunca a 7 |
+
+Trilha idêntica nas três que passaram (`GET /requests/{id}/tasks`):
+
+```
+294 → 233 → 7 (pool Gestor_Imediato) → 9 Sol. Validação do Gestor (TOTVS-FS)
+  → 280 → 265 Paralelo → 277 Itens com Gestor? → 14 Validação Orçamentária [NOT_COMPLETED, 7ed9f502…] → 271 Join (System:Auto)
+```
+
+### 7.5 Resposta
+
+**Não — com esta conta não há rota até a 257 sem o gestor orçamentário nominal.**
+
+1. O gateway 265 é **paralelo**: 277 e 267 sempre correm juntos (171 = 171 = 171 no
+   histórico), e o ramo 267 termina no Join 271 sem tarefa. O Join espera a 14. Não existe
+   "pular a 14" no desenho publicado (v71).
+2. A 280 resolve o gestor pelo **centro de custo no ERP** e grava `itensGestOrcamentario =
+   "Sim"` sempre — `aprovResp` vazio (96438, 95585), CC de unidade (0100, 0131) e
+   `itensGestOrcamentario = "Não"` no payload não mudam nada. Quatro CCs distintos resolveram
+   para `004445`/Erlon, o que sugere um aprovador padrão do ERP quando o CC não tem titular.
+3. Sem rateio a SC nem chega à 7.
+4. A conta não aparece em `dsProtheus_getUser_restGetByEmail` nem em
+   `ds_protheus_getMatriculaTitular_rest` (`Erro 401 Funcionario não localizado`), logo nenhum
+   CC pode resolver para ela.
+
+Item 3 do pedido (confirmar SC na grade Atribuir da Gerência de Compras como `active: true`):
+**não medido** — nenhuma SC chegou à 257.
+
+O que destrava, por ordem de custo: (a) **Erlon Cesar Dengo (ou o gestor do processo em
+`managerMode`) aprovar as 6 SCs paradas na 14** — 96380, 96438, 96445, 96446, 96447 e 96435
+— e elas seguem 16 → 254 → 256 → 257 pelos pools que a conta já tem; (b) cadastrar a conta
+como titular de um centro de custo no Protheus (administrador do ERP), o que faria a 14
+nascer nominal para `TOTVS-FS`.
+
+⚠️ Ao marcar o rádio: `#tbmanag_aprovadoValidSim` existe **duas vezes** no formulário
+(linha-modelo `name="tbmanag_aprovadoValid"` e linha real `name="tbmanag_aprovadoValid___1"`);
+o seletor estável é `input[name="tbmanag_aprovadoValid___1"][value="Aprovado"]`.

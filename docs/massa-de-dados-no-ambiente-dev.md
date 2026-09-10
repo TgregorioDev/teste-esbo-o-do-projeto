@@ -174,10 +174,11 @@ node scripts/semear-massa.mjs --quantidade=3   # cria N SCs marcadas QA-MASSA-<u
 node scripts/semear-massa.mjs --acompanhar     # diz em que atividade cada uma parou
 ```
 
-O livro fica em `playwright/.massa/semeada.jsonl`, ao lado de `playwright/.auth`. A primeira
-versão o colocou em `test-results/`, que é o `outputDir` do Playwright e **é apagado a cada
-execução** — o livro sumiu duas vezes antes de eu perceber. Ainda assim ele é local e não
-versionado, então a lista do que semeamos em 10/09/2026 fica registrada aqui:
+O livro fica em `playwright/.massa/semeada.jsonl`, ao lado de `playwright/.auth`, e **é
+versionado** — é a fonte da verdade sobre toda a massa semeada (só ids e marcas, nada
+sensível). A primeira versão o colocou em `test-results/`, que é o `outputDir` do Playwright e
+**é apagado a cada execução**; o livro sumiu duas vezes antes de eu perceber. As oito primeiras,
+de 10/09/2026, ficam registradas aqui também, como histórico:
 
 ```
 96363  96369  96370  96376  96377  96378  96379  96380
