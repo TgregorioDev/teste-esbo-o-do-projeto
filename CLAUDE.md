@@ -354,6 +354,24 @@ Quando houver sobreposição de CSS, use clique de mouse na coordenada (`page.mo
 **Estado global mutável não paraleliza.** `describe.serial` não serializa entre repetições do
 `--repeat-each`; caso que disputa recurso de conta única vira flaky garantido.
 
+**API de leitura instantânea usada como se esperasse.** `isVisible()`, `evaluateAll()`, `count()` e
+`isChecked()` devolvem o estado do INSTANTE — "não visível", zero opções e zero linhas são respostas
+válidas para elas. Só em 10/09/2026 isso produziu quatro vermelhos com a causa errada: a página não
+publicada classificada ora como pré-condição, ora como timeout (`isVisible`); o combo UF do SIGAJURI
+"sem nenhuma opção" com 29 opções na tela (`evaluateAll`); e dois scripts de massa. Leitura que decide
+veredito espera por condição (`waitFor`, `expect(...).toHaveCount`, `Promise.race` entre os sinais).
+
+**Tela que não confirma não prova que a ação não aconteceu.** Quando a verificação na tela estoura,
+consulte o servidor antes de reprovar (`utils/estado-da-solicitacao.js`): ação registrada é
+`PRÉ-CONDIÇÃO` de ambiente com a evidência; ação não registrada é falha real. **Nunca troque a
+verificação da tela pela do servidor** — o que o usuário vê é o comportamento; o servidor só
+classifica. Na execução dos destrutivos de 10/09/2026, 7 vermelhos eram ações que o servidor tinha
+registrado (`docs/execucoes/relatorio-destrutivos-2026-09-10.md`).
+
+**Lock de recurso compartilhado cobre o desfecho, não o clique.** A área de upload do usuário segue
+ocupada enquanto a publicação está em voo. Soltar o lock no Confirmar fez 2 dos 4 casos de
+`bloqueio-extensoes` falharem limpando o arquivo do vizinho, sem nunca afirmar nada sobre extensão.
+
 ---
 
 ## Estado do quality gate

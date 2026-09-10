@@ -79,6 +79,15 @@ import { comExclusividade } from '../utils/exclusividade.js';
  *   acontecia sob o overlay do blockUI e morria em `intercepts pointer events` / `detached`.
  *   A busca textual da Lixeira continua não servindo — a varredura por paginação, sim.
  */
+/**
+ * Mensagens com que o GED recusaria um arquivo — a união das formas que os casos de
+ * `bloqueio-extensoes.spec.js` e `gestao-documentos.spec.js` aceitam. Aqui ela é SINAL DE
+ * SINCRONIZAÇÃO (a publicação teve desfecho), não assertion: cada spec continua afirmando a
+ * própria expectativa com a própria expressão.
+ */
+export const MENSAGEM_DE_BLOQUEIO_DE_ARQUIVO =
+  /extensão não permitida|tipo de arquivo não permitido|arquivo não permitido|conteúdo não corresponde|arquivo inválido/i;
+
 export class DocumentosGedPage extends DocumentosPage {
   /** @param {import('@playwright/test').Page} page */
   constructor(page) {
@@ -217,6 +226,10 @@ export class DocumentosGedPage extends DocumentosPage {
    * extensão bloqueada): exigir o fechamento ali transformaria em vermelho um eventual conserto
    * do produto, em que o modal legitimamente continuaria aberto exibindo o erro.
    *
+   * Com `false`, o lock é mantido até o DESFECHO da publicação — o publicador fechou (publicou)
+   * OU uma mensagem de bloqueio apareceu —, o que vier primeiro. Não exige o fechamento, mas
+   * também não solta o lock com a publicação em voo. Ver o comentário dentro do método.
+   *
    * @param {{ descricao: string, caminhoArquivo: string, antesDeConfirmar?: () => Promise<void>, esperaPublicacao?: boolean }} dados
    */
   async enviarDocumento({ descricao, caminhoArquivo, antesDeConfirmar, esperaPublicacao = true }) {
@@ -232,13 +245,44 @@ export class DocumentosGedPage extends DocumentosPage {
     // ("o publicador de documento não fechou") numa repetição de `CT-GED-04-H` com 4 workers.
     return comExclusividade('fluig-upload-staging', async () => {
       await this.publicarDocumento({ descricao, caminhoArquivo, antesDeConfirmar });
-      if (!esperaPublicacao) return;
-      // 60s (e não os 30s padrão) porque a publicação com aprovação configurada grava mais e
-      // porque o lock enfileira workers: é o prazo da OPERAÇÃO, não folga para esconder falha.
-      await expect(
-        this.modal.descricao,
-        'o publicador de documento não fechou — a publicação não concluiu',
-      ).toBeHidden({ timeout: 60_000 });
+
+      if (esperaPublicacao) {
+        // 60s (e não os 30s padrão) porque a publicação com aprovação configurada grava mais e
+        // porque o lock enfileira workers: é o prazo da OPERAÇÃO, não folga para esconder falha.
+        await expect(
+          this.modal.descricao,
+          'o publicador de documento não fechou — a publicação não concluiu',
+        ).toBeHidden({ timeout: 60_000 });
+        return;
+      }
+
+      // ⚠️ Com `esperaPublicacao: false` este método SOLTAVA o lock no clique em Confirmar — a
+      // mesma falha que o comentário acima registra para o outro modo. Medido na execução dos
+      // destrutivos de 10/09/2026: os quatro casos de `bloqueio-extensoes.spec.js` rodam em
+      // paralelo; o primeiro soltava o lock com o `saveNewItem` ainda em voo, o seguinte abria
+      // o publicador, via o arquivo do primeiro na área de staging e não conseguia removê-lo —
+      // "Não foi possível limpar as linhas residuais" em 2 dos 4, que nunca chegaram a afirmar
+      // nada sobre extensão.
+      //
+      // O que se espera aqui é o DESFECHO, não o fechamento: publicou (o modal fechou, que é o
+      // defeito de hoje) OU bloqueou (a mensagem apareceu, que é o conserto esperado). Os dois
+      // liberam a área de staging, e nenhum dos dois é afirmado aqui — quem afirma é o teste.
+      const desfecho = await Promise.any([
+        this.modal.descricao.waitFor({ state: 'hidden', timeout: 60_000 }).then(() => 'publicou'),
+        this.page
+          .getByText(MENSAGEM_DE_BLOQUEIO_DE_ARQUIVO)
+          .first()
+          .waitFor({ state: 'visible', timeout: 60_000 })
+          .then(() => 'bloqueou'),
+      ]).catch(() => 'semDesfecho');
+
+      if (desfecho === 'semDesfecho') {
+        throw new Error(
+          'a publicação não teve desfecho em 60s: o publicador não fechou e nenhuma mensagem de ' +
+            'bloqueio apareceu. Sem desfecho não dá para afirmar se o arquivo foi aceito ou ' +
+            'recusado — e a área de upload do usuário ficou ocupada.',
+        );
+      }
     });
   }
 

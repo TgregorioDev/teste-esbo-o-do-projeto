@@ -7,6 +7,7 @@ import { FormularioSolicitacaoCompraPage } from './FormularioSolicitacaoCompraPa
 import { CentralTarefasComprasPage } from './CentralTarefasComprasPage.js';
 import { criarProdutoCompra, FILIAL_PADRAO, PRODUTO_PADRAO } from '../factories/produto-compra.js';
 import { paraNumero } from '../utils/captura-payload.js';
+import { consultarTarefaPendente, descreverTarefa } from '../utils/estado-da-solicitacao.js';
 
 /**
  * Ciclo do Comprador — etapas 6 a 11 do E2E de Compras, dentro do Portal do Comprador
@@ -302,16 +303,17 @@ export async function criarSolicitacaoCompraClassica(page, overrides = {}) {
 
   await formulario.enviar();
 
-  await page.waitForFunction(
-    () => /iniciada com sucesso|Erro/.test(document.body.innerText),
-    undefined,
-    { timeout: 30_000 },
-  );
-  const texto = await page.locator('body').innerText();
-  const numero = texto.match(/Solicitação (\d+) iniciada com sucesso/)?.[1];
-  if (!numero) {
-    throw new Error(`Falha ao criar a Solicitação de Compras clássica: ${texto.slice(0, 400)}`);
-  }
+  // O desfecho do envio é lido por `aguardarConfirmacaoDeEnvio`, o oráculo que a suíte já usa
+  // para ESTE MESMO evento: link numérico de confirmação, diálogo de recusa com o texto dela,
+  // ou pré-condição de ambiente quando o Fluig não dá retorno nenhum.
+  //
+  // A versão anterior tinha um oráculo próprio — `waitForFunction(/iniciada com sucesso|Erro/)`
+  // de 30s que lançava `Error` cru. Na execução dos destrutivos de 10/09/2026 ele reprovou 4
+  // testes (`alcadas-orcamentaria` :108 :193 :237, `ciclo-comprador` :293) como se fossem
+  // regressão, e no servidor as quatro SCs (96462, 96463, 96464, 96466) EXISTIAM, com a
+  // atividade 233 concluída em 12–17s e a tarefa na Validação do Gestor. Dois oráculos para o
+  // mesmo evento, um com veredito e outro sem, é o que produz vermelho sem causa.
+  const numero = await formulario.aguardarConfirmacaoDeEnvio();
 
   return { numeroProcesso: numero, item };
 }
@@ -336,7 +338,7 @@ export async function aprovarValidacaoDoGestor(page, numeroProcesso, justificati
   }).toPass({ timeout: 150_000, intervals: [5_000, 10_000] });
 
   await central.assumirTarefaAtual(numeroProcesso);
-  await aprovarComRetentativa(page, central, justificativa);
+  await aprovarComRetentativa(page, central, justificativa, numeroProcesso);
   await central.abrirDetalheAposConfirmacao();
 
   return central;
@@ -387,8 +389,9 @@ async function esperarFormularioDeAprovacaoPronto(central) {
  * @param {import('@playwright/test').Page} page
  * @param {CentralTarefasComprasPage} central
  * @param {string} justificativa
+ * @param {string | number} numeroProcesso só para classificar o "sem retorno" pelo servidor
  */
-async function aprovarComRetentativa(page, central, justificativa) {
+async function aprovarComRetentativa(page, central, justificativa, numeroProcesso) {
   const dialogoErro = page.getByRole('heading', { name: 'Erro', exact: true });
   const maxTentativas = 3;
 
@@ -415,6 +418,28 @@ async function aprovarComRetentativa(page, central, justificativa) {
       await page.getByRole('button', { name: 'Ok, entendi' }).click();
       await dialogoErro.waitFor({ state: 'hidden' });
       continue;
+    }
+
+    if (resultado === 'nenhum') {
+      // A tela não confirmou nem recusou em 30s. Antes de reprovar, o servidor diz se a
+      // aprovação ACONTECEU — sem isso, "o Fluig não registrou" e "o Fluig registrou mas a tela
+      // de confirmação não chegou" saem com a mesma mensagem. Medido em 10/09/2026: a SC 96459
+      // reprovou aqui como "Falha ao submeter" e, no servidor, tinha passado 7 → 9 → 280 → 14.
+      // A tela continua sendo o que se afirma; o servidor só classifica o vermelho.
+      const { tarefa, motivo } = await consultarTarefaPendente(page, numeroProcesso);
+      const saiuDaValidacaoDoGestor = tarefa === null || (tarefa !== undefined && tarefa.atividade !== 7);
+      if (saiuDaValidacaoDoGestor) {
+        faltaPreCondicao(
+          `(ambiente): a aprovação da SC #${numeroProcesso} foi registrada no servidor — ela saiu da ` +
+            `Validação do Gestor e está em: ${descreverTarefa(tarefa)} — mas a tela não mostrou a ` +
+            'confirmação em 30s. O fluxo sob teste andou; foi a tela que não chegou a tempo.',
+        );
+      }
+      throw new Error(
+        `Falha ao submeter a aprovação da Validação do Gestor após ${tentativa} tentativa(s): a tela ` +
+          `não confirmou nem recusou em 30s, e no servidor a SC #${numeroProcesso} continua em ` +
+          `${descreverTarefa(tarefa)}${motivo ? ` — ${motivo}` : ''}.`,
+      );
     }
 
     throw new Error(

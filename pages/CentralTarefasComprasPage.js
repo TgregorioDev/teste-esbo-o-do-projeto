@@ -1,6 +1,7 @@
 // @ts-check
 import { expect } from '@playwright/test';
 import { faltaPreCondicao } from '../utils/pre-condicao.js';
+import { consultarTarefaPendente, descreverTarefa } from '../utils/estado-da-solicitacao.js';
 
 /**
  * Extensão da Central de Tarefas (`/portal/p/1/pagecentraltask`) para o ciclo de aprovação
@@ -308,9 +309,31 @@ export class CentralTarefasComprasPage {
   async assumirTarefaAtual(numeroProcesso) {
     await this.botaoAssumirTarefaAtual().click();
     const heading = this.page.getByRole('heading', { level: 2 }).filter({ hasText: /^\d+\s*-/ });
-    await heading.waitFor({ state: 'visible', timeout: 30_000 }).catch(() => {
-      throw new Error(`Assumir tarefa da solicitação #${numeroProcesso} não abriu a tela de decisão esperada.`);
-    });
+    const abriu = await heading
+      .waitFor({ state: 'visible', timeout: 30_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (abriu) return;
+
+    // A tela de decisão não abriu em 30s. O servidor diz se o "Assumir" ACONTECEU — sem isso,
+    // "o Fluig não atribuiu a tarefa" e "atribuiu, mas a tela não montou a tempo" saem com a
+    // mesma mensagem, e o gate lê as duas como regressão. Medido em 10/09/2026: as SCs 96460 e
+    // 96465 reprovaram aqui e, no servidor, tinham um movimento novo na atividade 7 — assumidas.
+    // A tela continua sendo o que se exige; o servidor só classifica o vermelho.
+    const { tarefa, motivo } = await consultarTarefaPendente(this.page, numeroProcesso);
+    const login = process.env.QA_USERNAME ?? '';
+    if (tarefa && login && tarefa.responsavel === login) {
+      faltaPreCondicao(
+        `(ambiente): a tarefa da SC #${numeroProcesso} foi assumida no servidor — ` +
+          `${descreverTarefa(tarefa)} — mas a tela de decisão não abriu em 30s. O "Assumir" ` +
+          'funcionou; foi a tela que não chegou a tempo.',
+      );
+    }
+    throw new Error(
+      `Assumir tarefa da solicitação #${numeroProcesso} não abriu a tela de decisão esperada, e no ` +
+        `servidor a tarefa NÃO está com ${login || 'o usuário da automação'}: ${descreverTarefa(tarefa)}` +
+        `${motivo ? ` — ${motivo}` : ''}.`,
+    );
   }
 
   /**
