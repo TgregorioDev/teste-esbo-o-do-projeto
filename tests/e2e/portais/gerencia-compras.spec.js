@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { GerenciaComprasPage } from '../../../pages/GerenciaComprasPage.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
 
@@ -143,5 +144,87 @@ test.describe('Gerência de Compras', () => {
     ).toEqual(COLUNAS);
 
     expect(guarda.tentativas()).toBe(0);
+  });
+
+  /**
+   * FSWTBC-3707 e FSWTBC-3840 — a aba Atribuir oferece o caminho de atribuição.
+   *
+   * Os dois chamados são a mesma queixa em momentos diferentes: *"não está atribuindo
+   * comprador"*. O 3840 é a **terceira** ocorrência (depois do 3707 e do 2790), fechada no mesmo
+   * dia, sem causa raiz e com evidência que chegou por WhatsApp. Um caminho que quebra três
+   * vezes e nunca tem causa registrada é exatamente o que uma suíte deve vigiar.
+   *
+   * ## Por que estes casos estavam bloqueados, e por que deixaram de estar
+   *
+   * O bloqueio declarado nos dois era o mesmo: *"a aba Atribuir não lista nenhum registro"* —
+   * sem SC parada na atividade **257 - Gerência de Compras**, não há o que atribuir. No
+   * ambiente `caixade213859` há 17, medido em quatro cargas seguidas.
+   *
+   * ## O que este teste afirma, e o que deliberadamente não faz
+   *
+   * Afirma que **os meios de atribuir existem e estão na tela**: cada linha traz o campo
+   * "Selecione o comprador" e o botão "Atribuir"; o topo traz "Atribuir em lote" e os três
+   * filtros (Filial, Valor Estimado, Grupo de Produto).
+   *
+   * **Não** clica em "Atribuir" nem em "Atribuir em lote": atribuir movimenta a SC de outra
+   * pessoa da atividade 257 para a 119, e as 17 listadas são de terceiros. A guarda de escrita
+   * prova que nada saiu. É a mesma linha que os próprios casos traçam ("concluir a atribuição é
+   * escrita em processo de terceiros; não foi executada").
+   */
+  test('FSWTBC-3707 FSWTBC-3840 — a aba Atribuir lista SCs com os controles de atribuição disponíveis', async ({
+    page,
+  }) => {
+    const guarda = await bloquearCriacaoDeSolicitacao(page);
+    const gerenciaCompras = new GerenciaComprasPage(page);
+
+    await gerenciaCompras.goto();
+    await gerenciaCompras.expectCarregada();
+    await gerenciaCompras.abrirAbaAtribuir();
+    await gerenciaCompras.expectGradeDisponivel('Atribuir');
+
+    const linhas = await gerenciaCompras.esperarLinhasReais();
+    test.info().annotations.push({
+      type: 'atribuir-massa',
+      description: `${linhas} solicitação(ões) aguardando distribuição de comprador`,
+    });
+
+    if (linhas === 0) {
+      faltaPreCondicao(
+        '(ambiente): a aba Atribuir não trouxe nenhuma solicitação parada na atividade ' +
+          '"257 - Gerência de Compras". Sem SC aguardando distribuição não há atribuição a ' +
+          'oferecer — é a massa que falta, não o caminho.',
+      );
+    }
+
+    // Os três filtros que os dois casos mandam conferir antes de localizar a SC.
+    for (const filtro of ['Filial', 'Valor Estimado', 'Grupo de Produto']) {
+      await expect(
+        page.getByText(filtro, { exact: true }).first(),
+        `o filtro "${filtro}" da aba Atribuir sumiu`,
+      ).toBeVisible();
+    }
+    await expect(page.getByRole('button', { name: 'Filtrar' })).toBeVisible();
+
+    // O caminho de atribuição, por linha e em lote. É isto que "não estava atribuindo" nos
+    // três chamados: sem estes controles não há como distribuir a SC a um comprador.
+    const primeira = gerenciaCompras.getLinhasDaTabelaAtiva().first();
+    await expect(
+      primeira.getByPlaceholder('Selecione o comprador'),
+      'a linha da SC deveria oferecer o campo de escolha do comprador',
+    ).toBeVisible();
+    await expect(
+      primeira.getByRole('button', { name: 'Atribuir' }),
+      'a linha da SC deveria oferecer a ação de atribuir',
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Atribuir em lote' }),
+      'a tela deveria oferecer a atribuição em lote',
+    ).toBeVisible();
+
+    // Nenhum clique em Atribuir: as 17 SCs são de terceiros, e atribuir as movimenta.
+    expect(
+      guarda.tentativas(),
+      `ler a fila de atribuição não deveria escrever nada — tentou: ${JSON.stringify(guarda.urls())}`,
+    ).toBe(0);
   });
 });

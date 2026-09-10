@@ -119,6 +119,41 @@ export class GerenciaComprasPage {
     return this.getTabelaAtiva().getByText('Nenhum dado encontrado');
   }
 
+  /**
+   * Espera até a grade trazer linha REAL e devolve quantas são.
+   *
+   * ⚠️ A linha de estado vazio fica na tela **enquanto a grade carrega**, não só quando não há
+   * dado. Medido em 09/09/2026: lendo 8s depois de abrir a aba, "Nenhum dado encontrado";
+   * esperando até 40s, 17 SCs — em 4 de 4 tentativas. Contar cedo demais faz concluir, errado,
+   * que a aba está vazia (foi o que me fez duvidar da própria remoção da tag `@bug` aqui).
+   *
+   * Devolve 0 quando o prazo acaba e a linha continua sendo a de estado vazio — aí é ausência
+   * de massa de verdade, e quem chama decide como declarar.
+   *
+   * @param {number} [timeout]
+   * @returns {Promise<number>}
+   */
+  async esperarLinhasReais(timeout = 45_000) {
+    const linhas = this.getLinhasDaTabelaAtiva();
+    const limite = Date.now() + timeout;
+
+    while (Date.now() < limite) {
+      const total = await linhas.count();
+      if (total > 1) return total;
+      if (total === 1) {
+        const texto = await linhas.first().innerText();
+        if (!/Nenhum dado encontrado|No data found/i.test(texto)) return 1;
+      }
+      // Espera pela PRÓXIMA renderização da grade, não por tempo fixo: `waitFor` num locator
+      // que já existe volta na hora, então o passo é o próprio recount acima.
+      await linhas
+        .nth(1)
+        .waitFor({ state: 'attached', timeout: 2_000 })
+        .catch(() => {});
+    }
+    return 0;
+  }
+
   /** Linhas de dados (exclui a linha de "Nenhum dado encontrado") da tabela visível. */
   getLinhasDaTabelaAtiva() {
     return this.getTabelaAtiva().locator('tbody tr');
