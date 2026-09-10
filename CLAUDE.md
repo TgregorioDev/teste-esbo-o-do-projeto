@@ -25,6 +25,31 @@ produção: arquitetura, isolamento, paralelismo e observabilidade valem aqui co
 
 ---
 
+## Portão do serviço do ERP — roda ANTES de tudo, e mata a execução
+
+`fixtures/global-setup.js` pergunta ao Fluig se o serviço do ERP responde e **aborta a execução
+inteira** se não responder. Regra dada pelo desenvolvedor do projeto em 10/09/2026: *"tem que
+pedir para ele, antes de fazer os teste, verificar se o serviço está no ar"*.
+
+```
+GET /api/public/2.0/authorize/client/test?serviceCode=apiRESTProtheusCompras
+```
+
+⚠️ **O status HTTP não serve de veredito**: a rota devolve 200 até para `serviceCode`
+inexistente. O que decide é `content.description` — `apiRESTProtheusCompras:SUCCESS` (no ar)
+contra `ERROR CALLING SERVICE: …` (fora). `utils/servico-erp.js` encapsula isso; use-o em vez
+de chamar a rota na mão. `content.result` **varia conforme o endpoint** que o serviço usa por
+baixo — não afirme nada sobre ele.
+
+Antes de qualquer análise em tela pelo Playwright MCP, faça a mesma consulta: com o ERP fora,
+nada de Compras funciona no Fluig e o que você observar não diz nada sobre o produto.
+
+- `PULAR_GATE_ERP=1` roda mesmo com o serviço fora (suítes que não dependem de Compras).
+- `SERVICO_ERP=servicoQueNaoExiste` prova que o portão reprova, sem derrubar serviço nenhum.
+- `npm run canario` mostra o mesmo veredito na primeira linha.
+
+---
+
 ## Comandos
 
 > **Execução é sempre em PRIMEIRO PLANO.** Nunca mande a suíte para segundo plano, nunca use

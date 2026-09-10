@@ -27,6 +27,7 @@ import dotenv from 'dotenv';
 import { chromium } from '@playwright/test';
 import { readFileSync, existsSync } from 'node:fs';
 import { ARQUIVO_AUTENTICACAO } from '../fixtures/global-setup.js';
+import { verificarServicoErp } from '../utils/servico-erp.js';
 
 dotenv.config({ path: process.env.ENV_FILE ?? '.env.test', quiet: true });
 
@@ -142,6 +143,22 @@ async function main() {
   const pagina = await contexto.newPage();
 
   console.log(`\nCanário do ambiente — ${BASE}\n${'='.repeat(72)}`);
+
+  // Primeira pergunta, e a mais barata: o serviço do ERP responde? É a mesma que o
+  // `globalSetup` faz para decidir se deixa a execução começar — aqui ela só informa, porque o
+  // canário nunca decide por você (ver a doc no topo deste arquivo).
+  const servico = await verificarServicoErp(pagina);
+  console.log(
+    `[${servico.noAr ? '  ok  ' : ' FORA '}] ${('Serviço do ERP (' + servico.servico + ')').padEnd(38)} ` +
+      `${servico.noAr ? '' : servico.descricao + (servico.detalhe ? ' — ' + servico.detalhe : '')}`,
+  );
+  if (!servico.noAr) {
+    console.log(
+      '         Com ele fora, NADA de Compras funciona no Fluig e o `globalSetup` aborta a\n' +
+        '         execução (escape: PULAR_GATE_ERP=1).',
+    );
+  }
+  console.log(`${'-'.repeat(72)}`);
 
   /** @type {Array<{nome: string, veredito: string, arrasta: string}>} */
   const resultados = [];
