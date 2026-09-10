@@ -36,3 +36,24 @@ limpeza-alvos.json
 relatorios/html/
 relatorios/blob-report-extra/
 .playwright-mcp/
+
+# Sondas temporárias de investigação (agentes e sessões de depuração). Ficam na raiz por
+# necessidade — precisam resolver `./fixtures/global-setup.js` e o `@playwright/test` do
+# projeto —, mas não são do projeto. Em 10/09/2026 um `git add -A` levou sete delas para a
+# `main` no meio de um commit de correção; daí a regra.
+.inv-*
+.alt-*
+.bpmn-*
+.sonda*
+.start*
+.erp.mjs
+.quem.mjs
+.onde.mjs
+.poll.mjs
+.pool.mjs
+.abrir.mjs
+.tarefa.mjs
+.ativas.mjs
+.cot.mjs
+.campos-*.json
+.casos.json
