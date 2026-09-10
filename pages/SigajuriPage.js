@@ -126,6 +126,23 @@ export class SigajuriPage {
    * @returns {Promise<Array<{ valor: string, rotulo: string }>>}
    */
   async listarOpcoesReais(combo) {
+    // ⚠️ `evaluateAll` NÃO espera — devolve o que existir no DOM naquele instante, e zero
+    // opções é um resultado perfeitamente válido para ele. Medido em 10/09/2026: 787 ms depois
+    // do heading "Início" o combo tem **0 opções** (o iframe do formulário ainda nem existe);
+    // a 1,8 s tem **29**. As UFs são fixas no HTML do formulário — nenhum dataset é chamado —,
+    // então "nenhuma opção" nunca significa cadastro vazio: significa que se leu cedo demais.
+    //
+    // Sem esta espera, o caso reprovava com PRÉ-CONDIÇÃO AUSENTE acusando o ambiente de não
+    // oferecer "MA" no combo "UF", e o `error-context.md` do próprio relatório mostrava o combo
+    // cheio. É a terceira ocorrência desta família de erro na suíte (as outras duas em
+    // `AcompanhamentoContratosPage.expectPaginaPublicada` e no script de massa): **API de
+    // leitura instantânea usada como se esperasse**.
+    await combo
+      .locator('option')
+      .first()
+      .waitFor({ state: 'attached', timeout: 30_000 })
+      .catch(() => {});
+
     const opcoes = await combo.locator('option').evaluateAll((els) =>
       els.map((el) => ({
         valor: /** @type {HTMLOptionElement} */ (el).value,

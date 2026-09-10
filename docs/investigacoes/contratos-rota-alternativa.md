@@ -148,8 +148,8 @@ devolve 500 `java.lang.NullPointerException` — a mesma resposta que `getContra
 `getItensPlanilha` e `getFiscaisPorTipoContrato` dão no `search`.
 
 **Prova definitiva:** `GET /ecm/api/rest/ecm/dataset/list` responde para a sessão comum com a
-lista completa dos datasets do tenant (`.alt-13-datasets.json` durante a investigação; a rota
-fica registrada aqui). Conferindo nome a nome:
+lista completa dos datasets do tenant — **526 datasets, 379 custom** (10/09/2026). Conferindo nome a
+nome:
 
 | dataset que o widget do portal consome | no tenant |
 |---|---|
@@ -286,4 +286,57 @@ as 4 primeiras conferidas em `/requests/{id}` são `CANCELED`/`active:false` (en
 seq. 88 *Busca Informações do Contrato*. Portanto **criar medição funciona neste tenant** quando
 há fornecedor+contrato+competência com saldo — e a massa dessa medição veio da filial 3501, não
 da 1101.
+
+### 3.3 Datasets de contrato que EXISTEM e a suíte nunca usou (medido com constraint)
+
+Todos aceitam o par `CorporateId=01` + `BranchId=<filial>` como escopo; sem ele caem na filial
+default (1101). Constraints de campo ERP são aceitas junto.
+
+| dataset | constraints medidas | devolve |
+|---|---|---|
+| `dsProtheus_getInfoCompletaContrato_restGetAll` | `[CorporateId, BranchId]` → 20; `[CorporateId, BranchId, CN9_NUMERO, CN9_FILIAL]` → **2 linhas (uma por revisão)** | CN9 completo + `CN1_DESCRI` (tipo) + `E4_TIPO/E4_COND` (condição de pagamento). `fields` esperados no echo de erro: `CN9_FILIAL, CN9_TPCTO, CN1_DESCRI, CN9_DTINIC, CN9_NUMERO, CN9_DTFIM, CN9_CLIENT, CN9_MOEDA, CN9_CONDPG, E4_*, CN9_CODOBJ, CN9_VLINI, CN9_VLATU, CN9_SALDO, CN9_REVISA, CN9_SITUAC…` — **é a "ficha" do modal Informações Complementares** |
+| `dsProtheus_getInformaContratos_restGetAll` | `[CorporateId, BranchId]` → 20; `[CN9_NUMERO, CN9_FILIAL]` → 2 | só `CN9_NUMERO, CN9_FILIAL, CN9_REVISA, CN9_SITUAC, CN9_TPCTO, CN9_XFISCA, CN9_XAPCSE, CN9_XAPRCS` — as colunas da grade |
+| `dsProtheus_getPlanContxFornecedor_restGetAll` | `[CorporateId, BranchId]` → 23; `+ CNA_FORNEC, CNA_LJFORN` → 5 | planilha × fornecedor: `CNA_FILIAL, CNA_CONTRA, CNA_NUMERO, CNA_REVISA, CNA_FORNEC, CNA_LJFORN, CNA_TIPPLA, CNA_VLTOT, CNA_SALDO, CNA_DTINI, CNA_DTFIM, A2_COD, A2_LOJA, A2_NOME, A2_NREDUZ, A2_CGC, A2_EMAIL` — **é o modal "Informações da Planilha" + "Detalhes da Planilha"** (Filial, Contrato, Planilha, Revisão, Cod. Fornecedor, Fornecedor, Loja, tipo, valor total, saldo, CNPJ) |
+| `dsProtheus_getInformaPlanContratos_restGetAll` | `[CNA_CONTRA, CNA_FILIAL]` → 2 (11 s) | `CNA_*` + `CNA_XFISCA` (fiscal de serviço por planilha) |
+| `dsProtheus_getMedicaoContrato_restGetAll` | `[CorporateId, BranchId]` → 300 | itens de medição `CNE_*` (`CNE_CONTRA, CNE_NUMMED, CNE_QUANT, CNE_VLUNIT, CNE_VLTOT, CNE_PEDIDO`) — constraint por contrato não aceita `CND_*` |
+| `dsProtheus_getProdxPlanContxClasseValor_restGetAll` | `[CorporateId, BranchId]` → 300 | produto × classe de valor × conta (`B1_COD, CTA_CLVL, CTH_CLVL, CT1_CLORC…`) — fonte do `classeOrca/classeValor` do item |
+| `ds_fatcon_get_listaContratos` | `[FORNECEDOR, LOJA]` ou `[CNA_FORNEC, CNA_LJFORN]` → 20 | `{STATUS, NUM_CONTRATO, CODIGO}` — contratos do fornecedor (o zoom de contrato do Faturamento) |
+| `ds_fatcon_get_busca_contratos` | qualquer | `{STATUS:"SUCCESS", RESPONSE:"{total:0, items:[]}"}` — vazio em todas as variantes |
+| `ds_fatcon_get_listaFornecedor` | qualquer | `{STATUS:"SUCCESS", RESPONSE:null}` |
+| `ds_fatcon_get_medicoes` | `[CNA_CONTRA, FILIAL]` | `{STATUS:"ERROR", RESPONSE:"{code:404, message:\"Não foram localizadas medições para o Contrato informado.\"}"}` — inclusive para `00002-2025-3501`, que tem a medição 96437 aberta |
+| `dsProtheus_getContratoxFornecedor_restGet` (singular) | 4 variantes | **0 linhas, sem colunas** em todas — não é o substituto da grade |
+| `dsProtheus_getInfoContratosDelegacao` | 2 variantes | 0 linhas |
+| `ds_fc_getContratos` | qualquer | `{SUCCESS:"ERRO", RESPONSE:"Unexpected token: c"}` |
+| `dsRevisaoContratos` | 2 variantes | 0 linhas (mesmo achado do FSWTBC-4176) |
+| `dsFluig_getProcFaturamentoSql_CASSI` | sem `fields` | `SQLSyntaxErrorException` — só funciona com a lista de `fields` que o Tracker envia |
+| `dsFluig_getProcessoFaturamentoContratoSql` | `[]` | 100 linhas: `NUM_PROCES, DES_ESTADO, pw#status, START_DATE, NUM_SEQ_ESTADO…` — instâncias de FC lidas do banco do Fluig |
+| `dsProtheus_getSolicitacoesCompras_restGetAll` | `[]` | 628 linhas `C1_*` (SCs do Protheus, com `C1_XNUMCT`, `C1_GERACTR`, `C1_FILENT`) |
+| `dsProtheus_getClassesOrcamentarias_restGetAll` | `[]` | 4.098 `AK6_*` |
+| `dsProtheus_getFornecedoresCompras_restGetAll` | `[]` | 300 (16,6 s) |
+| `ds_filaMovimentacaoContratos` | `[]` | 4.707 registros do formulário de fila (136 s!) — não use sem constraint |
+| `dsTipoContrato` | `[]` | `ServiceNotFoundException: ' SIGAJURI '` (é do jurídico) |
+
+### 3.4 Varredura das 71 filiais — a massa de contratos EXISTE
+
+`dsProtheus_getContratos_restGetAll` com `[CorporateId=01, BranchId=<Code de cada filial de getBranches>]`,
+71 chamadas (10/09/2026, ~1 s cada):
+
+| métrica | valor |
+|---|---:|
+| linhas (uma por revisão) | **1.932** |
+| contratos distintos (`CN9_NUMERO|CN9_FILIAL`) | **861** |
+| situação `05` (Vigente) — linhas / distintos | 564 / **564** |
+| situação `10` | 1.070 |
+| `07` / `06` / `08` / `02` / `01` / `11` / `04` / `09` | 130 / 64 / 47 / 26 / 20 / 5 / 5 / 1 |
+| filiais com 0 contratos | 3513, 5305, 5308 |
+| maiores | **5303: 868 linhas (219 vigentes)**, 2901: 87, 4301: 61, 3501: 55 |
+
+**564 vigentes distintos** é o mesmo número que a suíte media na grade do ambiente antigo
+(*"554 vigentes medidos em 30/08/2026"*, `utils/massa-contratos.js`). A base de contratos está
+íntegra; o que sumiu foi a superfície que a lia. A afirmação do mapa ("contrato é zero") era a
+filial default.
+
+Nota de cautela: o código da situação vem cru (`05`, `10`…). O texto "Vigente"/"Finali" que a
+grade mostrava saía de `dsProtheus_getCampoCombo_restGetAll`, que aqui devolve `Unexpected
+token: <` — logo o **defeito D-08 (truncamento)** não é medível por dataset neste tenant.
 

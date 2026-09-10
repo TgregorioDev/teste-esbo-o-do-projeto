@@ -11,7 +11,15 @@ Serviço do ERP no início da investigação:
 
 Massa criada nesta investigação (fica viva, marcada `QA-MASSA`): ver seção 6.
 
-> Documento em construção — seções são atualizadas conforme a medição avança.
+**Resumo dos vereditos**
+
+| # | Vermelho | Veredito | O que falta, e de quem depende |
+|---|---|---|---|
+| 1 | FC do Usuário Integrador no Tracker | **VIÁVEL** (FC 96437 nasce por API e aparece `ABERTA / Usuário Integrador`); medição (`tests/e2e/contratos/*`) **NÃO DETERMINADO** | a atividade 88 precisa achar o contrato no Protheus desta base — contrato/serviço de Contratos: administrador do Protheus |
+| 2 | SIGAJURI, combo UF vazio | **não é massa** — corrida de leitura no page object | ajuste em `SigajuriPage.listarOpcoesReais` (esperar o combo antes de `evaluateAll`) |
+| 3 | Minhas solicitações sem atrasada | **VIÁVEL com espera** (SLA 24 h em 233/236/124; 96 h em 7/14) | `/start` recusa `deadlineDate`; alterar prazo exige gestor do processo |
+| 4 | Portal do Comprador / Controle de Cotações | **INVIÁVEL do nosso lado** (premissa "202 troca de senha" obsoleta: hoje o ERP nem é consultado; chamado direto, `/java_portal_comprador_v1/…/genericQuery` responde **401**) | `Y1_USER` para a conta (e-mail `fabricasoftware@totvs.com.br` no SY1) e cotação na SC8 — administrador do Protheus |
+| 5 | Gerência de Compras (257) | 7 **VIÁVEL e provado**; 14 **INVIÁVEL** com a conta (tarefa nominal do gestor do CC) | aprovação de Erlon Cesar Dengo (CC 9423) ou matrícula no ERP para a conta |
 
 ---
 
@@ -74,11 +82,26 @@ com a FC semeada.
 
 ### Onde parou
 
-`GET /requests/96437/tasks`: mov 1 `88 Busca Informações do Contrato` COMPLETED por TOTVS-FS,
-mov 2 `88` **NOT_COMPLETED, System:Auto** — 12 min depois ainda ali (a 96310 do integrador
-passou por 88 em 1 s). A 88 é a integração que lê o contrato no Protheus; hoje
-`dsProtheus_getContratos_restGetAll` responde **zero linhas** e `apiRESTProtheusContratos`
-"não encontrado". Ver seção 6 para o estado final.
+`GET /requests/96437/tasks`, ao longo da tarde:
+
+```
+14:28:29  mov 1  88 Busca Informações do Contrato   COMPLETED     TOTVS-FS
+14:28:30  mov 2  88 Busca Informações do Contrato   NOT_COMPLETED System:Auto   (a 96310 do integrador passou por 88 em 1 s)
+14:40:18  mov 3  124 Correção                        NOT_COMPLETED Pool:Group:G.P.FatCon_Correcoes   deadline 11/09 14:40 (SLA 24 h)
+14:43:52  mov 4  88 Busca Informações do Contrato   NOT_COMPLETED System:Auto   (após assumir no pool e reenviar)
+```
+
+A 88 é a integração que lê o contrato no Protheus; **12 minutos** depois ela cai, por desenho,
+em **124 Correção**, pool `G.P.FatCon_Correcoes` — do qual a conta participa. O mesmo ciclo
+da SC (233 → 236). Assumir e reenviar funciona pelo mesmo caminho da SC (Central de Tarefas →
+Tarefas em pool → link do grupo → Assumir; `pageworkflowview…currentMovto=3` → Enviar →
+`workflowView/send` 200): o formulário da Correção expõe os zooms `zoomNumContrato`,
+`zoomCompetencia`, `zoomFilialMedicao`, `zoomNumPlanilha` (já preenchidos com o molde) e os
+selects `aprovPreviaCSE` / `aprovFiscalServico`. Reenviada, voltou para 88 — e a expectativa,
+com `dsProtheus_getContratos_restGetAll` respondendo **zero linhas** nesta base e
+`apiRESTProtheusContratos` "não encontrado", é cair em 124 de novo. O que falta é **contrato
+no Protheus desta base** (ou o serviço de Contratos registrado no Fluig) — dono do ambiente /
+administrador do Protheus.
 
 **Veredito: VIÁVEL para o Tracker (a FC nasce, aparece como ABERTA/Usuário Integrador e
 entra no filtro do teste); NÃO DETERMINADO para os cenários de medição** (`tests/e2e/contratos/*`
@@ -239,9 +262,57 @@ ativas" de `docs/massa-de-dados-no-ambiente-dev.md` caíram no cancelamento em b
 Gestor", com a justificativa `QA-MASSA-…`) — a massa de SC já chega ao portal; o que não chega
 é o vínculo da conta com um comprador (`Y1_USER`).
 
-**Veredito parcial: a premissa "202 troca de senha" está obsoleta; a fila depende de
-`Y1_USER` para TOTVS-FS (cadastro no ERP, de quem administra o Protheus).** Se a fila de
-Cotações depende só de `CD_MATRICULA`, iniciar cotação por API pode populá-la — em medição.
+### Iniciar cotação e negociação por API — a instância nasce, a grade continua vazia
+
+Moldes: `GET /requests/95754?expand=formFields` (cotação, 83 campos) e
+`GET /requests/95610?expand=formFields` (negociação, 90 campos). E-mails trocados pelo da conta.
+
+```
+POST /processes/wf_cotacao_produtos_servicos/start     { targetState: 0, … }  → 200 { processInstanceId: 96439, nextState: 32 }
+POST /processes/wf_negociacao_cotacao_prod_serv/start  { targetState: 0, … }  → 200 { processInstanceId: 96440, nextState: 6 }
+POST …/wf_negociacao_cotacao_prod_serv/start  com hd_atribuicao = "TOTVS-FS"  → 200 { processInstanceId: 96442 }
+```
+
+Desfecho: 96439 → `7 Recepção de Propostas` (assignee `admin`); 96440 → `8 Recepção de
+Propostas` (`admin`); 96442 → `8 Recepção de Propostas` (**`TOTVS-FS`**). O dataset da grade
+passou a devolver as duas negociações:
+
+```
+dsFluig_getProcessosProjetoComprasSql [STATUS=0, PROCESS=negociacao]
+→ 96440 (hd_atribuicao 265d01ce…, CD_MATRICULA admin) ; 96442 (hd_atribuicao TOTVS-FS, CD_MATRICULA TOTVS-FS)
+```
+
+…e a grade `#/controleCotacao` **seguiu em "Página 1 de 0 — Nenhum dado encontrado"** nas
+duas leituras (antes e depois da 96442). O motivo está no bundle: a grade **não parte do
+Fluig, parte do Protheus** — o widget consulta a tabela **SC8** (cotações do ERP; campos
+`C8_FILIAL, C8_NUM, C8_NUMPRO, C8_FORNECE, C8_LOJA`) via `genericQuery`
+(`enviromentService.getProtheusData().url + /api/framework/v1/genericQuery?tables=…`) e só
+depois cruza cada linha com a negociação do Fluig, exibindo-a quando `STATUS == "0"` e
+`hd_atribuicao == <matrícula do comprador>`. Hoje a consulta ao ERP **nem é disparada**
+(captura de rede na tela: zero chamadas a `genericQuery` ou a `/api/public/2.0/authorize/client/invoke`)
+porque a cadeia de identidade morre antes — sem `Y1_USER`, não há comprador para consultar.
+
+O "HTTP 202 *troca de senha*" da medição anterior era a resposta do ERP a essa consulta — que
+hoje não acontece; a string não existe no bundle (é do lado Protheus). Chamando o endpoint
+diretamente, como o widget faria (`KNOWN_HOSTS` mapeia `caixade213859` → `env: "prod"` →
+`urlProtheus = /java_portal_comprador_v1/tbc/protheus`):
+
+```
+GET /java_portal_comprador_v1/tbc/protheus/api/framework/v1/genericQuery?tables=SC8,SA2&fields=C8_NUM,…&limit=5
+→ 401 application/json {"message":"The request requires authentication. The server might return this response for a page behind a login."}
+GET /java_portal_comprador/tbc/protheus/api/framework/v1/genericQuery?…   (URL dos envs qa/tst)  → 404 Not Found
+GET /java_generico_protheus/tbc/api/framework/v1/genericQuery?…            (widget Logs Protheus)  → 401
+```
+
+Ou seja: **hoje a resposta é 401, não 202** — o proxy Java está publicado e exige credencial
+própria (o widget a obtém do lado servidor, provavelmente via `dsFluig_getConfigMailers` /
+`authorize/client/invoke`, caminho que só é percorrido depois de o comprador existir).
+
+**Veredito: INVIÁVEL do nosso lado.** Semear cotação/negociação no Fluig é possível e provado,
+mas a grade exige (1) a conta cadastrada como comprador no Protheus (`Y1_USER` ↔ e-mail
+`fabricasoftware@totvs.com.br`) e (2) cotação correspondente na SC8 do ERP. Os dois são
+cadastro no Protheus — administrador do ERP. A **Validação Inicial** tem a mesma raiz
+(`dsCount_validInicialCompras&filterFields=matriculaComprador,TOTVS-FS` → `total: 0`).
 
 ---
 
@@ -253,16 +324,56 @@ Fonte: `expand=formFields` das SCs 95753 e 95274 (que chegaram a 161), comparado
 | Etapa | Quem recebe | Campos que a etapa grava | Como avançar |
 |---|---|---|---|
 | **7 Validação do Gestor** | pool `G.P.Requisicao_de_Compras_Gestor_Imediato` (a conta está nele) | `tbmanag_aprovadoValid___1 = Aprovado`, `tbmanag_justificativa___1`, `tbmanag_dataValid/horaValid/emailRespValid/nomeRespValid/mailSubstitute___1`, `managerAprovadoValidacao = Aprovado` | **Provado na 96380**: assumir no pool, abrir `pageworkflowview?…currentMovto=<seq>`; o formulário expõe **só 2 controles editáveis** — radio `tbmanag_aprovadoValidSim` / `tbmanag_aprovadoValidNao` e textarea `tbmanag_justificativa___1`. Marcar "Aprovado", justificar, **Enviar** → `POST /ecm/api/rest/ecm/workflowView/send` 200. A SC seguiu 280 → 265 → 277 → **14** em 10 s |
-| **14 Validação Orçamentária** | **usuário nominal** — na 96380 foi `7ed9f502370740aa8c42285266bde117` (**Erlon Cesar Dengo**, `erlon.dengo@cassi.com.br` — o mesmo `tbitorc_matriculaValid___1` da 95753), **não o pool** | `tbitorc_aprovadoValid___1 = Aprovado`, `tbitorc_codERPUserValid___1 = 004445`, `tbitorc_codERPValid___1`, `tbitorc_justificativa___1`, `tbitorc_vlrTotEstItem___1`, `itemAprovadoValidacao = Aprovado`, `itensGestOrcamentario = Sim` | O gestor vem de `tbprod_aprovResp___1` (`004445`, herdado do molde 95753) → resolvido no ERP em 280 "Distribuição Gestor Orçamentário". **TOTVS-FS não consegue assumir**: a tarefa não está em pool. Sonda em curso: SC com `aprovResp` vazio para ver se o desvio 267 "Itens sem Gestor?" cai no pool `Validacao_Orcamentaria` (seção 6) |
+| **14 Validação Orçamentária** | **usuário nominal** — na 96380 foi `7ed9f502370740aa8c42285266bde117` (**Erlon Cesar Dengo**, `erlon.dengo@cassi.com.br` — o mesmo `tbitorc_matriculaValid___1` da 95753), **não o pool** | `tbitorc_aprovadoValid___1 = Aprovado`, `tbitorc_codERPUserValid___1 = 004445`, `tbitorc_codERPValid___1`, `tbitorc_justificativa___1`, `tbitorc_vlrTotEstItem___1`, `itemAprovadoValidacao = Aprovado`, `itensGestOrcamentario = Sim` | O gestor vem de `tbprod_aprovResp___1` (`004445`, herdado do molde 95753) → resolvido no ERP em 280 "Distribuição Gestor Orçamentário". **TOTVS-FS não consegue assumir**: a tarefa não está em pool. Sonda feita: SC **96438** com `tbprod_aprovResp___1 = ""` — aprovada na 7 às 14:39, passou por 280 → 265 → **277 "Itens com Gestor?"** → 14, atribuída **ao mesmo Erlon**. O gestor é resolvido pelo **centro de custo** (`9423`) no ERP, não pelo campo do item. Sem matrícula no Protheus, nenhum centro de custo aponta para esta conta |
 | 271 Join → 16 → 254 Distribuição Comprador → 256 | automáticas | `distribuicaoManual = Sim` (já no molde) | — |
 | **257 Gerência de Compras** | pool `G.P.Requisicao_de_Compras_Validacao_Compradores` | é a fila do widget `ds_getSolicsGerenciaCompras` (`etapa,257`) | nas SCs reais a 257 durou 1 s e virou **119 Validação do Comprador** (transferida ao comprador); a grade da Gerência lista o que está parado em 257 |
 | 119/121 Validação do Comprador | comprador nominal / pool | `buyer*` (11 campos), `codERPValidBuyer`, `codERPUserValidBuyer`, `matriculaValidBuyer`, `codStatusSolicitacao = 07`, `cotacaoGerada = Sim`, `numCotacao` | depende de comprador no ERP |
 
-**Veredito: 7 → VIÁVEL e provado; 14 → INVIÁVEL com a conta atual quando o item tem gestor
-orçamentário no ERP (tarefa nominal); NÃO DETERMINADO para item sem gestor (sonda em curso).**
+**Veredito: 7 → VIÁVEL e provado (duas vezes: 96380 e 96438); 14 → INVIÁVEL com a conta
+atual** — a tarefa é nominal, para o gestor orçamentário do centro de custo no ERP (Erlon
+Cesar Dengo para o CC 9423), e `aprovResp` vazio não muda isso. **Não medido:** se um centro
+de custo *sem* responsável no ERP faria o desvio 267 "Itens sem Gestor?" cair no pool
+`G.P.Requisicao_de_Compras_Validacao_Orcamentaria` — `dsProtheus_getSQB_restGetAll` (departamentos
+× responsável) responde hoje `error: "Unexpected token: c"`, então não há como escolher um CC
+assim sem o administrador do Protheus. Duas SCs (96380, 96438) ficam paradas na 14 como
+evidência; o caminho até 257 exige que Erlon (ou o gestor do processo) as aprove.
 
 ---
 
-## 6. Massa criada e estado no fechamento
+## 6. Massa criada e estado no fechamento (10/09/2026, ~14:50)
 
-(atualizado ao fim da investigação)
+Tudo marcado `QA-MASSA-…` (justificativa/observação/comentário de início), e-mails de
+notificação apontados para `fabricasoftware@totvs.com.br`. Registrado em
+`playwright/.massa/semeada.jsonl` (local, não versionado) — por isso a lista fica aqui:
+
+| Instância | Processo | Criada por | Onde parou | Prazo |
+|---|---|---|---|---|
+| 96363 | SC | semeadura da manhã | 7 Validação do Gestor, **assumida por TOTVS-FS** (outro agente, 13:15) | 14/09 12:00 |
+| 96369, 96370, 96376, 96377, 96378, 96379 | SC | semeadura da manhã | 7 Validação do Gestor, pool Gestor_Imediato | 14/09 12:00 |
+| 96380 | SC | semeadura da manhã | **aprovada na 7 por esta investigação** → 14 Validação Orçamentária, Erlon Cesar Dengo | 14/09 14:25 |
+| 96436 | SC | outro agente (14:14) | não acompanhada aqui | — |
+| 96438 | SC, `aprovResp` vazio | esta investigação (14:33) | aprovada na 7 → 14 Validação Orçamentária, Erlon Cesar Dengo | 14/09 14:39 |
+| **96437** | **FC** `wf_faturamento_contratos` | esta investigação (14:28) | 88 → 124 Correção (pool FatCon_Correcoes) → reenviada → 88 Busca Informações do Contrato, System:Auto | 24 h quando em 124 |
+| 96439 | Cotação `wf_cotacao_produtos_servicos` | esta investigação (14:37) | 7 Recepção de Propostas, `admin` | 18/09 14:38 |
+| 96440 | Negociação `wf_negociacao_cotacao_prod_serv` | esta investigação (14:37) | 8 Recepção de Propostas, `admin` | 14/09 14:37 |
+| 96442 | Negociação, `hd_atribuicao = TOTVS-FS` | esta investigação (14:41) | 8 Recepção de Propostas, **TOTVS-FS** | 14/09 14:41 |
+
+Nada foi cancelado. Para higienizar: `node scripts/limpar-massa.mjs --descobrir --desde=2026-09-10`
+(a FC, a cotação e a negociação não têm campo de texto carimbado além do `comment` de início —
+o `--descobrir` só acha o que tem `QA` no formulário; para elas, use o livro-razão ou os ids
+acima com `POST /api/public/2.0/workflows/cancelInstances`).
+
+### O que ficou reutilizável
+
+- **Qualquer processo publicado para a conta inicia por API** com o molde de
+  `expand=formFields` de uma instância existente + `targetState: 0` — provado em SC, FC,
+  cotação e negociação (quatro processos, quatro `200` com `processInstanceId`). O molde
+  carrega e-mails reais: **troque-os** antes de semear.
+- **Pool + `pageworkflowview` + Enviar** movimenta qualquer tarefa de pool da conta — provado
+  em 236 Correção (SC), 7 Validação do Gestor (SC, com o radio `tbmanag_aprovadoValidSim`) e
+  124 Correção (FC). `scripts/empurrar-massa.mjs` só conhece o grupo de Correções da SC; o
+  grupo e o preenchimento variam por etapa (ver `.inv-5` desta investigação, apagado — a
+  lógica está descrita na seção 5).
+- **O bloqueio comum a 1, 4 e 5 é um só: a conta não existe no Protheus** (`dsProtheus_getUser_restGetByEmail`
+  → `error: "undefined"`). Com `Y1_USER` (comprador) e um centro de custo cujo gestor seja a
+  conta, o resto do caminho já está aberto pelos pools.
