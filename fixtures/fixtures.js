@@ -297,11 +297,17 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
      */
     ritmoDeEscrita: [
       /**
-       * @param {{}} _fixtures
+       * O primeiro parâmetro PRECISA ser um padrão de desestruturação literal — o Playwright
+       * inspeciona a assinatura para descobrir de quais fixtures esta depende, e recusa a
+       * definição com "First argument must use the object destructuring pattern". Renomeá-lo
+       * para `_fixtures` fez `--list` devolver "0 tests in 0 files": a suíte inteira some, sem
+       * erro em nenhum teste.
+       *
+       * @param {{}} fixtures
        * @param {(valor: undefined) => Promise<void>} use
        * @param {import('@playwright/test').TestInfo} testInfo
        */
-      async (_fixtures, use, testInfo) => {
+      async ({}, use, testInfo) => {
         await use(undefined);
 
         const pausa = Number(process.env.PAUSA_DESTRUTIVOS ?? 0);
