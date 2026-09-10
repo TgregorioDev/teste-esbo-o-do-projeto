@@ -9,6 +9,7 @@
     "test:e2e": "playwright test --project=e2e",
     "report": "playwright show-report",
     "typecheck": "tsc --noEmit -p jsconfig.json",
+    "canario": "node scripts/canario-do-ambiente.mjs",
     "cobertura": "node scripts/gerar-cobertura.mjs",
     "limpar": "node scripts/limpar-massa.mjs",
     "limpar:simular": "node scripts/limpar-massa.mjs --simular"

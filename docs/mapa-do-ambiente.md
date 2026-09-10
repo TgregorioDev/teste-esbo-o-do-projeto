@@ -38,6 +38,21 @@ segue respondendo com `error: "undefined"` — a conta continua sem matrícula d
 **Consequência para a suíte:** todo cenário que parte de contrato, fornecedor, SC ou tarefa
 declara `PRÉ-CONDIÇÃO AUSENTE`. Não é regressão, e o gate classifica como ambiente.
 
+### O ERP dos formulários é INTERMITENTE, não está fora
+
+Medido em 10/09/2026, três cargas seguidas do formulário de Solicitação de Compras: **duas**
+com a faixa *"Não foi possível estabelecer comunicação com o ERP"* e o formulário sem montar,
+**uma** montando normalmente. O mesmo vale para a Cotação e para a Gerência de Compras (cuja
+aba Atribuir alterna entre 17 SCs e nenhuma).
+
+Isso corrige uma afirmação categórica que este documento fazia ("o formulário não monta"). A
+consequência prática muda: um vermelho dessa família **não é conclusivo numa execução só**.
+Repita o teste isolado antes de investigar — é a mesma regra do protocolo acima, e aqui ela
+vale em dobro.
+
+`npm run canario` diz em ~1 min o que está de pé **naquele momento**, que é a única forma
+honesta de ler um ambiente que alterna.
+
 ### Portal do Fornecedor — a tela mudou de verdade
 
 O modelo de três acessos (*Acesso Normal* = CNPJ da empresa + CPF do usuário; *Acesso

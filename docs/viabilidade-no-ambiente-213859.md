@@ -70,6 +70,12 @@ montado.
 **Consequência:** todo cenário que cria SC — e são muitos, incluindo os que já rodavam — fica
 fora. É o bloqueio de maior alcance deste ambiente, e não existia no anterior.
 
+⚠️ **Correção de 10/09/2026:** medindo três cargas seguidas, o formulário alterna — duas com a
+faixa de erro, uma montando normalmente. A afirmação categórica acima ("não abre") estava
+errada: é **intermitente**. Para a viabilidade dos casos a conclusão não muda (não dá para
+apoiar um caso numa tela que falha em 2 de 3 tentativas), mas para a leitura de um vermelho
+muda tudo — repita antes de concluir.
+
 A mesma mensagem aparece em **Gestão de Equipes** e no **Portal de Autorização de Horas Extras**
 (*"base offline"*). Já `dsProtheus_getBranches_restGetAll` (71 filiais),
 `dsProtheus_getProdutos_restGetAll` (3.100) e `ds_protheus_getFuncionarios_restGetAll` (72.369)
