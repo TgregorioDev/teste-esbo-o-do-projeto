@@ -174,17 +174,29 @@ node scripts/semear-massa.mjs --quantidade=3   # cria N SCs marcadas QA-MASSA-<u
 node scripts/semear-massa.mjs --acompanhar     # diz em que atividade cada uma parou
 ```
 
-O livro fica em `test-results/massa-semeada.jsonl` — que é **ignorado pelo git e apagado por
-qualquer execução da suíte**. Por isso o que semeamos em 10/09/2026 fica registrado aqui, e é
-esta lista que sobrevive:
+O livro fica em `playwright/.massa/semeada.jsonl`, ao lado de `playwright/.auth`. A primeira
+versão o colocou em `test-results/`, que é o `outputDir` do Playwright e **é apagado a cada
+execução** — o livro sumiu duas vezes antes de eu perceber. Ainda assim ele é local e não
+versionado, então a lista do que semeamos em 10/09/2026 fica registrada aqui:
 
 ```
 96363  96369  96370  96376  96377  96378  96379  96380
 ```
 
-Oito solicitações, todas ABERTAS no fim do dia, esperando a atividade 233 gravar. Se o livro
-sumir, `node scripts/limpar-massa.mjs --descobrir` continua achando todas pela marca `QA` no
-formulário — é para isso que a marca existe.
+Se o livro sumir, `node scripts/limpar-massa.mjs --descobrir` continua achando todas pela marca
+`QA` no formulário — é para isso que a marca existe.
+
+### O desfecho das oito, no mesmo dia
+
+Criadas com o ERP fora, as oito caíram em *236 Correção*. Quando o serviço voltou
+(`apiRESTProtheusCompras:SUCCESS`), `node scripts/empurrar-massa.mjs` assumiu cada tarefa do
+pool e reenviou: **as oito passaram por *Grava SC e Anexos* e pararam em *7 Validação do
+Gestor***, no pool `G.P.Requisicao_de_Compras_Gestor_Imediato`.
+
+Ou seja, o que a seção 4 registrava como bloqueio era **queda de serviço, não impedimento de
+desenho** — com o ERP no ar, a SC semeada por API grava no Protheus e segue o fluxo. O caminho
+até *257 Gerência de Compras* passa agora por três validações humanas (Gestor → Orçamentária →
+Comprador), todas em pools que esta conta tem.
 
 **A massa fica viva de propósito.** Ela não passa pelo `global-teardown` e não é cancelada ao
 fim da execução — foi a decisão do dono do ambiente ("sem se preocupar em apagar no final,

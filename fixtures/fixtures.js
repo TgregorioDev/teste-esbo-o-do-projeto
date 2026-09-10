@@ -42,6 +42,7 @@ faker.seed(FAKER_SEED);
  * @property {AcompanhamentoContratosPage} contratosPage
  * @property {SolicitacaoCompraModal} solicitacaoModal
  * @property {undefined} evidence
+ * @property {undefined} ritmoDeEscrita
  */
 
 export const test = /** @type {import('@playwright/test').TestType<import('@playwright/test').PlaywrightTestArgs & import('@playwright/test').PlaywrightTestOptions & Fixtures, import('@playwright/test').PlaywrightWorkerArgs & import('@playwright/test').PlaywrightWorkerOptions>} */ (
@@ -270,6 +271,47 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
           ),
           contentType: 'application/json',
         });
+      },
+      { auto: true },
+    ],
+
+    /**
+     * Pausa depois de cada teste que ESCREVE, quando `PAUSA_DESTRUTIVOS` está definida.
+     *
+     * ## Por que uma espera por tempo é legítima aqui
+     *
+     * Esta suíte proíbe `waitForTimeout` como sincronização — e continua proibindo. A exceção,
+     * já registrada na skill do projeto, é **ritmo de escrita**: o Fluig tem proteção contra
+     * volume de requisições, e o Protheus por trás dele processa as integrações da SC em
+     * minutos, não em milissegundos. Espaçar as escritas não sincroniza nada; é vazão.
+     *
+     * Não afirma nada, não muda veredito e não roda por padrão: sem a variável, o valor é 0 e a
+     * fixture é um no-op. `PAUSA_DESTRUTIVOS=60000` é o que o dono do ambiente pediu para a
+     * execução completa com destrutivos.
+     *
+     * A pausa é POR WORKER: com 3 workers, três testes destrutivos pausam em paralelo. Isso é o
+     * desejado — o que se quer espaçar é a escrita de cada linha de execução, não serializar a
+     * suíte.
+     *
+     * O gancho é a tag no título, a mesma convenção que `--grep @destrutivo` usa.
+     */
+    ritmoDeEscrita: [
+      /**
+       * @param {{}} _fixtures
+       * @param {(valor: undefined) => Promise<void>} use
+       * @param {import('@playwright/test').TestInfo} testInfo
+       */
+      async (_fixtures, use, testInfo) => {
+        await use(undefined);
+
+        const pausa = Number(process.env.PAUSA_DESTRUTIVOS ?? 0);
+        if (!pausa || !testInfo.titlePath.join(' ').includes('@destrutivo')) return;
+
+        testInfo.annotations.push({
+          type: 'ritmo-de-escrita',
+          description: `pausa de ${pausa} ms após teste destrutivo (PAUSA_DESTRUTIVOS)`,
+        });
+        await new Promise((resolve) => setTimeout(resolve, pausa));
       },
       { auto: true },
     ],

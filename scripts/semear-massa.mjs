@@ -54,7 +54,14 @@ import { criarMassaSolicitacaoCompra } from '../factories/massa-solicitacao-comp
 
 dotenv.config({ path: process.env.ENV_FILE ?? '.env.test', quiet: true });
 
-const LIVRO = 'test-results/massa-semeada.jsonl';
+/**
+ * Livro-razão da massa semeada.
+ *
+ * **Não** pode viver em `test-results/`: aquele é o `outputDir` do Playwright, e toda execução
+ * o apaga. Custou duas reconstruções em 10/09/2026 até eu perceber. Fica ao lado de
+ * `playwright/.auth`, que sobrevive às execuções pelo mesmo motivo.
+ */
+const LIVRO = 'playwright/.massa/semeada.jsonl';
 const PROCESSO = 'wf_solicitacao_compras';
 
 const argumentos = process.argv.slice(2);
@@ -131,7 +138,7 @@ if (acompanhar) {
     console.log('');
   }
 } else {
-  mkdirSync('test-results', { recursive: true });
+  mkdirSync('playwright/.massa', { recursive: true });
   console.log(`\nSemeando ${quantidade} solicitação(ões) em ${process.env.BASE_URL}\n${'='.repeat(78)}`);
 
   for (let i = 0; i < quantidade; i++) {
