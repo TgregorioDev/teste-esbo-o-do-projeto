@@ -305,7 +305,9 @@ async function criarEAssumirNoPoolGestorImediato(page, overridesMassa = {}) {
     faltaPreCondicao(
       `a SC #${numeroProcesso}, criada por este teste, não ficou assumível ` +
         '("Assumir tarefa") na Validação do Gestor dentro de 180s. Isto NÃO é defeito do produto ' +
-        'confirmado — pode ser lentidão do BPMN acima do observado em campo (~76s), ou a tarefa ' +
+        'confirmado — a atividade 233 "Grava SC e Anexos" normalmente conclui em 10–27s neste ' +
+        'tenant (mediana 14s, p90 24s em 30 passagens medidas em 10/09/2026), mas em janelas de ' +
+        'degradação do ERP passa de 260s e chega a cair em "Correção". Também pode ser a tarefa ' +
         'ter sido assumida por outra execução concorrente que pega a primeira do pool ' +
         '(tests/e2e/tarefas/assumir-tarefa-pool.spec.js). ' +
         `Atividade atual observada na tela de detalhe: "${atividadeObservada}". ` +

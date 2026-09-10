@@ -343,6 +343,39 @@ export async function aprovarValidacaoDoGestor(page, numeroProcesso, justificati
 }
 
 /**
+ * "Rádio visível" NÃO é "formulário pronto" — e essa distinção decide o destino da SC.
+ *
+ * Medido em 10/09/2026, cronometrando a tela de decisão da atividade 7:
+ *
+ * | +0,0 s | ainda o formulário de DETALHE (`WKFormMode=VIEW`), rádio oculto |
+ * | +4,6 s | `WKFormMode=MOD`, **rádio "Sim" visível e clicável**, mas `beforeSendValidate` ainda `undefined` e "Aprovador" vazio |
+ * | +6,4 s | `beforeSendValidate` passa a existir (o `App` do formulário terminou de construir) |
+ * | +6,8 s | `handleRowsManager` preenche "Aprovador", data e hora — **e desmarca o rádio** |
+ *
+ * Quem marca e envia dentro dessa janela produz DUAS falhas diferentes, e as duas já
+ * apareceram nesta suíte:
+ *
+ * 1. o Fluig não encontra `beforeSendValidate` e envia sem consolidar
+ *    `managerAprovadoValidacao`. O `send` responde **200 e "movimentada com sucesso"**, mas o
+ *    gateway *9 Sol. Validação do Gestor* lê o campo vazio e manda a SC para
+ *    **11 "Ajustar Informações"** em vez de 280. Prova A/B: a SC 96436, enviada 277 ms depois
+ *    de o rádio aparecer, gravou `managerAprovadoValidacao=""` e desviou; a 96435, enviada
+ *    depois do hook existir, gravou `"Aprovado"` e seguiu;
+ * 2. o `handleRowsManager` desmarca o rádio depois do `check()`, e o servidor recusa com
+ *    *O campo "Aprovar? - Linha 1" é obrigatório!* — o erro que a retentativa abaixo trata.
+ *
+ * O oráculo de prontidão é o campo **"Aprovador"** (`tbmanag_nomeRespValid___N`, readonly): ele
+ * só recebe valor depois que `handleRowsManager` terminou, que por sua vez só roda depois de o
+ * `App` existir. Esperar por ele fecha as duas corridas de uma vez.
+ *
+ * @param {CentralTarefasComprasPage} central
+ */
+async function esperarFormularioDeAprovacaoPronto(central) {
+  const aprovador = central.frame.getByRole('textbox', { name: 'Aprovador' }).first();
+  await expect(aprovador, 'o campo "Aprovador" nunca foi preenchido — o script do formulário não terminou de montar').not.toHaveValue('', { timeout: 60_000 });
+}
+
+/**
  * Confirma "Aprovar? Sim" e envia, com nova tentativa quando o próprio Fluig recusa a
  * submissão. Confirmado em execução real: `CentralTarefasComprasPage.decidirEEnviar` (existente,
  * não editável por esta suíte) marca o rádio e clica Enviar, mas o servidor às vezes responde com
@@ -360,6 +393,7 @@ async function aprovarComRetentativa(page, central, justificativa) {
   const maxTentativas = 3;
 
   for (let tentativa = 1; tentativa <= maxTentativas; tentativa += 1) {
+    await esperarFormularioDeAprovacaoPronto(central);
     const radio = central.radioAprovarSim();
     await radio.check();
     await expect(radio).toBeChecked();
@@ -391,16 +425,28 @@ async function aprovarComRetentativa(page, central, justificativa) {
 }
 
 /**
- * Ramo intermitente do próprio BPMN, confirmado em campo (1 em 6 SCs criadas nesta
- * investigação): a decisão automática "Sol. Validação do Gestor", que normalmente segue direto
- * para "Distribuição Gestor Orçamentario", às vezes devolve a SC para "Ajustar Informações" —
- * uma repetição de todo o formulário, incluindo a seção de aprovação (agora com os campos
- * prefixados por `_` em vez do sufixo `___N` da tela de pool, e já preenchida/`readonly` com a
- * decisão anterior). Não há, nesta investigação, um campo obrigatório vazio nem mensagem de erro
- * visível que explique O QUE precisa ser ajustado — é uma condição do lado do Protheus/BPMN, não
- * um formulário mal preenchido por esta suíte. Resolver esse ramo (descobrir o que ele
- * realmente exige) é investigação nova, fora do escopo desta tarefa; por isso esta função
- * apenas RECONHECE o ramo e falha com diagnóstico claro, em vez de um timeout genérico.
+ * O desvio para "Ajustar Informações" — e a correção de uma leitura errada que ficou aqui.
+ *
+ * A versão anterior deste comentário dizia que era *"um ramo intermitente do próprio BPMN"* e
+ * *"uma condição do lado do Protheus/BPMN, não um formulário mal preenchido por esta suíte"*.
+ * **É o contrário.** Medido em 10/09/2026, com prova A/B em duas SCs criadas para isso:
+ *
+ * O gateway *9 Sol. Validação do Gestor* lê o campo `managerAprovadoValidacao`. Com
+ * `"Aprovado"` segue para 280; **vazio ou `"Reprovado"`, desvia para 11 "Ajustar Informações"**.
+ * Quem preenche esse campo é o `beforeSendValidate` do `App.js` do formulário — script do
+ * CLIENTE, e o último a carregar. Enviar antes de ele existir grava o campo vazio, e o Fluig
+ * responde **200 com "movimentada com sucesso"**: nada na tela indica que a SC foi desviada.
+ *
+ * Ou seja, havia DOIS problemas sobrepostos:
+ *
+ * - **da suíte** — enviava cedo demais; resolvido em `esperarFormularioDeAprovacaoPronto`;
+ * - **do produto** — um gateway do BPMN decide por um campo que só o JavaScript do cliente
+ *   preenche, sem guarda no servidor. Um gestor humano em rede lenta que clique "Enviar" nos
+ *   primeiros dois segundos manda a própria solicitação para "Em Correção" sem ver aviso
+ *   nenhum. A SC 96436 é a evidência viva.
+ *
+ * Esta função continua RECONHECENDO o ramo e falhando com diagnóstico claro — o que mudou é
+ * que agora o diagnóstico aponta para a causa certa.
  */
 const ATIVIDADE_AJUSTAR_INFORMACOES = 'Ajustar Informações';
 
