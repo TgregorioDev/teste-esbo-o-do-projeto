@@ -8,6 +8,24 @@ esbarra em um ponto, e é um ponto do servidor, não da automação.
 
 Medido em 10/09/2026, com a conta `TOTVS-FS`.
 
+> ## ⚠️ Atualização do fim do dia (10/09/2026) — leia antes das seções abaixo
+>
+> As seções 1 a 5 registram a medição da **manhã**, com o serviço do ERP fora. Várias conclusões
+> mudaram depois, medidas:
+>
+> | O que está escrito abaixo | O que foi medido depois |
+> |---|---|
+> | a SC "trava em *Grava SC e Anexos*" (233) | era o serviço do ERP fora. Com ele no ar, a 233 conclui em **10–27 s** (mediana 14 s, 30 passagens) e a SC cai no pool da Validação do Gestor |
+> | a conta "está em todos os pools do caminho", incluindo a Validação Orçamentária | a atividade 14 **nunca vai para o pool** (0 tarefas em 4.100 movimentos): vira tarefa **nominal** do gestor do centro de custo, resolvido no ERP. A massa aprovada na 7 **para na 14** (96380, 96435, 96438, 96445, 96446, 96447 aguardam Erlon Cesar Dengo) |
+> | "Itens sem Gestor?" (267) poderia pular a 14 | **falso**: 265 é gateway paralelo, os dois ramos correm sempre e o Join espera a 14 |
+> | contratos e fornecedores "respondem com zero linhas" | leitura sem escopo de filial. Com `CorporateId` + `BranchId`: **861 contratos, 564 vigentes**; fornecedores **300** |
+> | Portal do Comprador falha no `genericQuery` com "troca de senha" | hoje falha antes: `dsProtheus_getUser_restGetByEmail` devolve `error: "undefined"` e o widget lança "Usuário não encontrado." |
+> | o desvio para "Ajustar Informações" é do BPMN | é a suíte enviando antes de o formulário montar (`managerAprovadoValidacao` vazio) — e um defeito de produto por aceitar isso com `send` 200 |
+>
+> Investigações completas em `docs/investigacoes/` (`massa-como-popular.md`,
+> `contratos-rota-alternativa.md`, `bpmn-desvio-ajustar-informacoes.md`). O livro-razão com
+> toda a massa semeada é `playwright/.massa/semeada.jsonl`.
+
 ---
 
 ## 1. O que ficou provado
