@@ -61,6 +61,39 @@ export class DependentesPage {
   }
 
   /**
+   * O formulário bloqueou por titular sem matrícula, ou montou os campos?
+   *
+   * Existe porque o cenário do CT-DEP-02-S1 deixou de ocorrer no `caixade213859`: medido em
+   * 09/09/2026, o formulário monta com 39 campos visíveis (de 65 no DOM) e nenhuma mensagem de
+   * bloqueio — a palavra "matrícula" que aparece na tela é o rótulo do campo *Matrícula Civil*,
+   * não um aviso.
+   *
+   * Cuidado ao ler: procurar "matrícula" no texto da página dá falso positivo por causa desse
+   * rótulo. O que distingue é a MENSAGEM de erro, e a contagem de campos acionáveis.
+   *
+   * @returns {Promise<{ bloqueado: boolean, camposVisiveis: number, camposNoDom: number }>}
+   */
+  async lerDesfechoDaIdentificacao() {
+    const bloqueado = await this.erroTitularSemMatricula
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    const frameElement = await this.page.locator('iframe').first().elementHandle();
+    const frame = frameElement ? await frameElement.contentFrame() : null;
+    if (!frame) return { bloqueado, camposVisiveis: 0, camposNoDom: 0 };
+
+    const contagens = await frame.evaluate(() => {
+      const campos = Array.from(document.querySelectorAll('input, select, textarea'));
+      return {
+        visiveis: campos.filter((el) => /** @type {HTMLElement} */ (el).offsetParent !== null).length,
+        noDom: campos.length,
+      };
+    });
+    return { bloqueado, camposVisiveis: contagens.visiveis, camposNoDom: contagens.noDom };
+  }
+
+  /**
    * Quantidade de campos de formulário (`input`/`select`/`textarea`) presentes no
    * documento do iframe — usado para provar, sem depender de texto, que nenhum campo de
    * cadastro chegou a ser montado.

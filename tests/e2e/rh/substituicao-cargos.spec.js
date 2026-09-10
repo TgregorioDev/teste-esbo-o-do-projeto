@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { ANOTACAO_PRE_CONDICAO } from '../../../utils/pre-condicao.js';
+import { ANOTACAO_PRE_CONDICAO, faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { SubstituicaoCargosPage } from '../../../pages/SubstituicaoCargosPage.js';
 import { criarSubstituto } from '../../../factories/pessoa.js';
 
@@ -55,12 +55,40 @@ test.describe('Substituição de Cargos', () => {
     // Pré-condição do caso: o processo abre (não é bloqueio de perfil).
     await substituicaoPage.expectFormularioAberto();
 
-    // O ponto central do caso: a identificação do solicitante bloqueia o formulário antes
-    // de qualquer campo de substituto (que os três subcasos atribuídos dependem).
-    await substituicaoPage.expectBloqueadoPorFuncionarioNaoLocalizado();
+    // O ponto central do caso: os campos de SUBSTITUTO nunca ficam acionáveis — é do que os
+    // três subcasos atribuídos (CT-SUB-01-H/01-S1/01-S2) dependem.
+    //
+    // O que se afirma é isso, e não a mensagem de bloqueio. O motivo é circunstância de
+    // ambiente: no `caixade182374` a tela dizia "Funcionário não localizado"; no
+    // `caixade213859` diz "Não foi possível estabelecer comunicação com o ERP" — e o mesmo
+    // formulário alterna entre esse aviso e uma carga sem aviso nenhum. Exigir a primeira
+    // mensagem fazia este `@achado` reprovar por motivo diferente do que declara, que é o pior
+    // desfecho possível para um achado: manda investigar a coisa errada.
+    const acesso = await substituicaoPage.lerAcessoAosCamposDeSubstituto();
 
-    // Reforça por contagem de DOM, não só por texto: nenhum campo segue visível/acionável
-    // depois do bloqueio.
-    expect(await substituicaoPage.contarCamposVisiveis()).toBe(0);
+    testInfo.annotations.push({
+      type: 'campos-de-substituto',
+      description:
+        `motivo do bloqueio: ${acesso.motivo} · ${acesso.noDom.length} campo(s) de substituto no ` +
+        `DOM, ${acesso.acionaveis.length} acionável(is)${acesso.acionaveis.length ? ': ' + acesso.acionaveis.join(', ') : ''}`,
+    });
+
+    // Sem os campos no DOM não há o que julgar: medido em 09/09/2026, o formulário alterna
+    // entre renderizar seus 74 campos (16 deles de substituto) e não renderizar nenhum. Chamar
+    // isso de "o achado mudou" seria conclusão errada — é a tela que não carregou.
+    if (acesso.noDom.length === 0) {
+      faltaPreCondicao(
+        '(ambiente): o formulário de Substituição de Cargos não renderizou campo algum de ' +
+          'substituto no DOM. Sem eles não dá para afirmar se estão ou não acionáveis, que é o ' +
+          'que este achado observa.',
+      );
+    }
+
+    expect(
+      acesso.acionaveis,
+      'os campos de substituto ficaram ACIONÁVEIS — o achado mudou. Se a identificação do ' +
+        'solicitante passou a resolver, CT-SUB-01-H, 01-S1 e 01-S2 podem ter deixado de ser ' +
+        'bloqueados e valem ser reavaliados. Reabra o assunto; não "conserte" este teste',
+    ).toEqual([]);
   });
 });

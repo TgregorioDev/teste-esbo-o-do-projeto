@@ -1,4 +1,5 @@
 // @ts-check
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 
 /** ID do processo de Automação de Admissão, usado por `pageworkflowview`. */
 export const PROCESSO_AUTOMACAO_ADMISSAO = 'wf_automacao_admissao';
@@ -94,7 +95,34 @@ export class AdmissaoPage {
    * @returns {Promise<string>} texto do heading do formulário realmente servido
    */
   async lerTituloDoFormularioInterno() {
-    const handle = await this.page.waitForFunction(
+    const handle = await this.esperarTituloMontado();
+    if (handle === null) {
+      faltaPreCondicao(
+        '(ambiente): o formulário interno do processo de Admissão não montou campo algum em ' +
+          '30s. Sem formulário montado não dá para ler QUAL formulário o processo serve, que é ' +
+          'o que este caso observa. Neste ambiente as telas de RH alternam entre montar e não ' +
+          'montar (ver docs/estabilidade-do-ambiente.md).',
+      );
+    }
+
+    const titulo = await handle.jsonValue();
+    if (titulo === null) {
+      throw new Error('o formulário interno do processo de Admissão não montou nenhum título');
+    }
+    return titulo;
+  }
+
+  /**
+   * Espera o formulário interno montar e devolve o handle do título — ou `null` se não montar.
+   *
+   * Separado de `lerTituloDoFormularioInterno` para que a espera possa falhar sem virar um
+   * `TimeoutError` cru: neste ambiente "não montou" é ambiente, e o veredito precisa dizer
+   * isso em vez de parecer defeito do produto.
+   *
+   * @returns {Promise<import('@playwright/test').JSHandle<string|null> | null>}
+   */
+  async esperarTituloMontado() {
+    return this.page.waitForFunction(
       () => {
         const iframe = document.querySelectorAll('iframe')[0];
         const doc = iframe instanceof HTMLIFrameElement ? iframe.contentDocument : null;
@@ -112,14 +140,6 @@ export class AdmissaoPage {
       undefined,
       // Mesmo orçamento de tempo que o `waitFor` anterior usava — não é afrouxamento.
       { timeout: 30_000 },
-    );
-
-    const titulo = await handle.jsonValue();
-    // `waitForFunction` só resolve com retorno truthy, então `null` é inalcançável aqui;
-    // a guarda existe para o verificador de tipos e falha alto caso isso mude.
-    if (titulo === null) {
-      throw new Error('o formulário interno do processo de Admissão não montou nenhum título');
-    }
-    return titulo;
+    ).catch(() => null);
   }
 }

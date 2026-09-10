@@ -95,6 +95,51 @@ export class SubstituicaoCargosPage {
   }
 
   /**
+   * O que a tela expõe do bloco de SUBSTITUTO, e por qual motivo (se houver).
+   *
+   * Esta é a substância do achado, e ela sobrevive à oscilação do ambiente. O motivo do
+   * bloqueio muda: no `caixade182374` a tela dizia "Funcionário não localizado"; no
+   * `caixade213859` diz "Não foi possível estabelecer comunicação com o ERP" — e, medido em
+   * 09/09/2026, o mesmo formulário alterna entre esse aviso (0 campos acionáveis, 74 no DOM) e
+   * uma carga sem aviso com só os campos de identificação visíveis.
+   *
+   * O que NÃO muda em nenhum dos estados: `sereiUsuarioSubstituto` e companhia continuam no
+   * DOM e nunca ficam acionáveis. Afirmar sobre eles é afirmar sobre o achado; afirmar sobre a
+   * mensagem é afirmar sobre a circunstância.
+   *
+   * @returns {Promise<{ acionaveis: string[], noDom: string[], motivo: 'funcionario-nao-localizado' | 'erp-indisponivel' | 'nenhum' }>}
+   */
+  async lerAcessoAosCamposDeSubstituto() {
+    const frameElement = await this.page.locator('iframe').first().elementHandle();
+    const frame = frameElement ? await frameElement.contentFrame() : null;
+    if (!frame) return { acionaveis: [], noDom: [], motivo: 'nenhum' };
+
+    return frame.evaluate(() => {
+      const texto = (document.body?.innerText ?? '').replace(/\s+/g, ' ');
+      const doSubstituto = (/** @type {Element} */ el) =>
+        /substitut/i.test(/** @type {HTMLInputElement} */ (el).id ?? '');
+
+      const campos = Array.from(document.querySelectorAll('input, select, textarea'));
+      const noDom = campos.filter(doSubstituto).map((el) => /** @type {HTMLInputElement} */ (el).id);
+      const acionaveis = campos
+        .filter(doSubstituto)
+        .filter((el) => {
+          const campo = /** @type {HTMLInputElement} */ (el);
+          return campo.offsetParent !== null && !campo.disabled && !campo.readOnly;
+        })
+        .map((el) => /** @type {HTMLInputElement} */ (el).id);
+
+      const motivo = /Funcionario não localizado|Funcionário não localizado/i.test(texto)
+        ? /** @type {const} */ ('funcionario-nao-localizado')
+        : /comunica[çc][ãa]o com o ERP/i.test(texto)
+          ? /** @type {const} */ ('erp-indisponivel')
+          : /** @type {const} */ ('nenhum');
+
+      return { acionaveis, noDom, motivo };
+    });
+  }
+
+  /**
    * Descreve qual dos desfechos conhecidos a tela apresentou — usado só para tornar a
    * falha legível no relatório.
    * @returns {Promise<string>}

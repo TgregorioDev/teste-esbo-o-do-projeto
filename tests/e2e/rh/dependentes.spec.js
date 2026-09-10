@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { ANOTACAO_PRE_CONDICAO } from '../../../utils/pre-condicao.js';
+import { ANOTACAO_PRE_CONDICAO, faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { DependentesPage } from '../../../pages/DependentesPage.js';
 import { criarDependente } from '../../../factories/pessoa.js';
 
@@ -62,10 +62,36 @@ test.describe('Gestão de Dependentes', () => {
     await dependentesPage.expectFormularioAberto();
 
     // O ponto central do caso CT-DEP-02-S1: o titular sem matrícula bloqueia o formulário.
-    await dependentesPage.expectBloqueadoPorTitularSemMatricula();
+    //
+    // ⚠️ No `caixade213859` esse cenário NÃO ocorre: medido em 09/09/2026, o formulário monta
+    // com 39 campos visíveis (65 no DOM) e nenhuma mensagem de bloqueio. O caso pressupõe um
+    // titular SEM matrícula, e a conta desta suíte resolve a dela aqui — é pré-condição
+    // ausente, não defeito e não regressão do teste.
+    //
+    // E há um recado no achado: se o formulário monta, CT-DEP-01-H (cadastrar), 01-S1
+    // (duplicado), 01-S2 (parentesco incompatível) e 01-S3 (CPF inválido) — que estavam
+    // bloqueados exatamente por ele nunca montar — podem ter ficado exercitáveis. Vale
+    // reavaliar antes de escrever qualquer coisa nova aqui.
+    const desfecho = await dependentesPage.lerDesfechoDaIdentificacao();
 
-    // Reforça por contagem de DOM, não só por texto: nenhum campo de cadastro existe —
-    // é essa mesma ausência que impede 01-H/01-S1/01-S2/01-S3 de serem exercitados.
-    expect(await dependentesPage.contarCamposDoFormulario()).toBe(0);
+    testInfo.annotations.push({
+      type: 'desfecho-da-identificacao',
+      description:
+        `bloqueado=${desfecho.bloqueado} · ${desfecho.camposVisiveis} campo(s) visível(is) de ` +
+        `${desfecho.camposNoDom} no DOM`,
+    });
+
+    if (!desfecho.bloqueado) {
+      faltaPreCondicao(
+        `(ambiente): o formulário de Gestão de Dependentes montou ${desfecho.camposVisiveis} ` +
+          'campo(s) sem exibir o bloqueio por titular sem matrícula. O cenário deste caso — ' +
+          'titular SEM matrícula localizada — não é reproduzível com esta conta neste ' +
+          'ambiente. Se o formulário monta, CT-DEP-01-H/01-S1/01-S2/01-S3 merecem reavaliação.',
+      );
+    }
+
+    // Com o bloqueio presente, nenhum campo de cadastro chega a ser montado — é essa mesma
+    // ausência que impede 01-H/01-S1/01-S2/01-S3 de serem exercitados.
+    expect(desfecho.camposVisiveis).toBe(0);
   });
 });
