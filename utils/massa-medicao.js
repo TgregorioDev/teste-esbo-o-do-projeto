@@ -1,4 +1,7 @@
 // @ts-check
+import { tentarComAlternativa } from './pre-condicao.js';
+import { descobrirContratoVigentePorDataset } from './massa-contratos.js';
+import { FORNECEDOR_FATURAMENTO, fornecedoresParaMedicao, parseFornecedorDaGrade } from '../factories/medicao.js';
 
 /**
  * Descoberta de massa para Faturamento de Contratos — por CONSULTA, não por navegação.
@@ -38,6 +41,115 @@
  */
 
 /** @typedef {{ competencia: string, mensagemDoServidor: string }} CompetenciaBloqueada */
+
+/**
+ * @typedef {import('../pages/MedicaoContratoPage.js').MedicaoContratoPage} MedicaoContratoPage
+ * @typedef {Awaited<ReturnType<MedicaoContratoPage['montarMedicaoComSaldoEmAberto']>>} ResultadoMontagem
+ */
+
+/**
+ * Monta uma medição com saldo em aberto tentando **o fornecedor designado (TOTVS S.A) primeiro** e,
+ * só depois, contratos vigentes descobertos por dataset — a regra "TOTVS primeiro" num lugar só, para
+ * `ciclo-faturamento` e `validacoes-faturamento` (etapa 1.1 do plano de evolução).
+ *
+ * Por que o TOTVS S.A abre a fila: é o fornecedor que o dono do ambiente indicou para o Faturamento
+ * manual (11/09/2026) e tem contrato vigente neste tenant, então é o ponto de partida
+ * DETERMINÍSTICO. Não é ponto único de falha: se ele não tiver competência com saldo aberto no
+ * momento, a busca cai para contratos descobertos por dataset. Saturação do ERP na montagem
+ * (`WFLYEJB0378`) vira PRÉ-CONDIÇÃO dentro do próprio Page Object (`MedicaoContratoPage`).
+ *
+ * `tentarComAlternativa` é obrigatório aqui: um fornecedor sem contrato/competência é pré-condição
+ * daquela tentativa (segue para o próximo), mas qualquer OUTRO erro tem de subir — envolver em
+ * `try/catch` à mão engoliria erro real e o gate leria como ambiente (ver `utils/pre-condicao.js`).
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {MedicaoContratoPage} medicao
+ * @param {{ maxContratosDescobertos?: number }} [opcoes]
+ * @returns {Promise<{ resultado: ResultadoMontagem | undefined, tentados: string[], descartes: string[] }>}
+ */
+export async function montarMedicaoComSaldoTotvsOuDescoberto(page, medicao, opcoes = {}) {
+  const { maxContratosDescobertos = 3 } = opcoes;
+  /** @type {ResultadoMontagem | undefined} */
+  let resultado;
+  const tentados = /** @type {string[]} */ ([]);
+  const descartes = /** @type {string[]} */ ([]);
+
+  /**
+   * @param {{ codigo: string, loja: string }} fornecedor
+   * @param {string} rotulo como o fornecedor aparece na mensagem de descarte
+   * @returns {Promise<boolean>} true quando montou com sucesso (encerra a busca)
+   */
+  const tentarFornecedor = async (fornecedor, rotulo) => {
+    tentados.push(rotulo);
+    // Ouvinte de saturação do ERP: qualquer resposta 5xx nos endpoints de dataset durante ESTA
+    // tentativa é a assinatura do `WFLYEJB0378` (esgotamento do pool de EJB do WildFly). É o sinal
+    // CONFIÁVEL — o banner na tela é transitório e some antes de o `catch` conferir; a resposta 500,
+    // não. Cobre a carga do formulário (`goto`/`expectAberto`, onde o S4 travou) e a cadeia de zooms
+    // (onde o S1 travou). Handler síncrono e à prova de erro: só lê status/URL.
+    /** @type {string[]} */
+    const errosDoErp = [];
+    const ouvir = (/** @type {import('@playwright/test').Response} */ resposta) => {
+      try {
+        if (resposta.status() < 500) return;
+        if (!/\/ecm\/dataset\/|\/dataset\/search|datasetZoom/.test(resposta.url())) return;
+        errosDoErp.push(`HTTP ${resposta.status()} em ${resposta.url().replace(/\?.*$/, '').split('/').pop()}`);
+      } catch {
+        // resposta já descartada pelo navegador — ignora
+      }
+    };
+    page.on('response', ouvir);
+    try {
+      await medicao.goto();
+      await medicao.expectAberto();
+      const tentativa = await tentarComAlternativa(() => medicao.montarMedicaoComSaldoEmAberto(fornecedor));
+      if (!tentativa.serviu) {
+        descartes.push(`${rotulo}: ${tentativa.motivo}`);
+        return false;
+      }
+      resultado = tentativa.valor;
+      if (resultado.sucesso) return true;
+      for (const t of resultado.tentativas) descartes.push(`${rotulo} / competência ${t.competencia}: ${t.mensagem}`);
+      return false;
+    } catch (erro) {
+      // Já classificado como pré-condição (banner detectado dentro do Page Object): registra e segue.
+      const mensagem = erro instanceof Error ? erro.message : String(erro);
+      if (/PRÉ-CONDIÇÃO AUSENTE/.test(mensagem)) {
+        descartes.push(`${rotulo}: ${mensagem.split('\n')[0]}`);
+        return false;
+      }
+      // Erro cru (um zoom sumiu do DOM, o formulário não abriu) ACOMPANHADO de 5xx do ERP = ambiente
+      // saturado (`WFLYEJB0378`): vira descarte e a busca segue para o próximo fornecedor. Sem 5xx do
+      // ERP, é erro real e sobe intacto — nunca se engole um defeito do produto.
+      if (errosDoErp.length > 0) {
+        descartes.push(
+          `${rotulo}: ERP saturado durante a montagem (WFLYEJB0378 — ${errosDoErp.length} resposta(s) 5xx do ` +
+            `Protheus: ${[...new Set(errosDoErp)].slice(0, 4).join('; ')}); "${mensagem.split('\n')[0]}"`,
+        );
+        return false;
+      }
+      throw erro;
+    } finally {
+      page.off('response', ouvir);
+    }
+  };
+
+  // 1) O fornecedor designado, primeiro.
+  if (await tentarFornecedor(FORNECEDOR_FATURAMENTO, `${FORNECEDOR_FATURAMENTO.nome} (${FORNECEDOR_FATURAMENTO.codigo}-${FORNECEDOR_FATURAMENTO.loja})`)) {
+    return { resultado, tentados, descartes };
+  }
+
+  // 2) Contratos vigentes descobertos por dataset, pulando o próprio TOTVS S.A se reaparecer.
+  const contratosDescobertos = /** @type {string[]} */ ([]);
+  for (let i = 0; i < maxContratosDescobertos; i++) {
+    const contrato = await descobrirContratoVigentePorDataset(page, { excluirContratos: contratosDescobertos });
+    contratosDescobertos.push(contrato.contrato);
+    const fornecedor = parseFornecedorDaGrade(contrato.fornecedor);
+    if (fornecedoresParaMedicao([fornecedor]).length === 1) continue; // é o próprio TOTVS S.A, já tentado
+    if (await tentarFornecedor(fornecedor, contrato.contrato)) break;
+  }
+
+  return { resultado, tentados, descartes };
+}
 
 /**
  * Extrai só o código numérico da filial ("3517 - CASSI …" → "3517").

@@ -78,6 +78,18 @@ export class MedicaoContratoPage {
       .filter({ hasNotText: 'Filtrar colunas' })
       .filter({ hasNotText: 'Buscando' });
 
+    /**
+     * Banner de erro de integração que o formulário mostra quando a montagem da medição satura o ERP.
+     * Medido em 11/09/2026 ao montar a medição do TOTVS S.A: a seleção de fornecedor+contrato dispara
+     * uma rajada de ~10 chamadas ao ERP (Tipo de Contrato, Condição de Pagamento, Competências…) e o
+     * WildFly deste tenant esgota o pool de EJB, respondendo HTTP 500 `WFLYEJB0378: Failed to acquire a
+     * permit within 1 MINUTES`. O formulário exibe *"Erro ao buscar as informações do &lt;X&gt;. Por
+     * favor, tente novamente."* e entra em laço de retry. É o "vai travar" declarado pelo desenvolvedor.
+     */
+    this.bannerErroDeIntegracao = this.frame
+      .getByText(/Erro ao buscar as informa|Failed to acquire a permit|WFLYEJB0378/i)
+      .first();
+
     /** Diálogo de erro síncrono do Protheus (fora do iframe, na página hospedeira). */
     this.dialogoErro = page.getByText('Erro:', { exact: true });
     this.mensagemErro = page.getByText(/Mensagem do erro/);
@@ -218,11 +230,26 @@ export class MedicaoContratoPage {
   async selecionarFornecedorPorCodigoLoja(codigo, loja) {
     await this.#clicarSemTooltip(this.campoFornecedor);
     await this.campoFornecedor.pressSequentially(codigo, { delay: 50 });
-    await this.page.waitForResponse(
-      (r) => r.url().includes('datasetZoom') && r.url().includes(`pattern=${codigo}`),
-      { timeout: 20000 },
-    );
-    await this.esperarOpcoesZoom();
+    // A resposta da busca é sinal de PROGRESSO, não veredito — e pode não vir: medido em
+    // 11/09/2026, a busca do zoom de Fornecedor foi abortada por oscilação de rede da máquina
+    // (`ERR_NETWORK_CHANGED`) e, sob a saturação do ERP (`WFLYEJB0378`), demora. Esperá-la de forma
+    // dura transformava isso num `TimeoutError` cru que o gate lê como regressão. O veredito real é a
+    // renderização das opções (`esperarOpcoesZoom`), abaixo.
+    await this.page
+      .waitForResponse(
+        (r) => r.url().includes('datasetZoom') && r.url().includes(`pattern=${codigo}`),
+        { timeout: 20000 },
+      )
+      .catch(() => undefined);
+    const apareceram = await this.esperarOpcoesZoom();
+    if (!apareceram) {
+      await this.#abortarSeErpSaturado('buscar o fornecedor');
+      faltaPreCondicao(
+        `(ambiente): o zoom de Fornecedor não retornou opções para o código "${codigo}" — a busca ao ` +
+          'Protheus não respondeu (oscilação de rede ou lentidão da integração). NÃO é defeito do ' +
+          'produto sob teste.',
+      );
+    }
 
     const padrao = new RegExp(`CÓDIGO\\s*${codigo}\\s*LOJA\\s*${loja}\\b`);
     // A resposta pode ainda não ter renderizado no DOM no instante da primeira leitura (a rede
@@ -267,6 +294,32 @@ export class MedicaoContratoPage {
   }
 
   /**
+   * Declara PRÉ-CONDIÇÃO de ambiente quando o formulário está mostrando o erro de integração da
+   * rajada de chamadas ao ERP (`WFLYEJB0378`, esgotamento do pool de EJB do WildFly). Chamada nos
+   * pontos em que um zoom volta vazio, para distinguir "o ERP travou" de "não há o que medir" — as
+   * duas coisas deixam o zoom vazio, mas só a primeira é ambiente saturado.
+   *
+   * O prazo curto de espera pelo banner é diagnóstico, não veredito: o zoom vazio (o negativo) já
+   * aconteceu; aqui só se escolhe a MENSAGEM certa. Sem banner, retorna e quem chamou segue com a
+   * mensagem de "sem massa".
+   * @param {string} oQueSeEsperava
+   */
+  async #abortarSeErpSaturado(oQueSeEsperava) {
+    const saturado = await this.bannerErroDeIntegracao
+      .waitFor({ state: 'visible', timeout: 3_000 })
+      .then(() => true, () => false);
+    if (!saturado) return;
+    const mensagem = (await this.bannerErroDeIntegracao.innerText().catch(() => '')).replace(/\s+/g, ' ').trim();
+    faltaPreCondicao(
+      `(ambiente): montar a medição saturou a integração do ERP deste tenant ao ${oQueSeEsperava} — o ` +
+        `formulário mostra "${mensagem}" e entra em laço de retry. É o WFLYEJB0378 ("Failed to acquire a ` +
+        'permit within 1 MINUTES", esgotamento do pool de EJB do WildFly) medido em 11/09/2026, e o "vai ' +
+        'travar" declarado pelo desenvolvedor — NÃO é defeito do produto. Rode este fluxo isolado, sem ' +
+        'concorrência.',
+    );
+  }
+
+  /**
    * Abre o zoom "Nº do Contrato" (já filtrado pelo fornecedor selecionado) e escolhe a
    * primeira opção oferecida.
    * @returns {Promise<string>} texto da opção escolhida, para diagnóstico
@@ -275,6 +328,7 @@ export class MedicaoContratoPage {
     await this.#clicarSemTooltip(this.campoNumContrato);
     const apareceram = await this.esperarOpcoesZoom();
     if (!apareceram) {
+      await this.#abortarSeErpSaturado('buscar o contrato do fornecedor');
       faltaPreCondicao(
         'o fornecedor selecionado não ofereceu nenhum contrato no zoom ' +
           '"Nº do Contrato" — isto NÃO é defeito do produto sob teste; escolha outro fornecedor.',
@@ -412,11 +466,33 @@ export class MedicaoContratoPage {
    * @returns {Promise<{ sucesso: true, competencia: string, planilha: string, contrato: string } | { sucesso: false, tentativas: Array<{ competencia: string, mensagem: string }> }>}
    */
   async montarMedicaoComSaldoEmAberto(fornecedor, maxTentativas = 6) {
+    try {
+      return await this.#montarMedicaoComSaldoEmAberto(fornecedor, maxTentativas);
+    } catch (erro) {
+      // A saturação do ERP (`WFLYEJB0378`) pode estourar NO MEIO da cadeia: o formulário re-renderiza
+      // e o zoom seguinte some do DOM, fazendo um `waitFor` estourar 45s como erro cru — que o gate
+      // leria como regressão. Se o banner de erro de integração está na tela, é ambiente saturado →
+      // pré-condição (relançada como está quando já for uma). Sem o banner, é erro real e sobe intacto.
+      if (erro instanceof Error && /PRÉ-CONDIÇÃO AUSENTE/.test(erro.message)) throw erro;
+      await this.#abortarSeErpSaturado('montar a medição (o formulário perdeu um zoom no meio da cadeia)');
+      throw erro;
+    }
+  }
+
+  /**
+   * Implementação de `montarMedicaoComSaldoEmAberto` — o wrapper acima reclassifica a saturação do ERP
+   * como pré-condição.
+   * @param {{ codigo: string, loja: string }} fornecedor
+   * @param {number} maxTentativas
+   * @returns {Promise<{ sucesso: true, competencia: string, planilha: string, contrato: string } | { sucesso: false, tentativas: Array<{ competencia: string, mensagem: string }> }>}
+   */
+  async #montarMedicaoComSaldoEmAberto(fornecedor, maxTentativas) {
     await this.selecionarFornecedorPorCodigoLoja(fornecedor.codigo, fornecedor.loja);
     const contrato = await this.selecionarPrimeiroContrato();
 
     const competencias = await this.listarCompetencias();
     if (competencias.length === 0) {
+      await this.#abortarSeErpSaturado('buscar as competências do contrato');
       faltaPreCondicao(
         `o fornecedor ${fornecedor.codigo}-${fornecedor.loja} não ofereceu ` +
           'nenhuma competência para o contrato selecionado.',

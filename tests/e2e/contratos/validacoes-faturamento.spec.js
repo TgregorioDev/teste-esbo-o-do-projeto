@@ -1,17 +1,15 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { faltaPreCondicao, tentarComAlternativa } from '../../../utils/pre-condicao.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { MedicaoContratoPage } from '../../../pages/MedicaoContratoPage.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
-import {
-  descobrirContratoVigentePorDataset,
-  descobrirContratosVigentesPorDataset,
-} from '../../../utils/massa-contratos.js';
-import { parseFornecedorDaGrade } from '../../../factories/medicao.js';
+import { descobrirContratosVigentesPorDataset } from '../../../utils/massa-contratos.js';
+import { FORNECEDOR_FATURAMENTO, parseFornecedorDaGrade } from '../../../factories/medicao.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
 import {
   descobrirCompetenciaBloqueada,
   listarCompetenciasBrutas,
+  montarMedicaoComSaldoTotvsOuDescoberto,
 } from '../../../utils/massa-medicao.js';
 
 /**
@@ -48,51 +46,6 @@ import {
  * Declarado aqui porque é onde `scripts/gerar-cobertura.mjs` reconhece cobertura.
  */
 
-/**
- * Descobre um contrato vigente com competência em saldo aberto, tentando até
- * `maxContratos` contratos distintos — usado por CT-FAT-02-S1 e CT-FAT-02-S4, que só
- * precisam chegar ao estado "zooms resolvidos sem erro" para verificar que o painel de
- * quantidade/rateio permanece inacessível.
- * @param {import('@playwright/test').Page} page
- * @param {MedicaoContratoPage} medicao
- * @param {number} maxContratos
- * @returns {Promise<{ resultado: Awaited<ReturnType<MedicaoContratoPage['montarMedicaoComSaldoEmAberto']>> | undefined, contratosTentados: string[], descartes: string[] }>}
- */
-async function encontrarMedicaoComSaldo(page, medicao, maxContratos = 3) {
-  const contratosTentados = /** @type {string[]} */ ([]);
-  /** @type {Awaited<ReturnType<MedicaoContratoPage['montarMedicaoComSaldoEmAberto']>> | undefined} */
-  let resultado;
-  /** Por que cada contrato/competência foi descartado — entra na mensagem de falha. */
-  const descartes = /** @type {string[]} */ ([]);
-
-  for (let i = 0; i < maxContratos; i++) {
-    const contrato = await descobrirContratoVigentePorDataset(page, {
-      excluirContratos: contratosTentados,
-    });
-    contratosTentados.push(contrato.contrato);
-    const fornecedor = parseFornecedorDaGrade(contrato.fornecedor);
-
-    await medicao.goto();
-    await medicao.expectAberto();
-    // Contrato sem o que medir (fornecedor sem contrato no zoom, zoom de competência vazio) é
-    // descartado, e o MOTIVO volta a quem chamou para entrar na mensagem de `faltaPreCondicao`.
-    // Qualquer OUTRO erro é relançado: antes todo erro virava descarte e terminava em
-    // pré-condição (ver `tentarComAlternativa`).
-    const tentativa = await tentarComAlternativa(() => medicao.montarMedicaoComSaldoEmAberto(fornecedor));
-    if (!tentativa.serviu) {
-      descartes.push(`${contrato.contrato}: ${tentativa.motivo}`);
-      continue;
-    }
-    resultado = tentativa.valor;
-    if (resultado.sucesso) break;
-    for (const t of resultado.tentativas) {
-      descartes.push(`${contrato.contrato} / competência ${t.competencia}: ${t.mensagem}`);
-    }
-  }
-
-  return { resultado, contratosTentados, descartes };
-}
-
 test.describe('Faturamento de Contratos — validações e bloqueios', () => {
   test('CT-FAT-02-S2: competência recusada pelo Protheus deve bloquear a medição E avisar o usuário', async ({
     page,
@@ -115,7 +68,12 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     // para eliminar. `descobrirContratosVigentes` devolve quatro contratos reservados e
     // distribuídos, e falha via `faltaPreCondicao` quando a grade não tem massa.
     const MAX_CONTRATOS = 4;
-    const amostra = await descobrirContratosVigentesPorDataset(page, MAX_CONTRATOS);
+    // O contrato do fornecedor designado (TOTVS S.A) entra na frente da amostra descoberta — é onde a
+    // competência recusada é procurada primeiro (etapa 1.1 do plano). Sem competência bloqueada nele,
+    // a busca segue pelos contratos vigentes descobertos por dataset, como antes.
+    const descobertos = await descobrirContratosVigentesPorDataset(page, MAX_CONTRATOS);
+    const contratoTotvs = descobertos.find((l) => parseFornecedorDaGrade(l.fornecedor).codigo === FORNECEDOR_FATURAMENTO.codigo);
+    const amostra = contratoTotvs ? [contratoTotvs, ...descobertos.filter((l) => l !== contratoTotvs)] : descobertos;
 
     const tentados = /** @type {string[]} */ ([]);
     /** @type {{ competencia: string, mensagemDoServidor: string } | null} */
@@ -205,12 +163,13 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
 
     const medicao = new MedicaoContratoPage(page);
-    const { resultado, contratosTentados } = await encontrarMedicaoComSaldo(page, medicao);
+    const { resultado, tentados, descartes } = await montarMedicaoComSaldoTotvsOuDescoberto(page, medicao);
 
     if (!resultado?.sucesso) {
       faltaPreCondicao(
-        'nenhum contrato vigente tentado teve competência com saldo em ' +
-          `aberto — impossível chegar ao estado onde o campo de quantidade existiria. Tentados: ${contratosTentados.join(', ')}.`,
+        'nenhum fornecedor/contrato tentado teve competência com saldo em ' +
+          `aberto — impossível chegar ao estado onde o campo de quantidade existiria. Tentados: ${tentados.join(', ')}. ` +
+          `Motivo de cada descarte (inclui saturação do ERP, se houve): ${JSON.stringify(descartes)}`,
       );
     }
 
@@ -249,12 +208,13 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
 
     const medicao = new MedicaoContratoPage(page);
-    const { resultado, contratosTentados } = await encontrarMedicaoComSaldo(page, medicao);
+    const { resultado, tentados, descartes } = await montarMedicaoComSaldoTotvsOuDescoberto(page, medicao);
 
     if (!resultado?.sucesso) {
       faltaPreCondicao(
-        'nenhum contrato vigente tentado teve competência com saldo em ' +
-          `aberto — impossível chegar ao estado onde a aba de rateio existiria. Tentados: ${contratosTentados.join(', ')}.`,
+        'nenhum fornecedor/contrato tentado teve competência com saldo em ' +
+          `aberto — impossível chegar ao estado onde a aba de rateio existiria. Tentados: ${tentados.join(', ')}. ` +
+          `Motivo de cada descarte (inclui saturação do ERP, se houve): ${JSON.stringify(descartes)}`,
       );
     }
 

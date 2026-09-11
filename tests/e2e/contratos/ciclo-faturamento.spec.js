@@ -1,10 +1,9 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { faltaPreCondicao, tentarComAlternativa } from '../../../utils/pre-condicao.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { MedicaoContratoPage } from '../../../pages/MedicaoContratoPage.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
-import { descobrirContratoVigentePorDataset } from '../../../utils/massa-contratos.js';
-import { parseFornecedorDaGrade } from '../../../factories/medicao.js';
+import { montarMedicaoComSaldoTotvsOuDescoberto } from '../../../utils/massa-medicao.js';
 import { lerTarefas, lerCamposDoFormulario } from '../../../utils/estado-da-solicitacao.js';
 
 /**
@@ -56,53 +55,21 @@ test.describe('Faturamento de Contratos — ciclo de medição', () => {
     // mascara flakiness"), só que este teste amplia a busca por até 3 contratos.
     test.setTimeout(180_000);
 
-    // Contrato vigente por DATASET, não pela grade do Acompanhamento: este teste mede a medição, e a
-    // grade é superfície de outro portal (etapa 3 de `docs/plano-de-evolucao-2026-09-11.md`).
     await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
 
     const medicao = new MedicaoContratoPage(page);
 
-    // Não há oráculo para saber de antemão qual contrato/competência tem saldo em aberto
-    // para medir (varia com o tempo e com execuções concorrentes desta suíte). Tenta até
-    // 3 contratos vigentes distintos, cada um com sua própria busca de competência —
-    // consistente com "nunca fixe o valor de um contrato numa constante" (README).
-    const MAX_CONTRATOS = 3;
-    /** @type {Awaited<ReturnType<MedicaoContratoPage['montarMedicaoComSaldoEmAberto']>> | undefined} */
-    let resultado;
-    const contratosTentados = /** @type {string[]} */ ([]);
-    /** Por que cada contrato/competência foi descartado — vai inteiro para a mensagem de falha. */
-    const descartes = /** @type {string[]} */ ([]);
-
-    for (let i = 0; i < MAX_CONTRATOS; i++) {
-      const contrato = await descobrirContratoVigentePorDataset(page, {
-        excluirContratos: contratosTentados,
-      });
-      contratosTentados.push(contrato.contrato);
-      const fornecedor = parseFornecedorDaGrade(contrato.fornecedor);
-
-      await medicao.goto();
-      await medicao.expectAberto();
-
-      // Contrato sem o que medir (fornecedor sem contrato no zoom, zoom de competência vazio) é
-      // descartado, e o MOTIVO entra na mensagem final — sem ele a pré-condição dizia
-      // `Tentativas: []`. Qualquer OUTRO erro é relançado: antes todo erro virava descarte e
-      // terminava em pré-condição (ver `tentarComAlternativa`).
-      const tentativa = await tentarComAlternativa(() => medicao.montarMedicaoComSaldoEmAberto(fornecedor));
-      if (!tentativa.serviu) {
-        descartes.push(`${contrato.contrato}: ${tentativa.motivo}`);
-        continue;
-      }
-      resultado = tentativa.valor;
-      if (resultado.sucesso) break;
-      for (const t of resultado.tentativas) {
-        descartes.push(`${contrato.contrato} / competência ${t.competencia}: ${t.mensagem}`);
-      }
-    }
+    // Fornecedor designado (TOTVS S.A) primeiro, depois contratos vigentes descobertos por dataset
+    // (`utils/massa-medicao.js`, etapa 1.1 do plano de evolução). Não há oráculo para saber de
+    // antemão qual contrato/competência tem saldo em aberto — varia com o tempo e com execuções
+    // concorrentes. Saturação do ERP na montagem (`WFLYEJB0378`) já vira PRÉ-CONDIÇÃO dentro do
+    // Page Object.
+    const { resultado, tentados, descartes } = await montarMedicaoComSaldoTotvsOuDescoberto(page, medicao);
 
     if (!resultado?.sucesso) {
       faltaPreCondicao(
-        'nenhum dos contratos vigentes tentados ' +
-          `(${contratosTentados.join(', ')}) tem competência com saldo em aberto para medir ` +
+        'nenhum fornecedor/contrato tentado ' +
+          `(${tentados.join(', ')}) tem competência com saldo em aberto para medir ` +
           'no momento desta execução — isto NÃO é defeito do produto sob teste. Motivo de cada ' +
           `descarte: ${JSON.stringify(descartes)}`,
       );

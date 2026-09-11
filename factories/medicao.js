@@ -20,6 +20,56 @@
  */
 
 /**
+ * @typedef {{ codigo: string, loja: string }} FornecedorMedicao
+ */
+
+/**
+ * Fornecedor designado para a massa do ciclo de Faturamento: **TOTVS S.A**
+ * (código `53113791`, loja `0001`, CNPJ 53113791000122).
+ *
+ * ## Por que um fornecedor FIXO aqui
+ *
+ * A suíte evita depender de registro fixo (README) — mas este não é um contrato de negócio
+ * arbitrário. É o fornecedor que o dono do ambiente indicou para exercitar o Faturamento manual
+ * (11/09/2026), e é a própria TOTVS como fornecedora da Cassi. Neste tenant ele tem um contrato
+ * vigente (medido: **00015-2026-5303**, filial 5303), então serve de ponto de partida
+ * DETERMINÍSTICO. Não é ponto único de falha: `fornecedoresParaMedicao` faz os testes caírem para
+ * contratos descobertos por dataset quando o TOTVS S.A não tiver competência com saldo aberto. E não
+ * se fixa o NÚMERO do contrato nem valor nenhum — só o fornecedor, cujo cadastro é estável.
+ *
+ * ⚠️ Buscar "TOTVS SA" no zoom dá ZERO: o nome gravado é "TOTVS S.A", com ponto (medido). Por isso a
+ * seleção é sempre por CÓDIGO+LOJA (`MedicaoContratoPage.selecionarFornecedorPorCodigoLoja`), nunca
+ * por nome.
+ *
+ * @type {Readonly<FornecedorMedicao & { nome: string }>}
+ */
+export const FORNECEDOR_FATURAMENTO = Object.freeze({ codigo: '53113791', loja: '0001', nome: 'TOTVS S.A' });
+
+/**
+ * Ordem de tentativa dos fornecedores do Faturamento: o designado (TOTVS S.A) **primeiro**, depois os
+ * descobertos por dataset — sem repetir o designado se ele reaparecer entre os descobertos.
+ *
+ * Função pura, para ser testada isolada (`unit/medicao.test.mjs`) e para manter a regra "TOTVS
+ * primeiro" num lugar só, em vez de repetida em cada spec de faturamento.
+ *
+ * @param {FornecedorMedicao[]} [descobertos]
+ * @returns {FornecedorMedicao[]}
+ */
+export function fornecedoresParaMedicao(descobertos = []) {
+  const chave = (/** @type {FornecedorMedicao} */ f) => `${f.codigo}-${f.loja}`;
+  const vistos = new Set([chave(FORNECEDOR_FATURAMENTO)]);
+  /** @type {FornecedorMedicao[]} */
+  const ordem = [{ codigo: FORNECEDOR_FATURAMENTO.codigo, loja: FORNECEDOR_FATURAMENTO.loja }];
+  for (const f of descobertos) {
+    if (!vistos.has(chave(f))) {
+      vistos.add(chave(f));
+      ordem.push(f);
+    }
+  }
+  return ordem;
+}
+
+/**
  * A grade do Portal de Acompanhamento de Contratos exibe o fornecedor como
  * `"<código> - <loja>"` (ex.: `"05395624 - 0001"`) — confirmado em campo via
  * `AcompanhamentoContratosPage.lerLinhasDaGrade()`. O zoom "Fornecedor" do Faturamento,

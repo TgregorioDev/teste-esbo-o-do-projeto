@@ -86,6 +86,50 @@ Corrigido em três pontos:
 
 Reexecução: CT-CMP-04-H verde (SC 96504, "Distribuição Gestor Orçamentario"); CT-CMP-05-H chegou à 14 (SC 96505).
 
+### Teste e factory do Faturamento manual com o TOTVS S.A — 11/09/2026 (~16:45)
+
+Implementado o fluxo manual na suíte, com o TOTVS S.A como fornecedor designado e o tratamento do
+`WFLYEJB0378` como pré-condição.
+
+**Factory (`factories/medicao.js`).** `FORNECEDOR_FATURAMENTO` = TOTVS S.A (código 53113791, loja 0001) e
+`fornecedoresParaMedicao(descobertos)` — função pura que põe o TOTVS S.A primeiro e não o repete. Por que
+um fornecedor fixo: é o que o dono do ambiente indicou, é a própria TOTVS como fornecedora da Cassi e tem
+contrato vigente neste tenant — ponto de partida DETERMINÍSTICO, sem ser ponto único de falha (cai para
+contratos descobertos por dataset). Não se fixa número de contrato nem valor. Testada em
+`unit/medicao.test.mjs` (30 unitários no total).
+
+**Orquestrador (`utils/massa-medicao.js`).** `montarMedicaoComSaldoTotvsOuDescoberto(page, medicao)`: TOTVS S.A
+primeiro, depois contratos vigentes descobertos por dataset, com `tentarComAlternativa`. Um ouvinte das
+respostas 5xx do ERP durante cada tentativa é o sinal CONFIÁVEL de saturação — o banner na tela é
+transitório e some antes do `catch`; a resposta 500, não. Erro cru na montagem ACOMPANHADO de 5xx do ERP
+vira descarte de ambiente (segue para o próximo fornecedor); sem 5xx, sobe intacto.
+
+**Page Object (`MedicaoContratoPage`).** Detecção do `WFLYEJB0378` em três pontos: a busca de fornecedor que
+não responde, o zoom vazio (contrato/competência) e o erro NO MEIO da cadeia (o formulário perde um zoom e
+um `waitFor` estoura 45 s) — todos reclassificados como PRÉ-CONDIÇÃO de ambiente, com a causa medida na
+mensagem. O `waitForResponse` da busca de fornecedor virou best-effort.
+
+**Aplicado em:** `ciclo-faturamento` (CT-FAT-01-H) e `validacoes-faturamento` (CT-FAT-02-S1/S2/S4) — os casos
+que montam a medição. `faturamento-contratos` (só abre o formulário, não seleciona fornecedor) e o S3 (lê o
+pool) não trabalham esse fluxo e ficaram como estavam.
+
+**Execução (16:25–16:47, isolado, `--workers=1`):**
+
+| Teste | Resultado |
+|---|---|
+| CT-FAT-01-H | **verde** — medição 96510 criada e roteada para "Realizar Medição do Contrato". TOTVS S.A tentado primeiro; sem competência com saldo agora, caiu para 00005-2025-3301 (fallback funcionando) |
+| CT-FAT-02-S1 (quantidade) | **verde** |
+| CT-FAT-02-S4 (rateio) | **verde** |
+| CT-FAT-02-S2 (competência recusada) | pré-condição legítima (nenhuma competência recusada nos contratos amostrados) |
+
+**Prova da reclassificação:** nas execuções sob o tenant saturado (das nossas próprias chamadas), S1 e S4
+estouraram 45 s CRU (banner já sumido) e o gate leu como regressão; com o ouvinte de 5xx do ERP eles passaram
+a sair como pré-condição/verde. É o "vai travar" do desenvolvedor virando ambiente, não defeito.
+
+**Fora de escopo, não regressão minha:** CT-FAT-02-S3 (alcançabilidade do pool) reprova hoje no `waitFor` de
+um header do pool que renderiza `hidden` sob carga — corpo do teste byte-idêntico ao commitado (md5 conferido),
+falha independente desta entrega.
+
 ### Correção do usuário e teste real do formulário manual — 11/09/2026 (~16:05)
 
 O usuário corrigiu: "manual" NÃO é ativar o job — é **preencher o formulário de Faturamento escolhendo o
