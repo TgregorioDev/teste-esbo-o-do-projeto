@@ -89,10 +89,10 @@ test.describe('Notificações — alertas automáticos', () => {
     });
 
     expect(
-      duplicadas.length,
+      duplicadas,
       `${duplicadas.length} combinação(ões) de (evento, destinatário, alvo, instante) geraram mais ` +
         `de um alerta idêntico entre os ${alertas.length} alertas auditados — isso é a assinatura de ` +
         'duplicidade que o job de alerta automático não deveria produzir. Ver CT-NOT-02-S1.',
-    ).toBe(0);
+    ).toHaveLength(0);
   });
 });

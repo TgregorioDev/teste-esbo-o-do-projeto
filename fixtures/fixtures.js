@@ -307,6 +307,7 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
        * @param {(valor: undefined) => Promise<void>} use
        * @param {import('@playwright/test').TestInfo} testInfo
        */
+      // eslint-disable-next-line no-empty-pattern -- o Playwright exige desestruturação literal no 1º parâmetro da fixture (JSDoc acima)
       async ({}, use, testInfo) => {
         await use(undefined);
 

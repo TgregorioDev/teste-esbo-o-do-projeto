@@ -158,25 +158,17 @@ test.describe('Validação Orçamentária e Alçadas', () => {
     const paraNumero = (/** @type {string} */ v) => Number(v.replace(/\./g, '').replace(',', '.'));
     const somaDosItens = painel.itens.reduce((acc, v) => acc + paraNumero(v), 0);
 
-    if (painel.aprovadores.length === 1) {
-      expect(
-        paraNumero(painel.aprovadores[0].total),
-        `o Total Estimado a Aprovar (${painel.aprovadores[0].total}) diverge da soma dos ` +
-          `${painel.itens.length} itens da SC (${somaDosItens.toFixed(2)}). O cálculo é do ` +
-          `Protheus — divergência aqui é sintoma de integração, não de tela`,
-      ).toBeCloseTo(somaDosItens, 2);
-    } else {
-      // Vários aprovadores: cada um responde por parte, e a soma das partes é o todo.
-      const somaDosAprovadores = painel.aprovadores.reduce(
-        (acc, a) => acc + paraNumero(a.total),
-        0,
-      );
-      expect(
-        somaDosAprovadores,
-        `a soma dos totais por aprovador (${somaDosAprovadores.toFixed(2)}) diverge da soma dos ` +
-          `itens da SC (${somaDosItens.toFixed(2)}) — item sem aprovador, ou item contado duas vezes`,
-      ).toBeCloseTo(somaDosItens, 2);
-    }
+    // Com um aprovador ou com vários, a regra é a mesma: a soma dos totais por aprovador é o todo
+    // (o aprovador único responde por todos os itens). Uma assertion incondicional cobre os dois
+    // casos — a versão anterior tinha um `if/else` com uma assertion diferente em cada ramo.
+    const somaDosAprovadores = painel.aprovadores.reduce((acc, a) => acc + paraNumero(a.total), 0);
+    expect(
+      somaDosAprovadores,
+      `a soma dos totais por aprovador (${somaDosAprovadores.toFixed(2)}, ${painel.aprovadores.length} ` +
+        `aprovador(es)) diverge da soma dos ${painel.itens.length} itens da SC ` +
+        `(${somaDosItens.toFixed(2)}) — item sem aprovador, item contado duas vezes, ou cálculo do ` +
+        'Protheus divergente (sintoma de integração, não de tela)',
+    ).toBeCloseTo(somaDosItens, 2);
   });
 
   /**

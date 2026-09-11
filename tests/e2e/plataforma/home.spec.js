@@ -23,6 +23,7 @@ test.describe('Home da plataforma', () => {
     // Estado observável (rede estabilizada), não tempo fixo: garante que chamadas
     // assíncronas disparadas na carga (analytics, widgets) já tiveram chance de responder
     // antes de avaliar o coletor de erros de console.
+    // eslint-disable-next-line playwright/no-networkidle -- a assertion é sobre o tráfego/console da carga: espera-se a rede assentar antes de medir (erros de console)
     await page.waitForLoadState('networkidle');
 
     // DEFEITO REAL CONFIRMADO EM CAMPO (novo — ainda não catalogado em

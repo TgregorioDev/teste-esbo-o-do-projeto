@@ -16,7 +16,7 @@ const r = await p.evaluate(async (lista) => {
       if (j.processId !== 'wf_solicitacao_compras') continue;
       const mv = (j.currentMovements ?? [])[0];
       out.push({ id, status: j.status, etapa: mv?.stateDescription ?? mv?.state?.stateName ?? '-', inicio: (j.startDate ?? '').slice(0, 16) });
-    } catch {}
+    } catch { /* sonda: resposta que não é JSON é ignorada de propósito */ }
   }
   return out;
 }, ids);

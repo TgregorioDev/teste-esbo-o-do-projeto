@@ -545,8 +545,8 @@ test.describe('Payload de start — número de contrato incoerente (CT-ACC-04-S5
     const itensIncoerente = extrairItens(payloadIncoerente.formFields);
 
     expect(
-      itensIncoerente.length,
+      itensIncoerente,
       `nrContrato aponta para o MEDIO (${itensReferencia.length} itens reais), mas o payload enviou ${itensIncoerente.length} itens`,
-    ).toBe(itensReferencia.length);
+    ).toHaveLength(itensReferencia.length);
   });
 });

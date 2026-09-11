@@ -169,6 +169,7 @@ export class FormularioSolicitacaoCompraPage {
     // final da montagem saem ~4s depois da carga, e registrar depois perderia a resposta.
     // `.then(ok, err)` já consome a rejeição — promessa pendente sem tratamento derrubaria
     // o processo do worker com "unhandled rejection" quando o formulário não abrisse.
+    // eslint-disable-next-line playwright/missing-playwright-await -- promessa guardada de propósito: `.then(ok, err)` consome a rejeição e ela é aguardada em expectAberto()/expectMontagemConcluida()
     this.inicializacaoConcluida = this.page
       // 60s é o mesmo prazo que o config declara para navegação — é o custo de SERVIR a tela,
       // que é o que se espera aqui. Precisa ficar ABAIXO do timeout de teste (120s) de

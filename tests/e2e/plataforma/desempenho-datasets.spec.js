@@ -68,6 +68,7 @@ test.describe('Desempenho — consultas de dataset na carga da tela (FSWTBC-4178
       // A carga do widget é assíncrona: esperar a rede aquietar é o que separa "a tela terminou
       // de pedir dados" de "ainda está pedindo". `networkidle` é aceitável aqui porque a
       // asserção É sobre o tráfego — não é espera arbitrária por conteúdo.
+      // eslint-disable-next-line playwright/no-networkidle -- a assertion é sobre o tráfego/console da carga: espera-se a rede assentar antes de medir (contagem de datasets)
       await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {
         // rota que mantém conexão aberta (polling) nunca aquieta; a contagem até aqui já serve
       });

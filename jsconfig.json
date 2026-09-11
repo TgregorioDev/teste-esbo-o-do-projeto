@@ -9,7 +9,8 @@
     "strict": true,
     "types": [
       "node"
-    ]
+    ],
+    "maxNodeModuleJsDepth": 0
   },
   "include": [
     "tests/**/*.js",

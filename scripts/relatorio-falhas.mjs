@@ -27,7 +27,7 @@
  *   node scripts/relatorio-falhas.mjs /tmp/merged.json relatorios/relatorio-falhas-2026-09-04.html
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { basename, dirname } from 'node:path';
+import { dirname } from 'node:path';
 
 const entrada = process.argv[2] ?? '/tmp/merged.json';
 const saida = process.argv[3] ?? 'relatorios/relatorio-falhas.html';

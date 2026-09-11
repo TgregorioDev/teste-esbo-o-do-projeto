@@ -328,7 +328,7 @@ test.describe('Ciclo do Comprador — retorno ao ERP e Tracker (CT-E2E-10-H, CT-
 
     const linhas = tracker.getLinhasDoResultado();
     await expect(linhas.first()).toBeVisible({ timeout: 30_000 });
-    expect(await linhas.count()).toBe(1);
+    await expect(linhas).toHaveCount(1);
     await expect(linhas.first()).toContainText(numeroProcesso);
 
     // "Caminho percorrido": o ícone de rastro (sem nome acessível — mesma limitação já

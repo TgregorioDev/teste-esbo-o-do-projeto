@@ -195,6 +195,7 @@ test.describe('Plataforma — erro de console nas rotas-chave (CT-PLT-06-S1)', (
             `Causa: ${erro instanceof Error ? erro.message : String(erro)}`,
         );
       }
+      // eslint-disable-next-line playwright/no-networkidle -- a assertion é sobre o tráfego/console da carga: espera-se a rede assentar antes de medir (erros de console)
       await page.waitForLoadState('networkidle');
 
       const naoCatalogados = console_

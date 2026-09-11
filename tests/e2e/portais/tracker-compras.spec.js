@@ -41,7 +41,7 @@ test.describe('Tracker de Processos Compras/Contratos', () => {
 
     await expect(tracker.alertaFiltroObrigatorio).toBeVisible();
     // Nenhum resultado deve ter sido carregado quando o filtro é recusado.
-    expect(await tracker.getLinhasDoResultado().count()).toBe(0);
+    await expect(tracker.getLinhasDoResultado()).toHaveCount(0);
 
     expect(guarda.tentativas()).toBe(0);
   });
@@ -65,6 +65,7 @@ test.describe('Tracker de Processos Compras/Contratos', () => {
 
     expect(guarda.tentativas()).toBe(0);
   });
+
   /**
    * FSWTBC-1942 — o Tracker oferece as nove visões do negócio.
    *
@@ -190,6 +191,7 @@ test.describe('Tracker de Processos Compras/Contratos', () => {
 
     expect(guarda.tentativas()).toBe(0);
   });
+
   /**
    * FSWTBC-2158 e FSWTBC-4804 — o disparo automático de Faturamento não pode duplicar.
    *

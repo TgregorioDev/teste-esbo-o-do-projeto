@@ -262,7 +262,7 @@ test.describe('Fail-open do formulário clássico de Solicitação de Compras (C
 
     // ── O oráculo do caso ────────────────────────────────────────────────────────────────
     expect(
-      startsEnviados.length,
+      startsEnviados,
       'DEFEITO (fail-open, CT-CMP-07-S1): o Fluig aceitou submeter um formulário de Solicitação ' +
         'de Compras que ainda NÃO terminou de montar — nenhuma validação de cliente rodou e ' +
         `${startsEnviados.length} requisição(ões) de criação saíram para ` +
@@ -270,6 +270,6 @@ test.describe('Fail-open do formulário clássico de Solicitação de Compras (C
         descreverDesfechoDoServidor(criacao) +
         '. O esperado é ZERO: enquanto a montagem não termina, o Enviar tem de ficar inerte ' +
         '(ou desabilitado), e submissão de formulário não montado nunca pode ser aceita',
-    ).toBe(0);
+    ).toHaveLength(0);
   });
 });

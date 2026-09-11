@@ -110,10 +110,10 @@ test.describe('Indisponibilidade do Protheus ao abrir a Solicitação de Compra'
     const textosDosAlertas = (await alertas.allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').trim());
 
     expect(
-      textosDosAlertas.length,
+      textosDosAlertas,
       'UMA falha de dataset tem que produzir UM alerta. Mais de um significa duplicação de ' +
         `renderização (o que o D-11 afirmava). Alertas exibidos: ${JSON.stringify(textosDosAlertas)}`,
-    ).toBe(1);
+    ).toHaveLength(1);
 
     // ⚠️ FALSO VERDE JÁ PAGO (visto na execução de 25/08/2026): a assertion abaixo não pode ser
     // aplicada ao texto INTEIRO do alerta. O corpo simulado por `derrubarDataset` é

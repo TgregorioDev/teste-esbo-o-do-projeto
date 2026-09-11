@@ -36,6 +36,7 @@ test.describe('LGPD — telemetria enviada a serviço externo', () => {
 
     // Sincronização por estado real de rede (não é tempo arbitrário): a página termina
     // de assentar as requisições de telemetria disparadas após o carregamento.
+    // eslint-disable-next-line playwright/no-networkidle -- a assertion é sobre o tráfego/console da carga: espera-se a rede assentar antes de medir (requisições ao Google Analytics)
     await page.waitForLoadState('networkidle');
 
     expect(

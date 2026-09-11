@@ -195,6 +195,7 @@ export class MedicaoContratoPage {
   async #aguardarIndiceDaOpcao(padrao, timeoutMs = 5000) {
     /** @type {{ indice: number }} */
     const achado = { indice: -1 };
+    // eslint-disable-next-line playwright/no-conditional-expect -- o fim de prazo do poll é informação ('nenhuma opção casou'), convertida em -1 para o chamador reportar com as opções reais (JSDoc acima)
     await expect
       .poll(
         async () => {
@@ -272,6 +273,7 @@ export class MedicaoContratoPage {
    * troque esta espera por ele.
    */
   async #aguardarCascataDeHabilitacao() {
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- exceção medida em 25/08/2026: ciclo interno de 100 ms sem sinal observável de fora (JSDoc acima)
     await this.page.waitForTimeout(1200);
   }
 

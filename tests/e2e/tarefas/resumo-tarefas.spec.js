@@ -88,13 +88,17 @@ test.describe('Resumo de Tarefas — coerência dos contadores (CT-TSK-01-H)', (
     await tarefasPage.expectCarregada();
 
     const { total } = await tarefasPage.resumoConsenso();
-    const mensagemVazioVisivel = await tarefasPage.avisoSemConsenso.isVisible();
 
-    expect(
-      mensagemVazioVisivel,
-      `painel anuncia total (${total}), mas a mensagem de "sem tarefas em consenso" ${
-        mensagemVazioVisivel ? 'está visível' : 'não está visível'
-      } — os dois precisam ser coerentes (total zero ⇔ mensagem visível)`,
-    ).toBe(total === 0);
+    // Asserção que ESPERA, com a visibilidade esperada derivada do total. A versão anterior lia
+    // `isVisible()` — o estado do instante — e comparava com `total === 0`: lido antes de o painel
+    // renderizar a mensagem, dava o veredito errado. Trocado em 11/09/2026 (lint,
+    // `prefer-web-first-assertions`); a correção automática gerou `toBeVisible(boolean)`, inválido.
+    const deveAparecer = total === 0;
+    await expect(
+      tarefasPage.avisoSemConsenso,
+      `painel anuncia total (${total}), então a mensagem de "sem tarefas em consenso" ` +
+        `${deveAparecer ? 'deveria estar visível' : 'não deveria aparecer'} — os dois precisam ser ` +
+        'coerentes (total zero ⇔ mensagem visível)',
+    ).toBeVisible({ visible: deveAparecer });
   });
 });

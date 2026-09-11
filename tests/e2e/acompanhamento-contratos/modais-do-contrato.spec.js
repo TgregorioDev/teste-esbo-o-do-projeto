@@ -267,6 +267,7 @@ test.describe('Planilhas do contrato — modais "Informações da Planilha" e "D
     }
 
     if (campos['Valor Total'] && campos['Valor Total'] !== '-') {
+      // eslint-disable-next-line playwright/no-conditional-expect -- medido em 11/09/2026: ~2% das planilhas da filial 5303 vêm com CNA_VLTOT vazio (20 de 1.000), nunca zero; torná-la obrigatória exige decidir se vazio é dado ou defeito (docs/plano-de-evolucao-2026-09-11.md)
       expect(campos['Valor Total']).toMatch(MOEDA_BR);
     }
 

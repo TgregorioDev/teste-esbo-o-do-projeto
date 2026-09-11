@@ -4,7 +4,6 @@ import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
 import { FormularioSolicitacaoCompraPage } from '../../../pages/FormularioSolicitacaoCompraPage.js';
 import { criarProdutoCompra, criarJustificativaDecisao } from '../../../factories/produto-compra.js';
-import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -60,7 +59,6 @@ const ANEXO_VALIDO = path.join(__dirname, '../../../fixtures/anexos/documento-va
  * cobertura — ID citado só em comentário no meio do arquivo NÃO conta.
  */
 
-const GRUPO_GESTOR_IMEDIATO = /Validação do Gestor Imediato/;
 const GRUPO_COMPRADOR = /Valida[çc][ãa]o (d[eo]s?)? ?Comprador/i;
 const GRUPO_ORCAMENTARIA = /Or[çc]ament[áa]ria/i;
 
@@ -388,10 +386,10 @@ test.describe('Validação do Gestor Imediato (Tarefas em pool)', () => {
     // FSWTBC-2681 — exatamente UMA linha em edição. Mais de uma significa que o gestor vê
     // duas decisões abertas para a mesma SC e não sabe qual vale.
     expect(
-      grade.ativas.length,
+      grade.ativas,
       `a grade do Gestor Imediato deveria ter exatamente uma linha em edição, e tem ` +
         `${grade.ativas.length} (históricas: ${grade.historicas.length})`,
-    ).toBe(1);
+    ).toHaveLength(1);
 
     // FSWTBC-5035 — a filial é exibida como "<código> - <nome>", não só o código. É o que
     // permite ao gestor saber de qual unidade é a compra que ele está aprovando.
@@ -637,6 +635,9 @@ test.describe('Etapas designadas nominalmente (verificação de alcançabilidade
       description: `processo=${numeroProcesso} telaComDecisaoSimNao=${temDecisaoPadrao}`,
     });
 
+    // Os dois ramos afirmam: o formato da tela de decisão da Validação dos Compradores varia, e cada
+    // um tem a sua evidência de que a etapa foi alcançada.
+    /* eslint-disable playwright/no-conditional-expect */
     if (temDecisaoPadrao) {
       const justificativa = criarJustificativaDecisao('validação do comprador');
       await central.decidirEEnviar({ aprovar: true, justificativa });
@@ -650,5 +651,6 @@ test.describe('Etapas designadas nominalmente (verificação de alcançabilidade
       // alcançabilidade quando o padrão de decisão difere do já mapeado.
       await expect(central.headingAtual()).toBeVisible();
     }
+    /* eslint-enable playwright/no-conditional-expect */
   });
 });

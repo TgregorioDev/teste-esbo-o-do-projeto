@@ -72,6 +72,6 @@ test.describe('Recuperação de senha', () => {
     // Garantia de que a troca de senha não é oferecida: o card é um único template estático
     // com todos os formulários pré-renderizados e alternados por classe CSS — o campo de
     // nova senha existe no DOM, mas seu formulário permanece oculto (`fs-display-none`).
-    await expect(recuperacaoPage.campoNovaSenha).not.toBeVisible();
+    await expect(recuperacaoPage.campoNovaSenha).toBeHidden();
   });
 });

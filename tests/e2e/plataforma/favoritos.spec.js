@@ -86,6 +86,7 @@ test.describe('Plataforma — favoritar processo e acessar por Favoritos (CT-PLT
       if (!jaEstavaFavoritadoAntes) {
         await favoritosPage.abrirCatalogo();
         await favoritosPage.desfavoritar(processId);
+        // eslint-disable-next-line playwright/no-conditional-expect -- limpeza no `finally`: só confere o que o próprio teste desfez
         await expect(favoritosPage.estrelaDoProcesso(processId)).toHaveAttribute(
           'data-favorite-process',
           'false',

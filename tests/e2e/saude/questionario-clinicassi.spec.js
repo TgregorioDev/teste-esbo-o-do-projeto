@@ -224,16 +224,16 @@ test.describe('Questionário CliniCASSI — contexto da clínica (CT-CLI-02-S1, 
     await questionario.expectFormularioAberto();
     await expect(questionario.headingQuestionario).toBeVisible();
 
-    expect(
-      await questionario.campoClinica.inputValue(),
+    await expect(
+      questionario.campoClinica,
       'o campo "Clínica" deveria vir preenchido com a clínica do diagnóstico — sintoma ' +
         'compatível com o achado U-14 (job dsQDC000 parado); sem acesso admin, a suíte não ' +
         'confirma a causa, só o sintoma',
-    ).not.toBe('');
-    expect(
-      await questionario.campoUnidade.inputValue(),
+    ).not.toHaveValue('');
+    await expect(
+      questionario.campoUnidade,
       'o campo "Unidade" deveria vir preenchido — mesmo sintoma do campo Clínica',
-    ).not.toBe('');
+    ).not.toHaveValue('');
 
     expect(guarda.tentativas(), `tentativa(s) de escrita bloqueada(s): ${JSON.stringify(guarda.urls())}`).toBe(0);
   });

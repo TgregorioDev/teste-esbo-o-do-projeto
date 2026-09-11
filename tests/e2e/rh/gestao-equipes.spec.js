@@ -89,8 +89,15 @@ test.describe('Gestão de Equipes — comunicação de erro (FSWTBC-630)', () =>
     });
 
     if (!SINAIS_DE_ERRO.test(mensagem)) {
-      // A mensagem não é de falha; o rótulo "Sucesso:" seria legítimo.
-      return;
+      // A mensagem não é de falha, então o rótulo "Sucesso:" seria legítimo — e o cenário do
+      // FSWTBC-630 (falha anunciada como sucesso) NÃO ocorreu nesta execução. A versão anterior
+      // fazia `return` aqui: este teste `@bug` terminava VERDE sem afirmar nada, e o alarme de
+      // "defeito corrigido" (`scripts/alerta-bug-corrigido.mjs`) leria isso como conserto.
+      // Achado pelo lint em 11/09/2026. Cenário ausente é pré-condição, nunca verde.
+      faltaPreCondicao(
+        `o diálogo de desfecho não comunicou falha ("${mensagem.slice(0, 120)}"), então o cenário do ` +
+          'FSWTBC-630 — falha sob o cabeçalho "Sucesso:" — não ocorreu nesta execução.',
+      );
     }
 
     expect(

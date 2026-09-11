@@ -129,6 +129,8 @@ test.describe('Cadastro público de fornecedor — campo CNPJ', () => {
     const campoCep = page.locator('#txt_cep');
     await campoCep.click();
     await page.keyboard.type('23456780', { delay: 60 });
+    // Só para a EVIDÊNCIA (anotação abaixo). O veredito é da asserção que espera, `toHaveValue`,
+    // e não desta leitura do instante — trocado em 11/09/2026 pelo lint.
     const comCep = await campoCep.inputValue();
 
     const soDigitos = (/** @type {string} */ v) => v.replace(/\D/g, '');
@@ -142,11 +144,11 @@ test.describe('Cadastro público de fornecedor — campo CNPJ', () => {
         `controle CEP → "${comCep}"`,
     });
 
-    expect(
-      comCep,
+    await expect(
+      campoCep,
       'nem o campo de CEP recebeu o que foi digitado — antes de acusar o campo de CNPJ, é a ' +
         'própria digitação deste teste que precisa ser revista',
-    ).toBe('23456-780');
+    ).toHaveValue('23456-780');
 
     expect(
       soDigitos(comNumerico),

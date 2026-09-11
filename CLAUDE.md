@@ -76,6 +76,7 @@ npm test                            # suíte completa (ambos os projetos)
 npm run test:auth                   # projeto "autenticacao" (sem storageState)
 npm run test:e2e                    # projeto "e2e" (com storageState)
 npm run typecheck                   # tsc --noEmit -p jsconfig.json
+npm run lint                        # eslint + eslint-plugin-playwright — as normas da suíte, como erro
 npm run report                      # abre o relatório HTML da última execução
 
 npx playwright test tests/e2e/plataforma/home.spec.js          # um arquivo
@@ -87,6 +88,12 @@ PULAR_DESTRUTIVOS=1 npx playwright test                         # regressão rá
 
 Antes de afirmar que um teste falha por defeito, rode `node --check <arquivo>` — um erro de
 sintaxe faz o Playwright reportar "No tests found", que é fácil confundir com filtro errado.
+
+**O lint é a varredura de anti-padrões da skill, feita pela máquina** (`eslint.config.js`, regras como
+erro desde 11/09/2026). Exceção só com o motivo **medido** no comentário:
+`// eslint-disable-next-line <regra> -- <motivo>`. Sem motivo medido, é correção, não exceção. E revise o
+`--fix` à mão: em 11/09/2026 ele gerou `toBeVisible(boolean)`, inválido, e trocou uma leitura usada numa
+anotação por um locator.
 
 ---
 

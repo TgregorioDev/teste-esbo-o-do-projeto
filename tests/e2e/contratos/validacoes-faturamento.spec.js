@@ -373,6 +373,7 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
         'teste deve ser revisto para exercitá-los de fato',
     ).toEqual([]);
   });
+
   /**
    * FSWTBC-2143 — todo rótulo de competência tem separador entre mês e ano.
    *

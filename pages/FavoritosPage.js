@@ -65,6 +65,7 @@ export class FavoritosPage {
     // clicar cedo demais não lança erro nenhum, só não faz nada (nenhuma requisição de
     // favorito sai). Confirmado em campo nesta implementação: o mesmo padrão de
     // `tests/e2e/plataforma/home.spec.js` (rede estabilizada, não tempo fixo) resolve.
+    // eslint-disable-next-line playwright/no-networkidle -- sem sinal observável de que o handler de clique do favorito foi ligado; o card fica visível antes (medido)
     await this.page.waitForLoadState('networkidle');
   }
 

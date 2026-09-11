@@ -196,6 +196,10 @@ test.describe('RDFC — rastreabilidade pai↔filho (contrato de dados)', () => 
 
       // 3) Filho finalizado: a etapa de serviço que propaga o resultado ao pai tem de estar
       //    COMPLETED. Se o filho terminou mas a etapa não fechou, o pai fica dessincronizado.
+      // Invariante POR PAR, aplicado só ao filho finalizado — os itens 1 e 2 acima valem para todos
+      // os pares, e a pré-condição garante ao menos um. Não é assertion condicional que possa
+      // terminar verde sem afirmar nada.
+      /* eslint-disable playwright/no-conditional-expect */
       if (par.filhoStatus === 'FINALIZED') {
         const etapa = par.etapaAtualizaPrincipal;
         expect(
@@ -210,6 +214,7 @@ test.describe('RDFC — rastreabilidade pai↔filho (contrato de dados)', () => 
             'sido atualizado.',
         ).toBe('COMPLETED');
       }
+      /* eslint-enable playwright/no-conditional-expect */
     }
   });
 });

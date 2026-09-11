@@ -130,7 +130,7 @@ test.describe('Delegação de Fiscais de Contrato/Serviço — ciclo completo', 
 
     // O único campo relacionado a fiscal na tela é somente leitura...
     await expect(formulario.campoFiscal).toBeVisible();
-    expect(await formulario.campoFiscal.isEditable()).toBe(false);
+    await expect(formulario.campoFiscal).not.toBeEditable();
 
     // ...e não existe, em lugar algum do formulário, um campo de BUSCA/SELEÇÃO de "Fiscal
     // Substituto" — nem por nome de campo acessível, nem por zoom.
@@ -205,7 +205,7 @@ test.describe('Delegação de Fiscais de Contrato/Serviço — ciclo completo', 
 
     // Nenhum dos campos de data existentes é editável pelo solicitante nesta tela.
     for (let i = 0; i < (await camposData.count()); i++) {
-      expect(await camposData.nth(i).isEditable()).toBe(false);
+      await expect(camposData.nth(i)).not.toBeEditable();
     }
   });
 });

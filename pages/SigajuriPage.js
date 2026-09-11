@@ -1,5 +1,4 @@
 // @ts-check
-import { expect } from '@playwright/test';
 import { faltaPreCondicao } from '../utils/pre-condicao.js';
 
 /** Rota de abertura/movimentação de processo por URL — igual a `FormularioProcessoPage`. */

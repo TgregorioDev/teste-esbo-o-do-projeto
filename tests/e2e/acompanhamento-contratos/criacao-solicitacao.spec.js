@@ -308,14 +308,14 @@ test.describe('Item sem quantidade e sem valor no contrato não pode virar item 
     const itensNaSC = extrairItens(/** @type {any} */ (corpoEnviado).formFields);
 
     expect(
-      itensNaSC.length,
+      itensNaSC,
       `contrato ${alvo.contrato.contrato}: o Protheus tem ${alvo.itens.length} itens ` +
         `(${itensValidos.length} com quantidade e valor + ${itensZerados.length} sem nenhum dos dois), ` +
         `mas a SC nasceu com ${itensNaSC.length}. Os itens sem quantidade não foram descartados: o ` +
         'serviço FABRICA quantidade para eles (cascata `resolveQuant` → fallback 1 em contrato de ' +
         `serviços) e com isso eles passam pelo filtro \`quant > 0\`. Quantidades enviadas: ` +
         `${JSON.stringify(itensNaSC.map((i) => i.tbprod_quantidade))}`,
-    ).toBe(itensValidos.length);
+    ).toHaveLength(itensValidos.length);
   });
 });
 
