@@ -118,7 +118,7 @@ async function buscarItensSemAbrirModal(page, linha) {
 async function descobrirContratoVigentePequeno(page, contratosPage, criterio = {}) {
   const excluir = new Set(criterio.excluirContratos ?? []);
   // 15 tentativas, e não 8: desde que `descobrirContratoVigente` distribui a escolha entre os
-  // 554 contratos vigentes (em vez de devolver sempre os primeiros da grade), a amostra deixou
+  // centenas de contratos vigentes — 564 em 11/09/2026 — (em vez de devolver sempre os primeiros da grade), a amostra deixou
   // de cair sistematicamente nos mesmos candidatos. Cada tentativa é uma leitura de dataset
   // (~0,1s, sem abrir modal), então ampliar a amostra custa pouco e evita `PRÉ-CONDIÇÃO
   // AUSENTE` por azar de sorteio.

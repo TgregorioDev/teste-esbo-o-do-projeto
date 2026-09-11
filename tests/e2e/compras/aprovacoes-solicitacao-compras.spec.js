@@ -4,6 +4,7 @@ import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
 import { criarJustificativaDecisao } from '../../../factories/produto-compra.js';
 import { criarEAssumirNoPoolDoGestor } from '../../../utils/massa-sc-api.js';
+import { aguardarEstadoNoServidor, lerCamposDoFormulario } from '../../../utils/estado-da-solicitacao.js';
 
 /**
  * CT-CMP-04-H, CT-CMP-04-S1, CT-CMP-05-S1, CT-CMP-05-H e CT-CMP-06-H — ciclo de APROVAÇÃO
@@ -152,9 +153,13 @@ test.describe('Validação do Gestor Imediato (Tarefas em pool)', () => {
       atividade = await central.lerNomeAtividadeAtual();
       expect(atividade.length).toBeGreaterThan(0);
     }).toPass({ timeout: 30_000 });
-    expect(atividade, 'aprovar deveria avançar a atividade para além de "Validação do Gestor"').not.toMatch(
-      /Validação do Gestor/i,
-    );
+    // "Ajustar Informações" também reprova: é para onde o gateway 9 manda a SC quando a aprovação chega
+    // sem `managerAprovadoValidacao` — e a tela diz "movimentada com sucesso" do mesmo jeito. Só olhar a
+    // saída da Validação do Gestor aceitava esse desvio como aprovação (SC 96503, 11/09/2026).
+    expect(
+      atividade,
+      'aprovar deveria avançar a atividade para além de "Validação do Gestor" — e não desviar para "Ajustar Informações"',
+    ).not.toMatch(/Validação do Gestor|Ajustar Informações/i);
 
     test.info().annotations.push({
       type: 'solicitacao-aprovada',
@@ -247,7 +252,7 @@ test.describe('Validação do Gestor Imediato (Tarefas em pool)', () => {
       alcadaVisivel = await mensagemAlcada.isVisible();
       atividade = alcadaVisivel ? '' : await central.lerNomeAtividadeAtual();
       expect(
-        alcadaVisivel || (atividade.length > 0 && !/Validação do Gestor/i.test(atividade)),
+        alcadaVisivel || (atividade.length > 0 && !/Validação do Gestor|Ajustar Informações/i.test(atividade)),
         'esperado: mensagem explícita de alçada OU avanço real da atividade — não os dois ausentes. ' +
           `Atividade atual lida na tela: "${atividade}"`,
       ).toBe(true);
@@ -305,6 +310,90 @@ test.describe('Etapas designadas nominalmente (verificação de alcançabilidade
         `Se este teste reprovou, a etapa passou a ser alcançável por pool — reabra CT-CMP-05-H ` +
         `e exercite a aprovação de verdade, em vez de apenas medir alcançabilidade.`,
     ).toBeUndefined();
+  });
+
+  /**
+   * CT-CMP-05-H — a Validação Orçamentária chega a quem SUBSTITUI o gestor orçamentário.
+   *
+   * A atividade 14 é nominal ao gestor do centro de custo, resolvido no ERP, e nunca vai a pool (o
+   * `@achado` acima). O caminho combinado com o desenvolvedor em 11/09/2026 é cadastrar a conta de
+   * automação como SUBSTITUTA desse gestor (pedido E3). Este teste existe ANTES do cadastro, para que o
+   * dia em que ele acontecer apareça no relatório sem ninguém precisar lembrar de conferir:
+   *
+   * 1. cria a SC por API e aprova a Validação do Gestor (o caminho do CT-CMP-04-H);
+   * 2. espera, no servidor, a SC chegar à 14;
+   * 3. abre o detalhe e lê a ação que a tela oferece (`lerAcaoNaTarefaAtual`, sinais medidos);
+   * 4. "Movimentar" tem de abrir a tela de decisão da etapa.
+   *
+   * Sem substituto, a tela oferece só "Ver detalhes" → PRÉ-CONDIÇÃO citando o E3. "Assumir tarefa" é
+   * falha real: a etapa nominal teria virado pool, e o `@achado` acima precisa ser reaberto.
+   *
+   * O que ele ainda NÃO faz, de propósito: DECIDIR na 14. A tela de decisão da Validação Orçamentária
+   * (grade `tbItemOrcamentario`, por item) nunca foi aberta por esta conta, e escrever a decisão sem
+   * medi-la seria código que ninguém viu funcionar. Medido o formulário no dia do E3, este teste ganha a
+   * aprovação e a assertion de roteamento.
+   */
+  test('CT-CMP-05-H @destrutivo a Validação Orçamentária chega à conta substituta do gestor orçamentário', async ({
+    page,
+    solicitacaoAssumida,
+  }, testInfo) => {
+    testInfo.setTimeout(600_000);
+    const central = new CentralTarefasComprasPage(page);
+    const { numeroProcesso } = solicitacaoAssumida;
+
+    await central.decidirEEnviar({ aprovar: true, justificativa: criarJustificativaDecisao('aprovação') });
+    await central.abrirDetalheAposConfirmacao(numeroProcesso);
+
+    // A saída do gateway 9 é a próxima tarefa HUMANA. Esperar só pela 14 transformava o desvio para
+    // 11 "Ajustar Informações" em "prazo estourado" — e o prazo estourado é pré-condição: foi o que
+    // aconteceu na primeira execução (SC 96503, 11/09/2026), um desvio causado pela própria suíte lido
+    // como ambiente. Estourar o prazo continua sendo ambiente (a 280 consulta o ERP); chegar ao lugar
+    // errado é reprovação.
+    const proximaHumana = (/** @type {any[]} */ lidas) =>
+      lidas.find(
+        (t) =>
+          t.status === 'NOT_COMPLETED' &&
+          ![7, 9].includes(t.state?.sequence) &&
+          !String(t.assignee?.code ?? '').startsWith('System:'),
+      );
+    const tarefas = await aguardarEstadoNoServidor(page, numeroProcesso, (lidas) => Boolean(proximaHumana(lidas)), {
+      timeout: 240_000,
+      oQueSeEspera: 'uma atividade humana depois da Validação do Gestor (esperada: 14 Validação Orçamentária)',
+    });
+    const tarefa = proximaHumana(tarefas);
+    const { managerAprovadoValidacao } = await lerCamposDoFormulario(page, numeroProcesso);
+    expect(
+      tarefa?.state?.sequence,
+      `a SC #${numeroProcesso}, aprovada na Validação do Gestor, deveria seguir para a 14 Validação Orçamentária ` +
+        `e foi para ${tarefa?.state?.sequence} "${tarefa?.state?.stateName}" — managerAprovadoValidacao gravado: ` +
+        `"${managerAprovadoValidacao}"`,
+    ).toBe(14);
+    const responsavel = String(tarefa?.assignee?.name ?? tarefa?.assignee?.code ?? '?');
+
+    await central.abrirDetalheDaSolicitacao(numeroProcesso);
+    const acao = await central.lerAcaoNaTarefaAtual();
+    testInfo.annotations.push({
+      type: 'acao-na-validacao-orcamentaria',
+      description: `SC ${numeroProcesso}: a tela oferece "${acao}"; responsável ${responsavel}`,
+    });
+
+    if (acao === 'nenhuma') {
+      faltaPreCondicao(
+        `(ambiente): a Validação Orçamentária da SC #${numeroProcesso} é tarefa nominal de ${responsavel}, e a ` +
+          'conta de automação ainda não é substituta dessa pessoa — o detalhe oferece só "Ver detalhes". ' +
+          'Pedido E3 de docs/plano-de-evolucao-2026-09-11.md.',
+      );
+    }
+    expect(
+      acao,
+      'a Validação Orçamentária é nominal: com substituto ela aparece para "Movimentar", nunca para assumir de pool',
+    ).toBe('movimentar');
+
+    await central.botaoMovimentarTarefaAtual().click();
+    await expect(
+      page.getByRole('heading', { level: 2 }).filter({ hasText: /^\d+\s*-/ }),
+      '"Movimentar" deveria abrir a tela de decisão da Validação Orçamentária',
+    ).toBeVisible({ timeout: 30_000 });
   });
 
   /**
@@ -370,7 +459,8 @@ test.describe('Etapas designadas nominalmente (verificação de alcançabilidade
     /* eslint-disable playwright/no-conditional-expect */
     if (temDecisaoPadrao) {
       const justificativa = criarJustificativaDecisao('validação do comprador');
-      await central.decidirEEnviar({ aprovar: true, justificativa });
+      // Atividade 119: a prontidão do formulário nesta etapa nunca foi medida (não há massa nela).
+      await central.decidirEEnviar({ aprovar: true, justificativa, esperarAprovador: false });
       await central.abrirDetalheAposConfirmacao(numeroProcesso);
       await expect(async () => {
         const atividade = await central.lerNomeAtividadeAtual();

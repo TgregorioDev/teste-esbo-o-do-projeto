@@ -77,7 +77,7 @@ do produto"*, separando ambiente de defeito no próprio relatório.
 Escolher "a primeira linha vigente da grade" era, na prática, escolher sempre o
 `000000000000001`: a suíte inteira pendurada num registro só. Desde 30/08/2026 a escolha é feita
 por **afinidade de hash** entre a identidade do teste (`titlePath`) e o número do contrato, entre
-os **554 vigentes** da base. Propriedades:
+os **564 vigentes** da base (varredura das 71 filiais, 11/09/2026). Propriedades:
 
 - **determinística** — o mesmo teste escolhe sempre o mesmo contrato, em qualquer worker e em
   qualquer ordem; é o que permite reproduzir uma falha;

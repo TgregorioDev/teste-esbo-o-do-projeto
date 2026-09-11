@@ -95,8 +95,8 @@ export function caminhoDoLock(nome) {
  *
  * `comExclusividade` resolve o caso "preciso deste recurso específico, espero minha vez". Este
  * resolve o outro: "preciso de UM recurso de um conjunto grande — se este está ocupado, pego o
- * próximo". É o que a reserva de contrato usa (`utils/massa-contratos.js`): com 554 contratos
- * vigentes na base, esperar por um deles seria desperdício quando há 553 livres ao lado.
+ * próximo". É o que a reserva de contrato usa (`utils/massa-contratos.js`): com 564 contratos
+ * vigentes na base (11/09/2026), esperar por um deles seria desperdício quando há centenas livres ao lado.
  *
  * Mesma primitiva de sempre: `mkdir` é atômico em POSIX e em Windows, então quem cria, adquire.
  *

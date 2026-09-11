@@ -5,6 +5,9 @@ cobertura em docs/cobertura.md seja auditável. Fonte: QA — Fábrica de Softwa
 
 **Ambiente:** `caixade182374.fluig.cloudtotvs.com.br` · TOTVS Fluig **Voyager 2.0.0-260811** (TOTVS Cloud)
 **Autor:** QA — Fábrica de Software TBC · **Data-base:** 19/08/2026
+
+> ⚠️ **Levantado no `caixade182374`.** Desde 09/09/2026 o ambiente é `caixade213859`, e somente ele: as URLs
+> abaixo valem trocando o subdomínio, e o que mudou de comportamento está medido em `docs/mapa-do-ambiente.md`.
 **Credencial de referência dos testes exploratórios:** `TOTVS-FS` (perfil de Compras/Contratos, **não-admin**)
 
 ---

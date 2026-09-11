@@ -18,8 +18,10 @@ produção: arquitetura, isolamento, paralelismo e observabilidade valem aqui co
 >    filial **5303 (CASSI SEDE) tem 868 contratos**, e a varredura das 71 filiais dá **861
 >    distintos, 564 vigentes** — o mesmo volume do ambiente antigo. Fornecedores: **300**.
 >    Antes de declarar "não há massa de X", **passe o escopo de filial** e confira em mais de uma.
-> 2. **O portal de Acompanhamento de Contratos não está publicado.** São 54 testes que não têm
->    como rodar aqui, e eles dizem isso em 13 segundos em vez de esperar 45s cada.
+> 2. **O portal de Acompanhamento de Contratos foi publicado em 11/09/2026.** Até então os testes dele
+>    declaravam pré-condição em 13 segundos. Publicado, **4 dos 6 datasets** do widget respondem — faltam
+>    `getFiscaisPorTipoContrato` e `getCronogramaFinanceiro` (pedido E1, conferido às 14:47) —, e o que
+>    depende deles segue em pré-condição. `npm run canario` diz o estado do dia.
 > 3. **A concorrência é 3, e é medida.** O tenant degrada sob carga: com os 8 workers do default
 >    a suíte reportava 79 timeouts que não eram defeito de nada. `PW_WORKERS` ajusta.
 >
@@ -114,7 +116,7 @@ O que se exige em troca:
   de ordem. Contrato é a exceção **verificada**: não há como a automação criá-lo, e a prova está
   em `docs/criacao-de-contrato-inviavel.md`. Ele é **descoberto em tempo de execução**
   (`utils/massa-contratos.js`), nunca fixado em `.env` — e desde 30/08/2026 a escolha é
-  **distribuída entre os 554 vigentes da base** e reservada por teste, de modo que nenhum
+  **distribuída entre os 564 vigentes da base** (varredura das 71 filiais, 11/09/2026) e reservada por teste, de modo que nenhum
   registro específico é ponto único de falha.
 - **Cenário que escreve leva a tag `@destrutivo`** — mas **roda na execução padrão**. Decisão do
   dono do ambiente (25/08/2026): *"sempre rode tudo, não me importa se serão testes destrutivos, a
@@ -215,6 +217,16 @@ reversível) está na skill **`cassi-fluig-master`**. Consulte antes de investig
 `fixtures/global-setup.js` autentica **uma vez** reaproveitando o `LoginPage` (não duplica
 seletores) e persiste o estado. Falha explicitamente se faltar variável de ambiente — setup
 silencioso faz a suíte inteira falhar pelo motivo errado.
+
+### Personas — um perfil de negócio, uma conta (`config/personas.js`)
+
+Comprador, fiscal, CSE e gestor de alçada são tarefas NOMINAIS no Fluig: a conta de automação não as
+alcança. Cada persona tem duas variáveis (`QA_<PERSONA>_USERNAME`/`_PASSWORD`, em `.env.example` e nos
+segredos do CI); o `globalSetup` autentica as que existem e a fixture `persona(nome)` abre um contexto com a
+sessão dela. **Sem credencial é PRÉ-CONDIÇÃO citando o pedido (E2, E4), nunca skip; credencial que não
+autentica é erro real.** A identidade é conferida por `GET /api/public/2.0/users/getCurrent` (`content.login`),
+não pelo título — o título prova que há sessão, não de quem. O login do Fluig ignora caixa (medido).
+`tests/e2e/plataforma/personas.spec.js` é a prova de cada uma.
 
 ### `fixtures/fixtures.js` — a base compartilhada
 

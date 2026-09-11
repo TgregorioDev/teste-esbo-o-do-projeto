@@ -1,5 +1,5 @@
 // @ts-check
-import { appendFileSync, mkdirSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { test as base, expect } from '@playwright/test';
 import { fakerPT_BR as faker } from '@faker-js/faker';
@@ -8,6 +8,8 @@ import { AcompanhamentoContratosPage } from '../pages/AcompanhamentoContratosPag
 import { SolicitacaoCompraModal } from '../components/SolicitacaoCompraModal.js';
 import { liberarReservasDeContrato } from '../utils/massa-contratos.js';
 import { criarScNoPoolDoGestor, criarEAssumirNoPoolDoGestor } from '../utils/massa-sc-api.js';
+import { PERSONAS, arquivoDaPersona, arquivoDeErroDaPersona, credencialDaPersona } from '../config/personas.js';
+import { faltaPreCondicao } from '../utils/pre-condicao.js';
 import { hash32, idEstavelDoTeste } from '../utils/identidade-do-teste.js';
 import { LIVRO_DE_CRIADOS } from '../utils/livro-razao.js';
 
@@ -48,6 +50,7 @@ faker.seed(FAKER_SEED);
  * @property {undefined} ritmoDeEscrita
  * @property {import('../utils/massa-sc-api.js').ScDeMassa} solicitacaoNoPool SC de massa por API, no pool da Validação do Gestor
  * @property {import('../utils/massa-sc-api.js').ScDeMassa} solicitacaoAssumida a mesma, já assumida pela conta — tela de decisão aberta
+ * @property {(nome: string) => Promise<{ page: import('@playwright/test').Page, contexto: import('@playwright/test').BrowserContext, usuario: string }>} persona abre um contexto com a sessão de uma persona de `config/personas.js`
  */
 
 export const test = /** @type {import('@playwright/test').TestType<import('@playwright/test').PlaywrightTestArgs & import('@playwright/test').PlaywrightTestOptions & Fixtures, import('@playwright/test').PlaywrightWorkerArgs & import('@playwright/test').PlaywrightWorkerOptions>} */ (
@@ -96,6 +99,44 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
 
     solicitacaoModal: async ({ page }, use) => {
       await use(new SolicitacaoCompraModal(page));
+    },
+
+    /**
+     * Abre uma PERSONA (`config/personas.js`): contexto próprio, com a sessão da conta dela — etapa 5
+     * do plano de evolução. Cada chamada abre um contexto novo, fechado ao fim do teste.
+     *
+     * Sem credencial: PRÉ-CONDIÇÃO dizendo as variáveis que faltam e o pedido que as destrava — nunca
+     * skip. Credencial presente cujo login falhou no `globalSetup`: erro real, com o motivo de lá.
+     */
+    persona: async ({ browser }, use, testInfo) => {
+      /** @type {import('@playwright/test').BrowserContext[]} */
+      const abertos = [];
+      await use(async (nome) => {
+        const definicao = PERSONAS[nome];
+        if (!definicao) throw new Error(`persona desconhecida: "${nome}" — ver config/personas.js`);
+        const credencial = credencialDaPersona(nome);
+        if (!credencial) {
+          faltaPreCondicao(
+            `(ambiente): a persona "${nome}" (${definicao.descricao}) não tem credencial — defina ` +
+              `${definicao.variavelUsuario} e ${definicao.variavelSenha}` +
+              (definicao.pedido ? ` (pedido ${definicao.pedido} de docs/plano-de-evolucao-2026-09-11.md).` : '.'),
+          );
+        }
+        if (existsSync(arquivoDeErroDaPersona(nome))) {
+          throw new Error(
+            `a persona "${nome}" tem credencial, mas o login falhou no globalSetup: ` +
+              readFileSync(arquivoDeErroDaPersona(nome), 'utf8'),
+          );
+        }
+        const contexto = await browser.newContext({
+          baseURL: testInfo.project.use.baseURL,
+          locale: testInfo.project.use.locale,
+          storageState: arquivoDaPersona(nome),
+        });
+        abertos.push(contexto);
+        return { page: await contexto.newPage(), contexto, usuario: credencial.usuario };
+      });
+      for (const contexto of abertos) await contexto.close();
     },
 
     /**

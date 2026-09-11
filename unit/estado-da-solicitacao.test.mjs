@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { saiuDaIntegracao, medirIntegracao } from '../utils/estado-da-solicitacao.js';
+import { saiuDaIntegracao, medirIntegracao, duracaoDaIntegracao } from '../utils/estado-da-solicitacao.js';
 
 /**
  * Leituras REAIS de `/process-management/api/v2/requests/{id}/tasks` (11/09/2026), reduzidas aos
@@ -55,4 +55,14 @@ test('a SC que caiu em Correção saiu da integração, com a espera real de 1.2
 
 test('medir sem tarefa humana aberta é erro de uso, não medida zero', () => {
   assert.throws(() => medirIntegracao(SC_96487_AINDA_INTEGRANDO), /exige uma leitura/);
+});
+
+test('duração da integração: saída para pool ou Correção conta; SC ainda na 233 conta até agora', () => {
+  assert.deepEqual(duracaoDaIntegracao(SC_96474_NO_POOL_DO_GESTOR), { segundos: 29, saiu: true });
+  assert.deepEqual(duracaoDaIntegracao(SC_96456_NA_CORRECAO), { segundos: 1221, saiu: true });
+  assert.deepEqual(
+    duracaoDaIntegracao(SC_96487_AINDA_INTEGRANDO, new Date('2026-09-11T13:05:20.000-0300')),
+    { segundos: 181, saiu: false },
+  );
+  assert.equal(duracaoDaIntegracao(SC_96474_NO_POOL_DO_GESTOR.filter((t) => t.state.sequence !== 233)), null);
 });

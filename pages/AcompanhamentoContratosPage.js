@@ -53,7 +53,7 @@ export class AcompanhamentoContratosPage {
    * código da página foram tentadas, todas Error page) nem falta de permissão (esta devolve
    * "Acesso negado", que a classe já modela logo acima).
    *
-   * Sem esta verificação, cada um dos 54 testes que dependem do portal esperava 45s por um
+   * Sem esta verificação, cada um dos 64 testes que dependem do portal (contagem de 10/09/2026) esperava 45s por um
    * heading que nunca vem e reprovava como TIMEOUT — indistinguível de regressão no relatório,
    * e ~40 minutos de espera por execução. Com ela, o veredito é imediato e o gate classifica
    * como ambiente, que é o que de fato é.

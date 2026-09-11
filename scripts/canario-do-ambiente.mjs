@@ -28,6 +28,9 @@ import { chromium } from '@playwright/test';
 import { readFileSync, existsSync } from 'node:fs';
 import { ARQUIVO_AUTENTICACAO } from '../fixtures/global-setup.js';
 import { verificarServicoErp } from '../utils/servico-erp.js';
+import { lerTarefas, duracaoDaIntegracao } from '../utils/estado-da-solicitacao.js';
+import { repetirSeFalhaDeRede } from '../utils/rede.js';
+import { CentralTarefasComprasPage } from '../pages/CentralTarefasComprasPage.js';
 
 dotenv.config({ path: process.env.ENV_FILE ?? '.env.test', quiet: true });
 
@@ -55,7 +58,7 @@ const SUPERFICIES = [
   {
     nome: 'Acompanhamento de Contratos',
     rota: '/portal/p/1/acompanhamentoContrato',
-    arrasta: '~61 testes (todo o diretório acompanhamento-contratos + Faturamento)',
+    arrasta: '55 testes (o diretório acompanhamento-contratos, --list de 11/09/2026; o Faturamento descobre contrato por dataset)',
     sinalDeQueda: { padrao: /Recurso não foi encontrado/i, veredito: 'PÁGINA NÃO PUBLICADA' },
     sinalDeVida: /Mostrando de \d+|Acompanhamento de Contratos/i,
   },
@@ -241,6 +244,9 @@ async function main() {
     );
   }
 
+  await medirIntegracaoRecente(pagina);
+  await conferirSubstitutoOrcamentario(pagina);
+
   const fora = resultados.filter((r) => r.veredito !== 'ok');
   console.log(`${'='.repeat(72)}`);
   if (fora.length === 0) {
@@ -255,6 +261,87 @@ async function main() {
   }
 
   await navegador.close();
+}
+
+/**
+ * Saúde da integração da SC com o ERP (atividade 233), lida nas SCs mais recentes da base — de qualquer
+ * autor, só leitura.
+ *
+ * Por que aqui: o desenvolvedor informou em 11/09/2026 que a lentidão da 233 é do Protheus e que não há
+ * como intervir pelo Fluig. Ela passa, então, a ser condição a MEDIR antes de executar, e não assunto a
+ * escalar: na manhã de 10/09 a 233 levou 687–1159 s; à tarde, 16–32 s. As fixtures de SC esperam até
+ * 200 s — acima disso, o que a execução mede é a fila do ERP.
+ *
+ * @param {import('@playwright/test').Page} pagina
+ */
+async function medirIntegracaoRecente(pagina) {
+  const LIMITE_SAUDAVEL_S = 60;
+  console.log(`${'-'.repeat(72)}\nIntegração da SC com o ERP (atividade 233), nas 10 SCs mais recentes`);
+  try {
+    const recentes = await repetirSeFalhaDeRede(() =>
+      pagina.evaluate(async () => {
+        const r = await fetch('/process-management/api/v2/requests?processId=wf_solicitacao_compras&pageSize=10', {
+          headers: { Accept: 'application/json' },
+        });
+        if (!r.ok) throw new Error(`listagem de SCs respondeu ${r.status}`);
+        return ((await r.json()).items ?? []).map((/** @type {any} */ i) => ({ id: i.processInstanceId, ativa: i.active }));
+      }),
+    );
+    /** @type {string[]} */
+    const medidas = [];
+    let lentas = 0;
+    for (const { id, ativa } of recentes) {
+      const duracao = duracaoDaIntegracao(await repetirSeFalhaDeRede(() => lerTarefas(pagina, id)));
+      if (!duracao || (!duracao.saiu && !ativa)) continue; // não passou pela 233, ou foi cancelada nela
+      if (duracao.segundos > LIMITE_SAUDAVEL_S) lentas++;
+      medidas.push(`${id}: ${duracao.segundos} s${duracao.saiu ? '' : ' (ainda na 233)'}`);
+    }
+    const marca = medidas.length === 0 ? ' ???? ' : lentas === 0 ? '  ok  ' : ' LENTA';
+    console.log(`[${marca}] ${`${lentas} de ${medidas.length} acima de ${LIMITE_SAUDAVEL_S} s`.padEnd(38)} ${medidas.join(' · ')}`);
+    if (lentas > 0) {
+      console.log('         SCs criadas agora podem estourar os 200 s das fixtures e sair como PRÉ-CONDIÇÃO.');
+    }
+  } catch (erro) {
+    console.log(`[ ???? ] não foi possível medir: ${erro instanceof Error ? erro.message.split('\n')[0] : erro}`);
+  }
+}
+
+/**
+ * Pedido E3: a conta de automação já é substituta do gestor orçamentário?
+ *
+ * A Validação Orçamentária (atividade 14) é tarefa NOMINAL do gestor do centro de custo; a massa semeada
+ * para nela. Quando o substituto estiver cadastrado, a tela de detalhe dessa SC passa a oferecer
+ * "Movimentar" à conta (hoje oferece só "Ver detalhes" — medido em 11/09/2026, SC 96435). Só lê.
+ *
+ * @param {import('@playwright/test').Page} pagina
+ */
+async function conferirSubstitutoOrcamentario(pagina) {
+  console.log(`${'-'.repeat(72)}\nSubstituto do gestor orçamentário (pedido E3)`);
+  const livro = 'playwright/.massa/semeada.jsonl';
+  const ids = existsSync(livro)
+    ? readFileSync(livro, 'utf8').split('\n').filter(Boolean).map((l) => Number(JSON.parse(l).processInstanceId))
+    : [];
+  try {
+    for (const id of ids) {
+      const aberta = (await repetirSeFalhaDeRede(() => lerTarefas(pagina, id))).find(
+        (t) => t.status === 'NOT_COMPLETED' && t.state?.sequence === 14,
+      );
+      if (!aberta) continue;
+      const central = new CentralTarefasComprasPage(pagina);
+      await central.abrirDetalheDaSolicitacao(id);
+      const acao = await central.lerAcaoNaTarefaAtual();
+      const rotulo = `Validação Orçamentária (SC ${id})`.padEnd(38);
+      if (acao === 'nenhuma') {
+        console.log(`[ NÃO  ] ${rotulo} só "Ver detalhes" — a conta ainda não substitui ${aberta.assignee?.code}`);
+      } else {
+        console.log(`[  ok  ] ${rotulo} a conta pode "${acao}" — substituto ativo; destrava CT-CMP-05-H`);
+      }
+      return;
+    }
+    console.log('[ ???? ] nenhuma SC da massa semeada parada na atividade 14 para conferir');
+  } catch (erro) {
+    console.log(`[ ???? ] não foi possível conferir: ${erro instanceof Error ? erro.message.split('\n')[0] : erro}`);
+  }
 }
 
 main().catch((erro) => {

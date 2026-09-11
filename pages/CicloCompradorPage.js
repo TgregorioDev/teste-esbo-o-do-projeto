@@ -377,8 +377,7 @@ export async function aprovarValidacaoDoGestor(page, numeroProcesso, justificati
  * @param {CentralTarefasComprasPage} central
  */
 async function esperarFormularioDeAprovacaoPronto(central) {
-  const aprovador = central.frame.getByRole('textbox', { name: 'Aprovador' }).first();
-  await expect(aprovador, 'o campo "Aprovador" nunca foi preenchido — o script do formulário não terminou de montar').not.toHaveValue('', { timeout: 60_000 });
+  await central.aguardarFormularioDeDecisaoPronto();
 }
 
 /**

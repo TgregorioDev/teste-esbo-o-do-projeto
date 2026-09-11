@@ -211,6 +211,29 @@ export function medirIntegracao(tarefas) {
 }
 
 /**
+ * Quanto a integração (atividade 233) levou numa SC — ou há quanto tempo ela segue lá.
+ *
+ * Diferente de `medirIntegracao`, que serve ao teste de SLA e exige a tarefa humana ABERTA, esta aceita
+ * SC já encerrada: a saída é o primeiro movimento depois da entrada na 233 que não é do `System:`, esteja
+ * ele aberto ou não. É o que o canário precisa para ler a saúde da integração nas SCs mais recentes da
+ * base, de qualquer autor, sem criar nada.
+ *
+ * * @param {any[]} tarefas leitura em que `saiuDaIntegracao(tarefas)` é verdadeiro
+ * @param {Date} [agora] fim da conta quando a SC ainda não saiu
+ * @returns {{ segundos: number, saiu: boolean } | null} `null` quando a SC nem passou pela 233
+ */
+export function duracaoDaIntegracao(tarefas, agora = new Date()) {
+  const porMovimento = [...tarefas].sort((a, b) => a.movementSequence - b.movementSequence);
+  const entrada = porMovimento.find((t) => t.state?.sequence === 233);
+  if (!entrada) return null;
+  const saida = porMovimento.find(
+    (t) => t.movementSequence > entrada.movementSequence && !String(t.assignee?.code ?? '').startsWith('System:'),
+  );
+  const fim = saida ? new Date(saida.startDate) : agora;
+  return { segundos: Math.round((fim.getTime() - new Date(entrada.startDate).getTime()) / 1000), saiu: Boolean(saida) };
+}
+
+/**
  * Descrição curta da tarefa, para mensagens de erro e de pré-condição.
  * @param {TarefaPendente | null | undefined} tarefa
  * @returns {string}

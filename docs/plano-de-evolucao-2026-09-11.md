@@ -32,12 +32,75 @@ e o ambiente com mais cuidado — e mudam o que se implementa:
 |---|---|---|---|
 | **E1** | Publicar `dsProtheus_getFiscaisPorTipoContrato` e `dsProtheus_getCronogramaFinanceiro` | o restante do Acompanhamento de Contratos | desenvolvedor (em andamento em 11/09) |
 | **E2** | Matrícula de comprador (SY1/`Y1_USER`) para `TOTVS-FS`, ou uma conta de comprador | filas de cotação do Portal do Comprador — **221 casos**. ⚠️ Corrigido em 11/09/2026: "Atuar como" **não** é bloqueio (o seletor aparece e a delegação funciona, §1.4), e as filas seguem vazias mesmo delegando — antes deste pedido vem o **E3** | administrador do Protheus |
-| **E3** | `TOTVS-FS` como substituto do gestor orçamentário (Erlon), pela "Substituição de Cargos" | SC chegar à Gerência de Compras e à Validação dos Compradores | Erlon / Cassi |
+| **E3** | `TOTVS-FS` como substituto do gestor orçamentário (Erlon), pela "Substituição de Cargos" | SC chegar à Gerência de Compras e à Validação dos Compradores | Erlon / Cassi — o desenvolvedor vai cadastrar (11/09, 12:08); conferência pronta: `npm run canario` e CT-CMP-05-H |
 | **E4** | Contas de fiscal/CSE, gestor de alçada e fornecedor | **54 + 39 + 15 casos** | Cassi / TOTVS |
 | **E5** | Decisão de regra do FSWTBC-4952 (crítica abaixo de R$ 0,10 ou de R$ 1,00?) | um vermelho sem veredito | desenvolvedor |
 | **E6** | ~~Retorno sobre o defeito do cancelamento~~ — **resolvido em 11/09/2026 (tarde)**: remedido, SC gravada no ERP e sem cotação cancela | a tag `@bug` saiu; o resíduo de antes da correção sai com `limpar-massa --alvos=` | desenvolvedor |
 | **E7** | Trocar a senha da conta de QA | segurança: vazou em conversa e aparece no FSWTBC-4608 e no fonte `UGCTE027.prw` | dono da conta |
 | **E8** | Planilha de contrato com `CNA_VLTOT` vazio (~2% na filial 5303, nunca zero): é dado incompleto ou defeito? | tornar incondicional a assertion de "Valor Total" em `modais-do-contrato.spec.js:270` | dono do produto / desenvolvedor |
+
+---
+
+## 1.1 Retorno do desenvolvedor — 11/09/2026
+
+Respostas por WhatsApp entre 10:33 e 12:09, e o que foi feito do nosso lado com cada uma.
+
+| Ele disse | Leitura | Feito |
+|---|---|---|
+| portal "pronto há algum tempo"; datasets "sendo aplicados" | E1 em andamento | às 14:47, 4 de 6 datasets; o canário diz o estado do dia |
+| lentidão da integração é do Protheus, "não consigo intervir" | a 233 lenta deixa de ser pedido e vira **condição a medir antes de executar** | linha nova no canário: `duracaoDaIntegracao` (com teste unitário) nas 10 SCs mais recentes da base, de qualquer autor, só leitura. Às 14:50: **0 de 10 acima de 60 s** (12–41 s). Na manhã de 10/09 foram 687–1159 s. Acima de 200 s as fixtures já declaram pré-condição com a leitura |
+| "vou colocar como substituto" (Validação Orçamentária; comprador no Protheus) | E3 a caminho | detecção no canário e teste CT-CMP-05-H, abaixo |
+| faturamento: o job fica desligado, "tem que fazer manual" | não haverá FC aberta pelo Usuário Integrador | conclusão por teste, abaixo |
+
+### Substituto do gestor orçamentário (E3) — pronto para conferir
+
+Não há API REST de substitutos neste ambiente (cinco rotas candidatas: `NotFoundException`; o TDN só documenta o
+SOAP `ColleagueReplacementService`). O sinal é a tela de detalhe da SC, medido com a conta de automação:
+
+| Tarefa atual | O detalhe oferece |
+|---|---|
+| da própria conta (SC 96436, atividade 11) | **Movimentar** |
+| de pool em que a conta está (SC 96369, atividade 7) | **Assumir tarefa** |
+| nominal do gestor orçamentário (SC 96435, atividade 14) | só **Ver detalhes** |
+
+- `CentralTarefasComprasPage.lerAcaoNaTarefaAtual()` lê isso esperando pelo primeiro dos três sinais.
+- `npm run canario`, seção "Substituto do gestor orçamentário": abre uma SC da massa parada na 14 e diz
+  `[ NÃO ]` ou `[ ok ]`. Às 14:50: **NÃO** (SC 96380).
+- **CT-CMP-05-H** (`aprovacoes-solicitacao-compras.spec.js`): cria a SC, aprova a Validação do Gestor, espera no
+  servidor a próxima tarefa humana, **exige que seja a 14** e confere que a tela oferece "Movimentar". Execução
+  15:00: SC 96505 chegou à 14 e o teste parou na pré-condição do E3. Depois do cadastro, falta medir a tela de
+  decisão da 14 (grade `tbItemOrcamentario`) e completar a aprovação — de propósito, não se escreveu decisão
+  sem vê-la.
+
+**Achado na primeira execução do CT-CMP-05-H — a suíte perdia a corrida do formulário.** A SC 96503, aprovada,
+foi para 11 "Ajustar Informações" com a tela dizendo "movimentada com sucesso", e o teste leu isso como ambiente
+(prazo estourado esperando a 14). No servidor: "Aprovador" e `managerAprovadoValidacao` vazios — a corrida
+medida em 10/09 (`docs/investigacoes/bpmn-desvio-ajustar-informacoes.md`). `CicloCompradorPage` esperava o
+"Aprovador"; `CentralTarefasComprasPage.decidirEEnviar` não. Relendo as SCs do dia, a corrida foi perdida em
+**2 de 6 envios** (96498 e 96503); as três aprovações que seguiram para a 14 tinham os campos preenchidos.
+Corrigido em três pontos:
+- a espera virou `aguardarFormularioDeDecisaoPronto()`, um oráculo só, usado pelas duas classes;
+- o CT-CMP-04-H e o teste de alçada afirmavam só "saiu da Validação do Gestor", e **aceitavam "Ajustar
+  Informações" como aprovação** — agora reprovam;
+- o CT-CMP-05-H trata chegar ao lugar errado como reprovação, e só o prazo estourado como ambiente.
+
+Reexecução: CT-CMP-04-H verde (SC 96504, "Distribuição Gestor Orçamentario"); CT-CMP-05-H chegou à 14 (SC 96505).
+
+### Faturamento "manual" — o que muda por teste
+
+Medido às 14:5x: `wf_faturamento_contratos` tem **0 instâncias abertas** no tenant. As 30 mais recentes estão
+canceladas: as do disparo automático (10 e 12/08, às 03h) paradas em "Realizar Medição do Contrato", e a medição
+manual da suíte (96437, 10/09) em "Correção".
+
+| Teste | Precisa de | Medição manual serve? | Situação |
+|---|---|---|---|
+| CT-FAT-01-H (`ciclo-faturamento`) | criar a medição pela tela | **é** a medição manual | executável; pré-condição só quando nenhum contrato tem competência com saldo |
+| CT-FAT-02-S1/S3/S4 (`validacoes-faturamento`) | painel de itens em "Realizar Medição do Contrato" | só com o fiscal/CSE do contrato | E4 |
+| FSWTBC-2158/4804 e FSWTBC-1934 (`tracker-compras`) | FC aberta pelo **Usuário Integrador** | **não** — o objeto dos chamados é o disparo automático | pré-condição **permanente** enquanto o job estiver desligado |
+| FSWTBC-4816 (`fila-faturamento-protheus`, `@bug`) | instância aberta na 182 "Aguarda processamento Fila Protheus" | só se a medição passar do fiscal; a nossa para antes | pré-condição "nenhuma instância aberta" (lido no código; 0 abertas medido) até E4 ou o job |
+
+Pergunta ao desenvolvedor: "manual" é alguém disparar a rotina de medição sob demanda? Se for, uma execução
+pontual, com 1 ou 2 contratos e num horário combinado, destrava os dois testes do Tracker sem deixar o job ligado.
 
 ---
 
@@ -65,10 +128,10 @@ e o ambiente com mais cuidado — e mudam o que se implementa:
 | 2 | Todo vermelho com veredito | — | **feita** (11/09); `alcadas-orcamentaria:108` e o typeahead do fluxo da SC reconferidos na etapa 0 |
 | 3 | Contrato descoberto por dataset | 0 (reavaliar) | **feita** (11/09) — Faturamento sem a grade; os (a) de planilhas/LGPD seguem para a etapa 6 |
 | 4 | Massa por API como fixture | — | **feita** (11/09) — fixtures de SC, livro-razão persistente, relatório de resíduo |
-| 5 | Personas | E2, E3, E4 | pedidos a fazer |
-| 6 | Backlog de casos por estratégia | 1–5 (contínuo) | contínuo |
-| 7 | Determinismo e CI | 0 | pendente |
-| 8 | Documentação e segurança | — (E7) | contínuo |
+| 5 | Personas | E2, E3, E4 | **mecanismo feito** (11/09) — `compras` verde; as outras 4 em pré-condição até as contas chegarem |
+| 6 | Backlog de casos por estratégia | 1–5 (contínuo) | contínuo — nesta rodada, só o CT-CMP-05-H (preparado para o E3); a tranche (a) de planilhas/LGPD segue aberta |
+| 7 | Determinismo e CI | 0 | **CI e unitários feitos** (11/09); o `--repeat-each` da suíte inteira espera a linha de base da etapa 0 |
+| 8 | Documentação e segurança | — (E7) | **feita** (11/09) — pendem E7 e a skill `cassi-fluig-master`, fora do repositório |
 
 Ordem: 0 → 1 e 2 juntas → 3 → 4; a 5 começa pelos pedidos; 7 e 8 em paralelo; 6 é contínua.
 
@@ -454,6 +517,31 @@ ambiente e segredo do CI, fixture `persona('comprador')`; sem credencial, pré-c
 
 **Pronto quando.** Um teste de cada persona rodar com a conta própria.
 
+### Andamento — 11/09/2026
+
+**Mecanismo.** `config/personas.js` cataloga cinco personas — `compras` (a conta atual), `comprador` (E2),
+`fiscal`, `cse` e `gestorAlcada` (E4) —, cada uma com o par `QA_<PERSONA>_USERNAME`/`_PASSWORD`
+(`.env.example`, segredos do CI). O `globalSetup` autentica as que têm credencial e grava a sessão em
+`playwright/.auth/persona-<nome>.json`, apagando antes a sessão e o erro da invocação anterior; login de
+persona que falha não aborta a execução, grava o motivo e a fixture o relança como erro real. A fixture
+`persona(nome)` abre um contexto com a sessão; sem credencial, **pré-condição citando o pedido**. O Portal do
+Fornecedor fica fora: autentica por CNPJ/senha próprios, não por `storageState`.
+
+**Oráculo de identidade.** O título da Home prova que há sessão, não de quem. `GET
+/api/public/2.0/users/getCurrent` devolve `content.login` da sessão (`findLoggedUser` e `getCurrentUser`
+respondem 500). `tests/e2e/plataforma/personas.spec.js` tem um teste por persona.
+
+**Execução:** `compras` verde em 7 s; as outras quatro em pré-condição com a variável e o pedido; o veredito do
+gate lê 1 ok e 4 pré-condição, sem regressão. **Provas de que reprova:**
+- credencial presente com senha errada → `globalSetup` registra o erro e o teste falha como erro real, não
+  como ambiente;
+- login diferente do da sessão → a assertion reprova. Na mesma prova, a persona configurada como `totvs-fs`
+  **autenticou** e o servidor devolveu `TOTVS-FS`: o login do Fluig ignora caixa, e a comparação passou a
+  normalizar — sem isso, credencial correta digitada em minúsculas reprovaria como sessão de outra pessoa.
+
+**Falta para "pronto":** as contas (E2, E4). O substituto do gestor orçamentário (E3) não é persona — é a mesma
+conta com permissão a mais; ver "Retorno do desenvolvedor" abaixo.
+
 ---
 
 ## Etapa 6 · Backlog de casos, pela estratégia da skill
@@ -481,6 +569,46 @@ código, ID no título, massa de factory, execução, prova de FAIL, evidência)
 - Testes unitários com `node:test` (sem dependência) para lógica pura: `veredito-do-gate`,
   `gerar-cobertura`, `ehRecusaTransitoria`, coerência das factories.
 
+### Andamento — 11/09/2026
+
+**Unitários — `npm run test:unit`, 24 testes, sem navegador, ~1 s.**
+- A regra do gate saiu de `veredito-do-gate.mjs` para `scripts/classificacao-do-gate.mjs`; o script ficou só com
+  leitura, gravação e impressão. 9 testes cobrem:
+  - a precedência (`@bug`/`@achado` antes de tudo);
+  - a anotação presente só no resultado que falhou;
+  - verde com anotação continua verde;
+  - "PRÉ-CONDIÇÃO AUSENTE" escrito à mão, sem a anotação, é regressão;
+  - relatório vazio e "No tests found" bloqueiam.
+- O CLI refatorado foi conferido ponta a ponta no relatório real das personas: 1 ok, 4 pré-condição, exit 0.
+- `unit/massa-e-limpeza.test.mjs`:
+  - `ehRecusaTransitoria` com as mensagens literais do servidor;
+  - a factory de massa: valor total = quantidade × preço em 200 gerações, o override da alçada
+    (`25.000.000,00`), carimbo único e rateio fechando 100%.
+- `duracaoDaIntegracao` com as leituras reais que já eram oráculo de `saiuDaIntegracao`.
+
+**CI (`.github/workflows/e2e.yml`).**
+
+| Item | Antes | Agora | Por quê |
+|---|---|---|---|
+| cron | `0 6 * * 1-5` (03:00 BRT) | `30 9 * * 1-5` (06:30 BRT) | 03:00 é dentro da carga da medição automática do Protheus (01:00 → 04h–05h) |
+| timeout da regressão | 30 min | 45 min | 190 testes; verde mediana 13 s, p90 25 s; ~20 min com 3 workers num dia bom |
+| `--shard` | — | **não** | cada shard traz 3 workers: 3 shards = 9 sessões, e o tenant degrada acima de 3 (79 timeouts com 8, 09/09) |
+| retries | 2 (config, `CI`) | regressão `--retries=1`; defeitos conhecidos `--retries=0`; destrutivos já `0` | um retry separa flaky de regressão; o segundo só repetia pré-condição, que é determinística |
+| unitários | — | passo `npm run test:unit` antes do navegador | falha de regra do gate aparece em segundos |
+| personas | — | segredos `QA_<PERSONA>_*` no `env` do workflow | etapa 5; segredo ausente = pré-condição |
+| comentários | "62 `@bug`", "8 `@achado`" | 69 e 10 (11/09) | |
+
+**Falha de rede na criação de massa.** O CT-CMP-04-S1 morreu em 720 ms com `Failed to fetch` no `/start` e o
+gate leria como regressão da reprovação. `criarScPorApi` não repete (é escrita), mas classifica: falha de
+transporte vira pré-condição de infraestrutura com a marca da massa; qualquer outro erro sobe. Provado por
+injeção (rota abortada no cliente, sem SC criada); na reexecução, 04-S1 e alçada verdes (96508, 96507).
+
+**Não feito, e por quê:**
+- `--repeat-each=3` nos 190 não destrutivos: sem a linha de base da etapa 0, mede o Protheus, não a suíte. Foi
+  feita uma amostra dirigida aos testes corrigidos hoje (abaixo).
+- Unitários de `gerar-cobertura`: pendente.
+- Histórico do CI e se o runner alcança o tenant: não verificável daqui (sem `gh`).
+
 ---
 
 ## Etapa 8 · Documentação e segurança
@@ -491,3 +619,19 @@ código, ID no título, massa de factory, execução, prova de FAIL, evidência)
   renderiza" no README; skill `cassi-fluig-master` com o domínio antigo e a afirmação de que "até SC
   presa é cancelável", que agora tem exceção.
 - E7.
+
+### Andamento — 11/09/2026
+
+| Afirmação | Onde | O que foi feito |
+|---|---|---|
+| "554 vigentes" | `CLAUDE.md`, `README.md`, `docs/politica-de-escrita.md`, `utils/exclusividade.js`, `criacao-solicitacao.spec.js` | **564**, da varredura das 71 filiais de 11/09. As medições DATADAS de 30/08 (`massa-contratos.js:160`, `criacao-de-contrato-inviavel.md`, investigações) ficaram: são registro do que se mediu naquele dia |
+| portal "não publicado", "54 testes" | `CLAUDE.md` item 2; `AcompanhamentoContratosPage.js`; canário | publicado em 11/09, 4 dos 6 datasets (conferido às 14:47); o Page Object cita 64 (contagem de 10/09); o canário, 55 (`--list` do diretório hoje) |
+| `docs/estado-do-gate.md` de 03/09 | topo do documento | aviso de que tudo abaixo é do ambiente anterior + composição da suíte hoje (301 testes, 69 `@bug`, 10 `@achado`, 53 `@destrutivo`, 190 no escopo do gate) + durações medidas |
+| `caixade182374` | `docs/catalogo-casos.md` | aviso no cabeçalho. `docs/mapa-do-ambiente.md` já abre com a troca de ambiente, e as demais menções são históricas (relatórios, investigações) |
+| `WFLYEJB0054` "hoje" | `factories/massa-solicitacao-compra.js` | passado, "até 10/09/2026". As outras menções já são medições datadas ou condicionais |
+| "Aba Atribuir nunca renderiza" | `README.md` | já não existe no README |
+| Personas | `CLAUDE.md` | seção nova, com a regra de pré-condição e o oráculo de identidade |
+
+**Fora deste repositório, não editado:** a skill `cassi-fluig-master` descreve o domínio antigo. A exceção ao
+"até SC presa é cancelável" (E6) deixou de valer com a correção de 11/09, então aquela frase voltou a ser
+verdadeira. **E7** (troca da senha da conta de QA) segue com o dono da conta.

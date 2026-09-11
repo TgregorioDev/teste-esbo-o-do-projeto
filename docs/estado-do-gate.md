@@ -1,10 +1,32 @@
 # Estado do quality gate — medições
 
 Números **medidos**, não estimados. Relatório JSON do Playwright, ambiente real.
-Última atualização: 03/09/2026, ao fim do plano de melhoria
-(`docs/plano-de-melhoria-2026-09-03.md`). As seções mais antigas ficam como histórico.
 
-## Suíte
+## ⚠️ 11/09/2026 — ambiente `caixade213859`: as medições abaixo são do ambiente anterior
+
+Desde 09/09/2026 a suíte roda em `caixade213859`, e **tudo desta seção para baixo foi medido no
+`caixade182374`** — determinismo, execuções completas e o carimbo de 03/09 inclusive. Não servem de linha de
+base para o ambiente novo. A linha de base nova é a etapa 0 de `docs/plano-de-evolucao-2026-09-11.md`, que
+espera os dois datasets do Acompanhamento de Contratos (pedido E1).
+
+Composição da suíte hoje (`--list`, 11/09/2026):
+
+| | |
+|---|---|
+| Testes na execução padrão | **301** (97 arquivos) |
+| … dos quais `@destrutivo` | 53 (24 arquivos) |
+| … dos quais `@bug` | 69 (46 arquivos) |
+| … dos quais `@achado` | 10 (6 arquivos) |
+| Escopo do gate de CI (`PULAR_DESTRUTIVOS=1 --grep-invert "@bug\|@achado"`) | **190** (63 arquivos) |
+| Testes unitários (`npm run test:unit`, sem navegador) | 24 |
+
+Duração por teste medida nas reexecuções de 11/09/2026 (96 resultados, 8 fatias, 3 workers): fora de
+`@destrutivo`/`@bug`/`@achado`, **verde mediana 13 s, p90 25 s, máx 59 s**; pré-condição mediana 3 s. É o
+que dimensiona o job de regressão do CI (`.github/workflows/e2e.yml`).
+
+---
+
+## Suíte — 03/09/2026 (ambiente anterior)
 
 | | |
 |---|---|

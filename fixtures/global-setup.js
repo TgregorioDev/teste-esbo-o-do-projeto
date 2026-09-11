@@ -1,12 +1,19 @@
 // @ts-check
 import { chromium, expect } from '@playwright/test';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { envObrigatoria, TITULO_HOME } from '../config/ambiente.js';
+import {
+  PERSONAS,
+  ARQUIVO_AUTENTICACAO,
+  arquivoDaPersona,
+  arquivoDeErroDaPersona,
+  credencialDaPersona,
+} from '../config/personas.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { verificarServicoErp, explicarServicoFora } from '../utils/servico-erp.js';
 
-export const ARQUIVO_AUTENTICACAO = 'playwright/.auth/usuario.json';
+export { ARQUIVO_AUTENTICACAO };
 
 /** Locale da sessão. Precisa ser o mesmo dos testes: a tela de login é traduzida. */
 export const LOCALE = 'pt-BR';
@@ -103,6 +110,8 @@ export default async function globalSetup() {
     } finally {
       await contextoAutenticado.close();
     }
+
+    await autenticarPersonasOpcionais(browser, baseURL);
   } finally {
     await browser.close();
   }
@@ -151,4 +160,46 @@ async function conferirServicoDoErp(page) {
   }
 
   console.log(`[setup] serviço do ERP no ar — ${veredito.descricao}`);
+}
+
+/**
+ * Autentica as personas opcionais que têm credencial (`config/personas.js`) e grava a sessão de cada
+ * uma (etapa 5 do plano de evolução).
+ *
+ * Login de persona que falha NÃO aborta a execução — só os testes daquela persona dependem dele. E
+ * também não vira pré-condição: credencial presente que não autentica é problema a corrigir, não
+ * ambiente. O motivo vai para um arquivo, e a fixture `persona` o relança como erro real no teste que
+ * pedir a persona.
+ *
+ * @param {import('@playwright/test').Browser} browser
+ * @param {string} baseURL
+ */
+async function autenticarPersonasOpcionais(browser, baseURL) {
+  for (const nome of Object.keys(PERSONAS)) {
+    if (nome === 'compras') continue; // a conta principal já foi autenticada acima
+    // Sessão e erro da invocação anterior saem antes: um login que falha hoje não pode deixar a sessão de
+    // ontem sendo usada, nem o erro de ontem acusando uma credencial que hoje autentica.
+    await rm(arquivoDaPersona(nome), { force: true });
+    await rm(arquivoDeErroDaPersona(nome), { force: true });
+    const credencial = credencialDaPersona(nome);
+    if (!credencial) continue;
+
+    const context = await browser.newContext({ baseURL, locale: LOCALE });
+    try {
+      const page = await context.newPage();
+      const loginPage = new LoginPage(page);
+      await loginPage.goto();
+      await loginPage.expectLoaded();
+      await loginPage.autenticar(credencial.usuario, credencial.senha);
+      await expect(page).toHaveTitle(TITULO_HOME, { timeout: 60_000 });
+      await context.storageState({ path: arquivoDaPersona(nome) });
+      console.log(`[setup] persona "${nome}" autenticada.`);
+    } catch (erro) {
+      const motivo = erro instanceof Error ? erro.message.split('\n')[0] : String(erro);
+      await writeFile(arquivoDeErroDaPersona(nome), motivo);
+      console.warn(`[setup] persona "${nome}": a credencial existe, mas o login falhou — ${motivo}`);
+    } finally {
+      await context.close();
+    }
+  }
 }

@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
+import { FALHA_DE_REDE } from './rede.js';
 import { criarMassaSolicitacaoCompra } from '../factories/massa-solicitacao-compra.js';
 import { CentralTarefasComprasPage } from '../pages/CentralTarefasComprasPage.js';
 import { aguardarEstadoNoServidor, saiuDaIntegracao } from './estado-da-solicitacao.js';
@@ -43,7 +44,10 @@ const ATIVIDADE_VALIDACAO_DO_GESTOR = 7;
  * mede nos consumidores é a tarefa, e "não consegui criar a massa" não pode sair como defeito dela.
  *
  * Não repete por falha de rede: é escrita, e repetir um `/start` que chegou ao servidor duplicaria
- * a SC (`utils/rede.js`).
+ * a SC (`utils/rede.js`). Mas também não deixa a falha de transporte sair como erro do teste: medido em
+ * 11/09/2026, o CT-CMP-04-S1 morreu em 720 ms com `Failed to fetch` no `/start`, antes de haver SC, e o
+ * gate leu isso como regressão da REPROVAÇÃO. É infraestrutura — vira pré-condição com a marca, para
+ * rastrear a SC caso o pedido tenha chegado ao servidor.
  *
  * @param {import('@playwright/test').Page} page
  * @param {{ quantidade?: number, precoUnitario?: number }} [overrides] o que o teste precisa VALIDAR
@@ -72,7 +76,15 @@ export async function criarScPorApi(page, overrides = {}) {
       return { status: r.status, id: corpo?.processInstanceId, trecho: texto.slice(0, 300) };
     },
     { formFields: massa.formFields, marca: massa.marca },
-  );
+  ).catch((/** @type {unknown} */ erro) => {
+    const mensagem = erro instanceof Error ? erro.message : String(erro);
+    if (!FALHA_DE_REDE.test(mensagem)) throw erro;
+    return faltaPreCondicao(
+      `(infraestrutura): o POST /start da SC de massa morreu no transporte (${mensagem.split('\n')[0]}) — não ` +
+        `repetido, porque um /start que tenha chegado ao servidor duplicaria a SC. Se ela foi criada, está ` +
+        `marcada ${massa.marca}.`,
+    );
+  });
 
   if (resposta.status !== 200 || typeof resposta.id !== 'number') {
     faltaPreCondicao(

@@ -314,6 +314,70 @@ export class CentralTarefasComprasPage {
   }
 
   /**
+   * Espera o formulário de decisão da Validação do Gestor TERMINAR de montar. Rádio visível não é
+   * formulário pronto.
+   *
+   * Medido em 10/09/2026 (`docs/investigacoes/bpmn-desvio-ajustar-informacoes.md`): o rádio "Sim" fica
+   * clicável ~1,8 s antes de o `beforeSendValidate` do formulário existir. Enviar nessa janela grava o
+   * rádio e a justificativa, mas não `managerAprovadoValidacao` — e o gateway 9 manda a SC para
+   * 11 "Ajustar Informações", com a tela dizendo "movimentada com sucesso". O oráculo é o campo
+   * "Aprovador" (`tbmanag_nomeRespValid___N`), que o formulário só preenche depois de montar.
+   *
+   * Até 11/09/2026 só `CicloCompradorPage` esperava por ele, e esta classe não. Medido no mesmo dia:
+   * `decidirEEnviar` perdeu a corrida em 2 de 6 envios — a SC 96503, APROVADA, foi para 11; a 96498,
+   * reprovada, chegou a 11 pelo motivo errado. As duas gravaram "Aprovador" e
+   * `managerAprovadoValidacao` vazios; as três aprovações que seguiram para a 14 (96493, 96497, 96500)
+   * tinham os dois preenchidos.
+   */
+  async aguardarFormularioDeDecisaoPronto() {
+    const aprovador = this.frame.getByRole('textbox', { name: 'Aprovador' }).first();
+    await expect(
+      aprovador,
+      'o campo "Aprovador" nunca foi preenchido — o script do formulário não terminou de montar',
+    ).not.toHaveValue('', { timeout: 60_000 });
+  }
+
+  botaoMovimentarTarefaAtual() {
+    return this.page.getByRole('button', { name: 'Movimentar', exact: true }).or(this.page.getByRole('link', { name: 'Movimentar', exact: true }));
+  }
+
+  /**
+   * O que a conta pode fazer na tarefa atual, lido na tela de detalhe já aberta
+   * (`abrirDetalheDaSolicitacao`).
+   *
+   * Medido em 11/09/2026 no detalhe de três SCs, com a conta de automação:
+   *
+   * | Tarefa atual | O que o cabeçalho do Histórico oferece |
+   * |---|---|
+   * | da própria conta (SC 96436, atividade 11) | **Movimentar** |
+   * | de pool em que a conta está (SC 96369, atividade 7) | **Assumir tarefa** |
+   * | nominal de outra pessoa (SC 96435, atividade 14, gestor orçamentário) | só **Ver detalhes** |
+   *
+   * É o sinal de que o pedido E3 (a conta como substituta do gestor orçamentário) foi atendido: o Fluig
+   * entrega ao substituto a tarefa do substituído. A espera é pelo primeiro dos três sinais, nunca pelo
+   * relógio. Nas três leituras "Ver detalhes" nunca apareceu junto de "Movimentar"; como a tela do
+   * SUBSTITUTO ainda não foi medida, "Ver detalhes" sozinho ainda ganha 5 s para "Movimentar" aparecer
+   * antes de a resposta ser "nenhuma".
+   *
+   * @returns {Promise<'movimentar' | 'assumir' | 'nenhuma'>}
+   */
+  async lerAcaoNaTarefaAtual() {
+    const movimentar = this.botaoMovimentarTarefaAtual();
+    const assumir = this.botaoAssumirTarefaAtual();
+    const verDetalhes = this.page.getByRole('button', { name: 'Ver detalhes', exact: true });
+    await movimentar.or(assumir).or(verDetalhes).first().waitFor({ state: 'visible', timeout: 45_000 });
+
+    const acionavel = await movimentar
+      .or(assumir)
+      .first()
+      .waitFor({ state: 'visible', timeout: 5_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!acionavel) return 'nenhuma';
+    return (await movimentar.count()) > 0 ? 'movimentar' : 'assumir';
+  }
+
+  /**
    * Assume a tarefa atual a partir da tela de detalhe já aberta (`abrirDetalheDaSolicitacao`)
    * e espera a seção de decisão da etapa (Sim/Não + Justificativa) aparecer.
    * @param {string | number} numeroProcesso usado só para a mensagem de erro
@@ -368,7 +432,10 @@ export class CentralTarefasComprasPage {
   /**
    * Preenche a decisão (Sim/Não) e a justificativa da etapa atual, e aciona o Enviar do
    * rodapé (fora do iframe) — o mesmo botão usado para criar a SC.
-   * @param {{ aprovar: boolean, justificativa: string }} decisao
+   * @param {{ aprovar: boolean, justificativa: string, esperarAprovador?: boolean }} decisao
+   *   `esperarAprovador` (padrão `true`): espera o formulário da Validação do Gestor terminar de montar
+   *   (`aguardarFormularioDeDecisaoPronto`). Só quem decide em outra etapa, cuja prontidão não foi
+   *   medida, passa `false`.
    */
   async decidirEEnviar(decisao) {
     const radio = decisao.aprovar ? this.radioAprovarSim() : this.radioAprovarNao();
@@ -389,6 +456,7 @@ export class CentralTarefasComprasPage {
       this.frame.locator('.loading-message'),
       'o overlay de carregamento do iframe não saiu — a tela de decisão ainda está montando',
     ).toHaveCount(0, { timeout: 30_000 });
+    if (decisao.esperarAprovador !== false) await this.aguardarFormularioDeDecisaoPronto();
 
     // Convergência sobre estado observável (não retry cego, não tempo fixo): reaplica o que
     // um re-render tenha desfeito e só sai quando os DOIS campos estão com o valor esperado.

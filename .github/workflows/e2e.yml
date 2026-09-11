@@ -6,20 +6,38 @@ on:
   pull_request:
   workflow_dispatch:
   schedule:
-    # Execução completa, com os destrutivos, de madrugada — fora do horário em que
-    # alguém possa estar usando a base de homologação.
-    - cron: '0 6 * * 1-5'
+    # Execução completa, com os destrutivos, às 06:30 de Brasília (09:30 UTC), antes do expediente.
+    #
+    # Até 11/09/2026 era '0 6 * * 1-5' — 03:00 de Brasília, DENTRO da janela de carga do Protheus: a
+    # medição automática dispara às 01:00, abre um processo por filial e o cliente relata processamento
+    # até 04h–05h (`cassi-fluig-master`). O que se media ali era a fila do ERP, não a suíte.
+    - cron: '30 9 * * 1-5'
+
+# Credenciais comuns aos três jobs. As personas (config/personas.js) são opcionais: segredo inexistente
+# chega vazio, e os testes da persona falham como PRÉ-CONDIÇÃO dizendo qual pedido a destrava.
+env:
+  BASE_URL: ${{ secrets.BASE_URL }}
+  QA_USERNAME: ${{ secrets.QA_USERNAME }}
+  QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
+  QA_COMPRADOR_USERNAME: ${{ secrets.QA_COMPRADOR_USERNAME }}
+  QA_COMPRADOR_PASSWORD: ${{ secrets.QA_COMPRADOR_PASSWORD }}
+  QA_FISCAL_USERNAME: ${{ secrets.QA_FISCAL_USERNAME }}
+  QA_FISCAL_PASSWORD: ${{ secrets.QA_FISCAL_PASSWORD }}
+  QA_CSE_USERNAME: ${{ secrets.QA_CSE_USERNAME }}
+  QA_CSE_PASSWORD: ${{ secrets.QA_CSE_PASSWORD }}
+  QA_GESTOR_ALCADA_USERNAME: ${{ secrets.QA_GESTOR_ALCADA_USERNAME }}
+  QA_GESTOR_ALCADA_PASSWORD: ${{ secrets.QA_GESTOR_ALCADA_PASSWORD }}
 
 jobs:
   # ---------------------------------------------------------------------------
   # GATE — a única pergunta que um PR precisa responder: há regressão NOVA?
   #
   # Rodar `npx playwright test` cru NUNCA pode passar nesta suíte, e isso não é
-  # defeito: 62 testes levam `@bug` porque reprovam DE PROPÓSITO, documentando
-  # defeito de produto catalogado no README, e 8 levam `@achado` porque afirmam
-  # o comportamento REAL medido. Um gate que nunca fica verde deixa de informar
-  # qualquer coisa — e o time passa a mergear por cima dele, que foi o que
-  # aconteceu no PR #2 (mergeado com o check vermelho).
+  # defeito: 69 testes levam `@bug` porque reprovam DE PROPÓSITO, documentando
+  # defeito de produto catalogado no README, e 10 levam `@achado` porque afirmam
+  # o comportamento REAL medido (contagens de 11/09/2026). Um gate que nunca fica
+  # verde deixa de informar qualquer coisa — e o time passa a mergear por cima
+  # dele, que foi o que aconteceu no PR #2 (mergeado com o check vermelho).
   #
   # Aqui o gate cobre só o que DEVERIA estar verde — e, desde 03/09/2026, o
   # veredito NÃO é o exit do runner: é o de scripts/veredito-do-gate.mjs, que
@@ -28,12 +46,25 @@ jobs:
   #     entregou, docs/excecoes-de-pre-condicao.md) → listada, NÃO bloqueia;
   #   - flaky (passou no retry) → listada como "investigar", não bloqueia;
   #   - regressão (falhou sem anotação) ou teste pulado → BLOQUEIA.
+  # A regra de classificação tem testes unitários (unit/classificacao-do-gate.test.mjs).
   # O passo da suíte é continue-on-error para que o veredito rode sempre; a
   # página de resumo do job mostra a tabela com o motivo de cada vermelho.
+  #
+  # Dimensionamento (11/09/2026): 190 testes no escopo; verde mediana 13 s e p90 25 s,
+  # pré-condição mediana 3 s (docs/estado-do-gate.md). Com 3 workers dá ~20 min quando o
+  # ambiente está bom — 30 min não deixava folga para a integração lenta. 45 min.
+  #
+  # SEM `--shard`, de propósito: cada shard é uma máquina com os seus 3 workers, e o tenant
+  # degrada acima de 3 sessões simultâneas (medido em 09/09/2026: 79 timeouts com 8). Três
+  # shards seriam 9 sessões — mais rápido no relógio e errado no resultado.
+  #
+  # `--retries=1` em vez dos 2 do config: um retry basta para separar "flaky" de
+  # "regressão"; o segundo só repete pré-condição, que é determinística no mesmo ambiente
+  # e já sai classificada na primeira tentativa.
   # ---------------------------------------------------------------------------
   regressao:
     name: Regressão (sem defeitos conhecidos)
-    timeout-minutes: 30
+    timeout-minutes: 45
     runs-on: ubuntu-latest
 
     steps:
@@ -47,13 +78,15 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
-      - name: Instalar navegador
-        run: npx playwright install --with-deps chromium
-
       - name: Verificação estática
         run: npm run typecheck
       - name: Lint (normas da suíte — eslint-plugin-playwright)
         run: npm run lint
+      - name: Testes unitários (regra do gate, factories, esperas)
+        run: npm run test:unit
+
+      - name: Instalar navegador
+        run: npx playwright install --with-deps chromium
 
       - name: Suíte de regressão
         id: regressao
@@ -62,11 +95,7 @@ jobs:
         continue-on-error: true
         # PULAR_DESTRUTIVOS: um PR não pode escrever na base do cliente a cada
         # push. Os cenários que criam registro rodam no job agendado.
-        run: PULAR_DESTRUTIVOS=1 npx playwright test --grep-invert "@bug|@achado"
-        env:
-          BASE_URL: ${{ secrets.BASE_URL }}
-          QA_USERNAME: ${{ secrets.QA_USERNAME }}
-          QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
+        run: PULAR_DESTRUTIVOS=1 npx playwright test --grep-invert "@bug|@achado" --retries=1
 
       - name: Veredito — há regressão nova?
         if: ${{ !cancelled() }}
@@ -91,12 +120,16 @@ jobs:
   # Um teste `@bug` que fica verde passa despercebido, e a tag apodrece marcando
   # algo que já não existe. Aqui, se algum passar, o passo seguinte avisa.
   # É a alternativa recomendada em docs/decisao-test-fail.md, escolhida em vez
-  # de migrar os 62 testes para `test.fail()` — que reportaria PASS mesmo quando
+  # de migrar os testes para `test.fail()` — que reportaria PASS mesmo quando
   # a falha fosse por outro motivo, escondendo a causa real.
+  #
+  # `--retries=0`: um `@bug` reprova pelo defeito, de novo, a cada tentativa; retentar só
+  # triplicava a duração. Foi assim que o E6 (cancelamento) apareceu corrigido em 11/09/2026 —
+  # verde na primeira.
   # ---------------------------------------------------------------------------
   defeitos-conhecidos:
     name: Defeitos conhecidos (informativo)
-    timeout-minutes: 30
+    timeout-minutes: 45
     runs-on: ubuntu-latest
     continue-on-error: true
 
@@ -117,11 +150,7 @@ jobs:
       - name: Executar os testes marcados como defeito conhecido
         id: conhecidos
         continue-on-error: true
-        run: PULAR_DESTRUTIVOS=1 npx playwright test --grep @bug
-        env:
-          BASE_URL: ${{ secrets.BASE_URL }}
-          QA_USERNAME: ${{ secrets.QA_USERNAME }}
-          QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
+        run: PULAR_DESTRUTIVOS=1 npx playwright test --grep @bug --retries=0
 
       - name: Avisar se algum defeito conhecido passou
         if: ${{ !cancelled() }}
@@ -142,8 +171,8 @@ jobs:
   #
   # Estes cenários CRIAM registro real na base de homologação do cliente. Rodá-los
   # a cada push transformaria o CI numa fábrica de massa: com `retries: 2`, cada
-  # falha vira três solicitações. Aqui rodam só no agendamento noturno e sob
-  # acionamento manual.
+  # falha vira três solicitações. Aqui rodam só no agendamento e sob acionamento
+  # manual.
   #
   # `--workers=1`: o dono do ambiente exige execução serializada; o Fluig tem
   # proteção contra volume e execução em rajada contamina o resultado.
@@ -184,10 +213,6 @@ jobs:
         # `--retries=0`: cada repetição de um destrutivo cria massa de novo. Ver o
         # comentário do job, acima.
         run: npx playwright test --grep @destrutivo --workers=1 --retries=0
-        env:
-          BASE_URL: ${{ secrets.BASE_URL }}
-          QA_USERNAME: ${{ secrets.QA_USERNAME }}
-          QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
 
       - name: Publicar relatório
         if: ${{ !cancelled() }}

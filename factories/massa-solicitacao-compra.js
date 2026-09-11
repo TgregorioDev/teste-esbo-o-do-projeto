@@ -13,8 +13,8 @@ import { randomUUID } from 'node:crypto';
  * ~40 campos que o motor precisa para a SC nascer e andar, incluindo o item e o rateio.
  *
  * Ela existe porque o formulário do portal **não é confiável neste ambiente**: ele depende do
- * dataset `ds_protheus_getMatriculaTitular_rest`, que hoje responde HTTP 500
- * (`WFLYEJB0054: Failed to marshal EJB parameters`), e por isso exibe a faixa
+ * dataset `ds_protheus_getMatriculaTitular_rest`, que respondia HTTP 500
+ * (`WFLYEJB0054: Failed to marshal EJB parameters`) até 10/09/2026 — não reproduz mais em 11/09 —, e por isso exibia a faixa
  * *"Não foi possível estabelecer comunicação com o ERP"*. Semear pela API contorna a tela e
  * não contorna nenhuma regra: a SC criada é uma SC normal, percorre o mesmo BPMN e cai nos
  * mesmos pools. Ver `docs/massa-de-dados-no-ambiente-dev.md`.
