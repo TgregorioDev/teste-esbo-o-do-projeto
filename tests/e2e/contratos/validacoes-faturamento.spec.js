@@ -1,12 +1,11 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { faltaPreCondicao, tentarComAlternativa } from '../../../utils/pre-condicao.js';
-import { AcompanhamentoContratosPage } from '../../../pages/AcompanhamentoContratosPage.js';
 import { MedicaoContratoPage } from '../../../pages/MedicaoContratoPage.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
 import {
-  descobrirContratoVigente,
-  descobrirContratosVigentes,
+  descobrirContratoVigentePorDataset,
+  descobrirContratosVigentesPorDataset,
 } from '../../../utils/massa-contratos.js';
 import { parseFornecedorDaGrade } from '../../../factories/medicao.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
@@ -54,12 +53,12 @@ import {
  * `maxContratos` contratos distintos — usado por CT-FAT-02-S1 e CT-FAT-02-S4, que só
  * precisam chegar ao estado "zooms resolvidos sem erro" para verificar que o painel de
  * quantidade/rateio permanece inacessível.
- * @param {import('../../../pages/AcompanhamentoContratosPage.js').AcompanhamentoContratosPage} contratosPage
+ * @param {import('@playwright/test').Page} page
  * @param {MedicaoContratoPage} medicao
  * @param {number} maxContratos
  * @returns {Promise<{ resultado: Awaited<ReturnType<MedicaoContratoPage['montarMedicaoComSaldoEmAberto']>> | undefined, contratosTentados: string[], descartes: string[] }>}
  */
-async function encontrarMedicaoComSaldo(contratosPage, medicao, maxContratos = 3) {
+async function encontrarMedicaoComSaldo(page, medicao, maxContratos = 3) {
   const contratosTentados = /** @type {string[]} */ ([]);
   /** @type {Awaited<ReturnType<MedicaoContratoPage['montarMedicaoComSaldoEmAberto']>> | undefined} */
   let resultado;
@@ -67,13 +66,7 @@ async function encontrarMedicaoComSaldo(contratosPage, medicao, maxContratos = 3
   const descartes = /** @type {string[]} */ ([]);
 
   for (let i = 0; i < maxContratos; i++) {
-    // `medicao.goto()` (chamado no fim da iteração anterior) navega para fora do Portal de
-    // Acompanhamento de Contratos — precisa voltar antes de ler a grade de novo.
-    if (i > 0) {
-      await contratosPage.goto();
-      await contratosPage.expectCarregada();
-    }
-    const contrato = await descobrirContratoVigente(contratosPage, {
+    const contrato = await descobrirContratoVigentePorDataset(page, {
       excluirContratos: contratosTentados,
     });
     contratosTentados.push(contrato.contrato);
@@ -107,15 +100,14 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     // Antes este teste levava 153s: procurava a competência bloqueada NAVEGANDO, uma cadeia de
     // cinco zooms por tentativa (~30s), em até 5 contratos. A mesma informação está em dois
     // datasets que respondem em milissegundos — ver `utils/massa-medicao.js`, que documenta os
-    // endpoints capturados em campo. Medido depois da mudança: **8,8s**, dos quais 8,2s são a
-    // própria grade de contratos carregando; a descoberta em si custa 0,7s.
+    // endpoints capturados em campo. Medido depois da mudança: **8,8s**, dos quais 8,2s eram a
+    // grade de contratos carregando — desde 11/09/2026 o contrato vem por dataset (cache da execução).
     test.setTimeout(120_000);
 
     const guarda = await bloquearCriacaoDeSolicitacao(page);
 
-    const contratosPage = new AcompanhamentoContratosPage(page);
-    await contratosPage.goto();
-    await contratosPage.expectCarregada();
+    // Contrato por dataset, sem a grade do Acompanhamento (etapa 3 do plano de evolução).
+    await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
 
     // Amostra por AFINIDADE, não por posição. `vigentes.slice(0, 4)` — a forma anterior —
     // amostrava sempre os mesmos quatro primeiros contratos da grade, o que reintroduzia pela
@@ -123,7 +115,7 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     // para eliminar. `descobrirContratosVigentes` devolve quatro contratos reservados e
     // distribuídos, e falha via `faltaPreCondicao` quando a grade não tem massa.
     const MAX_CONTRATOS = 4;
-    const amostra = await descobrirContratosVigentes(contratosPage, MAX_CONTRATOS);
+    const amostra = await descobrirContratosVigentesPorDataset(page, MAX_CONTRATOS);
 
     const tentados = /** @type {string[]} */ ([]);
     /** @type {{ competencia: string, mensagemDoServidor: string } | null} */
@@ -209,12 +201,11 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     test.setTimeout(240_000);
     const guarda = await bloquearCriacaoDeSolicitacao(page);
 
-    const contratosPage = new AcompanhamentoContratosPage(page);
-    await contratosPage.goto();
-    await contratosPage.expectCarregada();
+    // Contrato por dataset, sem a grade do Acompanhamento (etapa 3 do plano de evolução).
+    await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
 
     const medicao = new MedicaoContratoPage(page);
-    const { resultado, contratosTentados } = await encontrarMedicaoComSaldo(contratosPage, medicao);
+    const { resultado, contratosTentados } = await encontrarMedicaoComSaldo(page, medicao);
 
     if (!resultado?.sucesso) {
       faltaPreCondicao(
@@ -254,12 +245,11 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
     test.setTimeout(240_000);
     const guarda = await bloquearCriacaoDeSolicitacao(page);
 
-    const contratosPage = new AcompanhamentoContratosPage(page);
-    await contratosPage.goto();
-    await contratosPage.expectCarregada();
+    // Contrato por dataset, sem a grade do Acompanhamento (etapa 3 do plano de evolução).
+    await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
 
     const medicao = new MedicaoContratoPage(page);
-    const { resultado, contratosTentados } = await encontrarMedicaoComSaldo(contratosPage, medicao);
+    const { resultado, contratosTentados } = await encontrarMedicaoComSaldo(page, medicao);
 
     if (!resultado?.sucesso) {
       faltaPreCondicao(
@@ -397,11 +387,10 @@ test.describe('Faturamento de Contratos — validações e bloqueios', () => {
   }) => {
     test.setTimeout(120_000);
 
-    const contratosPage = new AcompanhamentoContratosPage(page);
-    await contratosPage.goto();
-    await contratosPage.expectCarregada();
+    // Contrato por dataset, sem a grade do Acompanhamento (etapa 3 do plano de evolução).
+    await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
 
-    const amostra = await descobrirContratosVigentes(contratosPage, 4);
+    const amostra = await descobrirContratosVigentesPorDataset(page, 4);
 
     /** Sentinela que o dataset devolve no lugar de uma competência quando o par não existe. */
     const SENTINELA = /contrato n[ãa]o localizado/i;

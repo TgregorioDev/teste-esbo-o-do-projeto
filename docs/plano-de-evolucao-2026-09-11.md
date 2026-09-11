@@ -63,7 +63,7 @@ e o ambiente com mais cuidado — e mudam o que se implementa:
 | 0 | Linha de base confiável | E1 | aguardando os 6 datasets (verificação a cada 10 min) |
 | 1 | Lint que aplica as normas | — | **concluída** (11/09) |
 | 2 | Todo vermelho com veredito | — | **feita** (11/09); `alcadas-orcamentaria:108` e o typeahead do fluxo da SC reconferidos na etapa 0 |
-| 3 | Contrato descoberto por dataset | 0 (reavaliar) | pendente |
+| 3 | Contrato descoberto por dataset | 0 (reavaliar) | **feita** (11/09) — Faturamento sem a grade; os (a) de planilhas/LGPD seguem para a etapa 6 |
 | 4 | Massa por API como fixture | — | pendente |
 | 5 | Personas | E2, E3, E4 | pedidos a fazer |
 | 6 | Backlog de casos por estratégia | 1–5 (contínuo) | contínuo |
@@ -339,6 +339,39 @@ de dados os 10 testes classificados como recuperáveis em
 `docs/investigacoes/contratos-rota-alternativa.md`.
 
 **Pronto quando.** Os consumidores que não testam a grade funcionarem com a grade fora.
+
+### Andamento — 11/09/2026
+
+**Fonte nova, `utils/contratos-por-dataset.js`.** `dsProtheus_getBranches_restGetAll` (71 filiais) →
+`dsProtheus_getContratos_restGetAll` com `CorporateId=01` + `BranchId`; vigente é `CN9_SITUAC = 05`, uma
+linha por contrato (a de maior revisão), fornecedor de `CN9_XCODFO`/`CN9_XLOJAF` — nenhum dos 564
+vigentes veio sem eles. O mapeamento é função pura, com 3 testes unitários.
+
+**O custo decidiu o desenho.** Medido: 71 filiais em **149,5 s** com 8 consultas simultâneas; a mais lenta,
+56 s com 22 linhas (a 5303, com 960, levou 35,8 s sozinha) — o custo é do servidor, não do volume. Varrer
+por teste é inviável: a varredura roda uma vez, sob exclusividade entre workers, grava
+`playwright/.cache/contratos-vigentes.json` e vale por 6 h (`CONTRATOS_CACHE_HORAS`). Quem encontra o cache
+frio ganha 240 s no timeout. Varredura sem vigente nenhum é pré-condição e não grava cache.
+
+**`utils/massa-contratos.js`: duas fontes, uma escolha.** O núcleo `escolherEReservar` (afinidade por hash +
+reserva) serve às duas; a checagem de número inequívoco na busca só vale para a grade. Novas:
+`descobrirContratoVigentePorDataset` e `descobrirContratosVigentesPorDataset`. A anotação
+`contrato-escolhido` diz a fonte, e `contratos-varredura-parcial` aparece quando alguma filial não respondeu.
+
+**Migrados:** `ciclo-faturamento` e `validacoes-faturamento` — os 5 testes da classe (a) de Faturamento em
+`docs/investigacoes/contratos-rota-alternativa.md` §6. Não abrem mais o portal de Acompanhamento.
+**Não migrados, de propósito:** `acompanhamento-contratos/*` age sobre a grade (classe b). Os demais (a) da
+investigação — planilhas e fiscais como teste de dado, e o LGPD por outro veículo — mudam o que o teste
+prova; vão para a etapa 6.
+
+**Execução.** `typecheck`, `lint` e 10 unitários limpos. Com o cache apagado:
+- `FSWTBC-2143` **verde** em 155 s, varredura fria incluída — 268 rótulos em 4 contratos de 3 filiais
+  (5303, 3102…), escolhidos por dataset; 0 malformados.
+- `CT-FAT-02-S2` escolheu 4 contratos por dataset (filiais 5303 e 4306) e terminou em pré-condição legítima:
+  nenhuma competência recusada na amostra.
+- O consumidor da grade conferido (`modais-do-contrato:206`) estourou em `expectCarregada` — a grade não
+  chegou a "Mostrando" em 45 s, **antes** da descoberta. É o portal de Acompanhamento instável hoje (o mesmo
+  ponto falhou às 13:05), e é exatamente a dependência que os testes de Faturamento deixaram de ter.
 
 ---
 

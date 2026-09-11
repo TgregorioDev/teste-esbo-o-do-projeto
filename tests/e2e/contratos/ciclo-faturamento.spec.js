@@ -1,10 +1,9 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { faltaPreCondicao, tentarComAlternativa } from '../../../utils/pre-condicao.js';
-import { AcompanhamentoContratosPage } from '../../../pages/AcompanhamentoContratosPage.js';
 import { MedicaoContratoPage } from '../../../pages/MedicaoContratoPage.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
-import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
+import { descobrirContratoVigentePorDataset } from '../../../utils/massa-contratos.js';
 import { parseFornecedorDaGrade } from '../../../factories/medicao.js';
 import { lerTarefas, lerCamposDoFormulario } from '../../../utils/estado-da-solicitacao.js';
 
@@ -57,9 +56,9 @@ test.describe('Faturamento de Contratos — ciclo de medição', () => {
     // mascara flakiness"), só que este teste amplia a busca por até 3 contratos.
     test.setTimeout(180_000);
 
-    const contratosPage = new AcompanhamentoContratosPage(page);
-    await contratosPage.goto();
-    await contratosPage.expectCarregada();
+    // Contrato vigente por DATASET, não pela grade do Acompanhamento: este teste mede a medição, e a
+    // grade é superfície de outro portal (etapa 3 de `docs/plano-de-evolucao-2026-09-11.md`).
+    await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
 
     const medicao = new MedicaoContratoPage(page);
 
@@ -75,13 +74,7 @@ test.describe('Faturamento de Contratos — ciclo de medição', () => {
     const descartes = /** @type {string[]} */ ([]);
 
     for (let i = 0; i < MAX_CONTRATOS; i++) {
-      // `medicao.goto()` (chamado no fim da iteração anterior) navega para fora do Portal
-      // de Acompanhamento de Contratos — precisa voltar antes de ler a grade de novo.
-      if (i > 0) {
-        await contratosPage.goto();
-        await contratosPage.expectCarregada();
-      }
-      const contrato = await descobrirContratoVigente(contratosPage, {
+      const contrato = await descobrirContratoVigentePorDataset(page, {
         excluirContratos: contratosTentados,
       });
       contratosTentados.push(contrato.contrato);

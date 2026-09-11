@@ -3,6 +3,7 @@ import { test } from '@playwright/test';
 import { hash32, idEstavelDoTeste } from './identidade-do-teste.js';
 import { faltaPreCondicao } from './pre-condicao.js';
 import { tentarAdquirir, liberar } from './exclusividade.js';
+import { lerContratosVigentesPorDataset } from './contratos-por-dataset.js';
 
 /**
  * Descoberta de massa de contratos em tempo de execução, **distribuída entre os testes**.
@@ -24,7 +25,20 @@ import { tentarAdquirir, liberar } from './exclusividade.js';
  * 1. remover aquele contrato da base derrubava dezenas de testes de uma vez;
  * 2. testes concorrentes disputavam o MESMO contrato sob `fullyParallel: true`.
  *
- * ## Como a escolha é feita agora
+ * ## Duas fontes, uma escolha
+ *
+ * - **Grade** (`descobrirContratoVigente`, `descobrirContratosVigentes`): para os testes que
+ *   agem SOBRE a grade do Portal de Acompanhamento — filtrar, abrir modal, iniciar SC. Eles
+ *   precisam do contrato como a grade o mostra, e de um número que identifique uma linha só.
+ * - **Dataset** (`descobrirContratoVigentePorDataset`, `descobrirContratosVigentesPorDataset`,
+ *   desde 11/09/2026): para os testes que só precisam de "um contrato vigente" e não testam a
+ *   grade — os de Faturamento. Leem `utils/contratos-por-dataset.js` e seguem de pé com o portal
+ *   fora. É a etapa 3 de `docs/plano-de-evolucao-2026-09-11.md`.
+ *
+ * As duas passam pela MESMA escolha e pela MESMA reserva (`escolherEReservar`), de modo que um
+ * contrato reservado por um teste da grade não é pego por um de Faturamento, e vice-versa.
+ *
+ * ## Como a escolha é feita
  *
  * **Afinidade por hash** (*rendezvous hashing*): para cada contrato candidato calcula-se
  * `hash(idDoTeste | numeroDoContrato)`, e vence o menor. Propriedades que interessam:
@@ -33,7 +47,7 @@ import { tentarAdquirir, liberar } from './exclusividade.js';
  *   worker, em qualquer ordem, com ou sem `--repeat-each`. Uma falha volta a acontecer no mesmo
  *   contrato, que é a condição para investigá-la.
  * - **Distribuída**: testes diferentes têm ids diferentes e caem em contratos diferentes. Com os
- *   554 vigentes medidos em 30/08/2026, nenhum registro é ponto único de falha.
+ *   564 vigentes medidos por dataset em 11/09/2026, nenhum registro é ponto único de falha.
  * - **Estável quando a base muda**: sumir um contrato só afeta os testes que o escolhiam, porque
  *   a ordem não é posicional (um `offset % total` deslocaria a escolha de TODOS os testes).
  *
@@ -63,6 +77,7 @@ import { tentarAdquirir, liberar } from './exclusividade.js';
  * Situação que a grade exibe por extenso para contrato vigente.
  * As demais situações saem truncadas (defeito D-08), então filtrar por esta é o único
  * critério confiável hoje — e é justamente a que interessa para abrir Solicitação de Compra.
+ * A fonte por dataset devolve a mesma palavra para `CN9_SITUAC = 05`.
  */
 const SITUACAO_VIGENTE = 'Vigente';
 
@@ -136,16 +151,15 @@ function ordenarPorAfinidade(candidatos, idDoTeste) {
 /**
  * `true` quando o número do contrato identifica **uma única linha** na busca da grade.
  *
- * Por que isto é obrigatório, e não refinamento: todo consumidor deste módulo faz
+ * Por que isto é obrigatório, e não refinamento: todo consumidor da GRADE faz
  * `filtrarPorContrato(numero)` e em seguida age sobre "a linha" — `acoesDaLinha` é um locator
  * global, resolvido depois do filtro. A busca do DataTables é por **substring em qualquer
  * coluna**, então um número que é prefixo de outro traz duas linhas e o clique estoura em modo
  * estrito.
  *
  * Não é hipótese: medido em 30/08/2026, **11 dos 554 contratos vigentes** têm essa colisão. O
- * caso que a expôs foi `0006-2022-4301`, que também casa com `C0006-2022-4301`. A versão
- * anterior deste módulo nunca esbarrava nisso por acidente — escolhia sempre o
- * `000000000000001`, que por sorte é inequívoco.
+ * caso que a expôs foi `0006-2022-4301`, que também casa com `C0006-2022-4301`. A fonte por
+ * dataset não passa por este filtro: seus consumidores não filtram a grade.
  *
  * @param {string} contrato
  * @param {LinhaDeContrato[]} todasAsLinhas a grade inteira, não só as vigentes
@@ -175,19 +189,20 @@ function nomeDaReserva(contrato) {
 }
 
 /**
- * Registra no relatório qual contrato o teste usou.
+ * Registra no relatório qual contrato o teste usou, e de qual fonte.
  *
  * Sem isto, a distribuição por hash seria opaca: quem lê uma falha precisa saber sobre QUAL
  * contrato ela aconteceu para reproduzir a investigação no Protheus.
  *
  * @param {LinhaDeContrato} linha
+ * @param {'grade' | 'dataset'} origem
  * @returns {void}
  */
-function anotarEscolha(linha) {
+function anotarEscolha(linha, origem) {
   try {
     test.info().annotations.push({
       type: 'contrato-escolhido',
-      description: `${linha.contrato} · filial ${linha.filial} · ${linha.tipo} · ${linha.status}`,
+      description: `${linha.contrato} · filial ${linha.filial} · ${linha.tipo} · ${linha.status} · via ${origem}`,
     });
   } catch {
     // Fora de um teste não há relatório para anotar — ver `idDoTesteCorrente`.
@@ -195,35 +210,21 @@ function anotarEscolha(linha) {
 }
 
 /**
- * Escolhe um contrato vigente da grade que satisfaça o critério, distribuindo a escolha entre
- * os testes e reservando o registro contra os demais workers.
+ * Núcleo comum às duas fontes: filtra vigentes pelo critério, ordena por afinidade e reserva.
  *
- * Falha com mensagem explícita quando não há massa — separando "o ambiente não tem contrato"
- * de "o produto está quebrado", que é a distinção que o relatório precisa deixar clara.
- *
- * @param {PortalContratos} contratosPage portal já carregado (`expectCarregada` executado)
- * @param {CriterioDeContrato} [criterio]
+ * @param {LinhaDeContrato[]} linhas o que a fonte trouxe
+ * @param {CriterioDeContrato} criterio
+ * @param {{ origem: 'grade' | 'dataset', exigirLinhaUnicaNaGrade: boolean }} opcoes
  * @returns {Promise<LinhaDeContrato>}
  */
-export async function descobrirContratoVigente(contratosPage, criterio = {}) {
-  const linhas = await contratosPage.lerLinhasDaGrade();
-
-  if (linhas.length === 0) {
-    faltaPreCondicao(
-      'a grade de contratos não retornou nenhuma linha. ' +
-        'A integração com o Protheus está indisponível ou sem dados — isto NÃO é defeito do ' +
-        'produto sob teste nem falha da automação. Confirme que o portal lista contratos ' +
-        'antes de interpretar este resultado.',
-    );
-  }
-
+async function escolherEReservar(linhas, criterio, { origem, exigirLinhaUnicaNaGrade }) {
   const vigentes = linhas.filter((l) => l.status === SITUACAO_VIGENTE);
 
   if (vigentes.length === 0) {
     faltaPreCondicao(
-      `a grade trouxe ${linhas.length} contrato(s), mas nenhum vigente. ` +
+      `a ${origem} trouxe ${linhas.length} contrato(s), mas nenhum vigente. ` +
         `Situações presentes: ${[...new Set(linhas.map((l) => l.status))].join(', ')}. ` +
-        'Solicitação de Compra só faz sentido a partir de contrato vigente.',
+        'Solicitação de Compra e medição só fazem sentido a partir de contrato vigente.',
     );
   }
 
@@ -237,13 +238,15 @@ export async function descobrirContratoVigente(contratosPage, criterio = {}) {
 
   if (satisfazemOCriterio.length === 0) {
     faltaPreCondicao(
-      `nenhum contrato vigente satisfaz o critério ` +
+      `nenhum contrato vigente (${origem}) satisfaz o critério ` +
         `${JSON.stringify(criterio)} entre os ${vigentes.length} disponíveis. ` +
         'A base mudou de perfil — reavalie o critério do teste.',
     );
   }
 
-  const candidatos = satisfazemOCriterio.filter((l) => identificaLinhaUnica(l.contrato, linhas));
+  const candidatos = exigirLinhaUnicaNaGrade
+    ? satisfazemOCriterio.filter((l) => identificaLinhaUnica(l.contrato, linhas))
+    : satisfazemOCriterio;
 
   if (candidatos.length === 0) {
     faltaPreCondicao(
@@ -261,7 +264,7 @@ export async function descobrirContratoVigente(contratosPage, criterio = {}) {
       continue;
     }
     reservasEmPosse.add(nomeDaReserva(linha.contrato));
-    anotarEscolha(linha);
+    anotarEscolha(linha, origem);
     return linha;
   }
 
@@ -281,7 +284,81 @@ export async function descobrirContratoVigente(contratosPage, criterio = {}) {
 }
 
 /**
- * Escolhe `quantidade` contratos vigentes distintos, cada um reservado.
+ * Escolhe um contrato vigente DA GRADE que satisfaça o critério, distribuindo a escolha entre
+ * os testes e reservando o registro contra os demais workers.
+ *
+ * Para quem age sobre a grade. Quem só precisa de "um contrato vigente" usa
+ * `descobrirContratoVigentePorDataset`, que não depende do portal.
+ *
+ * @param {PortalContratos} contratosPage portal já carregado (`expectCarregada` executado)
+ * @param {CriterioDeContrato} [criterio]
+ * @returns {Promise<LinhaDeContrato>}
+ */
+export async function descobrirContratoVigente(contratosPage, criterio = {}) {
+  const linhas = await contratosPage.lerLinhasDaGrade();
+
+  if (linhas.length === 0) {
+    faltaPreCondicao(
+      'a grade de contratos não retornou nenhuma linha. ' +
+        'A integração com o Protheus está indisponível ou sem dados — isto NÃO é defeito do ' +
+        'produto sob teste nem falha da automação. Confirme que o portal lista contratos ' +
+        'antes de interpretar este resultado.',
+    );
+  }
+
+  return escolherEReservar(linhas, criterio, { origem: 'grade', exigirLinhaUnicaNaGrade: true });
+}
+
+/**
+ * Escolhe um contrato vigente POR DATASET (todas as filiais, cache da execução), com a mesma
+ * afinidade e a mesma reserva de `descobrirContratoVigente` — sem depender da grade do portal.
+ *
+ * Anota no relatório quando a varredura teve filial que não respondeu: a escolha segue válida
+ * entre as que responderam, mas quem lê a execução precisa saber que a amostra era parcial.
+ *
+ * @param {import('@playwright/test').Page} page página em alguma rota do portal
+ * @param {CriterioDeContrato} [criterio]
+ * @returns {Promise<LinhaDeContrato>}
+ */
+export async function descobrirContratoVigentePorDataset(page, criterio = {}) {
+  const varredura = await lerContratosVigentesPorDataset(page);
+  if (varredura.filiaisComFalha.length > 0) {
+    try {
+      test.info().annotations.push({
+        type: 'contratos-varredura-parcial',
+        description: `${varredura.filiaisComFalha.length} de ${varredura.filiais} filial(is) não responderam: ${varredura.filiaisComFalha.slice(0, 6).join('; ')}`,
+      });
+    } catch {
+      // Fora de um teste não há relatório para anotar.
+    }
+  }
+  return escolherEReservar(varredura.linhas, criterio, { origem: 'dataset', exigirLinhaUnicaNaGrade: false });
+}
+
+/**
+ * Escolhe `quantidade` contratos vigentes distintos com a função de descoberta dada.
+ *
+ * @param {(criterio: CriterioDeContrato) => Promise<LinhaDeContrato>} descobrir
+ * @param {number} quantidade
+ * @param {CriterioDeContrato} criterio
+ * @returns {Promise<LinhaDeContrato[]>}
+ */
+async function amostrar(descobrir, quantidade, criterio) {
+  /** @type {LinhaDeContrato[]} */
+  const escolhidos = [];
+  const excluir = [...(criterio.excluirContratos ?? [])];
+
+  for (let i = 0; i < quantidade; i += 1) {
+    const linha = await descobrir({ ...criterio, excluirContratos: excluir });
+    escolhidos.push(linha);
+    excluir.push(linha.contrato);
+  }
+
+  return escolhidos;
+}
+
+/**
+ * Escolhe `quantidade` contratos vigentes distintos DA GRADE, cada um reservado.
  *
  * Existe para os casos que amostram vários contratos até achar um com a característica que
  * precisam (competência com saldo, item zerado). Antes esses testes faziam
@@ -294,20 +371,19 @@ export async function descobrirContratoVigente(contratosPage, criterio = {}) {
  * @returns {Promise<LinhaDeContrato[]>}
  */
 export async function descobrirContratosVigentes(contratosPage, quantidade, criterio = {}) {
-  /** @type {LinhaDeContrato[]} */
-  const escolhidos = [];
-  const excluir = [...(criterio.excluirContratos ?? [])];
+  return amostrar((c) => descobrirContratoVigente(contratosPage, c), quantidade, criterio);
+}
 
-  for (let i = 0; i < quantidade; i += 1) {
-    const linha = await descobrirContratoVigente(contratosPage, {
-      ...criterio,
-      excluirContratos: excluir,
-    });
-    escolhidos.push(linha);
-    excluir.push(linha.contrato);
-  }
-
-  return escolhidos;
+/**
+ * Como `descobrirContratosVigentes`, POR DATASET.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {number} quantidade
+ * @param {CriterioDeContrato} [criterio]
+ * @returns {Promise<LinhaDeContrato[]>}
+ */
+export async function descobrirContratosVigentesPorDataset(page, quantidade, criterio = {}) {
+  return amostrar((c) => descobrirContratoVigentePorDataset(page, c), quantidade, criterio);
 }
 
 /**

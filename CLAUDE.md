@@ -260,10 +260,15 @@ contrato viraram testes normais em vez de destrutivos.
 `ambiente.js` centraliza rotas, nomes de dataset e títulos, com `envObrigatoria()` falhando alto
 quando falta configuração.
 
-**Não existe variável de contrato.** A massa é descoberta em tempo de execução pela grade
+**Não existe variável de contrato.** A massa é descoberta em tempo de execução
 (`utils/massa-contratos.js`): o teste declara a característica de que precisa e a suíte escolhe
 um contrato que sirva; sem massa, falha com `PRÉ-CONDIÇÃO AUSENTE`, separando ambiente de
-defeito no relatório.
+defeito no relatório. **Duas fontes, desde 11/09/2026:** quem age SOBRE a grade do Portal de
+Acompanhamento usa `descobrirContratoVigente(contratosPage)`; quem só precisa de "um contrato
+vigente" usa `descobrirContratoVigentePorDataset(page)` e não depende do portal
+(`utils/contratos-por-dataset.js` — varre as 71 filiais uma vez, ~150 s, e guarda em
+`playwright/.cache/contratos-vigentes.json` por 6 h). Ao escrever teste novo que não testa a grade,
+use a do dataset.
 
 A escolha é **por afinidade de hash** entre a identidade do teste (`titlePath`) e o número do
 contrato, e o contrato escolhido é **reservado** contra os outros workers (lock de diretório,
