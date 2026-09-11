@@ -126,7 +126,21 @@ async function conferirServicoDoErp(page) {
     return;
   }
 
-  const veredito = await verificarServicoErp(page);
+  // Retenta antes de abortar, nos dois níveis. A falha de REDE já é repetida dentro de
+  // `verificarServicoErp`. Aqui se reconfere o VEREDITO "fora": abortar a execução inteira custa
+  // dezenas de minutos, e um serviço que oscila por segundos não justifica isso. Só depois de
+  // três leituras "fora", espaçadas, a execução é morta — e aí a queda é real.
+  let veredito = await verificarServicoErp(page);
+  const reconferencias = 2;
+  for (let vez = 1; !veredito.noAr && vez <= reconferencias; vez += 1) {
+    console.warn(
+      `[setup] serviço do ERP respondeu fora (${veredito.descricao}); reconferindo em ${5 * vez}s ` +
+        `(${vez}/${reconferencias}) antes de abortar.`,
+    );
+    // Espaçamento entre reconferências, não sincronização de teste.
+    await new Promise((resolver) => setTimeout(resolver, 5_000 * vez));
+    veredito = await verificarServicoErp(page);
+  }
 
   if (!veredito.noAr) {
     throw new Error(

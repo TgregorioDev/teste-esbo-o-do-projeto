@@ -55,6 +55,7 @@ export const SERVICO_COMPRAS = process.env.SERVICO_ERP ?? 'apiRESTProtheusCompra
  * @property {string} servico código consultado
  * @property {string} descricao o `content.description` cru, para a mensagem de erro
  * @property {string} detalhe primeira linha de `content.result` quando há falha (a stack do Fluig)
+ * @property {number} tentativas quantas chamadas foram precisas para obter uma resposta
  */
 
 /**
@@ -62,13 +63,24 @@ export const SERVICO_COMPRAS = process.env.SERVICO_ERP ?? 'apiRESTProtheusCompra
  *
  * Nunca lança por falha de serviço — devolve o veredito e deixa quem chama decidir o que fazer
  * (abortar a execução, declarar pré-condição, apenas registrar). Só propaga erro se a própria
- * chamada não completar.
+ * chamada não completar **depois das retentativas**.
+ *
+ * ## Por que retenta
+ *
+ * Falha de REDE não é veredito do serviço. Medido em 11/09/2026: uma fatia inteira da execução
+ * abortou no `globalSetup` com `TypeError: Failed to fetch` — a conexão com o tenant caiu por
+ * um instante bem na consulta, e o serviço do ERP estava no ar (as fatias antes e depois
+ * responderam `SUCCESS`). Por isso a chamada que não completa é repetida, com espaçamento
+ * crescente, antes de desistir. Uma RESPOSTA "serviço fora" não é repetida aqui: é um veredito
+ * válido, e reconferi-lo é decisão de quem chama (o `globalSetup` reconfere antes de abortar).
  *
  * @param {import('@playwright/test').Page} page página já autenticada
  * @param {string} [servico] código do serviço
+ * @param {{ tentativas?: number }} [opcoes] chamadas de rede antes de desistir (padrão 3)
  * @returns {Promise<VereditoDoServico>}
  */
-export async function verificarServicoErp(page, servico = SERVICO_COMPRAS) {
+export async function verificarServicoErp(page, servico = SERVICO_COMPRAS, opcoes = {}) {
+  const { tentativas = 3 } = opcoes;
   // `fetch` com caminho relativo precisa de uma origem para resolver, e uma aba recém-criada
   // está em `about:blank` — o canário chamava esta função antes de qualquer navegação e recebia
   // "Failed to parse URL". Navegar aqui é seguro porque só acontece quando não há origem
@@ -77,17 +89,38 @@ export async function verificarServicoErp(page, servico = SERVICO_COMPRAS) {
     await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
   }
 
-  const bruto = await page.evaluate(async (codigo) => {
-    const resposta = await fetch(`/api/public/2.0/authorize/client/test?serviceCode=${encodeURIComponent(codigo)}`, {
-      headers: { Accept: 'application/json' },
-    });
-    const texto = await resposta.text();
+  /** @type {{ corpo: any, textoBruto: string | null } | undefined} */
+  let bruto;
+  let tentativa = 0;
+  for (tentativa = 1; tentativa <= tentativas; tentativa += 1) {
     try {
-      return { corpo: JSON.parse(texto), textoBruto: null };
-    } catch {
-      return { corpo: null, textoBruto: texto.slice(0, 300) };
+      bruto = await page.evaluate(async (codigo) => {
+        const resposta = await fetch(`/api/public/2.0/authorize/client/test?serviceCode=${encodeURIComponent(codigo)}`, {
+          headers: { Accept: 'application/json' },
+        });
+        const texto = await resposta.text();
+        try {
+          return { corpo: JSON.parse(texto), textoBruto: null };
+        } catch {
+          return { corpo: null, textoBruto: texto.slice(0, 300) };
+        }
+      }, servico);
+      break;
+    } catch (erro) {
+      const motivo = erro instanceof Error ? erro.message.split('\n')[0] : String(erro);
+      if (tentativa === tentativas) {
+        throw new Error(
+          `a consulta ao serviço "${servico}" não completou em ${tentativas} tentativa(s) — falha de ` +
+            `rede ou de página, NÃO um veredito de serviço fora do ar. Último erro: ${motivo}`,
+        );
+      }
+      console.warn(`[servico-erp] consulta ao serviço "${servico}" falhou (${motivo}); tentativa ${tentativa}/${tentativas}, repetindo.`);
+      // Espaçamento de retentativa de rede, não sincronização: dá tempo de uma queda momentânea
+      // da conexão com o tenant passar.
+      await new Promise((resolver) => setTimeout(resolver, 2_000 * tentativa));
     }
-  }, servico);
+  }
+  if (!bruto) throw new Error(`a consulta ao serviço "${servico}" não produziu resposta.`);
 
   const descricao = bruto.corpo?.content?.description ?? bruto.textoBruto ?? '(resposta sem `content.description`)';
   const resultado = String(bruto.corpo?.content?.result ?? '');
@@ -97,6 +130,7 @@ export async function verificarServicoErp(page, servico = SERVICO_COMPRAS) {
     servico,
     descricao,
     detalhe: resultado.split('\n')[0].slice(0, 220),
+    tentativas: tentativa,
   };
 }
 

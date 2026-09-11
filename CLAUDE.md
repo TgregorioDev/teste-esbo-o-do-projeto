@@ -51,6 +51,10 @@ nada de Compras funciona no Fluig e o que você observar não diz nada sobre o p
 - `PULAR_GATE_ERP=1` roda mesmo com o serviço fora (suítes que não dependem de Compras).
 - `SERVICO_ERP=servicoQueNaoExiste` prova que o portão reprova, sem derrubar serviço nenhum.
 - `npm run canario` mostra o mesmo veredito na primeira linha.
+- **O portão retenta antes de abortar**: falha de rede na consulta é repetida até 3 vezes
+  (`utils/servico-erp.js`), e o veredito "fora" é reconferido 2 vezes, com espaçamento, pelo
+  `globalSetup`. Em 11/09/2026 um `Failed to fetch` momentâneo abortou uma fatia inteira com o
+  serviço no ar.
 
 ---
 
