@@ -1,12 +1,15 @@
 // @ts-check
 import { appendFileSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { test as base, expect } from '@playwright/test';
 import { fakerPT_BR as faker } from '@faker-js/faker';
 import { LoginPage } from '../pages/LoginPage.js';
 import { AcompanhamentoContratosPage } from '../pages/AcompanhamentoContratosPage.js';
 import { SolicitacaoCompraModal } from '../components/SolicitacaoCompraModal.js';
 import { liberarReservasDeContrato } from '../utils/massa-contratos.js';
+import { criarScNoPoolDoGestor, criarEAssumirNoPoolDoGestor } from '../utils/massa-sc-api.js';
 import { hash32, idEstavelDoTeste } from '../utils/identidade-do-teste.js';
+import { LIVRO_DE_CRIADOS } from '../utils/livro-razao.js';
 
 /**
  * Fixtures compartilhadas da suíte.
@@ -43,6 +46,8 @@ faker.seed(FAKER_SEED);
  * @property {SolicitacaoCompraModal} solicitacaoModal
  * @property {undefined} evidence
  * @property {undefined} ritmoDeEscrita
+ * @property {import('../utils/massa-sc-api.js').ScDeMassa} solicitacaoNoPool SC de massa por API, no pool da Validação do Gestor
+ * @property {import('../utils/massa-sc-api.js').ScDeMassa} solicitacaoAssumida a mesma, já assumida pela conta — tela de decisão aberta
  */
 
 export const test = /** @type {import('@playwright/test').TestType<import('@playwright/test').PlaywrightTestArgs & import('@playwright/test').PlaywrightTestOptions & Fixtures, import('@playwright/test').PlaywrightWorkerArgs & import('@playwright/test').PlaywrightWorkerOptions>} */ (
@@ -92,6 +97,37 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
     solicitacaoModal: async ({ page }, use) => {
       await use(new SolicitacaoCompraModal(page));
     },
+
+    /**
+     * SC de massa criada por API e já no pool da Validação do Gestor (`utils/massa-sc-api.js`) —
+     * para os testes em que a SC é pré-requisito, e não o comportamento sob teste (etapa 4 de
+     * `docs/plano-de-evolucao-2026-09-11.md`). Quem testa o FORMULÁRIO continua criando pela tela.
+     *
+     * Timeout PRÓPRIO: o setup de fixture corre fora do `testInfo.setTimeout` do corpo, e a
+     * integração com o Protheus leva 10–27 s em dia bom e passa de 200 s nas janelas ruins.
+     */
+    solicitacaoNoPool: [
+      /**
+       * @param {{ page: import('@playwright/test').Page }} fixtures
+       * @param {(valor: import('../utils/massa-sc-api.js').ScDeMassa) => Promise<void>} use
+       */
+      async ({ page }, use) => {
+        await use(await criarScNoPoolDoGestor(page));
+      },
+      { timeout: 300_000 },
+    ],
+
+    /** Como `solicitacaoNoPool`, com a tarefa já ASSUMIDA pela conta e a tela de decisão aberta. */
+    solicitacaoAssumida: [
+      /**
+       * @param {{ page: import('@playwright/test').Page }} fixtures
+       * @param {(valor: import('../utils/massa-sc-api.js').ScDeMassa) => Promise<void>} use
+       */
+      async ({ page }, use) => {
+        await use(await criarEAssumirNoPoolDoGestor(page));
+      },
+      { timeout: 400_000 },
+    ],
 
     /**
      * Evidência de falha no relatório da execução.
@@ -183,7 +219,7 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
         //
         // Os testes destrutivos já anotam o que criam (`sc-criada`, `medicao-criada`,
         // `contencioso-criado`). Aqui essas anotações viram uma linha por registro em
-        // `test-results/criados.jsonl`, que é o que `scripts/limpar-massa.mjs` consome depois
+        // `LIVRO_DE_CRIADOS` (`playwright/.massa/`), que é o que `scripts/limpar-massa.mjs` consome depois
         // da execução.
         //
         // Por que arquivo, e não a anotação sozinha: anotação só existe depois do merge dos
@@ -203,7 +239,7 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
         const criados = [...new Set([...criadosNaRede, ...idsAnotados])];
         if (criados.length > 0) {
           try {
-            mkdirSync('test-results', { recursive: true });
+            mkdirSync(dirname(LIVRO_DE_CRIADOS), { recursive: true });
             const linhas = criados
               .map((id) =>
                 JSON.stringify({
@@ -215,7 +251,7 @@ export const test = /** @type {import('@playwright/test').TestType<import('@play
                 }),
               )
               .join('\n');
-            appendFileSync('test-results/criados.jsonl', linhas + '\n');
+            appendFileSync(LIVRO_DE_CRIADOS, linhas + '\n');
           } catch (erro) {
             // Falhar aqui derrubaria um teste por causa da CONTABILIDADE dele, o que é pior
             // que perder uma linha do livro: o registro continua rastreável pelo carimbo `QA`.

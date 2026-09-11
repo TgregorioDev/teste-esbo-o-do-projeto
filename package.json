@@ -14,6 +14,7 @@
     "limpar": "node scripts/limpar-massa.mjs",
     "semear": "node scripts/semear-massa.mjs",
     "limpar:simular": "node scripts/limpar-massa.mjs --simular",
+    "residuo": "node scripts/residuo-de-massa.mjs",
     "lint": "eslint .",
     "test:unit": "node --test 'unit/*.test.mjs'"
   },

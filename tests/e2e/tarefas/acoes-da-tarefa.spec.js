@@ -1,11 +1,8 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { AcoesDaTarefaPage } from '../../../pages/AcoesDaTarefaPage.js';
-import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
 import { TarefaSolicitacaoCompraPage } from '../../../pages/TarefaSolicitacaoCompraPage.js';
-import { criarSolicitacaoCompletaEEnviar } from '../../../pages/PreenchimentoSolicitacaoCompraPage.js';
-import { criarProdutoCompra, criarJustificativaDecisao } from '../../../factories/produto-compra.js';
+import { criarJustificativaDecisao } from '../../../factories/produto-compra.js';
 import { envObrigatoria } from '../../../config/ambiente.js';
 
 /**
@@ -28,10 +25,11 @@ import { envObrigatoria } from '../../../config/ambiente.js';
  *   Status"* — a atividade é atribuída por "Executor Atividade", sem destino alternativo.
  * - `SIGAJURI_Contencioso` nasce em pool de um grupo do jurídico, do qual a conta não participa.
  *
- * Sobra o caminho real: criar a SC pelo formulário clássico e assumi-la no pool "Validação do
- * Gestor Imediato" — a etapa tem `radio` "Aprovar?" + `textarea` "Justificativa" (campo
- * editável, e o rascunho de verdade que o usuário perderia) e um GRUPO por trás, que é o que dá
- * candidatos à transferência.
+ * Sobra o caminho real: uma SC assumida no pool "Validação do Gestor Imediato" — a etapa tem
+ * `radio` "Aprovar?" + `textarea` "Justificativa" (campo editável, e o rascunho de verdade que o
+ * usuário perderia) e um GRUPO por trás, que é o que dá candidatos à transferência. Desde
+ * 11/09/2026 a SC vem da fixture `solicitacaoAssumida` (`utils/massa-sc-api.js`, criada por API):
+ * a tela sob teste é a da TAREFA, e criar pelo formulário clássico só somava ~4 min e as falhas dele.
  *
  * Cada teste cria a SUA SC: solicitação transferida ou movimentada não pode ser reaproveitada,
  * e depender de estado entre testes quebraria a independência.
@@ -53,52 +51,6 @@ import { envObrigatoria } from '../../../config/ambiente.js';
  */
 function loginDaAutomacao() {
   return envObrigatoria('QA_USERNAME');
-}
-
-/** Grupo de pool em que toda SC criada por este formulário estaciona (fallback do gestor). */
-const GRUPO_GESTOR_IMEDIATO = /Validação do Gestor Imediato/;
-
-/**
- * Cria uma SC (massa própria do teste) e espera, por condição observável, até que ela chegue
- * assumível ao pool "Validação do Gestor Imediato"; devolve com a tarefa já ASSUMIDA.
- *
- * Equivalente ao helper homônimo de `tests/e2e/compras/aprovacoes-solicitacao-compras.spec.js`
- * — mesma técnica e mesmos porquês, aqui reduzido ao que estes dois casos precisam. Entre o
- * Enviar e a tarefa ficar assumível existe uma cadeia de atividades automáticas do BPMN
- * (~76s observados em campo) sem evento de rede estável para aguardar: o polling é sobre a
- * tela de detalhe da PRÓPRIA solicitação (fonte de verdade), não sobre o painel-resumo da
- * Central, que pode vir com contagem de cache desatualizada.
- *
- * @param {import('@playwright/test').Page} page
- * @returns {Promise<{ massa: ReturnType<typeof criarProdutoCompra>, numeroProcesso: string }>}
- */
-async function criarEAssumirNoPoolGestorImediato(page) {
-  const massa = criarProdutoCompra();
-  const numeroProcesso = await criarSolicitacaoCompletaEEnviar(page, massa);
-  const central = new CentralTarefasComprasPage(page);
-
-  try {
-    await expect(async () => {
-      await central.abrirDetalheDaSolicitacao(numeroProcesso);
-      await expect(central.botaoAssumirTarefaAtual()).toBeVisible({ timeout: 5_000 });
-    }).toPass({ timeout: 180_000, intervals: [10_000, 15_000, 20_000, 30_000] });
-  } catch (erroDePoll) {
-    const atividadeObservada = await central.lerNomeAtividadeAtual().catch(() => '(não foi possível ler)');
-    faltaPreCondicao(
-      `a SC #${numeroProcesso}, criada por este teste, não ficou assumível ` +
-        `("Assumir tarefa") em ${GRUPO_GESTOR_IMEDIATO.source} dentro de 180s. Isto NÃO é defeito ` +
-        'da ação sob teste (Somente salvar / Transferir) — a atividade 233 "Grava SC e Anexos" ' +
-        'normalmente conclui em 10–27s neste tenant (mediana 14s, p90 24s em 30 passagens ' +
-        'medidas em 10/09/2026), mas em janelas de degradação do ERP passa de 260s e chega a ' +
-        'cair em "Correção". Também pode ser a tarefa ter sido assumida por outra execução ' +
-        'que pega a primeira do pool (tests/e2e/tarefas/assumir-tarefa-pool.spec.js). ' +
-        `Atividade atual observada: "${atividadeObservada}". ` +
-        `Causa do polling: ${erroDePoll instanceof Error ? erroDePoll.message : erroDePoll}`,
-    );
-  }
-
-  await central.assumirTarefaAtual(numeroProcesso);
-  return { massa, numeroProcesso };
 }
 
 /**
@@ -186,12 +138,13 @@ test.describe('Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08)'
    */
   test('CT-TSK-07-H @destrutivo — "Somente salvar" deve persistir o rascunho sem movimentar a atividade', async ({
     page,
+    solicitacaoAssumida,
   }, testInfo) => {
-    // Criar a SC (quatro combos assíncronos + anexo) + aguardar a cadeia automática do BPMN
-    // (~76s) + assumir + salvar + reabrir: legitimamente mais longo que o timeout padrão.
+    // Salvar + reabrir a tarefa + reler o servidor: mais longo que o timeout padrão. A criação e a
+    // assunção da SC correm no timeout próprio da fixture `solicitacaoAssumida`.
     testInfo.setTimeout(420_000);
 
-    const { numeroProcesso } = await criarEAssumirNoPoolGestorImediato(page);
+    const { numeroProcesso } = solicitacaoAssumida;
     testInfo.annotations.push({
       type: 'sc-criada',
       description: `numeroProcesso=${numeroProcesso} (massa própria de CT-TSK-07-H)`,
@@ -299,10 +252,11 @@ test.describe('Ações da tarefa — Somente salvar e Transferir (CT-TSK-07/08)'
    */
   test('CT-TSK-08-H @destrutivo — transferir deve trocar o responsável mantendo a mesma atividade', async ({
     page,
+    solicitacaoAssumida,
   }, testInfo) => {
     testInfo.setTimeout(420_000);
 
-    const { numeroProcesso } = await criarEAssumirNoPoolGestorImediato(page);
+    const { numeroProcesso } = solicitacaoAssumida;
     testInfo.annotations.push({
       type: 'sc-criada',
       description: `numeroProcesso=${numeroProcesso} (massa própria de CT-TSK-08-H)`,

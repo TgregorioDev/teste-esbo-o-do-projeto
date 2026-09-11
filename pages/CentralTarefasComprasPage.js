@@ -407,8 +407,11 @@ export class CentralTarefasComprasPage {
    * criação da SC ("Solicitação NNNNNN movimentada com sucesso." + link "Acessar
    * solicitação #NNNNNN") — não à tela de detalhe com abas Histórico/Anexos diretamente.
    * Este método segue esse link e espera a tela de detalhe (com a aba Histórico) carregar.
+   *
+   * @param {string | number} [numeroProcesso] com ele, o silêncio da tela é classificado pelo
+   *   servidor (ver o ramo `semRetorno`); sem ele, o silêncio é declarado como ambiente, como antes.
    */
-  async abrirDetalheAposConfirmacao() {
+  async abrirDetalheAposConfirmacao(numeroProcesso) {
     const linkConfirmacao = this.page.getByRole('link', { name: /^\d+$/ }).first();
     // O Fluig pode RECUSAR a movimentação em vez de confirmá-la (medido: HTTP 500 com
     // "Erro ao salvar dados do formulário: - O campo \"Aprovar? - Linha 1\" é obrigatório!").
@@ -430,10 +433,37 @@ export class CentralTarefasComprasPage {
       );
     }
     if (desfecho === 'semRetorno') {
+      if (numeroProcesso === undefined) {
+        faltaPreCondicao(
+          '(ambiente): 60s após acionar Enviar na tela de decisão, o Fluig ' +
+            'não deu retorno nenhum — nem a confirmação da movimentação, nem diálogo de erro. ' +
+            `URL: ${this.page.url()}`,
+        );
+      }
+
+      // Com o número, o servidor diz se a decisão ACONTECEU. Medido em 11/09/2026 (SC 96496): a
+      // reprovação foi gravada — atividade 9 concluída pela conta, SC em "Ajustar Informações" — e a
+      // tela não confirmou em 60s. Sem esta consulta, um Enviar que nunca chegou ao servidor sairia
+      // como ambiente do mesmo jeito. O critério é o MOVIMENTO, não "a tarefa está com a conta":
+      // depois de reprovar, "Ajustar Informações" cai justamente com a conta solicitante.
+      const movtoDaTela = Number(new URL(this.page.url()).searchParams.get('app_ecm_workflowview_currentMovto') ?? Number.NaN);
+      const { tarefa, motivo } = await consultarTarefaPendente(this.page, numeroProcesso);
+      if (tarefa === undefined || Number.isNaN(movtoDaTela)) {
+        throw new Error(
+          `60s após acionar Enviar na SC #${numeroProcesso}, a tela não confirmou nem recusou, e não deu ` +
+            'para saber no servidor se a decisão foi registrada: ' +
+            `${motivo || 'a URL da tela não traz o movimento da tarefa'} — ${descreverTarefa(tarefa)}. URL: ${this.page.url()}`,
+        );
+      }
+      if (tarefa !== null && tarefa.movimento === movtoDaTela) {
+        throw new Error(
+          `o Enviar não movimentou a SC #${numeroProcesso}: 60s depois, a tarefa segue no mesmo movimento ` +
+            `(${movtoDaTela}) — ${descreverTarefa(tarefa)} — e a tela não mostrou confirmação nem erro.`,
+        );
+      }
       faltaPreCondicao(
-        '(ambiente): 60s após acionar Enviar na tela de decisão, o Fluig ' +
-          'não deu retorno nenhum — nem a confirmação da movimentação, nem diálogo de erro. ' +
-          `URL: ${this.page.url()}`,
+        `(ambiente): a decisão da SC #${numeroProcesso} foi registrada no servidor — o movimento ${movtoDaTela} ` +
+          `da tela foi superado (${descreverTarefa(tarefa)}) — mas a tela não confirmou em 60s.`,
       );
     }
 

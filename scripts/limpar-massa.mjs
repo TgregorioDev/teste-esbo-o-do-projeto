@@ -17,7 +17,7 @@
  *   node scripts/limpar-massa.mjs --descobrir --desde=2026-08-25  # varre o servidor
  *   node scripts/limpar-massa.mjs --simular                       # não cancela, só lista
  *
- * O padrão lê `test-results/criados.jsonl`, escrito pela fixture durante a execução. O
+ * O padrão lê `playwright/.massa/criados.jsonl` (`utils/livro-razao.js`), escrito pela fixture durante a execução. O
  * `--descobrir` existe para o acumulado: varre a API e filtra pelo carimbo `QA` nos campos do
  * formulário. **Nunca filtra só por data** — a base é compartilhada, e cancelar por janela
  * destruiria trabalho de outras pessoas.
@@ -31,6 +31,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import dotenv from 'dotenv';
+import { LIVRO_DE_CRIADOS } from '../utils/livro-razao.js';
 
 import {
   cancelarComRetentativa,
@@ -58,7 +59,7 @@ const ARQUIVO_ALVOS = valorFlag('alvos', '');
 const SIMULAR = temFlag('simular');
 const DESDE = valorFlag('desde', new Date().toISOString().slice(0, 10));
 const PREFIXO = process.env.QA_DATA_PREFIX ?? 'QA';
-const LIVRO = 'test-results/criados.jsonl';
+const LIVRO = LIVRO_DE_CRIADOS;
 const RELATORIO = 'limpeza.json';
 const TAMANHO_LOTE = Number(valorFlag('lote', '25'));
 const PAUSA_ENTRE_LOTES_MS = Number(process.env.PAUSA_LIMPEZA ?? 5000);

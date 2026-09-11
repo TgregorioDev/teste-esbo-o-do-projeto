@@ -35,7 +35,7 @@ e o ambiente com mais cuidado — e mudam o que se implementa:
 | **E3** | `TOTVS-FS` como substituto do gestor orçamentário (Erlon), pela "Substituição de Cargos" | SC chegar à Gerência de Compras e à Validação dos Compradores | Erlon / Cassi |
 | **E4** | Contas de fiscal/CSE, gestor de alçada e fornecedor | **54 + 39 + 15 casos** | Cassi / TOTVS |
 | **E5** | Decisão de regra do FSWTBC-4952 (crítica abaixo de R$ 0,10 ou de R$ 1,00?) | um vermelho sem veredito | desenvolvedor |
-| **E6** | Retorno sobre o defeito do cancelamento (`beforeCancelProcess` × 404 sem cotação) | tag `@bug` do `cancelamento-sc-integrada` e o resíduo que não cancela | desenvolvedor (enviado em 11/09) |
+| **E6** | ~~Retorno sobre o defeito do cancelamento~~ — **resolvido em 11/09/2026 (tarde)**: remedido, SC gravada no ERP e sem cotação cancela | a tag `@bug` saiu; o resíduo de antes da correção sai com `limpar-massa --alvos=` | desenvolvedor |
 | **E7** | Trocar a senha da conta de QA | segurança: vazou em conversa e aparece no FSWTBC-4608 e no fonte `UGCTE027.prw` | dono da conta |
 | **E8** | Planilha de contrato com `CNA_VLTOT` vazio (~2% na filial 5303, nunca zero): é dado incompleto ou defeito? | tornar incondicional a assertion de "Valor Total" em `modais-do-contrato.spec.js:270` | dono do produto / desenvolvedor |
 
@@ -64,7 +64,7 @@ e o ambiente com mais cuidado — e mudam o que se implementa:
 | 1 | Lint que aplica as normas | — | **concluída** (11/09) |
 | 2 | Todo vermelho com veredito | — | **feita** (11/09); `alcadas-orcamentaria:108` e o typeahead do fluxo da SC reconferidos na etapa 0 |
 | 3 | Contrato descoberto por dataset | 0 (reavaliar) | **feita** (11/09) — Faturamento sem a grade; os (a) de planilhas/LGPD seguem para a etapa 6 |
-| 4 | Massa por API como fixture | — | pendente |
+| 4 | Massa por API como fixture | — | **feita** (11/09) — fixtures de SC, livro-razão persistente, relatório de resíduo |
 | 5 | Personas | E2, E3, E4 | pedidos a fazer |
 | 6 | Backlog de casos por estratégia | 1–5 (contínuo) | contínuo |
 | 7 | Determinismo e CI | 0 | pendente |
@@ -388,6 +388,59 @@ Testes de tarefa e aprovação criam SC pelo formulário (~4 min) só para ter u
 - Factory de faturamento: carimbo `QA` e nunca copiar `usuarioSolicitante` do molde (a FC 96437,
   sem carimbo, se passou pelo disparo automático e contaminou 3 testes).
 - Relatório periódico do resíduo que não cancela (E6).
+
+### Andamento — 11/09/2026
+
+**Massa por API, em fixture.** `utils/massa-sc-api.js`: `criarScPorApi` (`POST /start` com
+`targetState: 0`, factory `criarMassaSolicitacaoCompra`, pré-condição quando o motor não devolve a
+instância, anotação `sc-criada`), `criarScNoPoolDoGestor` (espera NO SERVIDOR a SC sair da integração e
+confere que caiu na atividade 7 — Correção ou "Ajustar Informações" viram pré-condição com o motivo) e
+`criarEAssumirNoPoolDoGestor` (assume pela tela de detalhe, deixando a decisão aberta). Fixtures
+`solicitacaoNoPool` e `solicitacaoAssumida` em `fixtures/fixtures.js`, com timeout próprio de setup.
+
+**Migrados:** `aprovacoes-solicitacao-compras` (04-H e 04-S1 pela fixture; a alçada pelo util, com
+500 × R$ 50.000 — saíram 256 linhas de preenchimento do formulário), `acoes-da-tarefa` (07-H e 08-H) e
+`assumir-tarefa-pool`, cuja pré-condição dizia que a automação não conseguia criar massa de pool (falso
+desde 10/09). O formulário segue exercitado onde é o comportamento (`ciclo-solicitacao-compras`,
+`validacoes-solicitacao-compras`).
+
+**Execução, 13:58–14:25** — só a criação pelo formulário levava ~4 min:
+
+| Teste | Resultado | Duração | SC |
+|---|---|---:|---|
+| CT-TSK-07-H (Somente salvar) | verde | 57 s | 96492 |
+| CT-CMP-04-H (aprovar) | verde | 74 s | 96493 |
+| assumir-tarefa-pool | verde | 79 s | 96494 |
+| CT-TSK-08-H (transferir) | verde | 66 s | 96495 |
+| alçada (500 × R$ 50.000) | verde — o polling reescrito na 1.3 rodou de verdade | 61 s | 96497 |
+| CT-CMP-04-S1 (reprovar) | pré-condição na 1ª (a tela não confirmou), verde na 2ª | 60 s | 96496, 96498 |
+
+**Achado — o silêncio da tela era classificado sem o servidor.** `abrirDetalheAposConfirmacao`
+declarava pré-condição sempre que a tela não confirmava em 60 s. Na SC 96496 a reprovação tinha sido
+gravada, mas o mesmo ramo diria "ambiente" para um Enviar que nunca chegou. Agora ele recebe o número do
+processo e compara o movimento da tela (`app_ecm_workflowview_currentMovto`) com a tarefa pendente no
+servidor. **Prova por injeção:** envio abortado → falha real ("não movimentou, mesmo movimento 4", SC
+96499; o gate diz regressão); envio que chega com a resposta retida → pré-condição com a evidência
+("movimento 4 superado, atividade 14", SC 96500).
+
+**Achado — o livro-razão não sobrevivia.** `test-results/criados.jsonl` é apagado pelo Playwright a
+cada invocação: só a última ficava, e o resíduo das fatias anteriores sumia do `limpar-massa`. Agora em
+`playwright/.massa/criados.jsonl`, com o caminho num lugar só (`utils/livro-razao.js`: fixture, teardown,
+`limpar-massa`, relatório) e ignorado pelo git. Provado: a linha da SC 96502 sobreviveu a uma segunda
+invocação.
+
+**E6 corrigido no ambiente.** O `@bug` `cancelamento-sc-integrada` ficou verde (SC 96501, `SUCCESS`), e o
+teardown cancelou as 9 SCs de massa do dia, todas com `numSolCompra` e sem cotação — até a manhã de 11/09
+elas eram recusadas. A tag saiu (README, CLAUDE.md). Observação para o desenvolvedor: o Nº SC do ERP
+passou a se repetir entre SCs canceladas (`000976` em quatro).
+
+**Relatório de resíduo:** `npm run residuo` (`scripts/residuo-de-massa.mjs`) lê os dois livros-razão e
+classifica cada SC no servidor. Hoje: 14 SCs de massa semeada em 10/09 abertas no ERP sem cotação
+(canceláveis desde a correção), 4 abertas canceláveis e 1 encerrada.
+
+**"Factory de faturamento":** não existe factory que copie `usuarioSolicitante`. A FC 96437 veio do
+`ciclo-faturamento` pela tela, e o formulário de medição não tem campo carimbável na etapa Início (34
+campos, 0 editáveis); a trilha é a anotação `medicao-criada`. Item encerrado sem código.
 
 ---
 

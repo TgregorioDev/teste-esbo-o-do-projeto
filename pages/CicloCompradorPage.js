@@ -343,7 +343,7 @@ export async function aprovarValidacaoDoGestor(page, numeroProcesso, justificati
 
   await central.assumirTarefaAtual(numeroProcesso);
   await aprovarComRetentativa(page, central, justificativa, numeroProcesso);
-  await central.abrirDetalheAposConfirmacao();
+  await central.abrirDetalheAposConfirmacao(numeroProcesso);
 
   return central;
 }

@@ -12,9 +12,11 @@ import { PoolTarefasPage, descobrirGrupoComTarefas } from '../../../pages/PoolTa
  * (o Fluig não expõe "devolver ao pool"). Autorizado por `docs/politica-de-escrita.md`
  * (base de homologação). Fica fora da execução padrão via `@destrutivo` + `grepInvert`.
  *
- * Pré-condição é de LEITURA (precisa existir tarefa no pool no momento da execução) — o
- * teste não pode inventar massa. Se não houver, falha via `faltaPreCondicao` em vez de
- * timeout opaco, mesmo padrão de `utils/massa-contratos.js`.
+ * Massa própria desde 11/09/2026: a fixture `solicitacaoNoPool` cria uma SC por API (`POST /start`
+ * com `targetState: 0`, `utils/massa-sc-api.js`) e espera, no servidor, ela cair no pool da
+ * Validação do Gestor. Antes disto o teste dependia de haver tarefa de outra pessoa no pool no
+ * momento da execução. Se o painel ainda assim anunciar pool vazio, falha via `faltaPreCondicao`
+ * em vez de timeout opaco.
  *
  * ## CT-TSK-02-S1 (concorrência) — não implementado
  *
@@ -34,6 +36,7 @@ import { PoolTarefasPage, descobrirGrupoComTarefas } from '../../../pages/PoolTa
 test.describe('Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H) @destrutivo', () => {
   test('assumir a primeira tarefa disponível de um grupo do pool deve movê-la para "Tarefas a concluir"', async ({
     page,
+    solicitacaoNoPool,
   }) => {
     const tarefasPage = new CentralTarefasPage(page);
     const poolPage = new PoolTarefasPage(page);
@@ -45,35 +48,12 @@ test.describe('Central de Tarefas — assumir tarefa do pool (CT-TSK-02-H) @dest
 
     if (poolAntes.total === 0) {
       faltaPreCondicao(
-        'o Resumo de Tarefas anuncia "Tarefas em pool (0)" no momento ' +
-          'da execução. Não há tarefa de pool disponível para assumir agora — isto NÃO é ' +
-          'defeito do produto sob teste. Reexecute quando houver massa (o usuário TOTVS-FS ' +
-          'pertence aos pools "Validação do Gestor Imediato" e "Validação dos Compradores"). ' +
-          '\n\nInvestigação de viabilidade de MASSA (medida ao vivo em 01/09/2026, não ' +
-          'presumida — ver `docs/criacao-de-contrato-inviavel.md` para o padrão desta ' +
-          'investigação): esta automação NÃO consegue montar seu próprio pré-requisito aqui, ' +
-          'por dois motivos independentes, ambos confirmados por consulta direta à API v2: ' +
-          '(1) A base tem MUITA atividade orgânica de usuários reais no momento (amostra de ' +
-          '20+ Solicitações de Compra abertas hoje, requesters reais como ' +
-          'geise.matias.cassi.com.br.1, paulocalixto.totvs.com.br.1, karolina.novais.cassi.com.br.1) ' +
-          '— mas nenhuma delas cai em pool de TOTVS-FS: o Gestor Imediato/Comprador de cada ' +
-          'uma resolve para uma pessoa nominal real (ex. erlon.dengo, danyelle.oliveira, ' +
-          'fernanda.smartins — RH do Protheus encontra o superior/comprador certo para quem ' +
-          'realmente pediu). TOTVS-FS recebe, sim, tarefa DIRETA vinda dessa atividade real ' +
-          '(2 confirmadas agora: processInstanceId 112830 "Validação do Gestor" e 112829 ' +
-          '"Correção", ambas assignee=TOTVS-FS) — mas tarefa direta não é tarefa de POOL, e ' +
-          'não conta para este contador. (2) A automação só consegue produzir uma SC própria ' +
-          'que caia em pool contornando D-01 (enviando `targetState` diferente de 6 direto na ' +
-          'API de `/start`, sem passar pelo widget defeituoso) — técnica que funcionou UMA vez ' +
-          'no passado (SC 112679, documentada em `cassi-fluig-master/references/catalogo-de-processos.md`) ' +
-          'mas nunca foi confirmada como reprodutível: o valor exato do campo e os ~101 campos ' +
-          'de `formFields` que a integração com o Protheus exige não são conhecidos com ' +
-          'confiança fora do que o formulário clássico (`pages/FormularioSolicitacaoCompraPage.js`, ' +
-          'de outra suíte) já monta pela UI. Fabricar esse payload às cegas, por fetch direto, ' +
-          'arriscaria produzir massa corrompida numa base de homologação compartilhada só para ' +
-          'contornar um defeito confirmado do produto — o oposto do que a automação deveria ' +
-          'fazer. Concluído: a pré-condição desta fila é de LEITURA de atividade orgânica, não ' +
-          'de escrita da automação — mesma natureza da exceção já formalizada para Contrato.',
+        `(ambiente): o Resumo de Tarefas anuncia "Tarefas em pool (0)" mesmo com a SC de massa ` +
+          `${solicitacaoNoPool.numeroProcesso} já no pool da Validação do Gestor segundo o servidor. ` +
+          'O painel-resumo trabalha com cache e já foi medido desatualizado (25/08/2026) — não há ' +
+          'tarefa a assumir por esta tela agora. Corrigido em 11/09/2026: a versão anterior desta ' +
+          'mensagem dizia que a automação não conseguia criar massa de pool; com `targetState: 0` ' +
+          'consegue, e é o que a fixture `solicitacaoNoPool` faz.',
       );
     }
 

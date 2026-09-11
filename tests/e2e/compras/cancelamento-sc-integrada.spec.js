@@ -9,7 +9,7 @@ import { criarJustificativaDecisao } from '../../../factories/produto-compra.js'
 /**
  * Cancelamento de uma Solicitação de Compras que já existe no Protheus e ainda não tem cotação.
  *
- * ## O defeito (medido em 11/09/2026)
+ * ## O defeito, e a correção (11/09/2026)
  *
  * Ao cancelar, o evento `beforeCancelProcess` de `wf_solicitacao_compras` pede ao ERP a exclusão
  * das cotações da SC. Sem nenhuma cotação, o ERP responde 404 e o evento aborta:
@@ -26,8 +26,11 @@ import { criarJustificativaDecisao } from '../../../factories/produto-compra.js'
  * cotação, **ninguém cancela a SC — nem o próprio solicitante**.
  *
  * O comportamento esperado é o que este teste afirma: "não há cotação" significa "nada a
- * excluir", e o cancelamento segue. Enviado ao desenvolvedor em 11/09/2026; o teste leva `@bug`
- * enquanto a correção (ou a explicação de que é intencional) não vier.
+ * excluir", e o cancelamento segue. Enviado ao desenvolvedor em 11/09/2026, de manhã.
+ *
+ * **Corrigido no mesmo dia.** Remedido à tarde: a SC 96501 cancelou com `SUCCESS`, e o teardown
+ * cancelou as 9 SCs de massa do dia, todas com `numSolCompra` e sem cotação. A tag `@bug` saiu — o
+ * teste segue afirmando o esperado, e volta a reprovar se o defeito voltar.
  *
  * ## Por que a massa é criada por API
  *
@@ -40,9 +43,9 @@ import { criarJustificativaDecisao } from '../../../factories/produto-compra.js'
  *
  * ## Resíduo
  *
- * Com o defeito presente, a SC deste teste não pode ser cancelada — nem pelo teardown, que usa o
- * mesmo endpoint. Ela fica aberta, com o carimbo `QA-MASSA` da factory. É o custo de medir o
- * defeito, e deixa de existir quando o produto for corrigido.
+ * Enquanto o defeito existia, a SC deste teste não podia ser cancelada — nem pelo teardown, que usa o
+ * mesmo endpoint — e ficava aberta com o carimbo `QA-MASSA` da factory. Com a correção, o próprio
+ * teste a cancela.
  */
 
 /** Atividade do BPMN em que a SC recém-gravada no ERP passa a esperar decisão humana. */
@@ -105,7 +108,7 @@ async function lerCamposDaSc(page, processInstanceId) {
 }
 
 test.describe('Cancelamento de SC integrada ao Protheus', () => {
-  test('@destrutivo @bug SC já gravada no Protheus e ainda sem cotação deveria poder ser cancelada pelo solicitante', async ({
+  test('@destrutivo SC já gravada no Protheus e ainda sem cotação pode ser cancelada pelo solicitante', async ({
     page,
   }, testInfo) => {
     testInfo.setTimeout(300_000);

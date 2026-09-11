@@ -78,6 +78,7 @@ npm run test:e2e                    # projeto "e2e" (com storageState)
 npm run typecheck                   # tsc --noEmit -p jsconfig.json
 npm run lint                        # eslint + eslint-plugin-playwright — as normas da suíte, como erro
 npm run test:unit                   # node:test da lógica pura (critérios de estado, sem navegador)
+npm run residuo                     # SCs de massa ainda abertas na base (livros-razão × servidor)
 npm run report                      # abre o relatório HTML da última execução
 
 npx playwright test tests/e2e/plataforma/home.spec.js          # um arquivo
@@ -179,10 +180,11 @@ impede a geração do relatório. Mesmo assim o arquivo nunca lança.
 O corte é **por invocação** (`process.uptime()`), porque o livro-razão é append-only e no fluxo
 destrutivo fatiado cada invocação recancelaria tudo que veio antes.
 
-- `fixtures/fixtures.js` escreve `test-results/criados.jsonl` a cada teste, lendo as anotações
-  `*-criada`/`*-criado` que os testes destrutivos já produzem. Escrever no instante da criação é
-  o ponto: o resíduo que mais importa é o de teste que morreu no meio, e esse nunca chega ao
-  relatório.
+- `fixtures/fixtures.js` escreve `playwright/.massa/criados.jsonl` (`utils/livro-razao.js`) a cada
+  teste, lendo as anotações `*-criada`/`*-criado` que os testes destrutivos já produzem. Escrever no
+  instante da criação é o ponto: o resíduo que mais importa é o de teste que morreu no meio, e esse
+  nunca chega ao relatório. ⚠️ Até 11/09/2026 o livro ficava em `test-results/`, que o Playwright
+  apaga a cada invocação — só a última sobrevivia. `npm run residuo` lista o que segue aberto.
 - `utils/cancelamento-fluig.js` tem o contrato: `POST /api/public/2.0/workflows/cancelInstances`,
   só cookie, `cancelText` obrigatório, aceita lote. **Sempre via `page.evaluate` + `fetch`** —
   `page.request` leva 403 do WAF por falta de `User-Agent` e `Referer` de navegador.
@@ -190,13 +192,13 @@ destrutivo fatiado cada invocação recancelaria tudo que veio antes.
   no modo livro-razão, aceita também sem carimbo, porque a medição de contrato não tem campo de
   texto para carimbar.
 
-- ⚠️ **SC que já existe no Protheus e ainda não tem cotação não cancela** — por nenhum dos dois
-  endpoints. Medido em 11/09/2026: o `beforeCancelProcess` de `wf_solicitacao_compras` pede ao ERP
-  a exclusão das cotações, recebe 404 "Não foram encontradas contações para exclusão" e aborta.
-  Na prática, SC de teste que passou da 233 (tem `numSolCompra`) e parou antes da cotação fica
-  aberta mesmo depois do teardown. Não é falha da limpeza — é defeito do produto
-  (`docs/execucoes/relatorio-destrutivos-2026-09-10.md`). E o `--descobrir` cancela também a massa
-  semeada: para limpar só órfãs, use `--alvos=` com os ids.
+- **SC já gravada no Protheus e ainda sem cotação: cancela desde 11/09/2026 (tarde).** Até a manhã
+  de 11/09 ela não cancelava por nenhum dos dois endpoints — o `beforeCancelProcess` recebia 404
+  "Não foram encontradas contações para exclusão" do ERP e abortava (defeito E6,
+  `docs/execucoes/relatorio-destrutivos-2026-09-10.md`). Remedido à tarde: `cancelamento-sc-integrada`
+  verde (SC 96501) e as 9 SCs de massa do dia canceladas pelo teardown. O que ficou aberto de antes
+  da correção continua lá até alguém cancelar. E o `--descobrir` cancela também a massa semeada: para
+  limpar só órfãs, use `--alvos=` com os ids.
 
 Conhecimento de campo sobre o ambiente (cancelamento, catálogo de processos, APIs, o que é
 reversível) está na skill **`cassi-fluig-master`**. Consulte antes de investigar de novo.
@@ -226,6 +228,12 @@ Exporta `test`/`expect` para **todas** as specs. Traz:
 
 Specs **não** adicionam fixtures aqui. Page Objects próprios são instanciados direto no teste
 (`new MinhaPage(page)`) — foi o que permitiu nove suítes serem escritas em paralelo sem colisão.
+
+**Massa de SC por fixture (desde 11/09/2026):** `solicitacaoNoPool` e `solicitacaoAssumida` criam uma
+SC por API (`utils/massa-sc-api.js`) e esperam, no servidor, ela cair no pool da Validação do Gestor — a
+segunda já com a tarefa assumida e a tela de decisão aberta. Use-as quando a SC é pré-requisito e a tela
+sob teste é outra (tarefa, aprovação, pool); para fixar valores, chame `criarEAssumirNoPoolDoGestor`
+direto. Quem testa o formulário da SC continua criando pela tela.
 
 ### `utils/` — as três ferramentas que a suíte gira em torno
 

@@ -1,5 +1,6 @@
 // @ts-check
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { LIVRO_DE_CRIADOS } from '../utils/livro-razao.js';
 import { chromium } from '@playwright/test';
 
 import { cancelarComRetentativa, conferirCancelamento, classificarAlvosDoLivro } from '../utils/cancelamento-fluig.js';
@@ -30,10 +31,12 @@ import { cancelarComRetentativa, conferirCancelamento, classificarAlvosDoLivro }
  *
  * ## O filtro por invocação
  *
- * O livro-razão (`test-results/criados.jsonl`) é append-only e sobrevive entre invocações. Sem
+ * O livro-razão (`LIVRO_DE_CRIADOS`, em `playwright/.massa/`) é append-only e sobrevive entre invocações. Sem
  * filtro, cada uma das 34 invocações do fluxo destrutivo fatiado tentaria recancelar tudo que
  * veio antes. O corte é o instante em que ESTE processo começou, derivado de `process.uptime()`
- * — sem arquivo auxiliar e sem depender de o `test-results/` ter sido limpo.
+ * — sem arquivo auxiliar. ⚠️ Até 11/09/2026 o livro ficava em `test-results/`, que o Playwright apaga a
+ * cada invocação: "sobrevive entre invocações" era falso, e o resíduo das fatias anteriores sumia do
+ * `limpar-massa` e do relatório de resíduo (`utils/livro-razao.js`).
  *
  * ## Como escapar
  *
@@ -51,7 +54,7 @@ export default async function globalTeardown() {
     return;
   }
 
-  const LIVRO = 'test-results/criados.jsonl';
+  const LIVRO = LIVRO_DE_CRIADOS;
   if (!existsSync(LIVRO)) return;
 
   // Instante em que ESTA invocação começou. Tudo que o livro registrou antes disso pertence a

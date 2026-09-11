@@ -11,6 +11,8 @@ test-results*/
 playwright-report*/
 playwright/.cache/
 playwright/.auth/
+# Livro-razão do que a suíte criou (`utils/livro-razao.js`): estado local de execução, não fonte.
+playwright/.massa/criados.jsonl
 blob-report/
 
 .env
