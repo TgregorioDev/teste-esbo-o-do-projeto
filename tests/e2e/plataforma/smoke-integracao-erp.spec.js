@@ -58,6 +58,13 @@ test.describe('Integração com o ERP — smoke das telas de Compras/Contratos',
     await tracker.pesquisar();
     await expect(tracker.alertaFiltroObrigatorio).toBeHidden();
     await expect(tracker.getTabelaResultado()).toBeVisible();
+    // A tabela aparece antes das linhas. Mesmo esperar-e-seguir da Gerência, abaixo: a contagem é
+    // MEDIÇÃO (zero é resposta válida), e o `catch` descarta só a espera.
+    await tracker
+      .getLinhasDoResultado()
+      .first()
+      .waitFor({ state: 'attached', timeout: 30_000 })
+      .catch(() => {});
     const totalTracker = await tracker.getLinhasDoResultado().count();
     medicoes.push(`Tracker: ${totalTracker} linhas`);
     if (totalTracker === 0) semDados.push('Tracker (Solicitação de Compras, status Abertos)');

@@ -38,19 +38,25 @@ test.describe('SIGAJURI_Contrato — geração de minuta, D-JUR-01', () => {
     await sigajuri.goto(PROCESS_ID);
     await sigajuri.expectFormularioAberto();
 
-    // Prova de campo: os três combos alimentados pelo serviço SIGAJURI deveriam oferecer
-    // opções reais de Filial/Área/Tipo de Contrato — hoje só a mensagem de erro. `count()`
-    // não espera o iframe carregar, por isso a visibilidade é confirmada primeiro.
-    await expect(sigajuri.comboFilialContrato).toBeVisible();
-    expect(
-      await sigajuri.comboFilialContrato.locator('option').count(),
-      'Filial deveria oferecer mais de uma opção (filiais reais)',
-    ).toBeGreaterThan(1);
-    await expect(sigajuri.comboTipoContrato).toBeVisible();
-    expect(
-      await sigajuri.comboTipoContrato.locator('option').count(),
-      'Tipo Contrato deveria oferecer mais de uma opção (tipos reais de contrato)',
-    ).toBeGreaterThan(1);
+    // Prova de campo: os combos alimentados pelo serviço SIGAJURI deveriam oferecer opções reais
+    // de Filial/Tipo de Contrato — hoje só a mensagem de erro. ⚠️ Visível NÃO é carregado: no
+    // Consultivo, mesmo serviço, o combo fica visível com ZERO opções e é populado ~1 s depois
+    // (medido em 11/09/2026), e `count()` não espera. Espera-se a primeira opção existir; aí se
+    // conta o que o formulário carregou, e o que ele carregou vai na mensagem.
+    for (const { nome, combo } of [
+      { nome: 'Filial', combo: sigajuri.comboFilialContrato },
+      { nome: 'Tipo Contrato', combo: sigajuri.comboTipoContrato },
+    ]) {
+      await expect(combo).toBeVisible();
+      const opcoes = combo.locator('option');
+      await expect(opcoes.first()).toBeAttached();
+      const rotulos = (await opcoes.allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').trim());
+      expect(
+        rotulos.length,
+        `${nome} deveria oferecer mais de uma opção (valores reais) — ofereceu ${rotulos.length}: ` +
+          JSON.stringify(rotulos).slice(0, 300),
+      ).toBeGreaterThan(1);
+    }
 
     // Consequência direta: sem Filial/Tipo Contrato selecionáveis, o formulário nunca sai do
     // estado inválido — Enviar deveria eventualmente habilitar depois de preenchido, mas fica

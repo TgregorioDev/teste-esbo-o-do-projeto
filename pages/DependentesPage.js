@@ -63,10 +63,10 @@ export class DependentesPage {
   /**
    * O formulário bloqueou por titular sem matrícula, ou montou os campos?
    *
-   * Existe porque o cenário do CT-DEP-02-S1 deixou de ocorrer no `caixade213859`: medido em
-   * 09/09/2026, o formulário monta com 39 campos visíveis (de 65 no DOM) e nenhuma mensagem de
-   * bloqueio — a palavra "matrícula" que aparece na tela é o rótulo do campo *Matrícula Civil*,
-   * não um aviso.
+   * Existe porque se registrou, em 09/09/2026, que o cenário do CT-DEP-02-S1 tinha deixado de
+   * ocorrer no `caixade213859` ("39 campos visíveis e nenhuma mensagem"). **Remedido em
+   * 11/09/2026: ocorre.** A mensagem aparece ~7,6 s depois de a casca abrir e o iframe fica com
+   * zero campos — a leitura antiga era do instante, antes de a consulta da matrícula voltar.
    *
    * Cuidado ao ler: procurar "matrícula" no texto da página dá falso positivo por causa desse
    * rótulo. O que distingue é a MENSAGEM de erro, e a contagem de campos acionáveis.
@@ -74,10 +74,17 @@ export class DependentesPage {
    * @returns {Promise<{ bloqueado: boolean, camposVisiveis: number, camposNoDom: number }>}
    */
   async lerDesfechoDaIdentificacao() {
+    // A mensagem só existe depois de a consulta da matrícula voltar. Lida no instante em que a
+    // casca abre, ela dava "não bloqueou" — que o teste lê como pré-condição ausente, escondendo
+    // justamente o cenário que ele mede. Espera-se a mensagem pelo prazo padrão de `expect`; sem
+    // ela nesse prazo, o formulário não bloqueou.
     const bloqueado = await this.erroTitularSemMatricula
       .first()
-      .isVisible()
-      .catch(() => false);
+      .waitFor({ state: 'visible', timeout: 30_000 })
+      .then(
+        () => true,
+        () => false,
+      );
 
     const frameElement = await this.page.locator('iframe').first().elementHandle();
     const frame = frameElement ? await frameElement.contentFrame() : null;

@@ -83,8 +83,11 @@ test.describe('Portal do Comprador', () => {
     // e o cenário simplesmente não se aplica — declarar isso é diferente de reprovar.
     await portalComprador.expectSeletorAtuarComoDisponivel();
     await expect(portalComprador.comboAtuarComo).toBeVisible();
-    const opcoes = await portalComprador.comboAtuarComo.locator('option').allInnerTexts();
-    expect(opcoes.length).toBeGreaterThan(1);
+    // Visível não é carregado — a segunda opção é ESPERADA, não contada no instante.
+    await expect(
+      portalComprador.comboAtuarComo.locator('option').nth(1),
+      '"Atuar como" deveria oferecer ao menos uma delegação além da própria conta',
+    ).toBeAttached();
 
     // Confirmado em campo: nesta sub-tela a mensagem de grade vazia é texto solto da
     // página (não uma linha de <table>) — por isso a leitura aqui não passa por
@@ -255,17 +258,20 @@ test.describe('Portal do Comprador', () => {
       await portalComprador.expectCarregada();
       await portalComprador.abrirEtapa(etapa);
 
-      const cabecalhos = await portalComprador.lerCabecalhosDaGrade();
-      expect(
-        cabecalhos,
-        'a grade precisa exibir o número do processo Fluig — é por ele que o filtro pedido ' +
-          'no chamado busca',
-      ).toContain('Nº. Proc. Fluig');
+      // O clique no tile e o do Filtrar não esperam a tela seguinte: cabeçalhos e rótulos são
+      // relidos até o prazo, em vez de lidos no instante do clique — quando ainda vinham vazios
+      // ou da tela anterior.
+      await expect
+        .poll(() => portalComprador.lerCabecalhosDaGrade(), {
+          message:
+            'a grade precisa exibir o número do processo Fluig — é por ele que o filtro pedido ' +
+            'no chamado busca',
+        })
+        .toContain('Nº. Proc. Fluig');
 
       await portalComprador.botaoFiltrar.click();
-      const rotulos = await portalComprador.lerRotulosDoFiltro();
 
-      expect(rotulos, `campos de filtro de ${etapa}`).toEqual([
+      await expect.poll(() => portalComprador.lerRotulosDoFiltro(), { message: `campos de filtro de ${etapa}` }).toEqual([
         'Nº do Processo Fluig',
         'Nº da Cotação ERP',
         'Filial',

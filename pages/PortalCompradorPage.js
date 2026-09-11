@@ -46,13 +46,22 @@ export class PortalCompradorPage {
   /**
    * Declara pré-condição quando o seletor "Atuar como" não existe na tela.
    *
-   * O mecanismo de delegação é configuração do AMBIENTE, não do produto: no tenant
-   * `caixade182374` as três sub-telas de cotação expunham o `<select>`; no `caixade213859`
-   * (medido em 09/09/2026) ele não é renderizado em nenhuma delas. Sem esta verificação, todo
-   * teste que passa por delegação espera 45s por um elemento inexistente e reprova como
-   * timeout — indistinguível de regressão do produto.
+   * O mecanismo de delegação é configuração do AMBIENTE, não do produto. ⚠️ Registrou-se em
+   * 09/09/2026 que no `caixade213859` o `<select>` não era renderizado em nenhuma sub-tela, e
+   * quatro testes reprovaram como pré-condição por dois dias. **Era a contagem no instante da
+   * troca de URL**: remedido em 11/09/2026 com a espera abaixo, o seletor aparece e a delegação
+   * troca de sessão (`CT-E2E-07-H` verde). A verificação continua, agora sobre a tela carregada.
    */
   async expectSeletorAtuarComoDisponivel() {
+    // A sub-tela precisa ter RENDERIZADO antes da contagem: quem chama chega aqui logo depois da
+    // troca de URL, e `count()` lê o instante — com a tela ainda montando, "zero selects" virava
+    // pré-condição de ambiente. Sinal de carga: a grade, a mensagem de grade vazia (texto solto
+    // nestas sub-telas) ou o próprio seletor.
+    await this.getTabelaAtiva()
+      .or(this.page.getByText(/Nenhum dado encontrado|No data found/i))
+      .or(this.comboAtuarComo)
+      .first()
+      .waitFor({ state: 'visible' });
     if ((await this.comboAtuarComo.count()) === 0) {
       faltaPreCondicao(
         '(ambiente): o seletor "Atuar como" não é renderizado no Portal do Comprador deste ' +

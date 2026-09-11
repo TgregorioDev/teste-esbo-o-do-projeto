@@ -614,10 +614,20 @@ export class DocumentosGedPage extends DocumentosPage {
     const linha = checkbox.locator('xpath=ancestor::tr[1]');
     await linha.locator('[title="Restaurar Documento"]').click();
 
-    const botaoConfirmarRestauro = this.page.getByRole('button', { name: /^(Restaurar|Confirmar)$/ });
-    if (await botaoConfirmarRestauro.count()) {
-      await botaoConfirmarRestauro.first().click();
-    }
+    // Medido em 11/09/2026 (trace de CT-GED-05-H): o clique abre um pedido de confirmação, e só o
+    // Confirmar dispara `POST /recycleBin/restoreDocument/`. O `count()` no instante do clique
+    // achava o botão porque o diálogo abre junto — mas decidia "sem confirmação" se ele
+    // demorasse, e o documento ficava na Lixeira com o vermelho saindo depois, como "não voltou
+    // para a pasta de origem". Espera-se o botão e a resposta do restauro.
+    const botaoConfirmarRestauro = this.page
+      .getByRole('button', { name: /^(Restaurar|Confirmar)$/ })
+      .first();
+    const restauro = this.page.waitForResponse(
+      (r) => r.url().includes('/ecm/api/rest/ecm/recycleBin/restoreDocument') && r.request().method() === 'POST',
+    );
+    await botaoConfirmarRestauro.click();
+    const resposta = await restauro;
+    expect(resposta.ok(), `o restauro do documento ${documentId} respondeu HTTP ${resposta.status()}`).toBe(true);
   }
 }
 

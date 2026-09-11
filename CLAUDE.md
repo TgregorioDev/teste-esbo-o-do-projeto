@@ -389,6 +389,12 @@ publicada classificada ora como pré-condição, ora como timeout (`isVisible`);
 "sem nenhuma opção" com 29 opções na tela (`evaluateAll`); e dois scripts de massa. Leitura que decide
 veredito espera por condição (`waitFor`, `expect(...).toHaveCount`, `Promise.race` entre os sinais).
 
+Duas variações pagas em 11/09/2026 (`docs/plano-de-evolucao-2026-09-11.md` §1.4): **`isVisible({ timeout })`
+não espera** — a opção é ignorada; e **asserção de ausência passa antes de a tela existir**
+(`toHaveCount(0)`, "não visível", `count() === 0`) — espere um sinal POSITIVO de carga antes de afirmar
+que algo não está lá. Juntas, sustentaram por dois dias dois vereditos de ambiente falsos: "o 'Atuar como'
+não é renderizado" (é, e a delegação funciona) e "Dependentes não bloqueia" (bloqueia, em ~7,6 s).
+
 **Tela que não confirma não prova que a ação não aconteceu.** Quando a verificação na tela estoura,
 consulte o servidor antes de reprovar (`utils/estado-da-solicitacao.js`): ação registrada é
 `PRÉ-CONDIÇÃO` de ambiente com a evidência; ação não registrada é falha real. **Nunca troque a

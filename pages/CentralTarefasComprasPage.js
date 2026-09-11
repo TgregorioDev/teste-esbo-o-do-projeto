@@ -81,16 +81,28 @@ export class CentralTarefasComprasPage {
     await this.titulo.waitFor({ state: 'visible' });
     await this.abaResumo.click();
 
+    // `isVisible({ timeout })` não espera (a opção é ignorada): com o painel ainda montando, a
+    // leitura dava "pool vazio", `listarGrupos()` devolvia `[]` e o vermelho saía como falta de
+    // massa — ou, no `@achado` da Validação Orçamentária, como verde por acaso.
     const linkClicavel = await this.abaTarefasEmPool
       .first()
-      .isVisible({ timeout: 10_000 })
-      .catch(() => false);
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .then(
+        () => true,
+        () => false,
+      );
     if (!linkClicavel) return;
 
     await this.abaTarefasEmPool.click();
-    // "Grupos (N)" é a única sub-aba hoje, mas esperar por ela (em vez de tempo) confirma
-    // que a lista de grupos terminou de renderizar.
+    // "Grupos (N)" é a única sub-aba hoje. A aba confirma a troca, não que os links de grupo já
+    // estejam no DOM — e `listarGrupos()` lê o instante. Com o pool clicável há ao menos uma
+    // tarefa, logo ao menos um grupo: espera-se o primeiro.
     await this.page.getByRole('tab', { name: /^Grupos/ }).waitFor({ state: 'visible' });
+    await this.page
+      .getByRole('link')
+      .filter({ hasText: /\(\d+\)$/ })
+      .first()
+      .waitFor({ state: 'visible' });
   }
 
   /**

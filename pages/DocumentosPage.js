@@ -215,6 +215,9 @@ export class DocumentosPage {
     );
     await this.linkRaiz.click();
     await resposta;
+    // A resposta chega antes de o jqGrid redesenhar: "primeira linha visível" podia ser ainda a
+    // linha da pasta anterior. O overlay do grid sai quando o redesenho termina.
+    await this.aguardarGradeOciosa();
     await this.linhasDeConteudo.first().waitFor({ state: 'visible' });
   }
 
@@ -231,5 +234,8 @@ export class DocumentosPage {
     );
     await this.seletorResultadosPorPagina.selectOption(String(quantidade));
     await resposta;
+    // Idem `voltarParaRaiz`: a resposta chega antes do redesenho, e a grade antiga tem o MESMO
+    // conjunto de pastas — ler nessa janela passava por acaso na comparação "antes = depois".
+    await this.aguardarGradeOciosa();
   }
 }

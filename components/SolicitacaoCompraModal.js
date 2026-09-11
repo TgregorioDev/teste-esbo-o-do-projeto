@@ -93,7 +93,11 @@ export class SolicitacaoCompraModal {
    * @returns {Promise<Array<{ valor: string, rotulo: string }>>}
    */
   async listarTiposDisponiveis() {
-    const opcoes = await this.campoTipo.locator('option:not([disabled])').evaluateAll((els) =>
+    // `evaluateAll` lê o instante: espera-se a primeira opção selecionável existir, senão uma
+    // leitura cedo demais devolvia `[]` e o teste acusava "catálogo divergente".
+    const selecionaveis = this.campoTipo.locator('option:not([disabled])');
+    await selecionaveis.first().waitFor({ state: 'attached' });
+    const opcoes = await selecionaveis.evaluateAll((els) =>
       els.map((el) => ({
         valor: /** @type {HTMLOptionElement} */ (el).value,
         rotulo: el.textContent ?? '',

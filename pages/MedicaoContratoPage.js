@@ -381,7 +381,13 @@ export class MedicaoContratoPage {
         // clique e o listener) — o diálogo de erro abaixo é a fonte de verdade real.
       });
 
-    const comErro = await this.dialogoErro.isVisible({ timeout: 8000 }).catch(() => false);
+    // `isVisible({ timeout })` NÃO espera — a opção é ignorada, e a leitura era do instante logo
+    // depois da resposta, com o diálogo possivelmente ainda por renderizar. Os 8 s são o que o
+    // método sempre pretendeu: sem diálogo nesse prazo, a consulta seguiu sem erro.
+    const comErro = await this.dialogoErro.waitFor({ state: 'visible', timeout: 8000 }).then(
+      () => true,
+      () => false,
+    );
     if (!comErro) return { comErro: false, mensagem: '' };
 
     const mensagem = await this.mensagemErro.innerText().catch(() => '');

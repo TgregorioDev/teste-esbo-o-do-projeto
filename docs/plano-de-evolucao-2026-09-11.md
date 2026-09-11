@@ -31,7 +31,7 @@ e o ambiente com mais cuidado — e mudam o que se implementa:
 | # | Pedido | Destrava | Com quem |
 |---|---|---|---|
 | **E1** | Publicar `dsProtheus_getFiscaisPorTipoContrato` e `dsProtheus_getCronogramaFinanceiro` | o restante do Acompanhamento de Contratos | desenvolvedor (em andamento em 11/09) |
-| **E2** | Matrícula de comprador (SY1/`Y1_USER`) para `TOTVS-FS`, ou uma conta de comprador | Portal do Comprador, "Atuar como", filas de cotação — **221 casos** | administrador do Protheus |
+| **E2** | Matrícula de comprador (SY1/`Y1_USER`) para `TOTVS-FS`, ou uma conta de comprador | filas de cotação do Portal do Comprador — **221 casos**. ⚠️ Corrigido em 11/09/2026: "Atuar como" **não** é bloqueio (o seletor aparece e a delegação funciona, §1.4), e as filas seguem vazias mesmo delegando — antes deste pedido vem o **E3** | administrador do Protheus |
 | **E3** | `TOTVS-FS` como substituto do gestor orçamentário (Erlon), pela "Substituição de Cargos" | SC chegar à Gerência de Compras e à Validação dos Compradores | Erlon / Cassi |
 | **E4** | Contas de fiscal/CSE, gestor de alçada e fornecedor | **54 + 39 + 15 casos** | Cassi / TOTVS |
 | **E5** | Decisão de regra do FSWTBC-4952 (crítica abaixo de R$ 0,10 ou de R$ 1,00?) | um vermelho sem veredito | desenvolvedor |
@@ -61,7 +61,7 @@ e o ambiente com mais cuidado — e mudam o que se implementa:
 | Etapa | Tema | Depende de | Estado |
 |---|---|---|---|
 | 0 | Linha de base confiável | E1 | aguardando os 6 datasets (verificação a cada 10 min) |
-| 1 | Lint que aplica as normas | — | **1.1, 1.2, 1.3 e 1.6 concluídas** (11/09); 1.4–1.5 pendentes |
+| 1 | Lint que aplica as normas | — | **1.1 a 1.4 e 1.6 concluídas** (11/09); 1.5 pendente |
 | 2 | Todo vermelho com veredito | — | pendente |
 | 3 | Contrato descoberto por dataset | 0 (reavaliar) | pendente |
 | 4 | Massa por API como fixture | — | pendente |
@@ -195,6 +195,57 @@ três primeiras: `isVisible({ timeout })` **ignora** o `timeout` (a opção est�
 - `CentralTarefasComprasPage:87` — `isVisible({ timeout: 10_000 })` decide se clica a aba de pool.
 - `aprovacoes-solicitacao-compras:631` — `isVisible({ timeout: 5_000 })` decide o ramo do teste.
 - `DependentesPage:80`, `PoolTarefasPage:242`, `validacoes-faturamento:357`.
+
+### 1.4 — leituras instantâneas · 11/09/2026
+
+**Varredura.** 100 leituras (`isVisible`, `count`, `isChecked`, `evaluateAll`, `allInnerTexts`…) em 45
+arquivos, classificadas pelo que alimentam: ~45 dentro de polling ou depois de espera pelo mesmo estado,
+~30 auxiliares cujo chamador já espera, e o resto decidindo veredito, pré-condição ou ramo logo depois
+de navegação ou clique.
+
+**Dois vereditos de "ambiente" eram falsos, havia dois dias:**
+
+| Teste | Dizia | Medido com espera |
+|---|---|---|
+| `CT-E2E-07-H`, `-08-H`, `-09-H`, `portal-comprador:63` | PRÉ-CONDIÇÃO: "o seletor 'Atuar como' não é renderizado" (desde 09/09) | o seletor aparece e a delegação troca de sessão — **os 4 verdes** |
+| `CT-DEP-02-S1` | PRÉ-CONDIÇÃO: "montou 0 campos sem exibir o bloqueio" (desde 10/09) | a mensagem de titular sem matrícula aparece em ~7,6 s, com 0 campos — **verde** |
+| `ciclo-cotacao:170`, `negociacao-proposta:133` | `toHaveCount(0)` no "Atuar como" — ausência afirmada antes de a tela renderizar | agora tentam a delegação e esperam a grade: **as filas seguem vazias com a delegação**. A pré-condição fica, com a causa certa: nenhuma SC chega à cotação (E3) |
+
+Consequência: **"Atuar como" não é bloqueio**, e o E2 abaixo foi reescrito. O item 2 da mensagem ao
+desenvolvedor de 11/09 (13:28) — "o Atuar como e as filas do Portal do Comprador não aparecem" — está
+errado pelo mesmo motivo.
+
+**Corrigidos** (espera pela condição, sem mudar o que se afirma):
+- `isVisible({ timeout })`, que ignora o prazo: `MedicaoContratoPage` (erro de saldo, 8 s),
+  `CentralTarefasComprasPage.abrirTarefasEmPool` (10 s, e agora espera o primeiro grupo — o `@achado` da
+  Validação Orçamentária podia passar por acaso), `aprovacoes:628` (ramo da Validação dos Compradores).
+- Combo lido quando visível, antes de popular: `sigajuri-contrato` (como o Consultivo),
+  `portal-comprador:86` (`nth(1)` esperado), `SolicitacaoCompraModal.listarTiposDisponiveis`.
+- Leitura logo depois de clique ou troca de URL: `PortalCompradorPage.expectSeletorAtuarComoDisponivel`
+  (espera grade, estado vazio ou o seletor), `portal-comprador` FSWTBC-3715 (cabeçalhos e rótulos por
+  polling), `DependentesPage.lerDesfechoDaIdentificacao`, `CicloCompradorPage.possuiDados`
+  (`esperarLinhasReais`).
+- Grade velha lida depois da resposta: `DocumentosPage.voltarParaRaiz` e `alterarResultadosPorPagina`
+  (overlay do jqGrid), `navegacao-documentos` (a comparação "antes = depois" passava com a grade velha).
+- `DocumentosGedPage.restaurarDaLixeira`, **medido por trace**: o clique sempre pede confirmação e só o
+  Confirmar dispara `POST /recycleBin/restoreDocument/`. Espera o botão e afirma a resposta.
+- `gestao-equipes:140` (polling — com o produto corrigido, o `@bug` reprovaria se o conteúdo chegasse um
+  instante depois) e `smoke-integracao-erp` (esperar-e-seguir nas linhas do Tracker).
+
+**Ficam, com motivo:** `abrirMaisOpcoesSePresente` e `buscarProcesso` (errar o ramo dá timeout, não
+veredito errado); `delegacao-fiscais` e `sigajuri-contencioso` (formulário estático e handler síncrono,
+lidos depois de um campo visível); `CentralTarefasPage.expectComSolicitacoes` (depois de 20 s de espera
+pela lista); `modais-do-contrato` (`abrirPlanilhas` já espera o rodapé); `grade-contratos`,
+`acesso-portal`; leituras que só alimentam anotação.
+
+**Execução.** `typecheck` e `lint` limpos. Verdes: `portal-comprador` (6 de 7 — o 7º é `@bug`),
+`ciclo-comprador` 07/08/09-H, `smoke-integracao-erp`, `navegacao-documentos` (4), `lixeira-documentos`
+(destrutivo), o `@achado` da Validação Orçamentária, `dependentes`. Vermelhos pelo motivo certo:
+`sigajuri-contrato` `@bug` (agora com as opções na mensagem), `gestao-equipes:127` `@bug` pelo polling,
+`ciclo-cotacao` e `negociacao-proposta` em pré-condição, com a delegação tentada.
+**Não executado:** `aprovacoes:596` (pool de Validação dos Compradores vazio), `modal-solicitacao-compra`,
+`ciclo-faturamento` e `validacoes-faturamento` com a espera do erro de saldo — dependem do Acompanhamento
+e entram na reexecução do E1.
 
 ---
 

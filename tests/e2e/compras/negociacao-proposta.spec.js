@@ -1,9 +1,9 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { ESTADO_VAZIO_DA_GRADE } from '../../../utils/grade.js';
+import { ESTADO_VAZIO_DA_GRADE, esperarLinhasReais } from '../../../utils/grade.js';
 import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { NegociacaoPage } from '../../../pages/NegociacaoPage.js';
-import { PortalCompradorPage } from '../../../pages/PortalCompradorPage.js';
+import { CicloCompradorPage } from '../../../pages/CicloCompradorPage.js';
 import { criarJustificativaDecisao } from '../../../factories/cotacao.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
 
@@ -134,42 +134,37 @@ test.describe('Negociação de Cotação — ponto de entrada real (Portal do Co
     page,
   }) => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);
-    const portalComprador = new PortalCompradorPage(page);
+    const ciclo = new CicloCompradorPage(page);
 
-    await portalComprador.goto();
-    await portalComprador.expectCarregada();
-    await portalComprador.abrirEtapa('Avaliação de Propostas');
+    await ciclo.goto();
+    await ciclo.expectCarregada();
+    await ciclo.portal.abrirEtapa('Validação Inicial');
+    await ciclo.portal.irParaEtapa('Controle de Cotações');
+    // ⚠️ Corrigido em 11/09/2026 — ver o mesmo teste em `ciclo-cotacao.spec.js`: a contagem 0 de
+    // `comboAtuarComo` era lida antes de a sub-tela renderizar. A delegação existe e é tentada
+    // antes de declarar a fila vazia, pelo mesmo caminho de `CT-E2E-08-H`.
+    await ciclo.atuarComoSubstituto();
+    await ciclo.portal.abrirEtapa('Avaliação de Propostas');
     await expect(page).toHaveURL(/avaliacaoPropostas/);
 
-    await expect(portalComprador.comboAtuarComo).toHaveCount(0);
-
-    const tabela = portalComprador.getTabelaAtiva();
-    await expect(tabela).toBeVisible();
-    // Ver `utils/grade.js`: a mensagem sai em português num ambiente e em inglês no outro.
-    await expect(tabela.getByText(ESTADO_VAZIO_DA_GRADE).first()).toBeVisible();
-
+    const propostas = await esperarLinhasReais(ciclo.getLinhas());
     expect(guarda.tentativas(), 'esta investigação é só leitura').toBe(0);
+    expect(
+      propostas,
+      `a fila de "Avaliação de Propostas" tem ${propostas} cotação(ões) com a delegação "Atuar como" — ` +
+        'CT-NEG-01-H/01-S1/01-S2 deixaram de estar bloqueados por falta de fila: implemente-os sobre ela',
+    ).toBe(0);
+    // Ver `utils/grade.js`: a mensagem sai em português num ambiente e em inglês no outro.
+    await expect(ciclo.getTabelaAtiva().getByText(ESTADO_VAZIO_DA_GRADE).first()).toBeVisible();
 
     faltaPreCondicao(
-      'a fila de "Avaliação de Propostas" do Portal do Comprador não ' +
-        'tem nenhuma cotação, com ou sem proposta de fornecedor. Isto NÃO é defeito isolado ' +
-        'do produto — é o mesmo bloqueio de fundo que impede CT-COT: D-01 mantém toda ' +
-        'Solicitação de Compra presa na conta de integração, então nenhuma Cotação real ' +
-        'chega a existir para negociar. CT-NEG-01-H, CT-NEG-01-S1 e CT-NEG-01-S2 continuam ' +
-        'bloqueados até D-01 ser corrigido e/ou existir uma proposta real nesta fila. ' +
-        '\n\nInvestigação de viabilidade de MASSA (reconfirmada ao vivo em 01/09/2026, mesma ' +
-        'rodada de `ciclo-cotacao.spec.js`): não é falta de massa no PRODUTO — a base tem ' +
-        'cotações reais em aberto agora (ex. processInstanceId 113025 em "Validação do ' +
-        'Comprador", assignee `fernanda.smartins.cassi.com.br.1`; 112994 em "Aguarda ' +
-        'Finalizar Cotação", requester `geise.matias.cassi.com.br.1`). O bloqueio é que essas ' +
-        'cadeias pertencem a compradores nominais reais da SY1, não a TOTVS-FS, e o "Atuar ' +
-        'como" que permitiria operar em nome deles está com `comboAtuarComo` em contagem 0 ' +
-        'nesta tela agora — sem delegação, sem visibilidade. Mesmo que a automação corrigisse ' +
-        'D-01 e levasse sua PRÓPRIA SC até virar Cotação, o comprador designado ainda seria um ' +
-        'nominal diferente de TOTVS-FS: o teto é cadastro no ERP (comprador na SY1), o mesmo ' +
-        'limite que `CLAUDE.md` já reconhece como fora do alcance da automação — não presunção, ' +
-        'medição repetida hoje. Candidato a exceção formal, mesmo padrão de ' +
-        '`docs/criacao-de-contrato-inviavel.md`.',
+      'a fila de "Avaliação de Propostas" do Portal do Comprador está vazia para esta conta, também ' +
+        'com a delegação "Atuar como" para um comprador substituído. Isto NÃO é defeito isolado do ' +
+        'produto: é o mesmo bloqueio de fundo de CT-COT — nenhuma SC desta suíte chega a virar ' +
+        'cotação (a massa para na Validação Orçamentária, atividade 14), então não há proposta a ' +
+        'negociar. CT-NEG-01-H, CT-NEG-01-S1 e CT-NEG-01-S2 seguem bloqueados até existir proposta ' +
+        'nesta fila. Corrigido em 11/09/2026: a versão anterior desta mensagem dizia que "Atuar como" ' +
+        'estava com contagem 0 nesta tela — era leitura feita antes de a sub-tela renderizar.',
     );
   });
 });

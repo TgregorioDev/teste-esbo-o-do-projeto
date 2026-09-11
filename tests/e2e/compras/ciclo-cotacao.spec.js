@@ -1,9 +1,9 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { ESTADO_VAZIO_DA_GRADE } from '../../../utils/grade.js';
+import { ESTADO_VAZIO_DA_GRADE, esperarLinhasReais } from '../../../utils/grade.js';
 import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { CotacaoPage } from '../../../pages/CotacaoPage.js';
-import { PortalCompradorPage } from '../../../pages/PortalCompradorPage.js';
+import { CicloCompradorPage } from '../../../pages/CicloCompradorPage.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
 
 /**
@@ -171,50 +171,42 @@ test.describe('Cotação de Produtos e Serviços — ponto de entrada real (Port
     page,
   }) => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);
-    const portalComprador = new PortalCompradorPage(page);
+    const ciclo = new CicloCompradorPage(page);
 
-    await portalComprador.goto();
-    await portalComprador.expectCarregada();
-    await portalComprador.abrirEtapa('Controle De Cotações');
+    await ciclo.goto();
+    await ciclo.expectCarregada();
+    await ciclo.portal.abrirEtapa('Validação Inicial');
+    await ciclo.portal.irParaEtapa('Controle de Cotações');
     await expect(page).toHaveURL(/controleCotacao/);
 
-    // Confirmado ao vivo: esta sub-tela não expõe "Atuar como" hoje — não há delegação para
-    // tentar antes de concluir que a fila está vazia.
-    await expect(portalComprador.comboAtuarComo).toHaveCount(0);
+    // ⚠️ Corrigido em 11/09/2026. Aqui se afirmava `comboAtuarComo` com contagem 0 ("esta sub-tela
+    // não expõe Atuar como"). Asserção de AUSÊNCIA passa na primeira leitura, antes de a sub-tela
+    // renderizar — e o seletor existe: `CT-E2E-07-H` troca a delegação nesta mesma tela. A fila só
+    // é declarada vazia depois de tentar a delegação e de a grade terminar de carregar.
+    await ciclo.atuarComoSubstituto();
+    await ciclo.portal.abrirEtapa('Controle De Cotações');
+    await expect(page).toHaveURL(/controleCotacao/);
 
+    const cotacoes = await esperarLinhasReais(ciclo.getLinhas());
+    expect(guarda.tentativas(), 'esta investigação é só leitura').toBe(0);
+    expect(
+      cotacoes,
+      `a fila de "Controle De Cotações" tem ${cotacoes} cotação(ões) com a delegação "Atuar como" — ` +
+        'CT-COT-01-H/01-S1/02-S1/02-S2/02-S3 deixaram de estar bloqueados por falta de fila: implemente-os sobre ela',
+    ).toBe(0);
     // As duas formas do estado vazio: no `caixade182374` a mensagem é em português; no
     // `caixade213859`, em inglês. Procurar só uma delas dá falso verde no outro ambiente.
     await expect(page.getByText(ESTADO_VAZIO_DA_GRADE).first()).toBeVisible();
 
-    expect(guarda.tentativas(), 'esta investigação é só leitura').toBe(0);
-
     faltaPreCondicao(
-      'a fila de "Controle De Cotações" do Portal do Comprador não ' +
-        'tem nenhuma Cotação para operar. Isto NÃO é defeito do produto sob teste isolado — ' +
-        'é consequência de D-01 (toda Solicitação de Compra criada por esta suíte fica presa ' +
-        'no marco de Início do BPMN e nunca chega ao Protheus, então nunca gera uma Cotação ' +
-        'real) somada à ausência de massa pré-existente na base. CT-COT-01-H, CT-COT-01-S1, ' +
-        'CT-COT-02-S1, CT-COT-02-S2 e CT-COT-02-S3 continuam bloqueados até D-01 ser corrigido ' +
-        'e/ou existir uma Cotação real nesta fila. ' +
-        '\n\nInvestigação de viabilidade de MASSA (reconfirmada ao vivo em 01/09/2026, ' +
-        'consulta direta à API v2 + navegação real, sem presumir): a base TEM cotações reais ' +
-        'em aberto agora mesmo (ex.: processInstanceId 113002, 112860, 112839 — todas ' +
-        '`wf_cotacao_produtos_servicos`, `status:OPEN`), então a fila do PRODUTO não está ' +
-        'vazia — o que está vazio é o que ESTA CONTA enxerga. Essas cotações nascem vinculadas ' +
-        'a um comprador nominal do Protheus (SY1) e só aparecem no Portal do Comprador de quem ' +
-        'é esse comprador ou tem "Atuar como" delegado a ele; `TOTVS-FS` não é um dos ~28 ' +
-        'compradores cadastrados. Confirmado agora mesmo: `comboAtuarComo` tem contagem 0 tanto ' +
-        'em "Controle De Cotações" quanto em "Avaliação de Propostas" — não há delegação ' +
-        'disponível para operar em nome de um comprador real hoje (nota: `pages/PortalCompradorPage.js`, ' +
-        'arquivo de outra suíte, documenta delegação a "Arthur de Almeida Santos" numa medição ' +
-        'anterior — a medição de agora, repetida duas vezes, não encontrou nenhum `<select>` ' +
-        'nessas duas telas; o ambiente pode ter mudado desde então, e esta contradição deveria ' +
-        'ser re-verificada por quem mantém aquele Page Object). A automação NÃO consegue criar ' +
-        'seu próprio pré-requisito aqui: mesmo que D-01 fosse corrigido e uma SC da automação ' +
-        'chegasse a virar Cotação, ela ainda cairia sob um comprador nominal diferente de ' +
-        'TOTVS-FS — o bloqueio é de CADASTRO NO ERP (comprador na SY1), o mesmo limite real que ' +
-        '`CLAUDE.md` já reconhece, e não de ausência de massa. Tratar como exceção formal, no ' +
-        'mesmo padrão de `docs/criacao-de-contrato-inviavel.md`.',
+      'a fila de "Controle De Cotações" do Portal do Comprador está vazia para esta conta, também ' +
+        'com a delegação "Atuar como" para um comprador substituído. Isto NÃO é defeito do produto ' +
+        'sob teste: a cotação nasce vinculada a um comprador nominal do Protheus (SY1), e nenhuma SC ' +
+        'desta suíte chega a virar cotação — a massa para na Validação Orçamentária (atividade 14, ' +
+        'tarefa nominal do gestor do centro de custo; `docs/massa-de-dados-no-ambiente-dev.md`). ' +
+        'CT-COT-01-H, CT-COT-01-S1, CT-COT-02-S1, CT-COT-02-S2 e CT-COT-02-S3 seguem bloqueados até ' +
+        'existir cotação nesta fila. Corrigido em 11/09/2026: a versão anterior desta mensagem dizia ' +
+        'que "Atuar como" não existia nesta tela — era leitura feita antes de a sub-tela renderizar.',
     );
   });
 });

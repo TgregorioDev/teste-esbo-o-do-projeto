@@ -137,16 +137,25 @@ test.describe('Gestão de Equipes — comunicação de erro (FSWTBC-630)', () =>
 
     // Medido: sobram apenas o menu e o título "Gestão de Equipes" — nenhuma tabela, nenhuma
     // linha, nenhum botão de ação. O usuário fica sem saber o que fazer a seguir.
-    const tabelas = await page.locator('table').count();
-    const acoes = await page
-      .getByRole('button')
-      .filter({ hasNotText: /^\s*9\+\s*$/ })
-      .count();
-
-    expect(
-      { tabelas, acoes },
-      'depois do OK a área do widget ficou sem conteúdo e sem ação: a tela deveria oferecer ao ' +
-        'menos uma mensagem explicando o que fazer, ou um caminho de volta',
-    ).not.toEqual({ tabelas: 0, acoes: 0 });
+    //
+    // A contagem é repetida até o prazo. Lida uma vez logo depois de o diálogo fechar, ela dava
+    // o vermelho certo hoje, mas com o produto corrigido reprovaria se o conteúdo chegasse um
+    // instante depois — e o alarme do `@bug` corrigido nunca tocaria.
+    await expect
+      .poll(
+        async () => ({
+          tabelas: await page.locator('table').count(),
+          acoes: await page
+            .getByRole('button')
+            .filter({ hasNotText: /^\s*9\+\s*$/ })
+            .count(),
+        }),
+        {
+          message:
+            'depois do OK a área do widget ficou sem conteúdo e sem ação: a tela deveria oferecer ao ' +
+            'menos uma mensagem explicando o que fazer, ou um caminho de volta',
+        },
+      )
+      .not.toEqual({ tabelas: 0, acoes: 0 });
   });
 });

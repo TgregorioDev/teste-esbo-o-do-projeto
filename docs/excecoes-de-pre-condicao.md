@@ -275,6 +275,13 @@ vermelhos no relatório (a skill proíbe skip), mas **não bloqueiam o gate**.
 
 **Teste:** `tests/e2e/compras/ciclo-cotacao.spec.js:168`
 
+> ⚠️ **Correção de 11/09/2026.** A premissa "esta sub-tela não expõe 'Atuar como'" e a "contagem 0"
+> citada na evidência abaixo eram uma asserção de **ausência** lida antes de a sub-tela renderizar.
+> O seletor existe e a delegação troca de sessão (`CT-E2E-07-H`). O teste agora tenta a delegação e
+> espera a grade carregar: **a fila segue vazia com a delegação**. A exceção continua, mas o que
+> destrava não é o "Atuar como" — é uma SC chegar à cotação, o que hoje para na Validação
+> Orçamentária (E3 de `docs/plano-de-evolucao-2026-09-11.md`).
+
 **Pré-condição ausente:** ao menos uma cotação real na fila "Controle De Cotações" do Portal do
 Comprador, para validar/reprovar uma cotação de verdade (em vez do formulário avulso
 `wf_cotacao_produtos_servicos`, testado à parte como shell fora de contexto).
@@ -325,6 +332,11 @@ caminho feliz e negativo de `CT-COT-01-H`/`S1` fora do shell avulso.
 ### 6. `CT-NEG-01-H` — fila de "Avaliação de Propostas" vazia
 
 **Teste:** `tests/e2e/compras/negociacao-proposta.spec.js:131`
+
+> ⚠️ **Correção de 11/09/2026** — a mesma do caso 5: a "contagem 0" do `comboAtuarComo` era lida antes
+> de a sub-tela renderizar. O teste agora troca a delegação (caminho de `CT-E2E-08-H`) e espera a grade:
+> **Avaliação de Propostas segue vazia com a delegação**, e Definir Vencedor também (`CT-E2E-09-H`). O
+> que destrava é uma SC chegar à cotação (E3), não o "Atuar como".
 
 **Pré-condição ausente:** ao menos uma proposta de fornecedor real na fila "Avaliação de
 Propostas", para aprovar/reprovar de verdade (em vez do shell avulso testado à parte).

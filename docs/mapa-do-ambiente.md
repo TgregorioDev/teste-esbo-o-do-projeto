@@ -20,7 +20,7 @@ alguém meça o contrário.
 |---|---|
 | `/portal/p/1/acompanhamentoContrato` | **não publicada** — o Fluig responde *"Recurso não foi encontrado"*. Não é rota renomeada: 12 variações do código foram tentadas, todas Error page. Não é permissão: essa devolveria "Acesso negado". |
 | `/portal/p/1/gestao_ferias` | idem, embora o menu lateral ofereça o link |
-| Seletor **"Atuar como"** | não é renderizado em nenhuma sub-tela do Portal do Comprador |
+| Seletor **"Atuar como"** | ~~não é renderizado em nenhuma sub-tela do Portal do Comprador~~ — **falso, corrigido em 11/09/2026**: era contagem feita no instante da troca de URL. Com a tela carregada o seletor aparece e a delegação troca de sessão (`CT-E2E-07-H`, `-08-H`, `-09-H` e `portal-comprador` verdes) |
 | Link **"Mais opções"** (Central de Tarefas) | não existe — as categorias já são abas diretas |
 | Botão **"Você"** (Central de Tarefas) | não existe; era usado só como sinal de carga |
 

@@ -79,7 +79,12 @@ test.describe('Documentos — navegação de pasta', () => {
     await documentosPage.voltarParaRaiz();
 
     await expect(documentosPage.breadcrumb).not.toContainText('Meus Documentos');
-    const descricoesDeVolta = await documentosPage.lerDescricoes();
-    expect(descricoesDeVolta.sort()).toEqual(descricoesNaRaiz.sort());
+    // O breadcrumb troca antes da grade: a lista é relida até o prazo, em vez de uma leitura só
+    // que podia pegar ainda o conteúdo de "Meus Documentos".
+    await expect
+      .poll(async () => (await documentosPage.lerDescricoes()).sort(), {
+        message: 'a Raiz deveria voltar com a mesma listagem de antes da navegação',
+      })
+      .toEqual([...descricoesNaRaiz].sort());
   });
 });

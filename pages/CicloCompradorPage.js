@@ -1,6 +1,6 @@
 // @ts-check
 import { expect } from '@playwright/test';
-import { ESTADO_VAZIO_DA_GRADE } from '../utils/grade.js';
+import { ESTADO_VAZIO_DA_GRADE, esperarLinhasReais } from '../utils/grade.js';
 import { faltaPreCondicao } from '../utils/pre-condicao.js';
 import { PortalCompradorPage } from './PortalCompradorPage.js';
 import { FormularioSolicitacaoCompraPage } from './FormularioSolicitacaoCompraPage.js';
@@ -160,9 +160,13 @@ export class CicloCompradorPage {
     return this.getTabelaAtiva().locator('tbody tr');
   }
 
-  /** @returns {Promise<boolean>} true quando a grade tem pelo menos um registro real */
+  /**
+   * A grade tem pelo menos um registro real? ESPERA até 30 s por ele (`esperarLinhasReais`): a
+   * contagem do instante, logo depois de abrir a etapa, dava `false` com a grade ainda carregando.
+   * @returns {Promise<boolean>}
+   */
   async possuiDados() {
-    return (await this.getLinhas().count()) > 1;
+    return (await esperarLinhasReais(this.getLinhas(), 30_000)) > 0;
   }
 
   /**

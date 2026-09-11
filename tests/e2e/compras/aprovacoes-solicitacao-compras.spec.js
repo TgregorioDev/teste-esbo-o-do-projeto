@@ -623,10 +623,16 @@ test.describe('Etapas designadas nominalmente (verificação de alcançabilidade
 
     // A tela pós-"Assumir" de Compras segue o mesmo padrão de decisão (Sim/Não +
     // Justificativa) observado na Validação do Gestor Imediato, quando aplicável.
+    // Espera de verdade pelo rádio: `isVisible({ timeout })` ignora o prazo, e logo depois do
+    // "Assumir" o iframe da tarefa ainda está montando — a leitura do instante mandava o teste
+    // para o ramo fraco (só o heading) mesmo quando a tela tinha a decisão Sim/Não.
     const temDecisaoPadrao = await central
       .radioAprovarSim()
-      .isVisible({ timeout: 5_000 })
-      .catch(() => false);
+      .waitFor({ state: 'visible', timeout: 30_000 })
+      .then(
+        () => true,
+        () => false,
+      );
 
     test.info().annotations.push({
       type: 'validacao-compradores-alcancada',

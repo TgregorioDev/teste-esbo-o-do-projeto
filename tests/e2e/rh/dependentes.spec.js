@@ -63,15 +63,11 @@ test.describe('Gestão de Dependentes', () => {
 
     // O ponto central do caso CT-DEP-02-S1: o titular sem matrícula bloqueia o formulário.
     //
-    // ⚠️ No `caixade213859` esse cenário NÃO ocorre: medido em 09/09/2026, o formulário monta
-    // com 39 campos visíveis (65 no DOM) e nenhuma mensagem de bloqueio. O caso pressupõe um
-    // titular SEM matrícula, e a conta desta suíte resolve a dela aqui — é pré-condição
-    // ausente, não defeito e não regressão do teste.
-    //
-    // E há um recado no achado: se o formulário monta, CT-DEP-01-H (cadastrar), 01-S1
-    // (duplicado), 01-S2 (parentesco incompatível) e 01-S3 (CPF inválido) — que estavam
-    // bloqueados exatamente por ele nunca montar — podem ter ficado exercitáveis. Vale
-    // reavaliar antes de escrever qualquer coisa nova aqui.
+    // ⚠️ CORRIGIDO em 11/09/2026. Este comentário dizia que no `caixade213859` o cenário não
+    // ocorria ("39 campos visíveis e nenhuma mensagem de bloqueio", 09/09/2026), e o teste
+    // reprovava como pré-condição ausente. Era leitura instantânea: a mensagem de titular sem
+    // matrícula aparece ~7,6 s depois de a casca abrir, e o formulário monta ZERO campos — o
+    // bloqueio ocorre, sim. `lerDesfechoDaIdentificacao` agora espera a mensagem.
     const desfecho = await dependentesPage.lerDesfechoDaIdentificacao();
 
     testInfo.annotations.push({
