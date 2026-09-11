@@ -1,6 +1,7 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
+import { repetirSeFalhaDeRede } from '../../../utils/rede.js';
 
 /**
  * CT-RDF-02-H — Rastreabilidade pai↔filho do RDFC (contrato de dados / integração).
@@ -68,7 +69,7 @@ test.describe('RDFC — rastreabilidade pai↔filho (contrato de dados)', () => 
      *   }>,
      * }}
      */
-    const medicao = await page.evaluate(
+    const medicao = await repetirSeFalhaDeRede(() => page.evaluate(
       async ({ processosRdfc, maxFilhos }) => {
         const headers = { Referer: `${location.origin}/portal/p/1/home` };
 
@@ -162,7 +163,7 @@ test.describe('RDFC — rastreabilidade pai↔filho (contrato de dados)', () => 
         return { filhosEncontrados: pares.length, pares };
       },
       { processosRdfc: PROCESSOS_RDFC, maxFilhos: MAX_FILHOS },
-    );
+    ));
 
     // Pré-condição de massa: sem nenhum par, não há o que afirmar — falha explícita, nunca
     // verde vazio.

@@ -1,6 +1,7 @@
 // @ts-check
 import { test, expect } from '../../fixtures/fixtures.js';
 import { faltaPreCondicao } from '../../utils/pre-condicao.js';
+import { repetirSeFalhaDeRede } from '../../utils/rede.js';
 
 /**
  * FSWTBC-5118 — a alçada é tarefa de gente com nome, não de pool.
@@ -13,6 +14,14 @@ import { faltaPreCondicao } from '../../utils/pre-condicao.js';
  *
  * O que este teste protege não é aquele número de SC (fixar instância é o que a suíte evita em
  * toda parte), e sim o **invariante**: nenhuma tarefa aberta de alçada pode estar num grupo.
+ *
+ * ## `@bug` desde 11/09/2026
+ *
+ * O invariante está quebrado em toda execução desde 09/09/2026 (a instância 95437, por exemplo, tem a
+ * alçada aberta no grupo `G.P.Requisicao_de_Compras_Validacao_Alcadas`) — é o defeito nº 6 de
+ * `docs/mapa-do-ambiente.md`, e `docs/execucoes/analise-falhas-2026-09-10.md` já recomendava a tag.
+ * Sem ela, o vermelho saía como regressão no gate a cada execução. O teste segue afirmando o
+ * esperado e fica verde sozinho quando não houver mais alçada em pool.
  *
  * ## Por que "num grupo" é o oráculo certo
  *
@@ -45,14 +54,14 @@ const MAX_PAGINAS = 15;
 const MAX_INSTANCIAS = 5;
 
 test.describe('Aprovação de Alçadas — atribuição', () => {
-  test('FSWTBC-5118 — toda tarefa aberta de alçada tem responsável nominal, nunca um pool', async ({
+  test('FSWTBC-5118 @bug — toda tarefa aberta de alçada tem responsável nominal, nunca um pool', async ({
     page,
   }) => {
     test.setTimeout(240_000);
     await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
 
     /** @type {number[]} */
-    const emAlcada = await page.evaluate(
+    const emAlcada = await repetirSeFalhaDeRede(() => page.evaluate(
       async ({ etapa, maxPaginas, maxInstancias }) => {
         /** @type {number[]} */
         const achadas = [];
@@ -74,7 +83,7 @@ test.describe('Aprovação de Alçadas — atribuição', () => {
         return achadas.slice(0, maxInstancias);
       },
       { etapa: ETAPA_ALCADA, maxPaginas: MAX_PAGINAS, maxInstancias: MAX_INSTANCIAS },
-    );
+    ));
 
     if (emAlcada.length === 0) {
       faltaPreCondicao(
@@ -83,7 +92,7 @@ test.describe('Aprovação de Alçadas — atribuição', () => {
       );
     }
 
-    const inspecao = await page.evaluate(
+    const inspecao = await repetirSeFalhaDeRede(() => page.evaluate(
       async ({ ids, etapa }) => {
         /** @type {Array<{instancia: number, aberturas: Array<{assignee: string, code: string, temLogin: boolean}>, escolhidos: string[]}>} */
         const resultado = [];
@@ -112,7 +121,7 @@ test.describe('Aprovação de Alçadas — atribuição', () => {
         return resultado;
       },
       { ids: emAlcada, etapa: ETAPA_ALCADA },
-    );
+    ));
 
     test.info().annotations.push({
       type: 'alcada-atribuicao',

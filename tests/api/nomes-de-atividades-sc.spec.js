@@ -1,6 +1,7 @@
 // @ts-check
 import { test, expect } from '../../fixtures/fixtures.js';
 import { faltaPreCondicao } from '../../utils/pre-condicao.js';
+import { repetirSeFalhaDeRede } from '../../utils/rede.js';
 
 /**
  * FSWTBC-4263 — a etapa que espera o retorno do ERP chama-se "Verificar retorno Protheus".
@@ -34,7 +35,7 @@ test.describe('Nomes de atividade da Solicitação de Compras (FSWTBC-4263)', ()
     // `page.request` leva 403 do WAF em `/process-management` neste tenant.
     await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
 
-    const observado = await page.evaluate(async (sequenciaRetorno) => {
+    const observado = await repetirSeFalhaDeRede(() => page.evaluate(async (sequenciaRetorno) => {
       /** @type {Array<{ instancia: number, sequencia: number, nome: string }>} */
       const atividades = [];
       let temMais = true;
@@ -63,7 +64,7 @@ test.describe('Nomes de atividade da Solicitação de Compras (FSWTBC-4263)', ()
         atividades,
         naSequenciaDeRetorno: atividades.filter((a) => a.sequencia === sequenciaRetorno),
       };
-    }, SEQ_RETORNO_ERP);
+    }, SEQ_RETORNO_ERP));
 
     if (!observado) {
       faltaPreCondicao('(ambiente): a API de solicitações não respondeu');

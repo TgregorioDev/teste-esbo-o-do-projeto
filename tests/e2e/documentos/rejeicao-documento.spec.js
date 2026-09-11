@@ -5,6 +5,7 @@ import { DocumentosGedPage } from '../../../pages/DocumentosGedPage.js';
 import { criarDocumento, criarNivelAprovacao } from '../../../factories/documento.js';
 import { criarJustificativaDecisao } from '../../../factories/produto-compra.js';
 import { envObrigatoria } from '../../../config/ambiente.js';
+import { repetirSeFalhaDeRede } from '../../../utils/rede.js';
 
 /**
  * CT-GED-04-S1 — rejeitar documento pendente de aprovação.
@@ -80,7 +81,7 @@ test.afterEach(async ({ page }) => {
  * @returns {Promise<Array<{ id: number, descricao: string, excluido: boolean, pai: number, aprovado: boolean, versaoAtiva: boolean }>>}
  */
 async function consultarDocumentoPorId(page, documentId) {
-  return page.evaluate(async (id) => {
+  return repetirSeFalhaDeRede(() => page.evaluate(async (id) => {
     const resposta = await fetch('/api/public/ecm/dataset/datasets', {
       method: 'POST',
       credentials: 'include',
@@ -103,7 +104,7 @@ async function consultarDocumentoPorId(page, documentId) {
       aprovado: linha.approved === true,
       versaoAtiva: linha.activeVersion === true,
     }));
-  }, documentId);
+  }, documentId));
 }
 
 /**

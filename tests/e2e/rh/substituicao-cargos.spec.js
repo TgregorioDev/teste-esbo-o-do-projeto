@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { ANOTACAO_PRE_CONDICAO, faltaPreCondicao } from '../../../utils/pre-condicao.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { SubstituicaoCargosPage } from '../../../pages/SubstituicaoCargosPage.js';
 import { criarSubstituto } from '../../../factories/pessoa.js';
 
@@ -40,7 +40,8 @@ test.describe('Substituição de Cargos', () => {
         description: `criarSubstituto() geraria ${JSON.stringify(substituto)} — não preenchido em tela porque o formulário bloqueia antes de expor campo de substituto.`,
       },
       {
-        type: ANOTACAO_PRE_CONDICAO,
+        // Tipo PRÓPRIO, não `pre-condicao-ausente`: ver o mesmo comentário em `dependentes.spec.js`.
+        type: 'casos-bloqueados-pela-mesma-causa',
         description:
           'CT-SUB-01-H (substituto válido), 01-S1 (substituto sem vínculo ativo) e 01-S2 (período ' +
           'retroativo/inválido) exigem passar da identificação do SOLICITANTE, que falha para esta ' +
@@ -73,9 +74,11 @@ test.describe('Substituição de Cargos', () => {
         `DOM, ${acesso.acionaveis.length} acionável(is)${acesso.acionaveis.length ? ': ' + acesso.acionaveis.join(', ') : ''}`,
     });
 
-    // Sem os campos no DOM não há o que julgar: medido em 09/09/2026, o formulário alterna
-    // entre renderizar seus 74 campos (16 deles de substituto) e não renderizar nenhum. Chamar
-    // isso de "o achado mudou" seria conclusão errada — é a tela que não carregou.
+    // Sem os campos no DOM não há o que julgar — é a tela que não carregou, e chamar isso de "o
+    // achado mudou" seria conclusão errada. ⚠️ Corrigido em 11/09/2026: registrou-se em 09/09 que
+    // o formulário "alterna entre renderizar seus 74 campos e nenhum", e desde 10/09 este teste
+    // caía aqui em ~4 s. Era a leitura feita antes de a identificação terminar: com a espera em
+    // `lerAcessoAosCamposDeSubstituto`, os 16 campos de substituto estão no DOM, bloqueados.
     if (acesso.noDom.length === 0) {
       faltaPreCondicao(
         '(ambiente): o formulário de Substituição de Cargos não renderizou campo algum de ' +

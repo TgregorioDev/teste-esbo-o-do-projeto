@@ -6,6 +6,12 @@ import { CentralTarefasPage } from '../../../pages/CentralTarefasPage.js';
 import { bloquearCriacaoDeSolicitacao, bloquearCriacaoDeProcesso } from '../../../utils/guarda-criacao.js';
 import { criarProdutoCompra, FILIAL_PADRAO } from '../../../factories/produto-compra.js';
 import { aguardarAtividadeAtual } from '../../../pages/CicloCompradorPage.js';
+import {
+  aguardarEstadoNoServidor,
+  lerCamposDoFormulario,
+  medirIntegracao,
+  saiuDaIntegracao,
+} from '../../../utils/estado-da-solicitacao.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -452,61 +458,26 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
       description: `numero=${numeroProcesso} justificativa="${massa.justificativa}"`,
     });
 
-    // A API de processos é consultada de dentro da página: `page.request` leva 403 do WAF neste
-    // tenant por falta de `User-Agent`/`Referer` de navegador.
-    const estado = await page.evaluate(async (instancia) => {
-      /** @param {string} url */
-      const json = async (url) => {
-        const r = await fetch(url, { headers: { Accept: 'application/json' } });
-        return r.ok ? r.json() : null;
-      };
+    // A integração é assíncrona: espera a SC SAIR dela no servidor — tarefa humana aberta (Validação
+    // do Gestor, Correção ou "Ajustar Informações"), com teto próprio. ⚠️ "Existe tarefa 233
+    // COMPLETED" não serve: a 233 fecha um primeiro movimento em 1 s e abre outro, que segue
+    // integrando (SC 96487, 11/09/2026) — o teste registrava "levou 1s" e passava. Estourar o prazo
+    // é a integração fora do ar: pré-condição, com a última leitura na mensagem.
+    const tarefas = await aguardarEstadoNoServidor(page, numeroProcesso, saiuDaIntegracao, {
+      timeout: 200_000,
+      oQueSeEspera: 'sair da integração com o Protheus (tarefa humana aberta)',
+    });
+    const integracao = medirIntegracao(tarefas);
+    const campos = await lerCamposDoFormulario(page, numeroProcesso);
+    const estado = {
+      atividadesAbertas: integracao.atividadesAbertas,
+      numSolCompra: campos.numSolCompra ?? '<campo ausente>',
+      erroIntegracao: campos.erroIntegracao ?? '<campo ausente>',
+      dtEmissao: campos.dtEmissaoSolCompra ?? '<campo ausente>',
+    };
 
-      // A integração é assíncrona: espera a etapa 233 concluir, com teto próprio para não
-      // depender do timeout do teste. Estado observável, nunca tempo fixo.
-      const limite = Date.now() + 200_000;
-      /** @type {any[]} */
-      let tarefas = [];
-      let gravaSC = null;
-      while (Date.now() < limite) {
-        const t = await json(`/process-management/api/v2/requests/${instancia}/tasks?pageSize=60`);
-        tarefas = t?.items ?? [];
-        gravaSC = tarefas.find(
-          (x) => x.state?.stateName === 'Grava SC e Anexos' && x.status === 'COMPLETED',
-        );
-        if (gravaSC) break;
-        await new Promise((r) => setTimeout(r, 5_000));
-      }
-
-      const det = await json(
-        `/process-management/api/v2/requests/${instancia}?expand=formFields`,
-      );
-      /** @type {Record<string,string>} */
-      const campos = {};
-      for (const f of det?.formFields ?? []) campos[f.field] = f.value;
-
-      const abertas = tarefas
-        .filter((x) => x.status === 'NOT_COMPLETED')
-        .map((x) => x.state?.stateName);
-
-      return {
-        gravaSC: gravaSC ? { inicio: gravaSC.startDate, fim: gravaSC.endDate } : null,
-        atividadesAbertas: abertas,
-        numSolCompra: campos.numSolCompra ?? '<campo ausente>',
-        erroIntegracao: campos.erroIntegracao ?? '<campo ausente>',
-        dtEmissao: campos.dtEmissaoSolCompra ?? '<campo ausente>',
-      };
-    }, numeroProcesso);
-
-    if (!estado.gravaSC) {
-      faltaPreCondicao(
-        `(ambiente): a atividade "Grava SC e Anexos" da SC ${numeroProcesso} não concluiu em 200s. ` +
-          `A integração com o Protheus está fora do ar — não é defeito do produto sob teste.`,
-      );
-    }
-
-    const segundos = Math.round(
-      (new Date(estado.gravaSC.fim).getTime() - new Date(estado.gravaSC.inicio).getTime()) / 1000,
-    );
+    // Da entrada na 233 até a primeira tarefa humana — o tempo que o solicitante espera.
+    const segundos = integracao.segundos;
 
     test.info().annotations.push({
       type: 'integracao-erp',
@@ -585,43 +556,22 @@ test.describe('Ciclo de criação da Solicitação de Compras (formulário clás
 
     const { numeroProcesso } = await criarSolicitacaoCompletaEEnviar(page);
 
-    const estado = await page.evaluate(async (instancia) => {
-      /** @param {string} url */
-      const json = async (url) => {
-        const r = await fetch(url, { headers: { Accept: 'application/json' } });
-        return r.ok ? r.json() : null;
-      };
+    // Espera a SC SAIR da integração (tarefa humana aberta), não "uma tarefa 233 COMPLETED": com
+    // esse critério o teste lia o número antes de a integração terminar e reprovava por um defeito
+    // que ainda não tinha tido chance de acontecer (SC 96458, 10/09/2026).
+    await aguardarEstadoNoServidor(page, numeroProcesso, saiuDaIntegracao, {
+      timeout: 200_000,
+      oQueSeEspera: 'sair da integração com o Protheus (tarefa humana aberta)',
+    });
 
-      const limite = Date.now() + 200_000;
-      let concluiu = false;
-      while (Date.now() < limite && !concluiu) {
-        const t = await json(`/process-management/api/v2/requests/${instancia}/tasks?pageSize=60`);
-        concluiu = (t?.items ?? []).some(
-          (/** @type {any} */ x) =>
-            x.state?.stateName === 'Grava SC e Anexos' && x.status === 'COMPLETED',
-        );
-        if (!concluiu) await new Promise((r) => setTimeout(r, 5_000));
-      }
-
-      const det = await json(`/process-management/api/v2/requests/${instancia}?expand=formFields`);
-      /** @type {Record<string,string>} */
-      const campos = {};
-      for (const f of det?.formFields ?? []) campos[f.field] = f.value;
-
-      return {
-        concluiu,
-        numSolCompra: campos.numSolCompra ?? '<campo ausente>',
-        erroIntegracao: campos.erroIntegracao ?? '<campo ausente>',
-        codERPSolicitante: campos.codERPSolicitante ?? '<campo ausente>',
-      };
-    }, numeroProcesso);
-
-    if (!estado.concluiu) {
-      faltaPreCondicao(
-        `(ambiente): "Grava SC e Anexos" da SC ${numeroProcesso} não concluiu em 200s — a ` +
-          `integração com o Protheus está fora do ar.`,
-      );
-    }
+    // Valor nulo vira `''` em `lerCamposDoFormulario`. Antes, `null ?? '<campo ausente>'` dava um
+    // texto não vazio — e a assertion abaixo passava justamente quando o número não voltou.
+    const campos = await lerCamposDoFormulario(page, numeroProcesso);
+    const estado = {
+      numSolCompra: campos.numSolCompra ?? '<campo ausente>',
+      erroIntegracao: campos.erroIntegracao ?? '<campo ausente>',
+      codERPSolicitante: campos.codERPSolicitante ?? '<campo ausente>',
+    };
 
     test.info().annotations.push({
       type: 'numero-erp',

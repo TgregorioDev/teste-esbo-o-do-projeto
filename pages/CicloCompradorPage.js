@@ -594,8 +594,29 @@ async function selecionarTypeahead(frame, containerId, termoBusca, opcaoEsperada
   const input = frame.locator(`#${containerId} .tt-input`);
   await input.click();
   await input.pressSequentially(termoBusca, { delay: 60 });
-  const opcao = frame.locator(`#${containerId} .tt-suggestion`).filter({ hasText: opcaoEsperada });
-  await opcao.first().waitFor({ state: 'visible', timeout: 15_000 });
+  const sugestoes = frame.locator(`#${containerId} .tt-suggestion`);
+  const opcao = sugestoes.filter({ hasText: opcaoEsperada });
+  const apareceu = await opcao.first().waitFor({ state: 'visible', timeout: 15_000 }).then(
+    () => true,
+    () => false,
+  );
+  if (!apareceu) {
+    // O timeout cru dizia só "locator.waitFor: Timeout 15000ms" (atribuicao-comprador, 10/09/2026).
+    // As sugestões oferecidas, lidas DEPOIS do prazo, separam as duas causas: nenhuma é a consulta
+    // do typeahead ao ERP que não voltou (ambiente); alguma, sem a esperada, é mudança de dado ou de
+    // produto — e reprova com a lista na mensagem.
+    const oferecidas = (await sugestoes.allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').trim());
+    if (oferecidas.length === 0) {
+      faltaPreCondicao(
+        `(ambiente): o typeahead #${containerId} não ofereceu sugestão nenhuma em 15s para ` +
+          `"${termoBusca}" — a consulta ao ERP não voltou.`,
+      );
+    }
+    throw new Error(
+      `o typeahead #${containerId} ofereceu ${oferecidas.length} sugestão(ões) para "${termoBusca}", ` +
+        `nenhuma com ${opcaoEsperada}: ${JSON.stringify(oferecidas).slice(0, 300)}`,
+    );
+  }
   await opcao.first().click();
 }
 

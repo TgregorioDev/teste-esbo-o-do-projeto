@@ -14,7 +14,8 @@
     "limpar": "node scripts/limpar-massa.mjs",
     "semear": "node scripts/semear-massa.mjs",
     "limpar:simular": "node scripts/limpar-massa.mjs --simular",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:unit": "node --test 'unit/*.test.mjs'"
   },
   "repository": {
     "type": "git",

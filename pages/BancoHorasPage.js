@@ -15,7 +15,11 @@ export const ROTA_BANCO_HORAS = '/portal/p/1/PORTAL_AUTORIZACAO_HORAS_EXTRAS';
  *    registrar `page.on('dialog', ...)` **antes** de navegar. Sem isso o alerta some e
  *    conclui-se, erradamente, que ele não existe.
  * 2. Em seguida, um modal (SweetAlert2, renderizado na própria página — não é diálogo
- *    nativo) exibe "Ops! Não foi possivel se comunicar com o Protheus, base offline.".
+ *    nativo) com título "Ops!". O TEXTO depende da consulta ao Protheus
+ *    (`authorize/client/invoke`, ver `simularProtheusFora`): falha → "Não foi possivel se
+ *    comunicar com o Protheus, base offline."; sucesso sem divisão para a matrícula → "Não foi
+ *    localizado nenhuma divisão para sua matrícula!" (o que o `caixade213859` mostra desde 11/09/2026,
+ *    com o Protheus no ar); sucesso com divisão → sem modal.
  * 3. Enquanto esse modal está aberto, o SweetAlert2 marca os ancestrais do restante da
  *    página com `aria-hidden="true"`: as abas Dashboard/Organograma/Saldo/Autorização
  *    ficam presentes no DOM mas FORA da árvore de acessibilidade — `getByRole('link')`
@@ -50,6 +54,25 @@ export class BancoHorasPage {
    */
   async goto() {
     await this.page.goto(ROTA_BANCO_HORAS, { waitUntil: 'domcontentloaded' });
+  }
+
+  /**
+   * Faz a integração do widget com o Protheus falhar, sem derrubar serviço nenhum. Chamar ANTES
+   * de navegar.
+   *
+   * Medido em 11/09/2026 lendo `widgetPagamentoHorasExtras_pt_BR.js`: o widget consulta o Protheus
+   * por `POST /api/public/2.0/authorize/client/invoke`. Sucesso sem divisão → "Não foi localizado
+   * nenhuma divisão para sua matrícula!"; o `cbError` dessa chamada → "Não foi possivel se comunicar
+   * com o Protheus, base offline.". Derrubar datasets (`utils/dataset-fluig.js`) NÃO reproduz o
+   * segundo aviso — os três que a tela consulta foram derrubados um a um, e o aviso foi sempre o
+   * de divisão.
+   *
+   * @param {number} [status] status HTTP da resposta simulada
+   */
+  async simularProtheusFora(status = 500) {
+    await this.page.route('**/api/public/2.0/authorize/client/invoke', (route) =>
+      route.fulfill({ status, contentType: 'application/json', body: '{"message":"simulado pela suíte"}' }),
+    );
   }
 
   /**

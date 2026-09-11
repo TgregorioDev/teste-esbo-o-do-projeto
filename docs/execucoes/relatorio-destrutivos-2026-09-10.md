@@ -37,8 +37,11 @@ quatro deles tinham estourado como `page.navegar: Timeout 60000ms`.
 
 ### 2. Defeito reproduzido — 9
 - `fail-open-formulario-sc` :128 — o Fluig aceitou enviar o formulário antes de ele montar.
-- `ciclo-solicitacao` :581 — a SC 96458 concluiu "Grava SC e Anexos" **sem número no ERP**, com
-  `erroIntegracao` vazio.
+- ~~`ciclo-solicitacao` :581 — a SC 96458 concluiu "Grava SC e Anexos" **sem número no ERP**, com
+  `erroIntegracao` vazio.~~ **Corrigido em 11/09/2026: não era o defeito.** A 233 da 96458 fechou um
+  primeiro movimento em 0 s e abriu um segundo, que ainda integrava quando o teste leu (foi cancelado
+  pela limpeza às 16:15). O critério do teste — "existe tarefa 233 COMPLETED" — aceitava o primeiro
+  movimento. Trocado por "saiu da integração" (`utils/estado-da-solicitacao.js`, `saiuDaIntegracao`).
 - `delegacao-fiscais-ciclo` :42 e :82 — o formulário exige um portal inalcançável e não tem campo
   de substituto.
 - `favoritos-contrato-api` :127 — favoritar duas vezes responde 500 em `text/plain`.

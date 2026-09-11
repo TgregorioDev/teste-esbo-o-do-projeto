@@ -225,6 +225,14 @@ export class SigajuriPage {
       (r) => r.url().includes('/ecm/api/rest/ecm/workflowView/send') && r.request().method() === 'POST',
     );
     await this.botaoEnviar.click();
-    return respostaPromise;
+    // Relança com o que se sabe: o `waitForResponse` estourado dizia só "Timeout 45000ms" (CT-JUR-01-S1,
+    // 10/09/2026), sem dizer que o que faltou foi a requisição de envio.
+    return respostaPromise.catch((erro) => {
+      throw new Error(
+        'o clique em Enviar não produziu `POST /ecm/api/rest/ecm/workflowView/send` no prazo — nem ' +
+          'resposta de sucesso, nem de erro. Ou o formulário recusou o envio no cliente sem aviso, ou a ' +
+          `requisição não saiu. Causa: ${erro instanceof Error ? erro.message.split('\n')[0] : String(erro)}`,
+      );
+    });
   }
 }

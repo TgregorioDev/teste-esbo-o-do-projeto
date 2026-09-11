@@ -110,6 +110,18 @@ export class SubstituicaoCargosPage {
    * @returns {Promise<{ acionaveis: string[], noDom: string[], motivo: 'funcionario-nao-localizado' | 'erp-indisponivel' | 'nenhum' }>}
    */
   async lerAcessoAosCamposDeSubstituto() {
+    // O desfecho da identificação é ASSÍNCRONO. Lido no instante em que a casca abre, o iframe ainda
+    // não tinha montado nada, e "0 campos no DOM" virava pré-condição — desde 10/09/2026 o teste
+    // reprovava assim em ~4 s, a mesma leitura instantânea que escondia o bloqueio de Dependentes
+    // (`DependentesPage.lerDesfechoDaIdentificacao`). Dá-se à validação o prazo padrão de `expect`
+    // para mostrar uma das duas mensagens de bloqueio; sem mensagem nesse prazo, lê-se o estado sem
+    // aviso, que também é desfecho medido. O `catch` descarta só a espera — a leitura abaixo decide.
+    await this.erroFuncionarioNaoLocalizado
+      .or(this.frame.getByText(/comunica[çc][ãa]o com o ERP/i))
+      .first()
+      .waitFor({ state: 'visible', timeout: 30_000 })
+      .catch(() => {});
+
     const frameElement = await this.page.locator('iframe').first().elementHandle();
     const frame = frameElement ? await frameElement.contentFrame() : null;
     if (!frame) return { acionaveis: [], noDom: [], motivo: 'nenhum' };

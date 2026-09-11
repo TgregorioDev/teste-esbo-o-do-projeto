@@ -4,11 +4,11 @@ import { test } from '@playwright/test';
 /**
  * Tipo da anotação que o gate (`scripts/veredito-do-gate.mjs`) e o relatório leem.
  *
- * É a MESMA grafia que os specs de RH (`dependentes`, `substituicao-cargos`, `admissao`) já
- * anotavam à mão — eles importam esta constante para que exista uma única grafia. Atenção à
- * semântica: a anotação sozinha NÃO significa falha. Esses três testes anotam a pré-condição
- * e PASSAM (provam o bloqueio); por isso o veredito só considera a anotação em teste que não
- * passou. Teste verde com anotação continua sendo verde.
+ * ⚠️ Não anote este tipo à mão. Os specs de RH (`dependentes`, `substituicao-cargos`, `admissao`)
+ * faziam isso para documentar OUTROS casos bloqueados pela mesma causa — e o gate classifica como
+ * ambiente todo teste reprovado que carregue a anotação, então uma falha real deles sairia como
+ * "pré-condição". Desde 11/09/2026 eles usam o tipo `casos-bloqueados-pela-mesma-causa`. Este tipo
+ * só nasce de `faltaPreCondicao`/`erroDePreCondicao`, junto com o erro.
  */
 export const ANOTACAO_PRE_CONDICAO = 'pre-condicao-ausente';
 

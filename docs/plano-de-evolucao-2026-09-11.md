@@ -61,8 +61,8 @@ e o ambiente com mais cuidado — e mudam o que se implementa:
 | Etapa | Tema | Depende de | Estado |
 |---|---|---|---|
 | 0 | Linha de base confiável | E1 | aguardando os 6 datasets (verificação a cada 10 min) |
-| 1 | Lint que aplica as normas | — | **1.1 a 1.4 e 1.6 concluídas** (11/09); 1.5 pendente |
-| 2 | Todo vermelho com veredito | — | pendente |
+| 1 | Lint que aplica as normas | — | **concluída** (11/09) |
+| 2 | Todo vermelho com veredito | — | **feita** (11/09); `alcadas-orcamentaria:108` e o typeahead do fluxo da SC reconferidos na etapa 0 |
 | 3 | Contrato descoberto por dataset | 0 (reavaliar) | pendente |
 | 4 | Massa por API como fixture | — | pendente |
 | 5 | Personas | E2, E3, E4 | pedidos a fazer |
@@ -247,6 +247,37 @@ pela lista); `modais-do-contrato` (`abrirPlanilhas` já espera o rodapé); `grad
 `ciclo-faturamento` e `validacoes-faturamento` com a espera do erro de saldo — dependem do Acompanhamento
 e entram na reexecução do E1.
 
+### 1.5 — polling no servidor com `expect.poll` · 11/09/2026
+
+**O que mudou.** Os três laços `while` + `setTimeout(5000)` dentro de `page.evaluate` saíram.
+`utils/estado-da-solicitacao.js` ganhou `lerTarefas`, `lerCamposDoFormulario` e
+`aguardarEstadoNoServidor` — polling com `expect.poll`, e prazo estourado vira pré-condição com a última
+leitura. No `ciclo-faturamento` o prazo estourado é reprovação de roteamento, então lá o `expect.poll` é a
+própria assertion.
+
+**Verde falso encontrado ao validar.** A execução real do teste de SLA (FSWTBC-4156) passou registrando
+"Grava SC e Anexos levou 1s", com a SC ainda na 233 e sem número no ERP. O critério "existe tarefa 233
+COMPLETED" — o mesmo nos dois testes, antes e depois da migração — aceita o primeiro movimento da 233, que
+fecha em 0–1 s enquanto um segundo segue integrando (SCs 96487, 96458, 96461). Consequências:
+- o SLA medido era sempre ~1 s: **o teste nunca podia reprovar**;
+- o `@bug` FSWTBC-621 lia o número antes de a integração terminar. O vermelho de 10/09 (SC 96458,
+  "concluiu sem número") **não era o defeito** — corrigido em `docs/execucoes/relatorio-destrutivos-2026-09-10.md`.
+  A medição de 08/09 citada no teste ("3 de 14 voltaram vazias") fica sob suspeita e precisa ser refeita.
+
+Critério novo: `saiuDaIntegracao` (há tarefa humana aberta) e `medirIntegracao` (da entrada na 233 à
+primeira tarefa humana — 29 s na SC 96474, 1.221 s na 96456, o "1.220 s" do relatório de 10/09).
+
+**Testes unitários** (antecipa a etapa 7): `npm run test:unit`, com `node:test` e sem dependência, usando
+as leituras reais das três SCs como oráculo. Prova de FAIL: com o critério antigo, o caso da SC 96487
+reprova.
+
+**Execução.** `typecheck`, `lint` e unitários limpos. Spec temporário contra o servidor: estado alcançado
+devolve as tarefas; estado inalcançável vira pré-condição com a última leitura; instância inexistente leva
+o motivo (404). Os dois destrutivos da SC rodaram às 13:07 e 13:13 e deram **pré-condição** — a integração
+passou de 200 s nas duas (SCs 96489 e 96490, canceladas pela limpeza). Com o critério antigo, o de SLA
+teria passado e o `@bug` teria reprovado. O caminho verde não foi observado nesta janela;
+`ciclo-faturamento` não executado (depende da grade do Acompanhamento).
+
 ---
 
 ## Etapa 2 · Todo vermelho com veredito
@@ -269,6 +300,29 @@ exata sai da etapa 0.
   `@achado`).
 
 **Pronto quando.** A linha de base não tiver nenhum vermelho sem veredito.
+
+### Andamento — 11/09/2026
+
+| Item | O que foi feito | Execução |
+|---|---|---|
+| `ciclo-cotacao:170` | pré-condição depois de tentar a delegação (§1.4) | pré-condição, com a delegação tentada |
+| `sigajuri-consultivo` CT-JUR-01-S1 | o `waitForResponse` estourado agora relança dizendo que o que faltou foi o `POST workflowView/send` | **verde** hoje — o timeout de 10/09 foi ambiente |
+| Typeahead "Classe Valor" (`atribuicao-comprador`, fluxo da SC) | sem sugestão nenhuma em 15 s → pré-condição (a consulta ao ERP não voltou); sugestões sem a esperada → falha com a lista | não executado: depende do fluxo da SC, e a 233 estava degradada |
+| `alcadas-orcamentaria:108` | o `waitForFunction` de 10/09 já tinha sido trocado pelo oráculo com veredito (correção 1 do relatório dos destrutivos) | não executado, pelo mesmo motivo — fica para a etapa 0 |
+| `Failed to fetch` | `utils/rede.js` — `repetirSeFalhaDeRede`: repete só falha de TRANSPORTE, sobe na hora qualquer outro erro, sobe intacto depois da última tentativa; nunca para escrita. 3 testes unitários. Adotado nos 5 specs em que apareceu (`rastreabilidade-rdfc`, `alcada-solicitacao-compras` ×2, `nomes-de-atividades-sc`, `fila-faturamento-protheus`, `rejeicao-documento`). `erros-de-console:176` fica: ali o `Failed to fetch` é erro de console da própria página | `rastreabilidade-rdfc` e `nomes-de-atividades-sc` verdes; `fila-faturamento` em pré-condição (sem medição aberta — o disparo automático não roda, confirmado pelo desenvolvedor) |
+| `banco-horas` CT-BH-01-S2 | a queda é **simulada** (`BancoHorasPage.simularProtheusFora`). Lendo o JS do widget: a consulta ao Protheus é `POST /api/public/2.0/authorize/client/invoke`, e o aviso "base offline" é o `cbError` dela. Derrubar datasets **não** reproduz o aviso — os três foram derrubados, e a tela sempre mostrou "nenhuma divisão para sua matrícula", o ramo de sucesso vazio | **verde**; sem a simulação reprovava (execução das 13:25) |
+| `FSWTBC-4503` | 500 do `dsProtheus_getFiscaisPorTipoContrato` → pré-condição enquanto o E1 não termina | pré-condição; os outros 3 do arquivo verdes |
+| `FSWTBC-4952` | → E5 | — |
+| `admissao:37` (e `dependentes`, `substituicao-cargos`) | a anotação manual usava o tipo `pre-condicao-ausente` para documentar OUTROS casos — e o gate classifica como ambiente qualquer teste reprovado que a carregue. Tipo próprio: `casos-bloqueados-pela-mesma-causa` | `admissao` `@bug` vermelho pelo defeito; `dependentes` verde |
+| Gerência de Compras | o `@achado` virou **`@bug`**: a grade lista processo CANCELADO como pendente. README atualizado (a linha "a tabela nunca renderiza dados" não valia mais) | vermelho pelo defeito: 17 processos encerrados na aba Atribuir |
+
+**Achados ao fechar a etapa:**
+- **`FSWTBC-5118` era um vermelho sem veredito desde 09/09** — tarefa de *Aprovação de Alçadas* no grupo
+  `G.P.Requisicao_de_Compras_Validacao_Alcadas`. É o defeito nº 6 do mapa, e a análise de 10/09 já recomendava a
+  tag. Agora `@bug`; o gate passou de "regressão" a "conhecido".
+- **Terceira pré-condição falsa por leitura instantânea:** o `@achado` de Substituição de Cargos caía em
+  "não renderizou campo de substituto" em ~4 s desde 10/09. Com espera pela validação da identificação, está
+  **verde** — "funcionário não localizado", 16 campos de substituto no DOM, 0 acionáveis.
 
 ---
 

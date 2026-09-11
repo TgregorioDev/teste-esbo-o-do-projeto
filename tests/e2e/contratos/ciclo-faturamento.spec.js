@@ -6,6 +6,7 @@ import { MedicaoContratoPage } from '../../../pages/MedicaoContratoPage.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
 import { descobrirContratoVigente } from '../../../utils/massa-contratos.js';
 import { parseFornecedorDaGrade } from '../../../factories/medicao.js';
+import { lerTarefas, lerCamposDoFormulario } from '../../../utils/estado-da-solicitacao.js';
 
 /**
  * CT-FAT-01-H — ciclo de Faturamento de Contratos: criação de medição a partir de contrato
@@ -169,42 +170,15 @@ test.describe('Faturamento de Contratos — ciclo de medição', () => {
     // Nada aqui cria massa nova: é leitura da solicitação que o próprio teste acabou de criar.
     // A API é chamada de dentro da página porque `page.request` leva 403 do WAF neste tenant.
     // ─────────────────────────────────────────────────────────────────────────────────────
-    const gravado = await page.evaluate(async (instancia) => {
-      /** @param {string} url */
-      const json = async (url) => {
-        const r = await fetch(url, { headers: { Accept: 'application/json' } });
-        return r.ok ? r.json() : null;
-      };
-
-      const det = await json(`/process-management/api/v2/requests/${instancia}?expand=formFields`);
-      /** @type {Record<string,string>} */
-      const campos = {};
-      for (const f of det?.formFields ?? []) campos[f.field] = f.value;
-
-      // Logo após o Enviar a medição passa por etapas AUTOMÁTICAS ("Busca Informações do
-      // Contrato" foi a observada). Afirmar a atividade nesse instante mede o meio do caminho,
-      // não o roteamento. Espera pela atividade humana, com teto próprio.
-      const limite = Date.now() + 150_000;
-      /** @type {any} */
-      let aberta = null;
-      while (Date.now() < limite) {
-        const t = await json(`/process-management/api/v2/requests/${instancia}/tasks?pageSize=60`);
-        aberta = (t?.items ?? []).find((/** @type {any} */ x) => x.status === 'NOT_COMPLETED');
-        if (aberta?.state?.stateName === 'Realizar Medição do Contrato') break;
-        await new Promise((r) => setTimeout(r, 5_000));
-      }
-
-      return {
-        numMedicao: campos.numMedicao ?? '',
-        competencia: campos.medContrCompetencia ?? '',
-        contrato: campos.zoomNumContrato ?? '',
-        situacaoContrato: campos.descSituacaoContrato ?? '',
-        emailFornecedor: campos.emailFornecedor ?? '',
-        emailFornecedorPlanilha: campos.emailFornecedorPlanilha ?? '',
-        atividade: aberta?.state?.stateName ?? '',
-        responsavel: aberta?.assignee?.login ?? '',
-      };
-    }, numeroSolicitacao);
+    const campos = await lerCamposDoFormulario(page, numeroSolicitacao);
+    const gravado = {
+      numMedicao: campos.numMedicao ?? '',
+      competencia: campos.medContrCompetencia ?? '',
+      contrato: campos.zoomNumContrato ?? '',
+      situacaoContrato: campos.descSituacaoContrato ?? '',
+      emailFornecedor: campos.emailFornecedor ?? '',
+      emailFornecedorPlanilha: campos.emailFornecedorPlanilha ?? '',
+    };
 
     testInfo.annotations.push({
       type: 'medicao-gravada',
@@ -250,21 +224,48 @@ test.describe('Faturamento de Contratos — ciclo de medição', () => {
 
     // FSWTBC-629 e 2886 — a atividade seguinte é nominal, não um estado qualquer. Medido em
     // 08/09/2026: a medição válida cai em "Realizar Medição do Contrato" (sequência 28).
-    expect(
-      gravado.atividade,
-      `a medição parou em "${gravado.atividade}" — o roteamento correto leva a "Realizar ` +
-        `Medição do Contrato"`,
-    ).toBe('Realizar Medição do Contrato');
+    //
+    // Logo após o Enviar a medição passa por etapas AUTOMÁTICAS ("Busca Informações do Contrato"
+    // foi a observada): afirmar a atividade nesse instante mede o meio do caminho. O polling
+    // espera a atividade humana — e aqui o prazo estourado É a reprovação de roteamento, não
+    // ambiente, por isso `expect.poll` direto e não `aguardarEstadoNoServidor`.
+    /** @type {any} */
+    let aberta = null;
+    await expect
+      .poll(
+        async () => {
+          try {
+            const tarefas = await lerTarefas(page, numeroSolicitacao);
+            aberta = tarefas.find((x) => x.status === 'NOT_COMPLETED') ?? null;
+            return aberta?.state?.stateName ?? '(sem tarefa aberta)';
+          } catch (erro) {
+            // A falha de leitura vira o valor observado: aparece no relatório se o prazo acabar.
+            return `(leitura falhou: ${erro instanceof Error ? erro.message.split('\n')[0] : String(erro)})`;
+          }
+        },
+        {
+          timeout: 150_000,
+          intervals: [5_000],
+          message: 'o roteamento correto da medição leva a "Realizar Medição do Contrato"',
+        },
+      )
+      .toBe('Realizar Medição do Contrato');
+
+    const responsavel = aberta?.assignee?.login ?? '';
+    testInfo.annotations.push({
+      type: 'medicao-roteada',
+      description: JSON.stringify({ atividade: aberta?.state?.stateName ?? '', responsavel }),
+    });
 
     // E tem dono humano: tarefa da fila que fica com a conta de integração é a assinatura da
     // tarefa órfã que trava a fila do Faturamento (ver fila-faturamento-protheus.spec.js).
     expect(
-      gravado.responsavel,
-      `a medição chegou a "${gravado.atividade}" sem responsável — tarefa órfã é a assinatura ` +
-        `do travamento da fila (ver fila-faturamento-protheus.spec.js)`,
+      responsavel,
+      'a medição chegou a "Realizar Medição do Contrato" sem responsável — tarefa órfã é a ' +
+        'assinatura do travamento da fila (ver fila-faturamento-protheus.spec.js)',
     ).not.toBe('');
     expect(
-      gravado.responsavel,
+      responsavel,
       'a medição ficou atribuída à conta de integração, não a um responsável humano',
     ).not.toBe('consumerkeycompras');
   });

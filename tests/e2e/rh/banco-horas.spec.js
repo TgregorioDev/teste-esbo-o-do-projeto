@@ -44,17 +44,20 @@ test.describe('Portal de Autorização de Horas Extras', () => {
   test(
     'CT-BH-01-S2 — informa a indisponibilidade de integração com o Protheus ao usuário',
     async ({ page }) => {
-      // Achado separado do defeito de parâmetros (U-02): mesmo com o alert() nativo
-      // dispensado, a página segue exibindo que a base do Protheus está offline. É uma
-      // indisponibilidade de INTEGRAÇÃO, distinta da falha de configuração do servidor —
-      // por isso tem assertion própria, e não é apenas uma consequência do outro caso.
+      // Achado separado do defeito de parâmetros (U-02): a indisponibilidade de INTEGRAÇÃO,
+      // distinta da falha de configuração do servidor — por isso tem assertion própria.
+      //
+      // ⚠️ Até 11/09/2026 este caso dependia de o Protheus estar FORA de verdade, e ficou vermelho
+      // no dia em que a base voltou: a pré-condição era do ambiente, não da suíte. Agora a queda é
+      // simulada na chamada que o widget usa (`simularProtheusFora`), e o caso mede o que promete —
+      // o aviso — a qualquer momento, sem depender do estado do ERP.
       const bancoHorasPage = new BancoHorasPage(page);
+      await bancoHorasPage.simularProtheusFora();
       await bancoHorasPage.goto();
 
       const semAviso =
-        'o Banco de Horas deveria informar ao usuário que a integração com o Protheus está ' +
-        'indisponível, e não apenas ficar sem dados. Nenhum aviso apareceu — ou a integração ' +
-        'voltou (e aí este caso perdeu a pré-condição) ou a tela deixou de avisar';
+        'com a integração com o Protheus falhando, o Banco de Horas deveria avisar que a base está ' +
+        'offline, e não apenas ficar sem dados';
       await expect(bancoHorasPage.tituloAvisoProtheusOffline, semAviso).toBeVisible();
       await expect(bancoHorasPage.mensagemProtheusOffline, semAviso).toBeVisible();
     },

@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { ANOTACAO_PRE_CONDICAO, faltaPreCondicao } from '../../../utils/pre-condicao.js';
+import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
 import { DependentesPage } from '../../../pages/DependentesPage.js';
 import { criarDependente } from '../../../factories/pessoa.js';
 
@@ -43,7 +43,10 @@ test.describe('Gestão de Dependentes', () => {
         description: `criarDependente() geraria ${JSON.stringify(dependente)} — não preenchido em tela porque o formulário nunca monta campos para esta conta.`,
       },
       {
-        type: ANOTACAO_PRE_CONDICAO,
+        // Tipo PRÓPRIO, não `pre-condicao-ausente`: esta anotação documenta OUTROS casos, e o gate
+        // (`scripts/veredito-do-gate.mjs`) classifica como ambiente qualquer teste reprovado que a
+        // carregue — uma falha real DESTE teste sairia como "pré-condição" (corrigido em 11/09/2026).
+        type: 'casos-bloqueados-pela-mesma-causa',
         description:
           'CT-DEP-01-H (cadastrar dependente), 01-S1 (duplicado), 01-S2 (parentesco incompatível) e ' +
           '01-S3 (CPF inválido) exigem que o formulário monte os campos nome/CPF/nascimento/sexo/' +

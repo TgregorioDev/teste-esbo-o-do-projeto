@@ -34,27 +34,22 @@ import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
  * Atribuir para esta conta — o que a grade lista são processos já encerrados, e a massa própria
  * para na Validação Orçamentária (tarefa nominal do gestor do centro de custo).
  *
- * ## Por que `@achado` e não `@bug` (corrigido em 03/09/2026)
+ * ## `@achado` até 11/09/2026, `@bug` desde então
  *
- * As duas specs deste arquivo afirmam o comportamento **REAL medido** e por isso estão
- * **VERDES** — não são vermelhos intencionais. O primeiro teste levava `@bug` por engano, o
- * que fazia `--grep-invert @bug` esconder uma medição válida e `--grep @bug` devolver um verde
- * que o alarme de "defeito corrigido" não sabe ler. A tag correta é `@achado`, com a polaridade
- * invertida de sempre: no dia em que a aba Atribuir passar a listar SCs para esta conta, este
- * teste fica **vermelho** — e isso não é regressão da suíte, é sinal de que o comportamento
- * mudou e alguém precisa decidir se a mudança foi intencional.
- *
- * Na regravação de 11/09/2026 a asserção passou a ser sobre o que é ESTÁVEL no achado — "a grade
- * lista processo encerrado" —, e não sobre a contagem, que é estado da base. O vermelho
- * significa uma de duas coisas, e as duas pedem reabrir o assunto: o dataset passou a filtrar
- * `END_DATE` (o conserto), ou as instâncias encerradas saíram da consulta.
+ * Enquanto a medição era "a Atribuir não lista nada para esta conta", o primeiro teste afirmava o
+ * comportamento REAL (`@achado`, verde): não havia critério para dizer que era defeito. A medição de
+ * 11/09 mudou isso — a grade lista processo **CANCELADO** como se esperasse atribuição, o que não é
+ * questão de massa nem de perfil, e foi comunicado ao desenvolvedor como defeito do widget em
+ * 10/09/2026. Por isso o teste agora afirma o ESPERADO (nenhuma linha encerrada) e leva `@bug`:
+ * reprova enquanto o dataset não filtrar `END_DATE`, e fica verde sozinho no dia do conserto.
+ * Grade vazia não é o defeito e não reprova.
  *
  * O vermelho de CT-E2E-05-H — o caso escrito contra o comportamento ESPERADO, "a aba deve
  * listar as solicitações pendentes de atribuição" — vive em
  * `tests/e2e/portais/gerencia-compras.spec.js` (`@bug`). Aqui só se documenta a causa.
  */
 test.describe('Gerência de Compras — Atribuir comprador (CT-E2E-05-H)', () => {
-  test('as abas Atribuir e Transferir listam processos já encerrados — a grade não filtra instância cancelada @achado', async ({
+  test('as abas Atribuir e Transferir não deveriam listar processo já encerrado — a grade não filtra instância cancelada @bug', async ({
     page,
   }, testInfo) => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);
@@ -68,13 +63,8 @@ test.describe('Gerência de Compras — Atribuir comprador (CT-E2E-05-H)', () =>
       else await gerencia.abrirAbaTransferir();
 
       // Conta linha REAL: a linha do estado vazio conta como linha e fica na tela enquanto a
-      // grade carrega (`utils/grade.js`).
+      // grade carrega (`utils/grade.js`). Grade vazia não é o defeito — só entra na anotação.
       const linhas = await gerencia.esperarLinhasReais();
-      expect(
-        linhas,
-        `a aba ${aba} voltou a vir vazia — em 11/09/2026 ela listava processos (Atribuir 17, ` +
-          'Transferir 14). O comportamento registrado mudou: reabra o assunto',
-      ).toBeGreaterThan(0);
 
       // O número de processo de cada linha, conferido no servidor. É isto que separa "a grade
       // tem dado" de "a grade tem SC que ainda espera ação".
@@ -88,12 +78,11 @@ test.describe('Gerência de Compras — Atribuir comprador (CT-E2E-05-H)', () =>
       });
 
       expect(
-        encerrados.length,
-        `a aba ${aba} deixou de listar processo encerrado. Em 11/09/2026 todas as linhas das duas ` +
-          'abas eram de solicitações CANCELED, porque `ds_getSolicsGerenciaCompras` não filtra ' +
-          'instância com END_DATE. Ou o dataset passou a filtrar (o conserto esperado), ou as ' +
-          'instâncias encerradas saíram da consulta — nos dois casos, reabra o assunto',
-      ).toBeGreaterThan(0);
+        encerrados,
+        `a aba ${aba} lista ${encerrados.length} processo(s) já encerrado(s) como se esperassem ` +
+          `ação: \`ds_getSolicsGerenciaCompras\` não filtra instância com END_DATE (medido em ` +
+          '11/09/2026: as 31 linhas das duas abas eram de solicitações CANCELED)',
+      ).toEqual([]);
     }
 
     expect(guarda.tentativas(), 'ler as filas da Gerência de Compras não deveria escrever nada').toBe(0);

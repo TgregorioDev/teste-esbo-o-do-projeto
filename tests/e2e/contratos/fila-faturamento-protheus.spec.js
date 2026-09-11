@@ -1,6 +1,7 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
 import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
+import { repetirSeFalhaDeRede } from '../../../utils/rede.js';
 
 /**
  * FSWTBC-4816 e família (SDCASSI-300 / 450 / 462 / 536) — a fila de integração do Faturamento
@@ -55,7 +56,7 @@ test.describe('Fila de integração do Faturamento de Contratos (FSWTBC-4816)', 
     // neste tenant por falta de `User-Agent`/`Referer` de navegador (ver `docs/mapa-do-ambiente.md`).
     await page.goto('/portal/p/1/home', { waitUntil: 'domcontentloaded' });
 
-    const resultado = await page.evaluate(
+    const resultado = await repetirSeFalhaDeRede(() => page.evaluate(
       async ({ sequencia, maxPaginas }) => {
         /** @param {string} url */
         const json = async (url) => {
@@ -103,7 +104,7 @@ test.describe('Fila de integração do Faturamento de Contratos (FSWTBC-4816)', 
         return { inspecionadas, paginas, aindaTemMais: temMais, presas };
       },
       { sequencia: SEQUENCIA_FILA, maxPaginas: MAX_PAGINAS },
-    );
+    ));
 
     if (resultado.erro) {
       faltaPreCondicao(`(ambiente): ${resultado.erro} ao listar instâncias do Faturamento`);

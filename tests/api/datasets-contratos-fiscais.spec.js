@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '../../fixtures/fixtures.js';
+import { faltaPreCondicao } from '../../utils/pre-condicao.js';
 
 /**
  * Smoke dos datasets de contratos que já sumiram de um deploy — FSWTBC-4503 e FSWTBC-4176.
@@ -29,6 +30,12 @@ const DATASETS = [
   { nome: 'dsRevisaoContratos', chamado: 'FSWTBC-4176' },
 ];
 
+/**
+ * Dataset que o desenvolvedor está publicando neste ambiente (pedido E1, 11/09/2026) — o 500 dele é
+ * pré-condição até a publicação terminar.
+ */
+const DATASET_EM_PUBLICACAO = 'dsProtheus_getFiscaisPorTipoContrato';
+
 /** Nome propositalmente inexistente, para calibrar o que "ausente" responde. */
 const NOME_AUSENTE = 'dsProtheus_getFiscaisPorTipoContrato_NAO_EXISTE';
 
@@ -44,6 +51,17 @@ test.describe('Datasets de contratos e fiscais', () => {
         type: 'dataset',
         description: `${nome}: ${resposta.status()} · ${corpo.slice(0, 140)}`,
       });
+
+      // Neste ambiente a ausência é conhecida e está sendo resolvida: é um dos dois datasets do
+      // Acompanhamento de Contratos que o desenvolvedor está publicando (pedido E1 de
+      // `docs/plano-de-evolucao-2026-09-11.md`, 11/09/2026). Até lá o 500 é pré-condição — quando a
+      // publicação terminar, a pré-condição some sozinha e o teste volta a medir o FSWTBC-4503.
+      if (resposta.status() === 500 && nome === DATASET_EM_PUBLICACAO) {
+        faltaPreCondicao(
+          `(ambiente): ${nome} ainda não está publicado no caixade213859 — pedido E1, em andamento ` +
+            'com o desenvolvedor desde 11/09/2026. Não é regressão: o dataset nunca existiu neste ambiente.',
+        );
+      }
 
       expect(
         resposta.status(),

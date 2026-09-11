@@ -77,6 +77,7 @@ npm run test:auth                   # projeto "autenticacao" (sem storageState)
 npm run test:e2e                    # projeto "e2e" (com storageState)
 npm run typecheck                   # tsc --noEmit -p jsconfig.json
 npm run lint                        # eslint + eslint-plugin-playwright — as normas da suíte, como erro
+npm run test:unit                   # node:test da lógica pura (critérios de estado, sem navegador)
 npm run report                      # abre o relatório HTML da última execução
 
 npx playwright test tests/e2e/plataforma/home.spec.js          # um arquivo
@@ -338,14 +339,15 @@ conclusão errada. Um teste `@achado` afirma o comportamento **REAL medido**, n�
 | Fica **vermelho** quando | — | o comportamento **mudar** (inclusive para melhor) |
 | Um vermelho significa | o defeito persiste | **reabra o assunto**, não "regressão" |
 
-São 11 testes em 7 arquivos (`npx playwright test --grep @achado --list`, conferido em
+São 10 testes em 6 arquivos (`npx playwright test --grep @achado --list`, conferido em
 11/09/2026): os 5 processos de RH que abrem sem bloqueio de grupo, a identificação do solicitante
 bloqueada em Substituição de Cargos, o resíduo `teste` servindo o formulário da SC, o formulário de
 Rejeições com ids repetidos herdados do RDFC, a Validação Orçamentária inalcançável por pool para a
-conta de automação, `dsTechnicalProcess` que não é dataset (o 500 é esperado), e as abas Atribuir e
-Transferir da Gerência de Compras listando processos **já encerrados** — regravado em 11/09/2026:
-o registro antigo ("a Atribuir não lista nada, a Transferir lista") deixou de valer neste ambiente,
-o `@achado` ficou vermelho, e a medição nova é que as 31 linhas das duas abas eram `CANCELED`.
+conta de automação e `dsTechnicalProcess` que não é dataset (o 500 é esperado).
+
+Um `@achado` pode virar `@bug` quando a medição passa a mostrar defeito, e não só comportamento: foi o
+caso da grade da Gerência de Compras em 11/09/2026 — ela lista processo **CANCELADO** como pendente
+(`atribuicao-comprador.spec.js`, agora `@bug`, afirmando o esperado).
 
 Existem para que o achado **não dependa de alguém lembrar**. O dia em que um deles ficar
 vermelho é o dia em que aquele comportamento mudou — e alguém precisa decidir se a mudança foi
