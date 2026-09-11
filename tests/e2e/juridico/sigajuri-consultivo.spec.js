@@ -72,12 +72,19 @@ test.describe('SIGAJURI_Consultivo — solicitação, D-JUR-01', () => {
     // Prova de campo, documentada ANTES de tentar enviar (para não confundir "não consegui
     // preencher" com "preenchi e falhou por outro motivo"): Tipo Consulta deveria oferecer
     // tipos reais de consulta jurídica — hoje a única opção é o texto do erro do serviço.
-    // `count()` não espera pelo formulário do iframe carregar — por isso a visibilidade é
-    // confirmada primeiro (essa, sim, com auto-wait).
+    // ⚠️ Visível NÃO é carregado. Medido em 11/09/2026: no instante do heading "Início" o combo
+    // já está visível com ZERO opções, e só é populado ~1s depois. `count()` não espera — ler
+    // nessa janela dava o vermelho certo pela razão errada e, com o produto corrigido, daria um
+    // vermelho falso. Espera-se a primeira opção existir; aí se conta o que o formulário de fato
+    // carregou, e o que ele carregou vai na mensagem.
     await expect(sigajuri.comboTipoConsulta).toBeVisible();
+    const opcoesTipoConsulta = sigajuri.comboTipoConsulta.locator('option');
+    await expect(opcoesTipoConsulta.first()).toBeAttached();
+    const rotulosTipoConsulta = (await opcoesTipoConsulta.allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').trim());
     expect(
-      await sigajuri.comboTipoConsulta.locator('option').count(),
-      'Tipo Consulta deveria oferecer mais de uma opção (tipos reais de consulta)',
+      rotulosTipoConsulta.length,
+      `Tipo Consulta deveria oferecer tipos reais de consulta — ofereceu ${rotulosTipoConsulta.length}: ` +
+        JSON.stringify(rotulosTipoConsulta).slice(0, 300),
     ).toBeGreaterThan(1);
 
     await sigajuri.preencherConsultivo(dados);

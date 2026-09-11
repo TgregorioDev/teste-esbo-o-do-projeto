@@ -44,8 +44,15 @@ quatro deles tinham estourado como `page.navegar: Timeout 60000ms`.
 - `favoritos-contrato-api` :127 — favoritar duas vezes responde 500 em `text/plain`.
 - `bloqueio-extensoes` :133 (.bat) e :176 (executável renomeado .pdf), `gestao-documentos` :66
   (.exe) — o GED não valida o tipo do arquivo.
-- `sigajuri-consultivo` :63 — Tipo Consulta com uma opção. ⚠️ **A confirmar**: a leitura é por
-  `count()`, a mesma família da corrida que produziu o falso "combo UF vazio".
+- `sigajuri-consultivo` :63 — Tipo Consulta com uma opção. **Confirmado em 11/09/2026 como
+  defeito real (D-JUR-01)**, amostrando os combos de +0 s a +60 s após o heading "Início":
+  Tipo Consulta e Filial trazem **uma única opção, estável**, cujo texto é
+  `ServiceNotFoundException: Não foi possível encontrar o serviço ' SIGAJURI '`; a Área
+  Solicitante carrega 74 opções reais no mesmo instante. O endpoint de teste de serviço não
+  encontra `SIGAJURI` por nenhum código (com ou sem espaços) — ressalva: ele cobre serviços REST
+  com OAuth. O teste chegava ao vermelho certo **por acaso**: em +0 s o combo está visível com
+  zero opções e o `count()` não espera. Corrigido para esperar a primeira opção existir, com o
+  texto carregado na mensagem de falha.
 
 ### 3. A 233 demorou de verdade — 7
 
@@ -124,10 +131,40 @@ A injeção rodou num spec temporário, apagado ao fim da execução.
 
 ---
 
-## Resíduo na base
+## Resíduo na base — limpeza de 11/09/2026
 
-O teardown só cancela o que o teste registrou, e os testes acima falharam antes disso. Ficaram
-abertas as SCs 96452, 96454, 96456, 96467, 96468 (em *Correção*); 96459, 96471, 96473 (na 14);
-96460, 96462–96466 (na 7). E a 96448, de uma variante do agente de massa, parada na 233 desde as
-15:00. Todas nascem pela factory, com carimbo `QA`:
-`node scripts/limpar-massa.mjs --descobrir --desde=2026-09-10 --simular` lista antes de cancelar.
+O teardown só cancela o que o teste registrou, e os testes acima falharam antes disso. Ficaram 14
+SCs órfãs abertas. A limpeza foi feita com `scripts/limpar-massa.mjs --alvos=`, restrita a esses
+14 ids — o `--descobrir` cancelaria também a massa semeada, que é mantida viva de propósito. Antes:
+carimbo `QA` confirmado no servidor por `confirmarCarimbo` (14/14), nenhuma no livro da massa, e
+`--simular` conferido.
+
+| Resultado | SCs |
+|---|---|
+| **Canceladas** e confirmadas `CANCELED` no servidor | 96452, 96454, 96456, 96467, 96468 |
+| **Não canceláveis** | 96459, 96460, 96462, 96463, 96464, 96465, 96466, 96471, 96473 |
+
+A 96448 não foi tocada: está no livro da massa (variante do agente, parada na 233 desde 10/09 15:00).
+
+### Defeito: SC que já existe no Protheus e ainda não tem cotação não pode ser cancelada
+
+As 9 recusas são idênticas, e o padrão é exato: **as 5 canceladas não têm `numSolCompra`** (nunca
+foram gravadas no ERP — estavam em *Correção*); **as 9 recusadas têm** (`000937` a `000957`) e
+nenhuma tem `numCotacao`.
+
+Os dois caminhos de cancelamento falham no mesmo ponto:
+
+```
+POST /api/public/2.0/workflows/cancelInstances           → FAIL por item
+POST /ecm/api/rest/ecm/workflowView/cancelInstance/       → HTTP 500
+
+Método: beforeCancelProcess   Processo: wf_solicitacao_compras
+com.fluig.bpm.exception.event.BPMBeforeCancelException:
+  Falha na Integração com ERP. code: 404 message: Não foram encontradas contações para exclusão
+```
+
+O evento pede ao Protheus a exclusão das cotações da SC e trata a resposta "não há cotação" como
+erro, abortando o cancelamento. Consequência: **entre "Grava SC e Anexos" e a geração da cotação,
+nenhuma SC pode ser cancelada — nem pelo próprio solicitante**. O esperado é que 404 "nenhuma
+cotação" signifique "nada a excluir" e o cancelamento siga. Candidato à tabela de defeitos do
+README e a um teste `@bug`.

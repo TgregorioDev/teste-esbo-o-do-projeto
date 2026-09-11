@@ -178,6 +178,14 @@ destrutivo fatiado cada invocação recancelaria tudo que veio antes.
   no modo livro-razão, aceita também sem carimbo, porque a medição de contrato não tem campo de
   texto para carimbar.
 
+- ⚠️ **SC que já existe no Protheus e ainda não tem cotação não cancela** — por nenhum dos dois
+  endpoints. Medido em 11/09/2026: o `beforeCancelProcess` de `wf_solicitacao_compras` pede ao ERP
+  a exclusão das cotações, recebe 404 "Não foram encontradas contações para exclusão" e aborta.
+  Na prática, SC de teste que passou da 233 (tem `numSolCompra`) e parou antes da cotação fica
+  aberta mesmo depois do teardown. Não é falha da limpeza — é defeito do produto
+  (`docs/execucoes/relatorio-destrutivos-2026-09-10.md`). E o `--descobrir` cancela também a massa
+  semeada: para limpar só órfãs, use `--alvos=` com os ids.
+
 Conhecimento de campo sobre o ambiente (cancelamento, catálogo de processos, APIs, o que é
 reversível) está na skill **`cassi-fluig-master`**. Consulte antes de investigar de novo.
 
