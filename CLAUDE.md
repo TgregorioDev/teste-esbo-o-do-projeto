@@ -325,11 +325,14 @@ conclusão errada. Um teste `@achado` afirma o comportamento **REAL medido**, n�
 | Fica **vermelho** quando | — | o comportamento **mudar** (inclusive para melhor) |
 | Um vermelho significa | o defeito persiste | **reabra o assunto**, não "regressão" |
 
-São 9 testes em 5 arquivos (`npx playwright test --grep @achado --list`): os 5 processos de RH
-que abrem sem bloqueio de grupo, o resíduo `teste` servindo o formulário da SC, o formulário de
-Rejeições com ids repetidos herdados do RDFC, a identificação do solicitante bloqueada em
-Substituição de Cargos, e a aba Atribuir da Gerência de Compras que não lista SC para a conta
-autenticada enquanto a aba Transferir, pelo mesmo mecanismo, lista.
+São 11 testes em 7 arquivos (`npx playwright test --grep @achado --list`, conferido em
+11/09/2026): os 5 processos de RH que abrem sem bloqueio de grupo, a identificação do solicitante
+bloqueada em Substituição de Cargos, o resíduo `teste` servindo o formulário da SC, o formulário de
+Rejeições com ids repetidos herdados do RDFC, a Validação Orçamentária inalcançável por pool para a
+conta de automação, `dsTechnicalProcess` que não é dataset (o 500 é esperado), e as abas Atribuir e
+Transferir da Gerência de Compras listando processos **já encerrados** — regravado em 11/09/2026:
+o registro antigo ("a Atribuir não lista nada, a Transferir lista") deixou de valer neste ambiente,
+o `@achado` ficou vermelho, e a medição nova é que as 31 linhas das duas abas eram `CANCELED`.
 
 Existem para que o achado **não dependa de alguém lembrar**. O dia em que um deles ficar
 vermelho é o dia em que aquele comportamento mudou — e alguém precisa decidir se a mudança foi

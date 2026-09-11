@@ -1,7 +1,7 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { ESTADO_VAZIO_DA_GRADE } from '../../../utils/grade.js';
 import { AtribuicaoCompradorPage } from '../../../pages/AtribuicaoCompradorPage.js';
+import { GerenciaComprasPage } from '../../../pages/GerenciaComprasPage.js';
 import { criarSolicitacaoCompraClassica, aprovarValidacaoDoGestor, aguardarAtividadeAtual } from '../../../pages/CicloCompradorPage.js';
 import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
 
@@ -13,13 +13,15 @@ import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
  * "a aba Atribuir nunca renderiza dados". As duas specs abaixo fazem exatamente essa medição,
  * com dois ângulos complementares:
  *
- * 1. **Sem criar massa** — comparar a aba Atribuir com a aba irmã Transferir (que usa o MESMO
- *    mecanismo de carga: duas chamadas a `ds_getSolicsGerenciaCompras`, uma por aba, disparadas
- *    juntas no carregamento da página). A Transferir renderiza 50+ linhas reais para esta conta;
- *    a Atribuir não renderiza nenhuma. Isso refina o diagnóstico: o pipeline
- *    requisição → resposta → renderização FUNCIONA (prova é a própria Transferir) — o que dá
- *    zero é a consulta `etapa=257` (Atribuir) filtrada pela matrícula da conta autenticada, não
- *    um clique que não dispara nada.
+ * 1. **Sem criar massa** — ler o que as abas Atribuir e Transferir de fato listam (as duas
+ *    carregam por `ds_getSolicsGerenciaCompras`, uma chamada por aba). **Regravado em
+ *    11/09/2026.** A medição original (03/09, ambiente anterior) era "a Transferir renderiza 50+
+ *    SCs reais e a Atribuir não renderiza nenhuma". No `caixade213859` isso deixou de valer, e o
+ *    `@achado` ficou vermelho — que é exatamente o trabalho dele. O que se mede agora: a Atribuir
+ *    lista **17** linhas e a Transferir **14**, e, conferindo cada número de processo em
+ *    `/process-management/api/v2/requests/{id}`, **todas as 31 são de solicitações `CANCELED`**.
+ *    O dataset não filtra instância encerrada: a tela mostra processo cancelado como se estivesse
+ *    aguardando atribuição ou transferência.
  *
  * 2. **Criando massa própria** — abrir uma SC nova pelo formulário clássico, aprovar a
  *    "Validação do Gestor" (a única etapa que esta conta consegue mover) e confirmar que a SC
@@ -28,9 +30,9 @@ import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
  *    determinística: a SC nunca chega perto da fila de Atribuir porque não passa da etapa
  *    anterior.
  *
- * As duas medições juntas respondem à pergunta do relatório: a aba Atribuir não é alcançável
- * por esta conta — nem por ausência de registro que bata com o filtro de hoje, nem (com massa
- * própria) por a SC nunca ter avançado o suficiente para chegar lá.
+ * As duas medições juntas respondem à pergunta do relatório: nenhuma SC VIVA chega à fila de
+ * Atribuir para esta conta — o que a grade lista são processos já encerrados, e a massa própria
+ * para na Validação Orçamentária (tarefa nominal do gestor do centro de custo).
  *
  * ## Por que `@achado` e não `@bug` (corrigido em 03/09/2026)
  *
@@ -42,56 +44,59 @@ import { bloquearCriacaoDeSolicitacao } from '../../../utils/guarda-criacao.js';
  * teste fica **vermelho** — e isso não é regressão da suíte, é sinal de que o comportamento
  * mudou e alguém precisa decidir se a mudança foi intencional.
  *
+ * Na regravação de 11/09/2026 a asserção passou a ser sobre o que é ESTÁVEL no achado — "a grade
+ * lista processo encerrado" —, e não sobre a contagem, que é estado da base. O vermelho
+ * significa uma de duas coisas, e as duas pedem reabrir o assunto: o dataset passou a filtrar
+ * `END_DATE` (o conserto), ou as instâncias encerradas saíram da consulta.
+ *
  * O vermelho de CT-E2E-05-H — o caso escrito contra o comportamento ESPERADO, "a aba deve
  * listar as solicitações pendentes de atribuição" — vive em
  * `tests/e2e/portais/gerencia-compras.spec.js` (`@bug`). Aqui só se documenta a causa.
  */
 test.describe('Gerência de Compras — Atribuir comprador (CT-E2E-05-H)', () => {
-  test('a aba Atribuir não lista SCs para a conta autenticada, embora o mesmo mecanismo renderize dados reais na aba Transferir @achado', async ({
+  test('as abas Atribuir e Transferir listam processos já encerrados — a grade não filtra instância cancelada @achado', async ({
     page,
-  }) => {
+  }, testInfo) => {
     const guarda = await bloquearCriacaoDeSolicitacao(page);
-    const atribuicao = new AtribuicaoCompradorPage(page);
+    const gerencia = new GerenciaComprasPage(page);
 
-    await atribuicao.goto();
-    await atribuicao.expectCarregada();
+    await gerencia.goto();
+    await gerencia.expectCarregada();
 
-    // Transferir primeiro: prova que o pipeline de carga/renderização da grade FUNCIONA para
-    // esta conta, com massa real — isola a causa da ausência de dados na Atribuir.
-    await atribuicao.abrirAbaTransferir();
-    await expect(
-      atribuicao.getTabelaAtiva(),
-      'a aba Transferir não renderizou a tabela. Ela é a PRÉ-CONDIÇÃO deste teste: serve para ' +
-        'provar que o pipeline de carga da grade funciona para esta conta, isolando a causa da ' +
-        'ausência de dados na aba Atribuir. Sem ela, o teste não tem o que comparar',
-    ).toBeVisible();
-    await expect
-      .poll(() => atribuicao.getLinhas().count(), {
-        message: 'aba Transferir deveria listar SCs reais para esta conta (etapa=119)',
-        timeout: 45_000,
-      })
-      .toBeGreaterThan(1);
+    for (const aba of /** @type {const} */ (['Atribuir', 'Transferir'])) {
+      if (aba === 'Atribuir') await gerencia.abrirAbaAtribuir();
+      else await gerencia.abrirAbaTransferir();
 
-    // Atribuir: mesma página, mesmo carregamento, dataset irmão (etapa=257) — sem dado real.
-    await atribuicao.abrirAbaAtribuir();
-    await expect(
-      atribuicao.getTabelaAtiva(),
-      'a aba Atribuir não renderizou nem a tabela vazia. O caso afirma sobre a AUSÊNCIA de ' +
-        'dados nela; sem a tabela na tela não dá para distinguir "veio vazia" (o defeito) de ' +
-        '"a aba não carregou" (outro problema)',
-    ).toBeVisible();
-    // As duas chamadas a `ds_getSolicsGerenciaCompras` (etapa=257 e etapa=119) disparam juntas
-    // no carregamento da página — a essa altura (já esperamos a Transferir acima) a resposta de
-    // etapa=257 já chegou; a assertion abaixo só confirma o estado final renderizado.
-    await expect(
-      atribuicao.getTabelaAtiva().getByText(ESTADO_VAZIO_DA_GRADE).first(),
-      'defeito: a aba Atribuir deveria listar as SCs pendentes de atribuição, e o esperado hoje ' +
-        'é o vazio ("Nenhum dado encontrado"). Se nem esse aviso aparece, a aba está num terceiro ' +
-        'estado — nem com dado, nem com vazio declarado',
-    ).toBeVisible({ timeout: 30_000 });
-    expect(await atribuicao.possuiDados()).toBe(false);
+      // Conta linha REAL: a linha do estado vazio conta como linha e fica na tela enquanto a
+      // grade carrega (`utils/grade.js`).
+      const linhas = await gerencia.esperarLinhasReais();
+      expect(
+        linhas,
+        `a aba ${aba} voltou a vir vazia — em 11/09/2026 ela listava processos (Atribuir 17, ` +
+          'Transferir 14). O comportamento registrado mudou: reabra o assunto',
+      ).toBeGreaterThan(0);
 
-    expect(guarda.tentativas()).toBe(0);
+      // O número de processo de cada linha, conferido no servidor. É isto que separa "a grade
+      // tem dado" de "a grade tem SC que ainda espera ação".
+      const processos = await gerencia.lerNumerosDeProcesso();
+      const { ativos, encerrados } = await gerencia.separarProcessosAtivos(processos);
+      testInfo.annotations.push({
+        type: `aba-${aba.toLowerCase()}`,
+        description:
+          `${linhas} linha(s) · ${ativos.length} aberta(s) · ${encerrados.length} encerrada(s)` +
+          (encerrados.length ? `: ${encerrados.slice(0, 6).join(', ')}` : ''),
+      });
+
+      expect(
+        encerrados.length,
+        `a aba ${aba} deixou de listar processo encerrado. Em 11/09/2026 todas as linhas das duas ` +
+          'abas eram de solicitações CANCELED, porque `ds_getSolicsGerenciaCompras` não filtra ' +
+          'instância com END_DATE. Ou o dataset passou a filtrar (o conserto esperado), ou as ' +
+          'instâncias encerradas saíram da consulta — nos dois casos, reabra o assunto',
+      ).toBeGreaterThan(0);
+    }
+
+    expect(guarda.tentativas(), 'ler as filas da Gerência de Compras não deveria escrever nada').toBe(0);
   });
 
   test('@destrutivo uma SC própria aprovada na Validação do Gestor para em Validação Orçamentária, sem nunca chegar à fila de Atribuir', async ({
