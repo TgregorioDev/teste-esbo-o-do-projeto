@@ -86,6 +86,49 @@ Corrigido em três pontos:
 
 Reexecução: CT-CMP-04-H verde (SC 96504, "Distribuição Gestor Orçamentario"); CT-CMP-05-H chegou à 14 (SC 96505).
 
+### Ativar o job de medição automática — investigado ao vivo em 11/09/2026 (~15:40)
+
+O usuário autorizou disparar o job pela conta de automação para entender como levar isso à suíte. Feito
+por MCP, com a sessão de `TOTVS-FS`. Conclusões medidas:
+
+**1. A conta NÃO ativa o job automático — e não é limitação a contornar.**
+- `POST /ecm/api/rest/ecm/jobscheduler/runJob` (o "executar agora" do agendador) → **500
+  `FDNAccessDeniedException` "Sem permissão de acesso ao recurso"**. É perfil de administrador.
+- Executar o dataset `dsSync_executeMedicaoAutomatica` pelo endpoint público de dataset → o próprio
+  script devolve `error: "Unexpected token: u"` (um `JSON.parse(undefined)` interno) e **não cria nada**. O
+  caminho real do job é o `onSync` agendado, não alcançável por essa rota.
+- O agendador mostra o job "Medição Automatica - Faturamento" criado hoje 12:17, **sem última execução**,
+  próxima marcada para **12/09 03:00**.
+
+**2. Mesmo se rodasse, hoje não abriria nada.** O dataset-fonte `ds_fatcon_get_medicaoAutomatica`
+(a lista de contratos a medir no mês) responde **0 linhas**. Sem contrato com "Dia Med Auto" devido, a
+rodada — inclusive a das 03:00 — abre zero processos. É o que explica não haver FC aberta no tenant.
+
+**3. Semear faturamento por API FUNCIONA — e é o caminho para a suíte.** Igual à massa de SC:
+`POST /process-management/api/v2/processes/wf_faturamento_contratos/start` com `targetState: 0` e um
+`formFields` de molde (99 campos, lidos de uma instância existente com `expand=formFields`). Medido: start
+200, instância **96509** criada, parou em **88 "Busca Informações do Contrato"** integrando com o ERP
+(System:Auto) e **não avançou em ~4 min** — o contrato do molde (00002-2025-3501, comp 09-2026) já tinha
+medição (nº 000236), então o ERP não deixa remedir. Para progredir até o fiscal precisa de contrato ×
+competência com saldo em aberto. **Cancelável pela conta** (`cancelInstances`, `successCount 1` → CANCELED):
+faturamento de massa é seguro de semear, ao contrário da SC integrada antes do E6.
+
+⚠️ **Cuidado do futuro factory de faturamento:** o molde 96437 traz `usuarioSolicitante = "Usuário
+Integrador"` e `tipoInicioProcesso = "automático"`. Copiá-los verbatim (como fiz na sonda) faz a FC semeada
+se **passar por FC do disparo automático** — exatamente a contaminação de 3 testes registrada na etapa 4. O
+factory tem de sobrescrever esses campos com carimbo `QA` e `tipoInicioProcesso = "manual"`.
+
+**4. Os testes do Tracker continuam bloqueados de propósito.** FSWTBC-2158/4804/1934 medem o COMPORTAMENTO
+do disparo automático (uma FC por contrato/filial, sem duplicidade). Massa semeada por nós não os substitui
+— o objeto do teste é o job, que exige admin e contratos configurados no Protheus. Pré-condição permanente
+enquanto o job estiver desligado, confirmado agora por dois motivos independentes (sem permissão de runJob;
+fonte com 0 contratos).
+
+**Próximo passo possível (não feito):** um `utils/massa-faturamento-api.js` espelhando `massa-sc-api.js`, com
+factory que carimba QA e escolhe um contrato com competência em aberto (`ds_fatcon_get_competencia`), para
+alimentar CT-FAT-01-H e os testes de medição por API em vez de pela tela. Depende de achar contrato com saldo
+— e das contas de fiscal/CSE (E4) para as etapas seguintes.
+
 ### Faturamento "manual" — o que muda por teste
 
 Medido às 14:5x: `wf_faturamento_contratos` tem **0 instâncias abertas** no tenant. As 30 mais recentes estão
@@ -99,8 +142,10 @@ manual da suíte (96437, 10/09) em "Correção".
 | FSWTBC-2158/4804 e FSWTBC-1934 (`tracker-compras`) | FC aberta pelo **Usuário Integrador** | **não** — o objeto dos chamados é o disparo automático | pré-condição **permanente** enquanto o job estiver desligado |
 | FSWTBC-4816 (`fila-faturamento-protheus`, `@bug`) | instância aberta na 182 "Aguarda processamento Fila Protheus" | só se a medição passar do fiscal; a nossa para antes | pré-condição "nenhuma instância aberta" (lido no código; 0 abertas medido) até E4 ou o job |
 
-Pergunta ao desenvolvedor: "manual" é alguém disparar a rotina de medição sob demanda? Se for, uma execução
-pontual, com 1 ou 2 contratos e num horário combinado, destrava os dois testes do Tracker sem deixar o job ligado.
+**Respondido pelo Paulo (15:13):** "manual" = alguém INICIA o Faturamento no Fluig e escolhe fornecedor e
+contrato (o caminho do CT-FAT-01-H), muito usado na Cassi. NÃO é disparar o job. A ideia de rodar o job
+pontualmente para 1–2 contratos não chega a resolver os dois testes do Tracker (eles medem o disparo
+automático em si), e ativar o job não é possível pela nossa conta (acima).
 
 ---
 
