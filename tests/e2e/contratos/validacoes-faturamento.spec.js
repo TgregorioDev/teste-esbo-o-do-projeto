@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '../../../fixtures/fixtures.js';
-import { faltaPreCondicao } from '../../../utils/pre-condicao.js';
+import { faltaPreCondicao, tentarComAlternativa } from '../../../utils/pre-condicao.js';
 import { AcompanhamentoContratosPage } from '../../../pages/AcompanhamentoContratosPage.js';
 import { MedicaoContratoPage } from '../../../pages/MedicaoContratoPage.js';
 import { CentralTarefasComprasPage } from '../../../pages/CentralTarefasComprasPage.js';
@@ -42,6 +42,11 @@ import {
  *
  * A outra metade do caso (confirmar no ERP que a CND recusa a segunda medição) exige credencial
  * de Protheus e fica fora.
+ *
+ * ## Chamados cobertos por este arquivo
+ *
+ * FSWTBC-2143 — todo rótulo de competência do zoom traz separador entre mês e ano.
+ * Declarado aqui porque é onde `scripts/gerar-cobertura.mjs` reconhece cobertura.
  */
 
 /**
@@ -59,12 +64,7 @@ async function encontrarMedicaoComSaldo(contratosPage, medicao, maxContratos = 3
   /** @type {Awaited<ReturnType<MedicaoContratoPage['montarMedicaoComSaldoEmAberto']>> | undefined} */
   let resultado;
   /** Por que cada contrato/competência foi descartado — entra na mensagem de falha. */
-  const descartes = /** @type {string[]} *
- * ## Chamados cobertos por este arquivo
- *
- * FSWTBC-2143 — todo rótulo de competência do zoom traz separador entre mês e ano.
- * Declarado aqui porque é onde `scripts/gerar-cobertura.mjs` reconhece cobertura.
- */ ([]);
+  const descartes = /** @type {string[]} */ ([]);
 
   for (let i = 0; i < maxContratos; i++) {
     // `medicao.goto()` (chamado no fim da iteração anterior) navega para fora do Portal de
@@ -81,16 +81,16 @@ async function encontrarMedicaoComSaldo(contratosPage, medicao, maxContratos = 3
 
     await medicao.goto();
     await medicao.expectAberto();
-    try {
-      resultado = await medicao.montarMedicaoComSaldoEmAberto(fornecedor);
-    } catch (erro) {
-      // Contrato descartado antes de chegar a tentar competências (ex.: fornecedor sem
-      // contrato navegável pelo zoom). O MOTIVO é guardado e devolvido a quem chamou, para
-      // entrar na mensagem de `faltaPreCondicao`: engolido, o relatório dizia apenas
-      // "nenhum contrato serviu", sem dizer por quê.
-      descartes.push(`${contrato.contrato}: ${erro instanceof Error ? erro.message : String(erro)}`);
+    // Contrato sem o que medir (fornecedor sem contrato no zoom, zoom de competência vazio) é
+    // descartado, e o MOTIVO volta a quem chamou para entrar na mensagem de `faltaPreCondicao`.
+    // Qualquer OUTRO erro é relançado: antes todo erro virava descarte e terminava em
+    // pré-condição (ver `tentarComAlternativa`).
+    const tentativa = await tentarComAlternativa(() => medicao.montarMedicaoComSaldoEmAberto(fornecedor));
+    if (!tentativa.serviu) {
+      descartes.push(`${contrato.contrato}: ${tentativa.motivo}`);
       continue;
     }
+    resultado = tentativa.valor;
     if (resultado.sucesso) break;
     for (const t of resultado.tentativas) {
       descartes.push(`${contrato.contrato} / competência ${t.competencia}: ${t.mensagem}`);

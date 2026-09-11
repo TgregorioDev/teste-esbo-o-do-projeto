@@ -504,31 +504,29 @@ test.describe('Validação do Gestor Imediato (Tarefas em pool)', () => {
     const justificativa = criarJustificativaDecisao('aprovação (alçada)');
     await central.decidirEEnviar({ aprovar: true, justificativa });
 
-    const mensagemAlcada = page.getByText(/N[ãa]o foi encontrado nenhum usu[áa]rio habilitado/i);
+    const mensagemAlcada = page.getByText(/N[ãa]o foi encontrado nenhum usu[áa]rio habilitado/i).first();
     await central.abrirDetalheAposConfirmacao();
 
     // Condição incondicional: OU a mensagem de alçada aparece explicitamente, OU a
     // atividade avança normalmente (prova de que não há trava silenciosa) — nunca as duas
     // ausentes (nem mensagem, nem avanço).
-    let atividadeMudou = false;
-    try {
-      await expect(async () => {
-        const atividade = await central.lerNomeAtividadeAtual();
-        expect(atividade.length).toBeGreaterThan(0);
-        expect(atividade).not.toMatch(/Validação do Gestor/i);
-      }).toPass({ timeout: 30_000 });
-      atividadeMudou = true;
-    } catch {
-      // segue false — ou a mensagem de alçada explica, ou nem uma coisa nem outra (falha)
-    }
-    const alcadaVisivel = await mensagemAlcada.isVisible().catch(() => false);
+    //
+    // As duas leituras ficam DENTRO do mesmo polling. Antes a atividade era esperada num `try`
+    // cujo `catch` descartava o erro, e a mensagem de alçada era lida uma única vez depois,
+    // num instante: o veredito dependia de onde essa leitura caía, e a falha perdia a
+    // atividade que o polling tinha visto.
+    let alcadaVisivel = false;
+    let atividade = '';
+    await expect(async () => {
+      alcadaVisivel = await mensagemAlcada.isVisible();
+      atividade = alcadaVisivel ? '' : await central.lerNomeAtividadeAtual();
+      expect(
+        alcadaVisivel || (atividade.length > 0 && !/Validação do Gestor/i.test(atividade)),
+        'esperado: mensagem explícita de alçada OU avanço real da atividade — não os dois ausentes. ' +
+          `Atividade atual lida na tela: "${atividade}"`,
+      ).toBe(true);
+    }).toPass({ timeout: 30_000 });
 
-    expect(
-      alcadaVisivel || atividadeMudou,
-      'esperado: mensagem explícita de alçada OU avanço real da atividade — não os dois ausentes',
-    ).toBeTruthy();
-
-    const atividade = atividadeMudou ? await central.lerNomeAtividadeAtual() : null;
     test.info().annotations.push({
       type: 'alcada-sem-aprovador',
       description: `processo=${numeroProcesso} mensagemAlcadaObservada=${alcadaVisivel} atividadeAposDecisao="${atividade}"`,

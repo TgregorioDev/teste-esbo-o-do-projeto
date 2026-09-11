@@ -61,7 +61,7 @@ e o ambiente com mais cuidado — e mudam o que se implementa:
 | Etapa | Tema | Depende de | Estado |
 |---|---|---|---|
 | 0 | Linha de base confiável | E1 | aguardando os 6 datasets (verificação a cada 10 min) |
-| 1 | Lint que aplica as normas | — | **1.1, 1.2 e 1.6 concluídas** (11/09); 1.3–1.5 pendentes |
+| 1 | Lint que aplica as normas | — | **1.1, 1.2, 1.3 e 1.6 concluídas** (11/09); 1.4–1.5 pendentes |
 | 2 | Todo vermelho com veredito | — | pendente |
 | 3 | Contrato descoberto por dataset | 0 (reavaliar) | pendente |
 | 4 | Massa por API como fixture | — | pendente |
@@ -148,6 +148,53 @@ vermelho com a mesma mensagem.
 **Não executado, e por quê:** a asserção do CEP em `cadastro-publico-fornecedor` (o `@bug` falha antes, no
 CNPJ); o `alcadas-orcamentaria` reescrito (depende do fluxo de SC, com a atividade 233 degradando — fica
 para a etapa 0); as conversões `toHaveLength` em specs destrutivos (troca sem mudança de semântica).
+
+### 1.3 — `try` e `.catch` que engoliam erro · 11/09/2026
+
+**Varredura.** Os 31 `try` e os 11 `.catch(() => {})` do plano, e também os ~45 `.catch(() => valor)`
+(`false`, `null`, `''`), que são a mesma classe e o plano não contava. Os 11 `.catch(() => {})`
+descartam só uma **espera** (tooltip sumir, primeira linha da grade, `load`), e a leitura seguinte é
+que decide — ficam. Os `try` em volta de `JSON.parse`/`text()` guardam um fallback e o status é
+afirmado depois — ficam. **Cinco pontos engoliam erro:**
+
+| Onde | O que acontecia | Correção |
+|---|---|---|
+| `ciclo-faturamento:92`, `validacoes-faturamento:84` | O laço "tenta o próximo contrato" engolia **qualquer** erro e o transformava em pré-condição. E a anotação `pre-condicao-ausente` da tentativa descartada ficava no teste: se o contrato seguinte servisse e o teste reprovasse depois, o gate lia a anotação e dizia "ambiente" | `tentarComAlternativa` (`utils/pre-condicao.js`): relança o que não é pré-condição e retira a anotação da tentativa descartada |
+| `aprovacoes-solicitacao-compras:514` | `toPass` dentro de `try` com `catch` vazio, seguido de `isVisible()` instantâneo decidindo o veredito | Um polling só, com as duas condições; a falha carrega a atividade lida |
+| `MedicaoContratoPage#aguardarIndiceDaOpcao` | `expect.poll(...).catch(() => undefined)` — assertion descartada, e o chamador relia a lista para a mensagem | `toPass` com as opções da última leitura na mensagem; uma exceção de lint a menos |
+| `processos-administrativos-usuario-comum:97/105` | `expect.soft(await isVisible().catch(() => false))` logo após o `goto`: "Enviar não deve estar visível" podia passar com o formulário ainda montando, e o `catch` transformava violação de strict mode em `false` | Espera o desfecho (diálogo **ou** Enviar) e afirma com `toBeVisible`/`toBeHidden` |
+
+De brinde: em `validacoes-faturamento` o bloco "Chamados cobertos" tinha ido parar dentro de um cast
+`@type`; voltou para o cabeçalho (onde `gerar-cobertura` o reconhece do mesmo jeito).
+
+**Prova de FAIL.** Spec temporário, apagado depois:
+- **Gate:** a mesma falha real depois de uma tentativa descartada. Com o padrão antigo o gate classificou
+  "pré-condição ausente"; com `tentarComAlternativa`, "regressão". Pré-condição descartada devolve o
+  motivo sem deixar anotação; erro comum é relançado intacto.
+- **Bloco de alçada** (cópia fiel sobre página estática, com o `CentralTarefasComprasPage` real): passa
+  com a atividade avançada, passa com a mensagem de alçada, **reprova** parado em "Validação do Gestor",
+  com `Atividade atual lida na tela: "Validação do Gestor"` na mensagem.
+
+**Execução real.**
+- `npm run typecheck` e `npm run lint` limpos.
+- `processos-administrativos-usuario-comum` antes e depois: os mesmos 3 vermelhos `@bug` por teste, com
+  as mesmas mensagens.
+- `validacoes-faturamento`: pela primeira vez passou da página do Acompanhamento. **S1 verde**
+  atravessando `tentarComAlternativa` e o polling novo do zoom; S3 verde. S2, S4 e FSWTBC-2143 pararam
+  **antes** do código tocado — timeout cru em `AcompanhamentoContratosPage:102` (grade) e em
+  `massa-medicao:138` (dataset). Vão para a etapa 2.
+- `aprovacoes` alçada (destrutivo): pré-condição — a SC 96485 não ficou assumível em 180 s (233 lenta).
+  O bloco novo não foi alcançado na execução real; está provado pela cópia acima. Sem resíduo: parada
+  na 233, sem `numSolCompra`, a SC foi cancelada pelo teardown (`CANCELED` conferido no servidor).
+- `ciclo-faturamento` **não executado**: destrutivo (cria medição), mesma troca que o S1 exercitou, e a
+  grade do Acompanhamento estava estourando no mesmo horário.
+
+**Entradas para a 1.4** — leituras instantâneas que decidem algo, achadas nesta varredura. Atenção às
+três primeiras: `isVisible({ timeout })` **ignora** o `timeout` (a opção está depreciada e não espera).
+- `MedicaoContratoPage:395` — `isVisible({ timeout: 8000 })` decide "sem erro de saldo" num instante.
+- `CentralTarefasComprasPage:87` — `isVisible({ timeout: 10_000 })` decide se clica a aba de pool.
+- `aprovacoes-solicitacao-compras:631` — `isVisible({ timeout: 5_000 })` decide o ramo do teste.
+- `DependentesPage:80`, `PoolTarefasPage:242`, `validacoes-faturamento:357`.
 
 ---
 

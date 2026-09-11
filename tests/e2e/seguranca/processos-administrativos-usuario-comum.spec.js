@@ -90,24 +90,33 @@ test.describe('Segurança — processos administrativos não devem abrir para us
       // Passo 2 — abrir o formulário de início por URL. Esperado: bloqueio (diálogo "Erro").
       await formularioPage.goto(processId);
 
+      // Espera a tela DECIDIR o que é — diálogo de bloqueio ou formulário com Enviar — antes de
+      // afirmar sobre qualquer um dos dois. As leituras eram `isVisible().catch(() => false)`
+      // logo depois do `goto`: com o formulário ainda montando, "Enviar não visível" passava
+      // por acaso, e o `catch` transformava até uma violação de strict mode em `false`.
+      await expect(
+        formularioPage.headingErro.or(formularioPage.botaoEnviar).first(),
+        `abrir '${processId}' não levou nem ao diálogo de bloqueio nem ao formulário de início`,
+      ).toBeVisible();
+
       // A tela deveria ser a de bloqueio de permissão. Hoje é o formulário — estas asserções
       // reprovam de propósito.
-      expect
+      await expect
         .soft(
-          await formularioPage.headingErro.isVisible().catch(() => false),
+          formularioPage.headingErro,
           `abrir '${processId}' deveria exibir o diálogo "Erro" de permissão para a conta ` +
             'não-admin, como acontece com os processos de RH barrados. Ver CT-SEG-08-S1.',
         )
-        .toBe(true);
+        .toBeVisible();
 
-      expect
+      await expect
         .soft(
-          await formularioPage.botaoEnviar.isVisible().catch(() => false),
+          formularioPage.botaoEnviar,
           `o formulário de início de '${processId}' (${nome}) carregou com o botão "Enviar" ` +
             'visível para a conta não-admin — o processo administrativo abriu de fato, quando ' +
             'deveria ter sido barrado. É a superfície da escalada de privilégio. Ver CT-SEG-08-S1.',
         )
-        .toBe(false);
+        .toBeHidden();
 
       // Invariante de segurança que DEVE valer sempre: a navegação de leitura não pode ter
       // disparado nenhuma escrita. Assertion dura (não-soft) — se falhar, é problema real.

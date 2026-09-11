@@ -68,3 +68,37 @@ export function erroDePreCondicao(motivo) {
 export function faltaPreCondicao(motivo) {
   throw erroDePreCondicao(motivo);
 }
+
+/**
+ * Executa uma TENTATIVA que tem alternativa (outro contrato, outra competência) e que pode
+ * esbarrar em pré-condição ausente sem que isso encerre o teste.
+ *
+ * Existe porque o laço "tenta o próximo contrato" engolia QUALQUER erro, e o vermelho saía com
+ * a etiqueta errada de duas formas:
+ *
+ * - erro que NÃO é de pré-condição (o zoom não acha o fornecedor que a própria grade listou,
+ *   um clique estoura o prazo) virava "descarte" e terminava em `faltaPreCondicao` — defeito
+ *   possível lido como ambiente. Aqui ele é relançado intacto.
+ * - a pré-condição de uma tentativa descartada deixava a anotação `pre-condicao-ausente` no
+ *   teste. Se a tentativa seguinte servisse e o teste reprovasse DEPOIS, por outro motivo, o
+ *   gate (`scripts/veredito-do-gate.mjs`) lia a anotação e classificava a falha como ambiente.
+ *   Aqui a anotação da tentativa descartada é retirada; o motivo volta a quem chamou, que o
+ *   repassa à pré-condição final se nenhuma tentativa servir.
+ *
+ * @template T
+ * @param {() => Promise<T>} tentativa
+ * @returns {Promise<{ serviu: true, valor: T } | { serviu: false, motivo: string }>}
+ */
+export async function tentarComAlternativa(tentativa) {
+  const anotacoes = test.info().annotations;
+  const antes = anotacoes.length;
+  try {
+    return { serviu: true, valor: await tentativa() };
+  } catch (erro) {
+    if (!(erro instanceof Error) || !erro.message.startsWith(PREFIXO_PRE_CONDICAO)) throw erro;
+    for (let i = anotacoes.length - 1; i >= antes; i--) {
+      if (anotacoes[i].type === ANOTACAO_PRE_CONDICAO) anotacoes.splice(i, 1);
+    }
+    return { serviu: false, motivo: erro.message };
+  }
+}

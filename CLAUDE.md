@@ -242,6 +242,12 @@ não pôde ser exercitado por falta de massa, serviço ou permissão. Anota
 a anotação é o que `scripts/veredito-do-gate.mjs` lê para separar ambiente de regressão no CI, e
 um `throw` sem anotação vira "regressão" no gate.
 
+Quando a pré-condição tem **alternativa** (outro contrato, outra competência), não envolva a
+tentativa em `try/catch`: use `tentarComAlternativa(() => ...)`, do mesmo arquivo. O `catch` à mão
+engolia erro que não era de pré-condição e deixava a anotação da tentativa descartada no teste — se
+a próxima servisse e o teste reprovasse depois, o gate classificava a falha como ambiente (provado
+em 11/09/2026, `docs/plano-de-evolucao-2026-09-11.md` §1.3).
+
 **`captura-payload.js`** — a técnica de maior valor do projeto. Ao clicar em Confirmar, o widget
 faz `POST .../wf_solicitacao_compras/start` com o payload completo da SC (~101 campos, itens
 sufixados `___1`, `___2`…). Interceptar, **ler o corpo e abortar** prova defeitos que antes só

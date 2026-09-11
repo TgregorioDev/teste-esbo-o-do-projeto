@@ -181,32 +181,25 @@ export class MedicaoContratoPage {
   }
 
   /**
-   * Relê as opções do zoom até alguma casar com o padrão, ou até o prazo acabar.
+   * Relê as opções do zoom até alguma casar com o padrão e devolve o índice dela.
    *
-   * `expect.poll` faz o trabalho de repetição (o Playwright já resolve isto melhor que um laço
-   * com espera fixa). Ele lança quando o prazo acaba; aqui esse fim de prazo NÃO é a falha a
-   * reportar — é a informação "nenhuma opção casou", que quem chama transforma numa mensagem
-   * rica, listando as opções realmente oferecidas. Por isso o rejeite vira `-1` em vez de
-   * propagar: o erro que chega ao runner é o do chamador, mais informativo, nunca engolido.
+   * O fim do prazo É a falha, e a mensagem carrega as opções oferecidas na ÚLTIMA leitura do
+   * polling. Antes o erro do `expect.poll` era descartado com `.catch` e virava `-1`, e o
+   * chamador relia a lista para montar a mensagem — uma assertion engolida, e uma segunda
+   * leitura que já não era a que o polling tinha visto.
    * @param {RegExp} padrao
+   * @param {string} oQueSeProcurava início da mensagem de falha
    * @param {number} [timeoutMs]
-   * @returns {Promise<number>} índice encontrado, ou -1
+   * @returns {Promise<number>} índice da primeira opção que casou
    */
-  async #aguardarIndiceDaOpcao(padrao, timeoutMs = 5000) {
-    /** @type {{ indice: number }} */
-    const achado = { indice: -1 };
-    // eslint-disable-next-line playwright/no-conditional-expect -- o fim de prazo do poll é informação ('nenhuma opção casou'), convertida em -1 para o chamador reportar com as opções reais (JSDoc acima)
-    await expect
-      .poll(
-        async () => {
-          achado.indice = await this.#indiceDaOpcao(padrao);
-          return achado.indice;
-        },
-        { timeout: timeoutMs, intervals: Array(Math.ceil(timeoutMs / 250)).fill(250) },
-      )
-      .toBeGreaterThanOrEqual(0)
-      .catch(() => undefined);
-    return achado.indice;
+  async #aguardarIndiceDaOpcao(padrao, oQueSeProcurava, timeoutMs = 5000) {
+    let indice = -1;
+    await expect(async () => {
+      const textos = await this.opcoesZoom.allInnerTexts();
+      indice = textos.findIndex((t) => padrao.test(t));
+      expect(indice, `${oQueSeProcurava}. Opções oferecidas: ${JSON.stringify(textos)}`).toBeGreaterThanOrEqual(0);
+    }).toPass({ timeout: timeoutMs, intervals: [250] });
+    return indice;
   }
 
   /**
@@ -235,14 +228,10 @@ export class MedicaoContratoPage {
     // A resposta pode ainda não ter renderizado no DOM no instante da primeira leitura (a rede
     // já respondeu, mas o `select2` está terminando de montar a lista) — daí o poll, que relê o
     // DOM até a opção existir, em vez de esperar um tempo fixo.
-    const indice = await this.#aguardarIndiceDaOpcao(padrao);
-    if (indice === -1) {
-      const textos = await this.opcoesZoom.allInnerTexts();
-      throw new Error(
-        `Nenhuma opção de Fornecedor bateu com código "${codigo}" e loja "${loja}". ` +
-          `Opções oferecidas: ${JSON.stringify(textos)}`,
-      );
-    }
+    const indice = await this.#aguardarIndiceDaOpcao(
+      padrao,
+      `Nenhuma opção de Fornecedor bateu com código "${codigo}" e loja "${loja}"`,
+    );
     await this.opcoesZoom.nth(indice).click();
     await this.#aguardarCascataDeHabilitacao();
   }
