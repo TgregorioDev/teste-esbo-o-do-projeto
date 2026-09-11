@@ -86,6 +86,41 @@ Corrigido em três pontos:
 
 Reexecução: CT-CMP-04-H verde (SC 96504, "Distribuição Gestor Orçamentario"); CT-CMP-05-H chegou à 14 (SC 96505).
 
+### Correção do usuário e teste real do formulário manual — 11/09/2026 (~16:05)
+
+O usuário corrigiu: "manual" NÃO é ativar o job — é **preencher o formulário de Faturamento escolhendo o
+fornecedor**, e a seleção do fornecedor é que dispara a rotina de integração. Pediu para testar com o
+fornecedor **TOTVS SA**. Feito por MCP, com a sessão de `TOTVS-FS`. Medido:
+
+- **TOTVS S.A** existe no cadastro: código **53113791**, loja **0001**, CNPJ 53113791000122 (o nome gravado
+  é "TOTVS S.A", com ponto — buscar "TOTVS SA" dá 0; "TOTVS" dá 1). O zoom do formulário usa
+  `dsProtheus_getFornecedores_restGetAll` (searchField `A2_NOMECGC`, `pattern=`).
+- Escolhido no formulário, o zoom **Nº do Contrato** oferece **um** contrato: **00015-2026-5303**, filial 5303.
+- **Selecionar fornecedor+contrato dispara a cadeia de integração do formulário** (`App/EventHandler.js`):
+  Tipo de Contrato, Condição de Pagamento (`dsProtheus_getCondicaoPgto_restGetAll` E4_CODIGO 007),
+  Competências etc. É isto que o usuário chamou de "ativar o job" — a rotina roda ao montar a medição, não
+  por agendamento.
+- **E aí o ambiente travou, exatamente como o desenvolvedor avisou.** Sob a rajada de ~10 chamadas ao ERP, o
+  Protheus respondeu **HTTP 500 `WFLYEJB0378: Failed to acquire a permit within 1 MINUTES`** (esgotamento do
+  pool de EJB do WildFly) em Tipo de Contrato e Condição de Pagamento. O formulário mostrou *"Erro ao buscar
+  as informações do Tipo de Contrato. Por favor, tente novamente."*, a Competência não carregou, e o
+  `EventHandler` entrou em laço de retry — 380+ erros de console e a navegação do MCP passou a estourar
+  timeout. Segundos depois os endpoints se recuperaram (a Condição de Pagamento 007 voltou a responder 200).
+  Nada foi submetido; nenhuma FC criada nesta rodada.
+
+**Conclusões para a automação:**
+- O caminho manual É automatizável e o fornecedor de teste natural é o **TOTVS S.A (53113791/0001), contrato
+  00015-2026-5303** — não depende de fiscal para MONTAR a medição (a etapa Início), só para as validações
+  seguintes (E4).
+- Mas a montagem dispara uma rajada de chamadas ao ERP que **satura o WildFly** neste tenant
+  (`WFLYEJB0378`). Um teste desse fluxo tem de: (1) tratar 500/`WFLYEJB0378` e o laço de retry do formulário
+  como **PRÉ-CONDIÇÃO de ambiente** (é o "vai travar" do desenvolvedor, não defeito do produto); (2) esperar
+  por CONDIÇÃO (Competência carregada) e não seguir enquanto a cadeia não estabilizar; (3) rodar isolado, sem
+  concorrência, para não competir por permits. `MedicaoContratoPage` já espera a cadeia de zooms — falta o
+  tratamento explícito do `WFLYEJB0378`.
+- A alternativa por API (semear com `wf_faturamento_contratos/start`, abaixo) contorna a rajada da TELA, mas
+  cai na MESMA integração no passo 88 — então também depende da capacidade do ERP no momento.
+
 ### Ativar o job de medição automática — investigado ao vivo em 11/09/2026 (~15:40)
 
 O usuário autorizou disparar o job pela conta de automação para entender como levar isso à suíte. Feito
