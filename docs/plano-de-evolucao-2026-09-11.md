@@ -609,6 +609,31 @@ injeção (rota abortada no cliente, sem SC criada); na reexecução, 04-S1 e al
 - Unitários de `gerar-cobertura`: pendente.
 - Histórico do CI e se o runner alcança o tenant: não verificável daqui (sem `gh`).
 
+**Amostra de determinismo — 15:07, `--repeat-each=3 --workers=3`**, nos testes de leitura corrigidos hoje
+(personas, Dependentes CT-DEP-02-S1, Substituição de Cargos `@achado`):
+
+| Teste | 3 repetições |
+|---|---|
+| Dependentes CT-DEP-02-S1 | verde, verde, verde |
+| Substituição de Cargos `@achado` | verde, verde, verde |
+| personas `comprador`, `fiscal`, `cse`, `gestorAlcada` | pré-condição nas 3 (mesma mensagem) |
+| persona `compras` | **falhou, falhou, verde** |
+
+As duas falhas foram `page.goto: net::ERR_NETWORK_CHANGED`, às 15:07:33 e 15:07:37, no primeiro `goto` do teste.
+É a mesma janela do `Failed to fetch` no `/start` das 15:03: **mudança de rede na máquina que executa**, não
+lógica do teste nem o tenant. Repetido isolado logo depois (`--repeat-each=6`): **6 de 6 verdes**, 3–4 s cada.
+Não é flaky da suíte. Se `ERR_NETWORK_CHANGED` aparecer no CI, classificar ESSE erro como infraestrutura. Uma
+classe genérica de "rede" ficou de fora de propósito: `ERR_CONNECTION_RESET` pode ser o WAF, e aí é comportamento.
+
+**A correção da corrida do formulário, conferida no servidor** — as quatro SCs da reexecução:
+
+| SC | Decisão | "Aprovador" | `managerAprovadoValidacao` | Foi para |
+|---|---|---|---|---|
+| 96504 (04-H) | aprovar | preenchido | `Aprovado` | 14 |
+| 96505 (CT-CMP-05-H) | aprovar | preenchido | `Aprovado` | 14 |
+| 96507 (alçada) | aprovar | preenchido | `Aprovado` | 14 |
+| 96508 (04-S1) | reprovar | preenchido | `Reprovado` | 11 |
+
 ---
 
 ## Etapa 8 · Documentação e segurança
